@@ -12,8 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# __author__ = 'minio'
-#
-# __version__ = '0.0.1'
-#
-# __all__ = ['Minio', 'foo', 'exceptions']
+__author__ = 'minio'
+
+
+class MinioException(Exception):
+    pass
+
+
+class BucketExistsException(MinioException):
+    pass

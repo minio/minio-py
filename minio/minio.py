@@ -14,9 +14,11 @@
 
 import collections
 import platform
-
 from urlparse import urlparse
+
 from urllib3 import connectionpool
+
+from .exceptions import MinioException
 
 __author__ = 'minio'
 
@@ -60,12 +62,14 @@ class Minio:
         self._user_agent += ''.join(components)
 
     # Bucket level
-    def make_bucket(self, bucket, acl = None):
+    # noinspection PyUnusedLocal
+    def make_bucket(self, bucket, acl=None):
         url = self._get_target_url(bucket)
         headers = {}
         conn = connectionpool.connection_from_url(self._scheme + '://' + self._location)
         response = conn.request('PUT', url, headers)
-        print response
+        if response != 200:
+            parse_error(response)
 
     def list_buckets(self, bucket):
         pass
@@ -116,16 +120,13 @@ class Minio:
 
         if query is not None:
             ordered_query = collections.OrderedDict(sorted(query.items()))
-            print ordered_query
             query_components = []
             for component_key in ordered_query:
                 single_component = [component_key]
                 if ordered_query[component_key] is not None:
                     single_component.append('=')
                     single_component.append(ordered_query[component_key])
-                print single_component
                 query_components.append(''.join(single_component))
-                print query_components
 
             query_string = '&'.join(query_components)
             if query_string is not '':
@@ -133,3 +134,7 @@ class Minio:
                 url_components.append(query_string)
 
         return ''.join(url_components)
+
+
+def parse_error(response):
+    raise MinioException('bucket exists')
