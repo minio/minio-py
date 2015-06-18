@@ -13,10 +13,10 @@
 # limitations under the License.
 
 """
-Minio Python Client
+Minio Python
 -------------------
 
-Minio Python Client is a client for accessing S3 compatible object storage servers.
+Minio Python is a library for accessing S3 compatible object storage servers.
 
 It is designed to be easy to use and minimal, exposing only the most used functionality.
 """
@@ -24,7 +24,7 @@ It is designed to be easy to use and minimal, exposing only the most used functi
 from setuptools import setup
 
 config = {
-    'description': 'Object Storage Client for Python',
+    'description': 'Minimal Object Storage Library for Python',
     'author': 'Minio Inc.',
     'url': 'https://github.com/minio/minio-py',
     'download_url': 'https://github.com/minio/minio-py',
