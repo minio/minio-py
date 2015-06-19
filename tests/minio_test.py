@@ -100,18 +100,36 @@ class UserAgentTests(TestCase):
 
 
 class MockResponse(object):
-    def __init__(self, status):
+    def __init__(self, method, url, headers, status):
+        self.method = method
+        self.url = url
+        self.headers = headers
         self.status = status
+
+    def mock_verify(self, method, url, headers):
+        eq_(self.method, method)
+        eq_(self.url, url)
+        eq_(self.headers, headers)
 
 
 class MockConnection(object):
+    def __init__(self):
+        self.requests = []
+
+    def mock_add_request(self, request):
+        self.requests.append(request)
+
     def request(self, method, url, headers):
-        return MockResponse(200)
+        return_request = self.requests.pop(0)
+        return_request.mock_verify(method, url, headers)
+        return return_request
 
 
 class MakeBucket(TestCase):
     @mock.patch('urllib3.connectionpool.connection_from_url')
     def test_make_bucket_works(self, mock_connectionpool):
-        mock_connectionpool.return_value = MockConnection()
+        mock_connection = MockConnection()
+        mock_connection.mock_add_request(MockResponse('PUT', 'http://localhost:9000/hello', {}, 200))
+        mock_connectionpool.return_value = mock_connection
         client = minio.Minio('http://localhost:9000')
         client.make_bucket('hello')

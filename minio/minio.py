@@ -136,5 +136,5 @@ class Minio:
         return ''.join(url_components)
 
 
-def parse_error(response):
+def parse_error(_):
     raise MinioException('bucket exists')
