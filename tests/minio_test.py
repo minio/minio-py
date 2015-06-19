@@ -20,6 +20,7 @@ import mock as mock
 from nose.tools import *
 
 from minio import minio
+from .minio_mocks import MockConnection, MockResponse
 
 
 class GetUrlTests(TestCase):
@@ -97,32 +98,6 @@ class UserAgentTests(TestCase):
     def test_parameter_must_not_be_empty(self):
         client = minio.Minio('http://localhost')
         client.add_user_agent('hello', '1.0.0', ['World', ''])
-
-
-class MockResponse(object):
-    def __init__(self, method, url, headers, status):
-        self.method = method
-        self.url = url
-        self.headers = headers
-        self.status = status
-
-    def mock_verify(self, method, url, headers):
-        eq_(self.method, method)
-        eq_(self.url, url)
-        eq_(self.headers, headers)
-
-
-class MockConnection(object):
-    def __init__(self):
-        self.requests = []
-
-    def mock_add_request(self, request):
-        self.requests.append(request)
-
-    def request(self, method, url, headers):
-        return_request = self.requests.pop(0)
-        return_request.mock_verify(method, url, headers)
-        return return_request
 
 
 class MakeBucket(TestCase):
