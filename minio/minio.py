@@ -18,7 +18,7 @@ from urlparse import urlparse
 
 from urllib3 import connectionpool
 
-from .exceptions import MinioException
+from .exceptions import BucketExistsException
 
 __author__ = 'minio'
 
@@ -137,4 +137,4 @@ class Minio:
 
 
 def parse_error(_):
-    raise MinioException('bucket exists')
+    raise BucketExistsException('bucket exists')
