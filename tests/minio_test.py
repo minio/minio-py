@@ -15,12 +15,9 @@
 import platform
 from unittest import TestCase
 
-import mock as mock
-
 from nose.tools import *
 
 from minio import minio
-from .minio_mocks import MockConnection, MockResponse
 
 
 class GetUrlTests(TestCase):
@@ -98,13 +95,3 @@ class UserAgentTests(TestCase):
     def test_parameter_must_not_be_empty(self):
         client = minio.Minio('http://localhost')
         client.add_user_agent('hello', '1.0.0', ['World', ''])
-
-
-class MakeBucket(TestCase):
-    @mock.patch('urllib3.connectionpool.connection_from_url')
-    def test_make_bucket_works(self, mock_connectionpool):
-        mock_connection = MockConnection()
-        mock_connection.mock_add_request(MockResponse('PUT', 'http://localhost:9000/hello', {}, 200))
-        mock_connectionpool.return_value = mock_connection
-        client = minio.Minio('http://localhost:9000')
-        client.make_bucket('hello')
