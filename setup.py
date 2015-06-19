@@ -23,17 +23,19 @@ It is designed to be easy to use and minimal, exposing only the most used functi
 
 from setuptools import setup
 
-config = {
-    'description': 'Minimal Object Storage Library for Python',
-    'author': 'Minio Inc.',
-    'url': 'https://github.com/minio/minio-py',
-    'download_url': 'https://github.com/minio/minio-py',
-    'author_email': 'dev@minio.io',
-    'version': '0.0.1',
-    'install_requires': ['nose', 'urllib3'],
-    'packages': ['minio'],
-    'scripts': [],
-    'name': 'minio'
-}
-
-setup(**config)
+setup(
+    name='minio',
+    description='Minimal Object Storage Library for Python',
+    author='Minio Inc.',
+    url='https=//github.com/minio/minio-py',
+    download_url='https=//github.com/minio/minio-py',
+    author_email='dev@minio.io',
+    version='0.0.1',
+    install_requires=['nose', 'urllib3'],
+    packages=['minio', 'tests'],
+    py_modules=['minio', 'tests'],
+    scripts=[],
+    setup_requires=['nose>=1.0'],
+    test_suite='tests',
+    use_2to3=True
+)
