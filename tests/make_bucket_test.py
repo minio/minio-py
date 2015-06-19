@@ -17,7 +17,7 @@ import mock
 from nose.tools import raises
 
 from minio import minio
-from minio.exceptions import BucketExistsException
+from minio.exceptions import BucketExistsException, InvalidBucketNameException
 from .minio_mocks import MockConnection, MockResponse
 
 __author__ = 'minio'
@@ -40,3 +40,12 @@ class MakeBucket(TestCase):
         mock_connectionpool.return_value = mock_connection
         client = minio.Minio('http://localhost:9000')
         client.make_bucket('hello')
+
+    @mock.patch('urllib3.connectionpool.connection_from_url')
+    @raises(InvalidBucketNameException)
+    def test_make_bucket_invalid_name(self, mock_connectionpool):
+        mock_connection = MockConnection()
+        mock_connection.mock_add_request(MockResponse('PUT', 'http://localhost:9000/1234', {}, 400))
+        mock_connectionpool.return_value = mock_connection
+        client = minio.Minio('http://localhost:9000')
+        client.make_bucket('1234')

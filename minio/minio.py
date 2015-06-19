@@ -18,7 +18,7 @@ from urlparse import urlparse
 
 from urllib3 import connectionpool
 
-from .exceptions import BucketExistsException
+from .exceptions import BucketExistsException, InvalidBucketNameException
 
 __author__ = 'minio'
 
@@ -136,5 +136,8 @@ class Minio:
         return ''.join(url_components)
 
 
-def parse_error(_):
-    raise BucketExistsException('bucket exists')
+def parse_error(response):
+    if response.status == 400:
+        raise InvalidBucketNameException()
+    if response.status == 409:
+        raise BucketExistsException()
