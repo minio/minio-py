@@ -16,6 +16,7 @@ import platform
 from unittest import TestCase
 
 from nose.tools import *
+from urllib3.exceptions import MaxRetryError
 
 from minio import minio
 
@@ -96,11 +97,9 @@ class UserAgentTests(TestCase):
         client = minio.Minio('http://localhost')
         client.add_user_agent('hello', '1.0.0', ['World', ''])
 
+
 class MakeBucket(TestCase):
+    @raises(MaxRetryError)
     def test_make_bucket_works(self):
         client = minio.Minio('http://localhost:9000')
         client.make_bucket('hello')
-        foo()
-
-## add test for this:
-# eq_(client._get_client(None, 'key'), 'https://localhost:9000/') # should raise
