@@ -22,19 +22,17 @@ __author__ = 'fkautz'
 
 server = 'http://localhost:9000'
 bucket = 'goroutine-py'
+client = minio.Minio(server)
 
 
 class MakeBucketIntegrationTests(TestCase):
     def test_make_bucket_works(self):
-        client = minio.Minio(server)
         client.make_bucket(bucket)
 
     @raises(BucketExistsException)
     def test_make_existing_bucket_fails(self):
-        client = minio.Minio(server)
         client.make_bucket(bucket)
 
     @raises(InvalidBucketNameException)
     def test_invalid_bucket_name_exception(self):
-        client = minio.Minio(server)
         client.make_bucket('1234')
