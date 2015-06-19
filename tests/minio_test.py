@@ -15,8 +15,9 @@
 import platform
 from unittest import TestCase
 
+import mock as mock
+
 from nose.tools import *
-from urllib3.exceptions import MaxRetryError
 
 from minio import minio
 
@@ -98,8 +99,19 @@ class UserAgentTests(TestCase):
         client.add_user_agent('hello', '1.0.0', ['World', ''])
 
 
+class MockResponse(object):
+    def __init__(self, status):
+        self.status = status
+
+
+class MockConnection(object):
+    def request(self, method, url, headers):
+        return MockResponse(200)
+
+
 class MakeBucket(TestCase):
-    @raises(MaxRetryError)
-    def test_make_bucket_works(self):
+    @mock.patch('urllib3.connectionpool.connection_from_url')
+    def test_make_bucket_works(self, mock_connectionpool):
+        mock_connectionpool.return_value = MockConnection()
         client = minio.Minio('http://localhost:9000')
         client.make_bucket('hello')
