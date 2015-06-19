@@ -68,7 +68,7 @@ class Minio:
         headers = {}
         conn = connectionpool.connection_from_url(self._scheme + '://' + self._location)
         response = conn.request('PUT', url, headers)
-        if response != 200:
+        if response.status != 200:
             parse_error(response)
 
     def list_buckets(self, bucket):
