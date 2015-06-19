@@ -21,3 +21,7 @@ class MinioException(Exception):
 
 class BucketExistsException(MinioException):
     pass
+
+
+class InvalidBucketNameException(MinioException):
+    pass
