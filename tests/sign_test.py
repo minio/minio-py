@@ -20,7 +20,8 @@ from datetime import datetime
 from nose.tools import eq_
 import pytz as pytz
 
-from minio.signer import generate_canonical_request, generate_string_to_sign, generate_signing_key
+from minio.signer import generate_canonical_request, generate_string_to_sign, generate_signing_key, \
+    generate_authorization_header
 
 __author__ = 'fkautz'
 
@@ -80,3 +81,13 @@ class SigningKeyTest(TestCase):
         actual_result = generate_signing_key(dt, 'region', 'S3CR3T')
 
         eq_(expected_result, actual_result)
+
+
+class AuthorizationHeaderTest(TestCase):
+    def test_generate_authentication_header(self):
+        expected_authorization_header = "AWS4-HMAC-SHA256 Credential=public_key/20150620/region/s3/aws4_request," \
+                                        "SignedHeaders=host,x-amz-content-sha256,x-amz-date,Signature=signed_request"
+        actual_authorization_header = generate_authorization_header('public_key', dt, 'region',
+                                                                    ['host', 'x-amz-content-sha256', 'x-amz-date'],
+                                                                    'signed_request')
+        eq_(expected_authorization_header, actual_authorization_header)

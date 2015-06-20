@@ -45,7 +45,9 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
     signing_key = generate_signing_key(dt, region, secret_key)
     signed_request = hmac.new(signing_key.encode('UTF-8'), string_to_sign.encode('UTF-8', hashlib.sha256)).hexdigest()
 
-    headers['authorization'] = signed_request
+    authorization_header = generate_authorization_header(access_key, dt, region, signed_headers, signed_request)
+
+    headers['authorization'] = authorization_header
 
     return headers
 
@@ -94,3 +96,10 @@ def generate_signing_key(dt, region, secret):
     key4 = hmac.new(key3, 's3'.encode('UTF-8'), hashlib.sha256).digest()
 
     return hmac.new(key4, 'aws4_request'.encode('UTF-8'), hashlib.sha256).hexdigest()
+
+
+def generate_authorization_header(access_key, dt, region, signed_headers, signed_request):
+    formatted_date = dt.strftime("%Y%m%d")
+    signed_headers_string = ','.join(signed_headers)
+    return "AWS4-HMAC-SHA256 Credential=" + access_key + "/" + formatted_date + "/" + region + \
+           "/s3/aws4_request,SignedHeaders=" + signed_headers_string + ",Signature=" + signed_request
