@@ -19,6 +19,7 @@ from urlparse import urlparse
 from urllib3 import connectionpool
 
 from .exceptions import BucketExistsException, InvalidBucketNameException
+from .signer import sign_v4
 
 __author__ = 'minio'
 
@@ -64,10 +65,12 @@ class Minio:
     # Bucket level
     # noinspection PyUnusedLocal
     def make_bucket(self, bucket, acl=None):
+        method = 'PUT'
         url = self._get_target_url(bucket)
         headers = {}
+        sign_v4(method, url, headers)
         conn = connectionpool.connection_from_url(self._scheme + '://' + self._location)
-        response = conn.request('PUT', url, headers)
+        response = conn.request(method, url, headers)
         if response.status != 200:
             parse_error(response)
 
