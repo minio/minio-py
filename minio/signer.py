@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from urlparse import urlparse
+from datetime import datetime
 
 __author__ = 'fkautz'
 
@@ -23,16 +24,15 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
     if access_key is None or secret_key is None:
         return
 
-    canonical_request(method, url, headers)
+    canonical_request(method, url, headers, content_hash)
     if headers is None:
         headers = {}
 
     parsed_url = urlparse(url)
 
     headers['host'] = parsed_url.hostname
-    headers['x-amz-date'] = 'amzdate'
+    headers['x-amz-date'] = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
     headers['x-amz-content-sha256'] = content_hash
-    pass
 
 
 def canonical_request(method, parsed_url, headers, content_hash):

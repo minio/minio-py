@@ -40,7 +40,8 @@ class CanonicalRequest(TestCase):
 
     def test_request_with_query(self):
         url = urlparse('http://localhost:9000/hello?c=d&e=f&a=b')
-        expected_request_array = ['PUT', '/hello', 'a=b&c=d&e=f', 'x-amz-content-sha256=' + empty_hash, 'x-amz-date=dateString',
+        expected_request_array = ['PUT', '/hello', 'a=b&c=d&e=f', 'x-amz-content-sha256=' + empty_hash,
+                                  'x-amz-date=dateString',
                                   '', 'x-amz-content-sha256;x-amz-date',
                                   empty_hash]
 
