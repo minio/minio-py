@@ -36,7 +36,12 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
 
 
 def canonical_request(method, parsed_url, headers, content_hash):
-    lines = [method, parsed_url.path, parsed_url.query]
+    lines = [method, parsed_url.path]
+
+    split_query = parsed_url.query.split('&')
+    split_query.sort()
+    query = '&'.join(split_query)
+    lines.append(query)
 
     signed_headers = []
     header_lines = []
