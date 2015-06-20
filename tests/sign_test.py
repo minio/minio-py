@@ -20,7 +20,7 @@ from datetime import datetime
 from nose.tools import eq_
 import pytz as pytz
 
-from minio.signer import canonical_request, string_to_sign, signing
+from minio.signer import generate_canonical_request, generate_string_to_sign, generate_signing_key
 
 __author__ = 'fkautz'
 
@@ -37,9 +37,9 @@ class CanonicalRequestTest(TestCase):
 
         expected_request = '\n'.join(expected_request_array)
 
-        actual_request = canonical_request('PUT', url, {'X-Amz-Date': 'dateString',
-                                                        '   x-Amz-Content-sha256\t': "\t" + empty_hash + " "},
-                                           empty_hash)
+        actual_request = generate_canonical_request('PUT', url, {'X-Amz-Date': 'dateString',
+                                                                 '   x-Amz-Content-sha256\t': "\t" + empty_hash + " "},
+                                                    empty_hash)
 
         eq_(expected_request, actual_request)
 
@@ -52,9 +52,9 @@ class CanonicalRequestTest(TestCase):
 
         expected_request = '\n'.join(expected_request_array)
 
-        actual_request = canonical_request('PUT', url, {'X-Amz-Date': 'dateString',
-                                                        '   x-Amz-Content-sha256\t': "\t" + empty_hash + " "},
-                                           empty_hash)
+        actual_request = generate_canonical_request('PUT', url, {'X-Amz-Date': 'dateString',
+                                                                 '   x-Amz-Content-sha256\t': "\t" + empty_hash + " "},
+                                                    empty_hash)
 
         eq_(expected_request, actual_request)
 
@@ -64,7 +64,7 @@ class StringToSignTest(TestCase):
         expected_signing_key_list = ["AWS4-HMAC-SHA256", "20150620T000000Z", "20150620/milkyway/s3/aws4_request",
                                      'request_hash']
 
-        actual_signing_key = string_to_sign(dt, "milkyway", 'request_hash')
+        actual_signing_key = generate_string_to_sign(dt, "milkyway", 'request_hash')
         eq_('\n'.join(expected_signing_key_list), actual_signing_key)
 
 
@@ -77,6 +77,6 @@ class SigningKeyTest(TestCase):
         key4 = hmac.new(key3, 's3'.encode('UTF-8'), hashlib.sha256).digest()
         expected_result = hmac.new(key4, 'aws4_request'.encode('UTF-8'), hashlib.sha256).hexdigest()
 
-        actual_result = signing(dt, 'region', 'S3CR3T')
+        actual_result = generate_signing_key(dt, 'region', 'S3CR3T')
 
         eq_(expected_result, actual_result)

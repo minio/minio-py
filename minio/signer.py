@@ -26,18 +26,31 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
     if access_key is None or secret_key is None:
         return
 
-    canonical_request(method, url, headers, content_hash)
     if headers is None:
         headers = {}
 
     parsed_url = urlparse(url)
 
+    canonical_request = generate_canonical_request(method, parsed_url, headers, content_hash)
+
     headers['host'] = parsed_url.hostname
     headers['x-amz-date'] = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
     headers['x-amz-content-sha256'] = content_hash
 
+    region = 'milkyway'
 
-def canonical_request(method, parsed_url, headers, content_hash):
+    dt = datetime.utcnow()
+
+    string_to_sign = generate_string_to_sign(dt, region, canonical_request)
+    signing_key = generate_signing_key(dt, region, secret_key)
+    signed_request = hmac.new(signing_key.encode('UTF-8'), string_to_sign.encode('UTF-8', hashlib.sha256)).hexdigest()
+
+    headers['authorization'] = signed_request
+
+    return headers
+
+
+def generate_canonical_request(method, parsed_url, headers, content_hash):
     lines = [method, parsed_url.path]
 
     split_query = parsed_url.query.split('&')
@@ -62,7 +75,7 @@ def canonical_request(method, parsed_url, headers, content_hash):
     return '\n'.join(lines)
 
 
-def string_to_sign(dt, region, request_hash):
+def generate_string_to_sign(dt, region, request_hash):
     formatted_date_time = dt.strftime("%Y%m%dT000000Z")
     formatted_date = dt.strftime("%Y%m%d")
 
@@ -71,7 +84,7 @@ def string_to_sign(dt, region, request_hash):
     return '\n'.join(['AWS4-HMAC-SHA256', formatted_date_time, scope, request_hash])
 
 
-def signing(dt, region, secret):
+def generate_signing_key(dt, region, secret):
     formatted_date = dt.strftime("%Y%m%d")
 
     key1_string = 'AWS4' + secret
