@@ -32,30 +32,41 @@ dt = datetime(2015, 06, 20, 1, 2, 3, 0, pytz.utc)
 class CanonicalRequestTest(TestCase):
     def test_simple_request(self):
         url = urlparse('http://localhost:9000/hello')
+        expected_signed_headers = ['x-amz-content-sha256', 'x-amz-date']
         expected_request_array = ['PUT', '/hello', '', 'x-amz-content-sha256=' + empty_hash, 'x-amz-date=dateString',
-                                  '', 'x-amz-content-sha256;x-amz-date',
+                                  '', ';'.join(expected_signed_headers),
                                   empty_hash]
 
         expected_request = '\n'.join(expected_request_array)
 
-        actual_request = generate_canonical_request('PUT', url, {'X-Amz-Date': 'dateString',
-                                                                 '   x-Amz-Content-sha256\t': "\t" + empty_hash + " "},
-                                                    empty_hash)
+        actual_request, actual_signed_headers = generate_canonical_request('PUT',
+                                                                           url,
+                                                                           {'X-Amz-Date': 'dateString',
+                                                                            '   x-Amz-Content-sha256\t': "\t" +
+                                                                                                         empty_hash +
+                                                                                                         " "},
+                                                                           empty_hash)
 
         eq_(expected_request, actual_request)
+        eq_(expected_signed_headers, actual_signed_headers)
 
     def test_request_with_query(self):
         url = urlparse('http://localhost:9000/hello?c=d&e=f&a=b')
+        expected_signed_headers = ['x-amz-content-sha256', 'x-amz-date']
         expected_request_array = ['PUT', '/hello', 'a=b&c=d&e=f', 'x-amz-content-sha256=' + empty_hash,
                                   'x-amz-date=dateString',
-                                  '', 'x-amz-content-sha256;x-amz-date',
+                                  '', ';'.join(expected_signed_headers),
                                   empty_hash]
 
         expected_request = '\n'.join(expected_request_array)
 
-        actual_request = generate_canonical_request('PUT', url, {'X-Amz-Date': 'dateString',
-                                                                 '   x-Amz-Content-sha256\t': "\t" + empty_hash + " "},
-                                                    empty_hash)
+        actual_request, actual_signed_headers = generate_canonical_request('PUT',
+                                                                           url,
+                                                                           {'X-Amz-Date': 'dateString',
+                                                                            '   x-Amz-Content-sha256\t': "\t" +
+                                                                                                         empty_hash +
+                                                                                                         " "},
+                                                                           empty_hash)
 
         eq_(expected_request, actual_request)
 
