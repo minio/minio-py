@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from urlparse import urlparse
+from datetime import datetime
 
 __author__ = 'fkautz'
 
@@ -23,16 +24,15 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
     if access_key is None or secret_key is None:
         return
 
-    canonical_request(method, url, headers)
+    canonical_request(method, url, headers, content_hash)
     if headers is None:
         headers = {}
 
     parsed_url = urlparse(url)
 
     headers['host'] = parsed_url.hostname
-    headers['x-amz-date'] = 'amzdate'
+    headers['x-amz-date'] = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
     headers['x-amz-content-sha256'] = content_hash
-    pass
 
 
 def canonical_request(method, parsed_url, headers, content_hash):
@@ -58,3 +58,12 @@ def canonical_request(method, parsed_url, headers, content_hash):
     lines.append(content_hash)
 
     return '\n'.join(lines)
+
+
+def signing_key(dt, region, request_hash):
+    formatted_date_time = dt.strftime("%Y%m%dT000000Z")
+    formatted_date = dt.strftime("%Y%m%d")
+
+    scope = '/'.join([formatted_date, region, 's3', 'aws4_request'])
+
+    return '\n'.join(['AWS4-HMAC-SHA256', formatted_date_time, scope, request_hash])
