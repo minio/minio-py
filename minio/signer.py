@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import hashlib
+import hmac
 
 from urlparse import urlparse
 from datetime import datetime
@@ -60,10 +62,22 @@ def canonical_request(method, parsed_url, headers, content_hash):
     return '\n'.join(lines)
 
 
-def signing_key(dt, region, request_hash):
+def string_to_sign(dt, region, request_hash):
     formatted_date_time = dt.strftime("%Y%m%dT000000Z")
     formatted_date = dt.strftime("%Y%m%d")
 
     scope = '/'.join([formatted_date, region, 's3', 'aws4_request'])
 
     return '\n'.join(['AWS4-HMAC-SHA256', formatted_date_time, scope, request_hash])
+
+
+def signing(dt, region, secret):
+    formatted_date = dt.strftime("%Y%m%d")
+
+    key1_string = 'AWS4' + secret
+    key1 = key1_string.encode('UTF-8')
+    key2 = hmac.new(key1, formatted_date.encode('UTF-8'), hashlib.sha256).digest()
+    key3 = hmac.new(key2, region.encode('UTF-8'), hashlib.sha256).digest()
+    key4 = hmac.new(key3, 's3'.encode('UTF-8'), hashlib.sha256).digest()
+
+    return hmac.new(key4, 'aws4_request'.encode('UTF-8'), hashlib.sha256).hexdigest()

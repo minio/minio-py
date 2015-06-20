@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import hashlib
+import hmac
 from unittest import TestCase
 from urlparse import urlparse
 from datetime import datetime
@@ -18,11 +20,12 @@ from datetime import datetime
 from nose.tools import eq_
 import pytz as pytz
 
-from minio.signer import canonical_request, signing_key
+from minio.signer import canonical_request, string_to_sign, signing
 
 __author__ = 'fkautz'
 
 empty_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+dt = datetime(2015, 06, 20, 1, 2, 3, 0, pytz.utc)
 
 
 class CanonicalRequestTest(TestCase):
@@ -58,9 +61,22 @@ class CanonicalRequestTest(TestCase):
 
 class StringToSignTest(TestCase):
     def test_signing_key(self):
-        dt = datetime(2015, 06, 20, 1, 2, 3, 0, pytz.utc)
         expected_signing_key_list = ["AWS4-HMAC-SHA256", "20150620T000000Z", "20150620/milkyway/s3/aws4_request",
                                      'request_hash']
 
-        actual_signing_key = signing_key(dt, "milkyway", 'request_hash')
+        actual_signing_key = string_to_sign(dt, "milkyway", 'request_hash')
         eq_('\n'.join(expected_signing_key_list), actual_signing_key)
+
+
+class SigningKeyTest(TestCase):
+    def test_generate_signing_key(self):
+        key1_string = 'AWS4' + 'S3CR3T'
+        key1 = key1_string.encode('UTF-8')
+        key2 = hmac.new(key1, '20150620'.encode('UTF-8'), hashlib.sha256).digest()
+        key3 = hmac.new(key2, 'region'.encode('UTF-8'), hashlib.sha256).digest()
+        key4 = hmac.new(key3, 's3'.encode('UTF-8'), hashlib.sha256).digest()
+        expected_result = hmac.new(key4, 'aws4_request'.encode('UTF-8'), hashlib.sha256).hexdigest()
+
+        actual_result = signing(dt, 'region', 'S3CR3T')
+
+        eq_(expected_result, actual_result)
