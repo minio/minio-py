@@ -29,6 +29,8 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
     if headers is None:
         headers = {}
 
+    headers = headers[:]
+
     parsed_url = urlparse(url)
 
     headers['host'] = parsed_url.hostname
