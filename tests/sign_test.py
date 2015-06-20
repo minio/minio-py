@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from unittest import TestCase
+from urlparse import urlparse
 
 from nose.tools import eq_
 
@@ -19,12 +20,18 @@ from minio.signer import canonical_request
 
 __author__ = 'fkautz'
 
+empty_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
 
 class CanonicalRequest(TestCase):
     def test_simple_request(self):
-        expected_request_array = ['PUT', '/hello', '', 'x-amz-date=dateString', '', 'x-amz-date',
-                                  'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855']
+        url = urlparse('http://localhost:9000/hello')
+        expected_request_array = ['PUT', '/hello', '', 'x-amz-content-sha256=' + empty_hash, 'x-amz-date=dateString',
+                                  '', 'x-amz-content-sha256;x-amz-date',
+                                  empty_hash]
 
         expected_request = '\n'.join(expected_request_array)
-        actual_request = canonical_request('PUT', '/hello', {'X-Amz-Date': 'dateString'})
+        actual_request = canonical_request('PUT', url, {'X-Amz-Date': 'dateString',
+                                                        '   x-Amz-Content-sha256\t': "\t" + empty_hash + " "},
+                                           empty_hash)
         eq_(expected_request, actual_request)
