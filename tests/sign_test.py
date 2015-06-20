@@ -31,7 +31,23 @@ class CanonicalRequest(TestCase):
                                   empty_hash]
 
         expected_request = '\n'.join(expected_request_array)
+
         actual_request = canonical_request('PUT', url, {'X-Amz-Date': 'dateString',
                                                         '   x-Amz-Content-sha256\t': "\t" + empty_hash + " "},
                                            empty_hash)
+
+        eq_(expected_request, actual_request)
+
+    def test_request_with_query(self):
+        url = urlparse('http://localhost:9000/hello?c=d&e=f&a=b')
+        expected_request_array = ['PUT', '/hello', 'a=b&c=d&e=f', 'x-amz-content-sha256=' + empty_hash, 'x-amz-date=dateString',
+                                  '', 'x-amz-content-sha256;x-amz-date',
+                                  empty_hash]
+
+        expected_request = '\n'.join(expected_request_array)
+
+        actual_request = canonical_request('PUT', url, {'X-Amz-Date': 'dateString',
+                                                        '   x-Amz-Content-sha256\t': "\t" + empty_hash + " "},
+                                           empty_hash)
+
         eq_(expected_request, actual_request)
