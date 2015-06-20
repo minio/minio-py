@@ -16,37 +16,40 @@ from urlparse import urlparse
 
 __author__ = 'fkautz'
 
-
 empty_sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
-def sign_v4(method, url, headers=None, access_key=None, secret_key=None):
+
+def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content_hash=empty_sha256):
     if access_key is None or secret_key is None:
         return
 
     canonical_request(method, url, headers)
     if headers is None:
         headers = {}
+
+    parsed_url = urlparse(url)
+
+    headers['host'] = parsed_url.hostname
     headers['x-amz-date'] = 'amzdate'
+    headers['x-amz-content-sha256'] = content_hash
     pass
 
 
-def canonical_request(method, url, headers):
-    lines = [method]
-
-    parsed_url = urlparse(url)
-    lines.append(parsed_url.path)
-    lines.append(parsed_url.query)
+def canonical_request(method, parsed_url, headers, content_hash):
+    lines = [method, parsed_url.path, parsed_url.query]
 
     signed_headers = []
     header_lines = []
     for header in headers:
         signed_headers.append(header.lower().strip())
         header_lines.append(header.lower().strip() + '=' + headers[header].strip())
+    signed_headers.sort()
+    header_lines.sort()
     lines = lines + header_lines
 
     lines.append('')
 
     lines.append(';'.join(signed_headers))
-    lines.append(empty_sha256)
+    lines.append(content_hash)
 
     return '\n'.join(lines)
