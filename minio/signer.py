@@ -58,3 +58,12 @@ def canonical_request(method, parsed_url, headers, content_hash):
     lines.append(content_hash)
 
     return '\n'.join(lines)
+
+
+def signing_key(dt, region, request_hash):
+    formatted_date_time = dt.strftime("%Y%m%dT000000Z")
+    formatted_date = dt.strftime("%Y%m%d")
+
+    scope = '/'.join([formatted_date, region, 's3', 'aws4_request'])
+
+    return '\n'.join(['AWS4-HMAC-SHA256', formatted_date_time, scope, request_hash])

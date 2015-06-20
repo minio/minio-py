@@ -13,17 +13,19 @@
 # limitations under the License.
 from unittest import TestCase
 from urlparse import urlparse
+from datetime import datetime
 
 from nose.tools import eq_
+import pytz as pytz
 
-from minio.signer import canonical_request
+from minio.signer import canonical_request, signing_key
 
 __author__ = 'fkautz'
 
 empty_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
 
-class CanonicalRequest(TestCase):
+class CanonicalRequestTest(TestCase):
     def test_simple_request(self):
         url = urlparse('http://localhost:9000/hello')
         expected_request_array = ['PUT', '/hello', '', 'x-amz-content-sha256=' + empty_hash, 'x-amz-date=dateString',
@@ -52,3 +54,13 @@ class CanonicalRequest(TestCase):
                                            empty_hash)
 
         eq_(expected_request, actual_request)
+
+
+class StringToSignTest(TestCase):
+    def test_signing_key(self):
+        dt = datetime(2015, 06, 20, 1, 2, 3, 0, pytz.utc)
+        expected_signing_key_list = ["AWS4-HMAC-SHA256", "20150620T000000Z", "20150620/milkyway/s3/aws4_request",
+                                     'request_hash']
+
+        actual_signing_key = signing_key(dt, "milkyway", 'request_hash')
+        eq_('\n'.join(expected_signing_key_list), actual_signing_key)
