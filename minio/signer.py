@@ -31,19 +31,23 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
 
     parsed_url = urlparse(url)
 
-    canonical_request = generate_canonical_request(method, parsed_url, headers, content_hash)
-
     headers['host'] = parsed_url.hostname
     headers['x-amz-date'] = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
     headers['x-amz-content-sha256'] = content_hash
+
+    canonical_request, signed_headers = generate_canonical_request(method, parsed_url, headers, content_hash)
 
     region = 'milkyway'
 
     dt = datetime.utcnow()
 
-    string_to_sign = generate_string_to_sign(dt, region, canonical_request)
+    canonical_request_hasher = hashlib.sha256()
+    canonical_request_hasher.update(canonical_request.encode('UTF-8'))
+    canonical_request_sha256 = canonical_request_hasher.hexdigest()
+
+    string_to_sign = generate_string_to_sign(dt, region, canonical_request_sha256)
     signing_key = generate_signing_key(dt, region, secret_key)
-    signed_request = hmac.new(signing_key.encode('UTF-8'), string_to_sign.encode('UTF-8', hashlib.sha256)).hexdigest()
+    signed_request = hmac.new(signing_key.encode('UTF-8'), string_to_sign.encode('UTF-8'), hashlib.sha256).hexdigest()
 
     authorization_header = generate_authorization_header(access_key, dt, region, signed_headers, signed_request)
 
@@ -74,7 +78,7 @@ def generate_canonical_request(method, parsed_url, headers, content_hash):
     lines.append(';'.join(signed_headers))
     lines.append(content_hash)
 
-    return '\n'.join(lines)
+    return '\n'.join(lines), signed_headers
 
 
 def generate_string_to_sign(dt, region, request_hash):
