@@ -97,7 +97,7 @@ class Minio:
         if response.status_code != 200:
             parse_error(response)
 
-    def list_buckets(self, bucket):
+    def list_buckets(self, prefix=None, recursive=True):
         pass
 
     def bucket_exists(self, bucket):
