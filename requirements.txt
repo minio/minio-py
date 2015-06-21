@@ -1,5 +1,4 @@
-requests
 mock
 nose
 pytz
-urllib3==1.10.4
+requests
