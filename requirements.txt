@@ -1,3 +1,4 @@
+requests
 mock
 nose
 pytz

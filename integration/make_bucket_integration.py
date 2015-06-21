@@ -18,11 +18,15 @@ from nose.tools import raises
 from minio import minio
 from minio.exceptions import BucketExistsException, InvalidBucketNameException
 
-__author__ = 'fkautz'
+__author__ = 'minio'
 
-server = 'http://localhost:9000'
+server = 'https://s3-us-west-2.amazonaws.com'
 bucket = 'goroutine-py'
-client = minio.Minio(server)
+
+access_key = None
+secret_key = None
+
+client = minio.Minio(server, access_key=access_key, secret_key=secret_key)
 
 
 class MakeBucketIntegrationTests(TestCase):
