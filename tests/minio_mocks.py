@@ -18,13 +18,13 @@ __author__ = 'minio'
 
 
 class MockResponse(object):
-    def __init__(self, method, url, headers, status, return_headers=None, content=None):
+    def __init__(self, method, url, headers, status_code, return_headers=None, data=None):
         self.method = method
         self.url = url
         self.headers = headers
-        self.status = status
+        self.status_code = status_code
         self.return_headers = return_headers
-        self.content = content
+        self.data = data
 
     def mock_verify(self, method, url, headers):
         eq_(self.method, method)

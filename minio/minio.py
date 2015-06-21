@@ -13,13 +13,16 @@
 # limitations under the License.
 
 import collections
+import hashlib
 import platform
 from urlparse import urlparse
 
-from urllib3 import connectionpool
+import requests
 
 from .exceptions import BucketExistsException, InvalidBucketNameException
+from .region import get_region
 from .signer import sign_v4
+from .xml_requests import bucket_constraint
 
 __author__ = 'minio'
 
@@ -38,8 +41,8 @@ class Minio:
 
         self._scheme = url_components.scheme
         self._location = url_components.netloc
-        self._accessKey = access_key
-        self._secretKey = secret_key
+        self._access_key = access_key
+        self._secret_key = secret_key
         self._user_agent = 'minio-py/' + '0.0.1' + ' (' + platform.system() + '; ' + platform.machine() + ')'
 
     # Client level
@@ -68,10 +71,22 @@ class Minio:
         method = 'PUT'
         url = self._get_target_url(bucket)
         headers = {}
-        sign_v4(method, url, headers)
-        conn = connectionpool.connection_from_url(self._scheme + '://' + self._location)
-        response = conn.request(method, url, headers)
-        if response.status != 200:
+
+        region = get_region(self._location)
+
+        content = ''
+        if region is not 'us-east-1':
+            content = bucket_constraint(region)
+            headers['Content-Length'] = str(len(content))
+
+        content_sha256 = get_sha256(content)
+
+        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+                          secret_key=self._secret_key, content_hash=content_sha256)
+
+        response = requests.put(url, data=content, headers=headers)
+
+        if response.status_code != 200:
             parse_error(response)
 
     def list_buckets(self, bucket):
@@ -140,7 +155,13 @@ class Minio:
 
 
 def parse_error(response):
-    if response.status == 400:
+    if response.status_code == 400:
         raise InvalidBucketNameException()
-    if response.status == 409:
+    if response.status_code == 409:
         raise BucketExistsException()
+
+
+def get_sha256(content):
+    hasher = hashlib.sha256()
+    hasher.update(content)
+    return hasher.digest()

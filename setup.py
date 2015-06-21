@@ -31,7 +31,7 @@ setup(
     download_url='https=//github.com/minio/minio-py',
     author_email='dev@minio.io',
     version='0.0.1',
-    install_requires=['nose', 'urllib3'],
+    install_requires=['nose', 'requests'],
     packages=['minio', 'tests'],
     py_modules=['minio', 'tests'],
     scripts=[],
