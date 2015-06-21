@@ -24,6 +24,16 @@ __author__ = 'minio'
 
 
 class MakeBucket(TestCase):
+    @raises(TypeError)
+    def test_bucket_is_string(self):
+        client = minio.Minio('http://localhost:9000')
+        client.make_bucket(1234)
+
+    @raises(ValueError)
+    def test_bucket_is_not_empty_string(self):
+        client = minio.Minio('http://localhost:9000')
+        client.make_bucket('  \t \n  ')
+
     @mock.patch('requests.put')
     def test_make_bucket_works(self, mock_request):
         mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello', {}, 200)
