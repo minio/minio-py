@@ -98,7 +98,13 @@ class Minio:
             parse_error(response)
 
     def list_buckets(self, prefix=None, recursive=True):
-        pass
+        if prefix is not None:
+            if not isinstance(prefix, basestring):
+                raise TypeError
+
+        if recursive is not None:
+            if not isinstance(recursive, bool):
+                raise TypeError
 
     def bucket_exists(self, bucket):
         pass
