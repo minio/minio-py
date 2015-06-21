@@ -49,11 +49,13 @@ class Minio:
     def add_user_agent(self, name, version, parameters):
         if not isinstance(name, basestring):
             raise TypeError('name')
+        name = name.strip()
         if name == '':
             raise ValueError('name')
 
         if not isinstance(version, basestring):
             raise TypeError('version')
+        version = version.strip()
         if version == '':
             raise ValueError('version')
 
@@ -68,6 +70,12 @@ class Minio:
     # Bucket level
     # noinspection PyUnusedLocal
     def make_bucket(self, bucket, acl=None):
+        if not isinstance(bucket, basestring):
+            raise TypeError('bucket')
+        bucket = bucket.strip()
+        if bucket == '':
+            raise ValueError
+
         method = 'PUT'
         url = self._get_target_url(bucket)
         headers = {}
@@ -155,8 +163,6 @@ class Minio:
 
 
 def parse_error(response):
-    print response
-    print response.status_code
     if response.status_code == 400:
         raise InvalidBucketNameException()
     if response.status_code == 409:
