@@ -155,10 +155,13 @@ class Minio:
 
 
 def parse_error(response):
+    print response
+    print response.status_code
     if response.status_code == 400:
         raise InvalidBucketNameException()
     if response.status_code == 409:
         raise BucketExistsException()
+    raise NotImplementedError()
 
 
 def get_sha256(content):
