@@ -106,6 +106,20 @@ class Minio:
             if not isinstance(recursive, bool):
                 raise TypeError
 
+        url = self._get_target_url()
+        method = 'GET'
+        headers = {}
+
+        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+                          secret_key=self._secret_key)
+
+        response = requests.get(url, headers=headers)
+
+        if response.status_code != 200:
+            parse_error(response)
+
+        return ['one', 'two', 'three', 'four', 'five']
+
     def bucket_exists(self, bucket):
         pass
 
