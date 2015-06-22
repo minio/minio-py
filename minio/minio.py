@@ -20,6 +20,7 @@ from urlparse import urlparse
 import requests
 
 from .exceptions import BucketExistsException, InvalidBucketNameException
+from .parsers import parse_list_buckets
 from .region import get_region
 from .signer import sign_v4
 from .xml_requests import bucket_constraint
@@ -118,7 +119,7 @@ class Minio:
         if response.status_code != 200:
             parse_error(response)
 
-        return ['one', 'two', 'three', 'four', 'five']
+        return parse_list_buckets(response.content)
 
     def bucket_exists(self, bucket):
         pass
