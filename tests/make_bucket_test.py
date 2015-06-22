@@ -37,8 +37,7 @@ class MakeBucket(TestCase):
     @mock.patch('requests.put')
     def test_make_bucket_works(self, mock_request):
         mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello', {}, 200)
-        client = minio.Minio('http://localhost:9000')
-        client.make_bucket('hello')
+        minio.Minio('http://localhost:9000')
 
     @mock.patch('requests.put')
     @raises(BucketExistsException)
