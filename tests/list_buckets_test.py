@@ -37,7 +37,16 @@ class ListBuckets(TestCase):
         client.list_buckets(recursive='Hello')
 
     @mock.patch('requests.get')
-    def test_make_bucket_works(self, mock_request):
+    def test_empty_list_buckets_works(self, mock_request):
+        mock_data = '<ListAllMyBucketsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01"><Buckets>' \
+                    '</Buckets><Owner><ID>minio</ID><DisplayName>minio</DisplayName></Owner></ListAllMyBucketsResult>'
+        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/', {}, 200, content=mock_data)
+        client = minio.Minio('http://localhost:9000')
+        buckets = client.list_buckets()
+        eq_([], buckets)
+
+    @mock.patch('requests.get')
+    def test_list_buckets_works(self, mock_request):
         mock_data = '<ListAllMyBucketsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01"><Buckets>' \
                     '<Bucket><Name>hello</Name><CreationDate>2015-06-22T23:07:43.240Z</CreationDate></Bucket><Bucket>' \
                     '<Name>world</Name><CreationDate>2015-06-22T23:07:56.766Z</CreationDate></Bucket>' \
