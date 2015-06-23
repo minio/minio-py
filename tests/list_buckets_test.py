@@ -57,6 +57,6 @@ class ListBuckets(TestCase):
 
         eq_(2, len(buckets))
         eq_('hello', buckets[0].name)
-        eq_(datetime(2015,6,22,23,7,43,240000,pytz.utc), buckets[0].creation_date)
+        eq_(datetime(2015, 6, 22, 23, 7, 43, 240000, pytz.utc), buckets[0].creation_date)
         eq_('world', buckets[1].name)
-        eq_(datetime(2015,6,22,23,7,56,766000,pytz.utc), buckets[1].creation_date)
+        eq_(datetime(2015, 6, 22, 23, 7, 56, 766000, pytz.utc), buckets[1].creation_date)
