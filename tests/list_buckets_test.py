@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from unittest import TestCase
+from datetime import datetime
 
 import mock
 from nose.tools import raises, eq_
+import pytz
 
 from minio import minio
 from .minio_mocks import MockResponse
@@ -46,6 +48,6 @@ class ListBuckets(TestCase):
 
         eq_(2, len(buckets))
         eq_('hello', buckets[0].name)
-        eq_('2015-06-22T23:07:43.240Z', buckets[0].creation_date)
+        eq_(datetime(2015,6,22,23,7,43,240000,pytz.utc), buckets[0].creation_date)
         eq_('world', buckets[1].name)
-        eq_('2015-06-22T23:07:56.766Z', buckets[1].creation_date)
+        eq_(datetime(2015,6,22,23,7,56,766000,pytz.utc), buckets[1].creation_date)
