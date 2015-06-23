@@ -122,7 +122,27 @@ class Minio:
         return parse_list_buckets(response.content)
 
     def bucket_exists(self, bucket):
-        pass
+        if not isinstance(bucket, basestring):
+            raise TypeError('bucket')
+        bucket = bucket.strip()
+        if bucket == '':
+            raise ValueError
+
+        method = 'GET'
+        url = self._get_target_url(bucket)
+        headers = {}
+
+        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+                          secret_key=self._secret_key)
+
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 206:
+            return True
+        if response.status_code == 409:
+            return False
+
+        parse_error(response)
 
     def remove_bucket(self, bucket):
         pass
