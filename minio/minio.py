@@ -20,7 +20,8 @@ from urlparse import urlparse
 import requests
 
 from .exceptions import BucketExistsException, InvalidBucketNameException, BucketNotFoundException
-from .parsers import parse_list_buckets
+from .acl import Acl
+from .parsers import parse_list_buckets, parse_acl
 from .region import get_region
 from .signer import sign_v4
 from .xml_requests import bucket_constraint
@@ -162,7 +163,22 @@ class Minio:
             parse_error(response)
 
     def get_bucket_acl(self, bucket):
-        pass
+        if not isinstance(bucket, basestring):
+            raise TypeError('bucket')
+        bucket = bucket.strip()
+        if bucket == '':
+            raise ValueError
+
+        method = 'GET'
+        url = self._get_target_url(bucket, query={"acl": None})
+        headers = {}
+
+        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+                          secret_key=self._secret_key)
+
+        response = requests.get(url, headers=headers)
+
+        return parse_acl(response.content)
 
     def set_bucket_acl(self, bucket, acl):
         pass
