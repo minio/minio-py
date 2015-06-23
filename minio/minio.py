@@ -145,7 +145,23 @@ class Minio:
         parse_error(response)
 
     def remove_bucket(self, bucket):
-        pass
+        if not isinstance(bucket, basestring):
+            raise TypeError('bucket')
+        bucket = bucket.strip()
+        if bucket == '':
+            raise ValueError
+
+        method = 'DELETE'
+        url = self._get_target_url(bucket)
+        headers = {}
+
+        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+                          secret_key=self._secret_key)
+
+        response = requests.delete(url, headers=headers)
+
+        if response.status_code != 206:
+            parse_error(response)
 
     def get_bucket_acl(self, bucket):
         pass
