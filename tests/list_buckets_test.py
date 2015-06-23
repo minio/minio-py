@@ -43,7 +43,9 @@ class ListBuckets(TestCase):
         mock_request.return_value = MockResponse('GET', 'http://localhost:9000/', {}, 200, content=mock_data)
         client = minio.Minio('http://localhost:9000')
         buckets = client.list_buckets()
-        count = 0
-        for _ in buckets:
-            count += 1
-        eq_(2, count)
+
+        eq_(2, len(buckets))
+        eq_('hello', buckets[0].name)
+        eq_('2015-06-22T23:07:43.240Z', buckets[0].creation_date)
+        eq_('world', buckets[1].name)
+        eq_('2015-06-22T23:07:56.766Z', buckets[1].creation_date)
