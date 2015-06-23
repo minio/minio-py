@@ -18,10 +18,11 @@ __author__ = 'minio'
 class MinioException(Exception):
     pass
 
-
 class BucketExistsException(MinioException):
     pass
 
+class BucketNotFoundException(MinioException):
+    pass
 
 class InvalidBucketNameException(MinioException):
     pass
