@@ -19,7 +19,7 @@ from urlparse import urlparse
 
 import requests
 
-from .exceptions import BucketExistsException, InvalidBucketNameException
+from .exceptions import BucketExistsException, InvalidBucketNameException, BucketNotFoundException
 from .parsers import parse_list_buckets
 from .region import get_region
 from .signer import sign_v4
@@ -128,19 +128,17 @@ class Minio:
         if bucket == '':
             raise ValueError
 
-        method = 'GET'
+        method = 'HEAD'
         url = self._get_target_url(bucket)
         headers = {}
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.get(url, headers=headers)
+        response = requests.head(url, headers=headers)
 
-        if response.status_code == 206:
+        if response.status_code == 200:
             return True
-        if response.status_code == 409:
-            return False
 
         parse_error(response)
 
@@ -160,7 +158,7 @@ class Minio:
 
         response = requests.delete(url, headers=headers)
 
-        if response.status_code != 206:
+        if response.status_code != 200:
             parse_error(response)
 
     def get_bucket_acl(self, bucket):
@@ -220,6 +218,8 @@ class Minio:
 
 
 def parse_error(response):
+    if response.status_code == 404:
+        raise BucketNotFoundException()
     if response.status_code == 400:
         raise InvalidBucketNameException()
     if response.status_code == 409:

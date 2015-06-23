@@ -17,7 +17,7 @@ import mock
 from nose.tools import raises, eq_
 
 from minio import minio
-from minio.exceptions import InvalidBucketNameException
+from minio.exceptions import InvalidBucketNameException, BucketNotFoundException
 from .minio_mocks import MockResponse
 
 __author__ = 'minio'
@@ -34,23 +34,23 @@ class BucketExists(TestCase):
         client = minio.Minio('http://localhost:9000')
         client.bucket_exists('  \t \n  ')
 
-    @mock.patch('requests.get')
+    @mock.patch('requests.head')
     def test_bucket_exists_works(self, mock_request):
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/hello', {}, 206)
+        mock_request.return_value = MockResponse('HEAD', 'http://localhost:9000/hello', {}, 200)
         client = minio.Minio('http://localhost:9000')
         result = client.bucket_exists('hello')
         eq_(True, result)
 
-    @mock.patch('requests.get')
+    @mock.patch('requests.head')
+    @raises(BucketNotFoundException)
     def test_bucket_exists_throws_fail(self, mock_request):
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/hello', {}, 409)
+        mock_request.return_value = MockResponse('HEAD', 'http://localhost:9000/hello', {}, 404)
         client = minio.Minio('http://localhost:9000')
-        result = client.bucket_exists('hello')
-        eq_(False, result)
+        client.bucket_exists('hello')
 
-    @mock.patch('requests.get')
+    @mock.patch('requests.head')
     @raises(InvalidBucketNameException)
     def test_bucket_exists_invalid_name(self, mock_request):
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/hello', {}, 400)
+        mock_request.return_value = MockResponse('HEAD', 'http://localhost:9000/hello', {}, 400)
         client = minio.Minio('http://localhost:9000')
         client.bucket_exists('1234')

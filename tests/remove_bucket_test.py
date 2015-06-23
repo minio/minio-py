@@ -17,7 +17,7 @@ import mock
 from nose.tools import raises, eq_
 
 from minio import minio
-from minio.exceptions import BucketExistsException, InvalidBucketNameException
+from minio.exceptions import BucketExistsException, BucketNotFoundException, InvalidBucketNameException
 from .minio_mocks import MockResponse
 
 __author__ = 'minio'
@@ -36,9 +36,16 @@ class RemoveBucket(TestCase):
 
     @mock.patch('requests.delete')
     def test_remove_bucket_works(self, mock_request):
-        mock_request.return_value = MockResponse('DELETE', 'http://localhost:9000/hello', {}, 206)
+        mock_request.return_value = MockResponse('DELETE', 'http://localhost:9000/hello', {}, 200)
         client = minio.Minio('http://localhost:9000')
         client.remove_bucket('hello')
+
+    @mock.patch('requests.delete')
+    @raises(BucketNotFoundException)
+    def test_remove_bucket_not_found(self, mock_request):
+        mock_request.return_value = MockResponse('DELETE', 'http://localhost:9000/hello', {}, 404)
+        client = minio.Minio('http://localhost:9000')
+        client.remove_bucket('1234')
 
     @mock.patch('requests.delete')
     @raises(InvalidBucketNameException)
