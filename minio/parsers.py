@@ -30,37 +30,37 @@ def parse_acl(data):
 
     public_read = False
     public_write = False
+    authenticated_read = False
+    authenticated_write = False
 
     for acls in root:
-        print '|', acls
         if acls.tag == '{http://s3.amazonaws.com/doc/2006-03-01}AccessControlList':
             for grant in acls:
-                print '|-- Grant'
                 user_uri = None
                 permission = None
                 for grant_property in grant:
-                    print '  |--', grant_property
                     if grant_property.tag == '{http://s3.amazonaws.com/doc/2006-03-01}Grantee':
                         for grantee in grant_property:
-                            print '    |--', grantee.tag, grantee.text
                             if grantee.tag == '{http://s3.amazonaws.com/doc/2006-03-01}URI':
                                 user_uri = grantee.text
                     if grant_property.tag == '{http://s3.amazonaws.com/doc/2006-03-01}Permission':
-                        print '    |--', grant_property.tag, grant_property.text
                         permission = grant_property.text
-                print user_uri, permission
                 if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' and permission == 'WRITE':
                     public_write = True
                 if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' and permission == 'READ':
                     public_read = True
-    print 'public read', public_read
-    print 'public write', public_write
+                if user_uri == 'http://acs.amazonaws.com/groups/global/AuthenticatedUsers' and permission == 'READ':
+                    authenticated_read = True
+                if user_uri == 'http://acs.amazonaws.com/groups/global/AuthenticatedUsers' and permission == 'WRITE':
+                    authenticated_write = True
 
     if public_read is True and public_write is True:
         return Acl.public_read_write()
     if public_read is True and public_write is False:
         return Acl.public_read()
-    return Acl.custom()
+    if authenticated_read is True and authenticated_write is False:
+        return Acl.authenticated()
+    return Acl.private()
 
 
 class Bucket(object):

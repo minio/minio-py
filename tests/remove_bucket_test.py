@@ -14,10 +14,10 @@
 from unittest import TestCase
 
 import mock
-from nose.tools import raises, eq_
+from nose.tools import raises
 
 from minio import minio
-from minio.exceptions import BucketExistsException, BucketNotFoundException, InvalidBucketNameException
+from minio.exceptions import BucketNotFoundException, InvalidBucketNameException
 from .minio_mocks import MockResponse
 
 __author__ = 'minio'

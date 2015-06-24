@@ -20,7 +20,6 @@ from urlparse import urlparse
 import requests
 
 from .exceptions import BucketExistsException, InvalidBucketNameException, BucketNotFoundException
-from .acl import Acl
 from .parsers import parse_list_buckets, parse_acl
 from .region import get_region
 from .signer import sign_v4
