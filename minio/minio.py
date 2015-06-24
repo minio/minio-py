@@ -203,10 +203,34 @@ class Minio:
         pass
 
     # Object Level
-    def get_key(self, bucket, key):
-        pass
+    def get_object(self, bucket, key):
+        if not isinstance(bucket, basestring):
+            raise TypeError('bucket')
+        bucket = bucket.strip()
+        if bucket == '':
+            raise ValueError
 
-    def put_key(self, bucket, key, content_type, length, data):
+        if not isinstance(key, basestring):
+            raise TypeError('key')
+        key = key.strip()
+        if key == '':
+            raise ValueError
+
+        method = 'GET'
+        url = self._get_target_url(bucket, key)
+        headers = {}
+
+        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+                          secret_key=self._secret_key)
+
+        response = requests.get(url, headers=headers)
+
+        if response.status_code != 200:
+            parse_error(response)
+
+        return response.iter_content()
+
+    def put_object(self, bucket, key, content_type, length, data):
         pass
 
     def list_keys(self, bucket, prefix, recursive):
