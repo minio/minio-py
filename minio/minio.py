@@ -230,8 +230,19 @@ class Minio:
 
         return response.iter_content()
 
-    def put_object(self, bucket, key, content_type, length, data):
-        pass
+    def put_object(self, bucket, key, content_type='application/octet-stream', length=None, data=None):
+        if not isinstance(bucket, basestring):
+            raise TypeError('bucket')
+        bucket = bucket.strip()
+        if bucket == '':
+            raise ValueError
+
+        if not isinstance(key, basestring):
+            raise TypeError('key')
+        key = key.strip()
+        if key == '':
+            raise ValueError
+        ## TODO implement this feature
 
     def list_keys(self, bucket, prefix, recursive):
         pass
