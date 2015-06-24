@@ -223,7 +223,7 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, stream=True)
 
         if response.status_code != 200:
             parse_error(response)
