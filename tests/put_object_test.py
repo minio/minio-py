@@ -24,35 +24,46 @@ class PutObjectTest(TestCase):
     @raises(TypeError)
     def test_bucket_is_string(self):
         client = minio.Minio('http://localhost:9000')
-        client.put_object(1234, 'world')
+        client.put_object(1234, 'world', 1, iter([1, 2, 3]))
 
     @raises(ValueError)
     def test_bucket_is_not_empty_string(self):
         client = minio.Minio('http://localhost:9000')
-        client.put_object('  \t \n  ', 'world')
+        client.put_object('  \t \n  ', 'world', 1, iter([1, 2, 3]))
 
     @raises(TypeError)
     def test_object_is_string(self):
         client = minio.Minio('http://localhost:9000')
-        client.put_object('hello', 1234)
+        client.put_object('hello', 1234, 1, iter([1, 2, 3]))
 
     @raises(ValueError)
     def test_object_is_not_empty_string(self):
         client = minio.Minio('http://localhost:9000')
-        client.put_object('hello', ' \t \n ')
+        client.put_object('hello', ' \t \n ', 1, iter([1, 2, 3]))
 
-    # @mock.patch('requests.put')
-    # def test_put_object_works(self, mock_request):
-    #     mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello', {}, 200, content='hello world')
-    #     client = minio.Minio('http://localhost:9000')
-    #     object_iter = client.put_object('hello', 'world')
-    #     actual_object = []
-    #     for object_chunk in object_iter:
-    #         actual_object.append(object_chunk)
-    #
-    # @mock.patch('requests.put')
-    # @raises(InvalidBucketNameException)
-    # def test_put_object_invalid_name(self, mock_request):
-    #     mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello', {}, 400)
-    #     client = minio.Minio('http://localhost:9000')
-    #     client.put_object('1234', 'world')
+    @raises(TypeError)
+    def test_length_is_string(self):
+        client = minio.Minio('http://localhost:9000')
+        client.put_object('hello', 1234, '1', iter([1, 2, 3]))
+
+    @raises(ValueError)
+    def test_length_is_not_empty_string(self):
+        client = minio.Minio('http://localhost:9000')
+        client.put_object('hello', ' \t \n ', -1, iter([1, 2, 3]))
+
+        # @mock.patch('requests.put')
+        # def test_put_object_works(self, mock_request):
+        #     mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello', {}, 200,
+        #                                              content='hello world')
+        #     client = minio.Minio('http://localhost:9000')
+        #     object_iter = client.put_object('hello', 'world')
+        #     actual_object = []
+        #     for object_chunk in object_iter:
+        #         actual_object.append(object_chunk)
+        #
+        # @mock.patch('requests.put')
+        # @raises(InvalidBucketNameException)
+        # def test_put_object_invalid_name(self, mock_request):
+        #     mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello', {}, 400)
+        #     client = minio.Minio('http://localhost:9000')
+        #     client.put_object('1234', 'world')
