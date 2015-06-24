@@ -180,7 +180,24 @@ class Minio:
         return parse_acl(response.content)
 
     def set_bucket_acl(self, bucket, acl):
-        pass
+        if not isinstance(bucket, basestring):
+            raise TypeError('bucket')
+        bucket = bucket.strip()
+        if bucket == '':
+            raise ValueError
+        method = 'PUT'
+        url = self._get_target_url(bucket, query={"acl": None})
+        headers = {
+            'x-amz-acl': acl
+        }
+
+        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+                          secret_key=self._secret_key)
+
+        response = requests.put(url, headers=headers)
+
+        if response.status_code != 200:
+            parse_error(response)
 
     def drop_all_incomplete_uploads(self, bucket):
         pass
