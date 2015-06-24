@@ -2,6 +2,7 @@ from xml.etree import ElementTree
 from datetime import datetime
 
 import pytz
+
 from .acl import Acl
 
 __author__ = 'minio'
@@ -23,13 +24,44 @@ def parse_list_buckets(data):
             bucket_list.append(Bucket(name, creation_date))
     return bucket_list
 
+
 def parse_acl(data):
     root = ElementTree.fromstring(data)
 
-    for acl in root:
-        print acl
+    public_read = False
+    public_write = False
 
-    return Acl.public_read_write()
+    for acls in root:
+        print '|', acls
+        if acls.tag == '{http://s3.amazonaws.com/doc/2006-03-01}AccessControlList':
+            for grant in acls:
+                print '|-- Grant'
+                user_uri = None
+                permission = None
+                for grant_property in grant:
+                    print '  |--', grant_property
+                    if grant_property.tag == '{http://s3.amazonaws.com/doc/2006-03-01}Grantee':
+                        for grantee in grant_property:
+                            print '    |--', grantee.tag, grantee.text
+                            if grantee.tag == '{http://s3.amazonaws.com/doc/2006-03-01}URI':
+                                user_uri = grantee.text
+                    if grant_property.tag == '{http://s3.amazonaws.com/doc/2006-03-01}Permission':
+                        print '    |--', grant_property.tag, grant_property.text
+                        permission = grant_property.text
+                print user_uri, permission
+                if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' and permission == 'WRITE':
+                    public_write = True
+                if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' and permission == 'READ':
+                    public_read = True
+    print 'public read', public_read
+    print 'public write', public_write
+
+    if public_read is True and public_write is True:
+        return Acl.public_read_write()
+    if public_read is True and public_write is False:
+        return Acl.public_read()
+    return Acl.custom()
+
 
 class Bucket(object):
     def __init__(self, name, created):
