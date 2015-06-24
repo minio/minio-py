@@ -24,7 +24,7 @@ from .minio_mocks import MockResponse
 __author__ = 'minio'
 
 
-class ListBuckets(TestCase):
+class ListBucketsTest(TestCase):
     @raises(TypeError)
     def test_prefix_fails_on_non_string(self):
         client = minio.Minio('http://localhost:9000')
