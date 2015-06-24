@@ -13,12 +13,9 @@
 # limitations under the License.
 from unittest import TestCase
 
-import mock
 from nose.tools import raises
 
 from minio import minio
-from minio.exceptions import InvalidBucketNameException
-from .minio_mocks import MockResponse
 
 __author__ = 'minio'
 
