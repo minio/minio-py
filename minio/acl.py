@@ -30,7 +30,3 @@ class Acl(object):
     @staticmethod
     def private():
         return "private"
-
-    @staticmethod
-    def custom():
-        return 'custom'
