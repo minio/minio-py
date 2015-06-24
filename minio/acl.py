@@ -20,7 +20,7 @@ class Acl(object):
         return "public_read_write"
 
     @staticmethod
-    def public_read_only():
+    def public_read():
         return "public_read_only"
 
     @staticmethod
@@ -30,3 +30,7 @@ class Acl(object):
     @staticmethod
     def private():
         return "private"
+
+    @staticmethod
+    def custom():
+        return 'custom'
