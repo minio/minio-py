@@ -31,6 +31,11 @@ class MockResponse(object):
         eq_(self.url, url)
         eq_(self.headers, headers)
 
+    def iter_content(self, chunk_size = 1, decode_unicode=False):
+        if self.content is not None:
+            return iter(bytearray(self.content, 'utf-8'))
+        return iter([])
+
 
 class MockConnection(object):
     def __init__(self):
