@@ -242,7 +242,7 @@ class Minio:
         key = key.strip()
         if key == '':
             raise ValueError
-        ## TODO implement this feature
+        # TODO implement this feature
 
     def list_keys(self, bucket, prefix, recursive):
         pass
