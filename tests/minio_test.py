@@ -29,7 +29,8 @@ class GetUrlTests(TestCase):
         eq_(get_target_url(scheme, location, 'bucket'), 'https://localhost:9000/bucket')
         eq_(get_target_url(scheme, location, 'bucket', 'key'), 'https://localhost:9000/bucket/key')
         eq_(get_target_url(scheme, location, 'bucket', 'key', None), 'https://localhost:9000/bucket/key')
-        eq_(get_target_url(scheme, location, 'bucket', 'key', {'foo': 'bar'}), 'https://localhost:9000/bucket/key?foo=bar')
+        eq_(get_target_url(scheme, location, 'bucket', 'key', {'foo': 'bar'}),
+            'https://localhost:9000/bucket/key?foo=bar')
         eq_(get_target_url(scheme, location, 'bucket', 'key', {'foo': 'bar', 'b': 'c', 'a': 'b'}),
             'https://localhost:9000/bucket/key?a=b&b=c&foo=bar')
         eq_(get_target_url('http', 'play.minio.io'), 'http://play.minio.io/')

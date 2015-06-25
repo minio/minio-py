@@ -13,6 +13,7 @@
 # limitations under the License.
 __author__ = 'minio'
 
+
 def generate_error(code, message, request_id, host_id, resource):
     return '''
     <Error>

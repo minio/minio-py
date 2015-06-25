@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import requests
+
 from .helpers import get_target_url
-from .parsers import parse_list_objects
+from .parsers import parse_list_objects, parse_error
 from .signer import sign_v4
 
 __author__ = 'minio'
+
 
 class ListObjectsIterator:
     def __init__(self, scheme, location, bucket, prefix, recursive, access_key, secret_key):
@@ -50,7 +52,7 @@ class ListObjectsIterator:
         if not self._recursive:
             query['delim'] = '/'
 
-        url = get_target_url(self._scheme, self._location, bucket=self._bucket,query=query)
+        url = get_target_url(self._scheme, self._location, bucket=self._bucket, query=query)
 
         method = 'GET'
         headers = {}
@@ -61,5 +63,5 @@ class ListObjectsIterator:
         response = requests.get(url, headers=headers)
 
         if response.status_code != 200:
-            self.client.parse_error(response)
+           parse_error(response)
         return parse_list_objects(response.content)

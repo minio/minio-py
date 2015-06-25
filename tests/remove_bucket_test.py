@@ -17,7 +17,6 @@ import mock
 from nose.tools import raises
 
 from minio import minio
-from minio.exceptions import BucketNotFoundException
 from minio.parsers import ResponseError
 from .minio_mocks import MockResponse
 from tests.helpers import generate_error

@@ -62,17 +62,24 @@ def parse_acl(data):
         return Acl.authenticated()
     return Acl.private()
 
+
 def parse_list_objects(data):
     return []
 
-def parse_error_xml(data):
+
+def parse_error(response):
+    if response.content is None:
+        # handle redirect
+        # handle 404
+        pass
+
     code = None
     message = None
     request_id = None
     host_id = None
     resource = None
 
-    root = ElementTree.fromstring(data)
+    root = ElementTree.fromstring(response.content)
     for attribute in root:
         if attribute.tag == 'Code':
             code = attribute.text
@@ -96,10 +103,12 @@ class ResponseError(BaseException):
         self.host_id = host_id
         self.resource = resource
 
+
 class Bucket(object):
     def __init__(self, name, created):
         self.name = name
         self.creation_date = created
+
 
 class Object(object):
     def __init__(self, bucket, key, creation_date):
