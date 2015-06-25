@@ -62,8 +62,17 @@ def parse_acl(data):
         return Acl.authenticated()
     return Acl.private()
 
+def parse_list_objects(data):
+    return []
+
 
 class Bucket(object):
     def __init__(self, name, created):
         self.name = name
         self.creation_date = created
+
+class Object(object):
+    def __init__(self, bucket, key, creation_date):
+        self.bucket = bucket
+        self.key = key
+        self.creation_date = creation_date
