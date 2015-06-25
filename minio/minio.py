@@ -284,7 +284,7 @@ class Minio:
             raise ValueError('upload_id')
 
         if upload_id is not None and part_id is not None:
-            url = get_target_url(self._scheme, self._locationbucket, bucket=bucket, key=key,
+            url = get_target_url(self._scheme, self._location, bucket=bucket, key=key,
                                  query={'uploadId': upload_id, 'partId': part_id})
         else:
             url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
