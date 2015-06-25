@@ -259,6 +259,10 @@ class Minio:
         if content_type == '':
             raise ValueError('content_type')
 
+        if len <= 5 * 1024 * 1024:
+            return self._do_put_object(bucket, object, length, data, content_type)
+        self._stream_put_object(bucket, object, length, data, content_type)
+
     def list_keys(self, bucket, prefix, recursive):
         pass
 
@@ -297,6 +301,39 @@ class Minio:
                 url_components.append(query_string)
 
         return ''.join(url_components)
+
+    def _do_put_object(self, bucket, key, length, data, content_type='application/octet-stream',
+                       upload_id=None, part_id=None):
+        method = 'PUT'
+
+        # guard against inconsistent upload_id/part_id states
+        if upload_id is None and part_id is not None:
+            raise ValueError('part_id')
+        if upload_id is not None and part_id is None:
+            raise ValueError('upload_id')
+
+        if upload_id is not None and part_id is not None:
+            url = self._get_target_url(bucket, key, query={'uploadId': upload_id, 'partId': part_id})
+        else:
+            url = self._get_target_url(bucket, key)
+
+        content_sha256 = get_sha256(data)
+
+        headers = {
+            'Content-Length': length,
+            'Content-Type': content_type
+        }
+
+        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+                          secret_key=self._secret_key, content_hash=content_sha256)
+
+        response = requests.put(url, headers=headers, data=data)
+
+        if response.status_code != 200:
+            parse_error(response)
+
+    def _stream_put_object(self, bucket, key, length, data, content_type):
+        pass
 
 
 def parse_error(response):
