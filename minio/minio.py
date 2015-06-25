@@ -21,7 +21,7 @@ import requests
 from .exceptions import BucketExistsException, InvalidBucketNameException, BucketNotFoundException
 from .generators import ListObjectsIterator
 from .helpers import get_target_url
-from .parsers import parse_list_buckets, parse_acl
+from .parsers import parse_list_buckets, parse_acl, parse_error_xml
 from .region import get_region
 from .signer import sign_v4
 from .xml_requests import bucket_constraint
@@ -309,12 +309,11 @@ class Minio:
 
 
 def parse_error(response):
-    if response.status_code == 404:
-        raise BucketNotFoundException()
-    if response.status_code == 400:
-        raise InvalidBucketNameException()
-    if response.status_code == 409:
-        raise BucketExistsException()
+    # TODO handle redirect
+    if response.content is not None:
+        print 'found'
+        parse_error_xml(response.content)
+    print 'not found'
     raise NotImplementedError()
 
 

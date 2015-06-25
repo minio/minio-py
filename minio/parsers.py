@@ -65,6 +65,36 @@ def parse_acl(data):
 def parse_list_objects(data):
     return []
 
+def parse_error_xml(data):
+    code = None
+    message = None
+    request_id = None
+    host_id = None
+    resource = None
+
+    root = ElementTree.fromstring(data)
+    for attribute in root:
+        if attribute.tag == 'Code':
+            code = attribute.text
+        if attribute.tag == 'Message':
+            message = attribute.text
+        if attribute.tag == 'RequestId':
+            request_id = attribute.text
+        if attribute.tag == 'HostId':
+            host_id = attribute.text
+        if attribute.tag == 'Resource':
+            resource = attribute.text
+
+    raise ResponseError(code, message, request_id, host_id, resource)
+
+
+class ResponseError(BaseException):
+    def __init__(self, code, message, request_id, host_id, resource):
+        self.code = code
+        self.message = message
+        self.request_id = request_id
+        self.host_id = host_id
+        self.resource = resource
 
 class Bucket(object):
     def __init__(self, name, created):

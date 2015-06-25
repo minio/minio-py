@@ -17,8 +17,10 @@ import mock
 from nose.tools import raises
 
 from minio import minio
-from minio.exceptions import BucketExistsException, InvalidBucketNameException
+from minio.exceptions import InvalidBucketNameException
+from minio.parsers import ResponseError
 from .minio_mocks import MockResponse
+from .helpers import generate_error
 
 __author__ = 'minio'
 
@@ -40,15 +42,9 @@ class MakeBucket(TestCase):
         minio.Minio('http://localhost:9000')
 
     @mock.patch('requests.put')
-    @raises(BucketExistsException)
+    @raises(ResponseError)
     def test_make_bucket_throws_fail(self, mock_request):
-        mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello', {}, 409)
+        error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
+        mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello', {}, 409, content=error_xml)
         client = minio.Minio('http://localhost:9000')
         client.make_bucket('hello')
-
-    @mock.patch('requests.put')
-    @raises(InvalidBucketNameException)
-    def test_make_bucket_invalid_name(self, mock_request):
-        mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello', {}, 400)
-        client = minio.Minio('http://localhost:9000')
-        client.make_bucket('1234')
