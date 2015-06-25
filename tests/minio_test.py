@@ -17,21 +17,22 @@ from unittest import TestCase
 from nose.tools import *
 
 from minio import minio
+from minio.helpers import get_target_url
 
 
 class GetUrlTests(TestCase):
     def test_get_target_url_works(self):
-        client = minio.Minio('https://localhost:9000')
-        eq_(client._get_target_url(), 'https://localhost:9000/')
-        eq_(client._get_target_url(), 'https://localhost:9000/')
-        eq_(client._get_target_url('bucket'), 'https://localhost:9000/bucket')
-        eq_(client._get_target_url('bucket', 'key'), 'https://localhost:9000/bucket/key')
-        eq_(client._get_target_url('bucket', 'key', None), 'https://localhost:9000/bucket/key')
-        eq_(client._get_target_url('bucket', 'key', {'foo': 'bar'}), 'https://localhost:9000/bucket/key?foo=bar')
-        eq_(client._get_target_url('bucket', 'key', {'foo': 'bar', 'b': 'c', 'a': 'b'}),
+        scheme = 'https'
+        location = 'localhost:9000'
+        eq_(get_target_url(scheme, location), 'https://localhost:9000/')
+        eq_(get_target_url(scheme, location), 'https://localhost:9000/')
+        eq_(get_target_url(scheme, location, 'bucket'), 'https://localhost:9000/bucket')
+        eq_(get_target_url(scheme, location, 'bucket', 'key'), 'https://localhost:9000/bucket/key')
+        eq_(get_target_url(scheme, location, 'bucket', 'key', None), 'https://localhost:9000/bucket/key')
+        eq_(get_target_url(scheme, location, 'bucket', 'key', {'foo': 'bar'}), 'https://localhost:9000/bucket/key?foo=bar')
+        eq_(get_target_url(scheme, location, 'bucket', 'key', {'foo': 'bar', 'b': 'c', 'a': 'b'}),
             'https://localhost:9000/bucket/key?a=b&b=c&foo=bar')
-        client2 = minio.Minio('http://play.minio.io')
-        eq_(client2._get_target_url(), 'http://play.minio.io/')
+        eq_(get_target_url('http', 'play.minio.io'), 'http://play.minio.io/')
 
     @raises(TypeError)
     def test_minio_requires_string(self):

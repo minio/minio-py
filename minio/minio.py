@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
 import hashlib
 import platform
 from urlparse import urlparse
@@ -20,6 +19,8 @@ from urlparse import urlparse
 import requests
 
 from .exceptions import BucketExistsException, InvalidBucketNameException, BucketNotFoundException
+from .generators import ListObjectsIterator
+from .helpers import get_target_url
 from .parsers import parse_list_buckets, parse_acl
 from .region import get_region
 from .signer import sign_v4
@@ -78,7 +79,7 @@ class Minio:
             raise ValueError
 
         method = 'PUT'
-        url = self._get_target_url(bucket)
+        url = get_target_url(self._scheme, self._location, bucket=bucket)
         headers = {}
 
         region = get_region(self._location)
@@ -98,16 +99,8 @@ class Minio:
         if response.status_code != 200:
             parse_error(response)
 
-    def list_buckets(self, prefix=None, recursive=True):
-        if prefix is not None:
-            if not isinstance(prefix, basestring):
-                raise TypeError
-
-        if recursive is not None:
-            if not isinstance(recursive, bool):
-                raise TypeError
-
-        url = self._get_target_url()
+    def list_buckets(self):
+        url = get_target_url(self._scheme, self._location)
         method = 'GET'
         headers = {}
 
@@ -129,7 +122,7 @@ class Minio:
             raise ValueError
 
         method = 'HEAD'
-        url = self._get_target_url(bucket)
+        url = get_target_url(self._scheme, self._location, bucket=bucket)
         headers = {}
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
@@ -150,7 +143,7 @@ class Minio:
             raise ValueError
 
         method = 'DELETE'
-        url = self._get_target_url(bucket)
+        url = get_target_url(self._scheme, self._location, bucket=bucket)
         headers = {}
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
@@ -169,7 +162,7 @@ class Minio:
             raise ValueError
 
         method = 'GET'
-        url = self._get_target_url(bucket, query={"acl": None})
+        url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
         headers = {}
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
@@ -186,7 +179,7 @@ class Minio:
         if bucket == '':
             raise ValueError
         method = 'PUT'
-        url = self._get_target_url(bucket, query={"acl": None})
+        url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
         headers = {
             'x-amz-acl': acl
         }
@@ -217,7 +210,7 @@ class Minio:
             raise ValueError
 
         method = 'GET'
-        url = self._get_target_url(bucket, key)
+        url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
         headers = {}
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
@@ -266,8 +259,8 @@ class Minio:
         print 'large object'
         self._stream_put_object(bucket, key, length, data, content_type)
 
-    def list_keys(self, bucket, prefix, recursive):
-        pass
+    def list_objects(self, bucket, prefix=None, recursive=True):
+        return ListObjectsIterator(self._scheme, self._location, bucket, prefix, recursive)
 
     def stat_key(self, bucket, key):
         pass
@@ -279,31 +272,6 @@ class Minio:
         pass
 
     # helper functions
-    def _get_target_url(self, bucket=None, key=None, query=None):
-        url_components = [self._scheme, '://', self._location, '/']
-
-        if bucket is not None:
-            url_components.append(bucket)
-            if key is not None:
-                url_components.append('/')
-                url_components.append(key)
-
-        if query is not None:
-            ordered_query = collections.OrderedDict(sorted(query.items()))
-            query_components = []
-            for component_key in ordered_query:
-                single_component = [component_key]
-                if ordered_query[component_key] is not None:
-                    single_component.append('=')
-                    single_component.append(ordered_query[component_key])
-                query_components.append(''.join(single_component))
-
-            query_string = '&'.join(query_components)
-            if query_string is not '':
-                url_components.append('?')
-                url_components.append(query_string)
-
-        return ''.join(url_components)
 
     def _do_put_object(self, bucket, key, length, data, content_type='application/octet-stream',
                        upload_id=None, part_id=None):
@@ -316,9 +284,10 @@ class Minio:
             raise ValueError('upload_id')
 
         if upload_id is not None and part_id is not None:
-            url = self._get_target_url(bucket, key, query={'uploadId': upload_id, 'partId': part_id})
+            url = get_target_url(self._scheme, self._locationbucket, bucket=bucket, key=key,
+                                 query={'uploadId': upload_id, 'partId': part_id})
         else:
-            url = self._get_target_url(bucket, key)
+            url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
 
         content_sha256 = get_sha256(data)
 
