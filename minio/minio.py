@@ -255,13 +255,16 @@ class Minio:
         if not isinstance(content_type, basestring):
             raise TypeError('content_type')
             # TODO implement this feature
+
         content_type = content_type.strip()
         if content_type == '':
             raise ValueError('content_type')
 
-        if len <= 5 * 1024 * 1024:
-            return self._do_put_object(bucket, object, length, data, content_type)
-        self._stream_put_object(bucket, object, length, data, content_type)
+        if length <= 5 * 1024 * 1024:
+            print 'small object'
+            return self._do_put_object(bucket, key, length, data, content_type)
+        print 'large object'
+        self._stream_put_object(bucket, key, length, data, content_type)
 
     def list_keys(self, bucket, prefix, recursive):
         pass

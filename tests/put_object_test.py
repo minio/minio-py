@@ -13,9 +13,11 @@
 # limitations under the License.
 from unittest import TestCase
 
+import mock
 from nose.tools import raises
 
 from minio import minio
+from tests.minio_mocks import MockResponse
 
 __author__ = 'minio'
 
@@ -50,6 +52,18 @@ class PutObjectTest(TestCase):
     def test_length_is_not_empty_string(self):
         client = minio.Minio('http://localhost:9000')
         client.put_object('hello', ' \t \n ', -1, iter([1, 2, 3]))
+
+    @mock.patch('requests.put')
+    def test_put_small_object(self, mock_request):
+        data = b'hello world'
+
+        client = minio.Minio('http://localhost:9000')
+        expected_headers = {
+            'Content-Length': len(data),
+            'Content-Type': 'application/octet-stream'
+        }
+        mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello', expected_headers, 200)
+        client.put_object('hello', 'world', len(data), data)
 
         # @mock.patch('requests.put')
         # def test_put_object_works(self, mock_request):
