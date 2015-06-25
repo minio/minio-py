@@ -18,8 +18,9 @@ from nose.tools import raises
 
 from minio import minio
 from minio.acl import Acl
-from minio.exceptions import InvalidBucketNameException
+from minio.parsers import ResponseError
 from .minio_mocks import MockResponse
+from .helpers import generate_error
 
 __author__ = 'minio'
 
@@ -42,8 +43,9 @@ class SetBucketAclTest(TestCase):
         client.set_bucket_acl('hello', Acl.private())
 
     @mock.patch('requests.put')
-    @raises(InvalidBucketNameException)
+    @raises(ResponseError)
     def test_set_bucket_acl_invalid_name(self, mock_request):
-        mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello?acl', {}, 400)
+        error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
+        mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello?acl', {}, 400, content=error_xml)
         client = minio.Minio('http://localhost:9000')
         client.set_bucket_acl('1234', Acl.private())

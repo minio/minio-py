@@ -63,4 +63,3 @@ class ListObjectsIterator:
         if response.status_code != 200:
             self.client.parse_error(response)
         return parse_list_objects(response.content)
-        # parse
