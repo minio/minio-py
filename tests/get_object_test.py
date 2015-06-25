@@ -69,4 +69,3 @@ class GetObjectTest(TestCase):
         mock_request.return_value = MockResponse('GET', 'http://localhost:9000/hello', {}, 400, content=error_xml)
         client = minio.Minio('http://localhost:9000')
         client.get_object('hello', 'world')
-

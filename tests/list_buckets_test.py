@@ -15,7 +15,7 @@ from unittest import TestCase
 from datetime import datetime
 
 import mock
-from nose.tools import raises, eq_
+from nose.tools import eq_
 import pytz
 
 from minio import minio
@@ -25,17 +25,6 @@ __author__ = 'minio'
 
 
 class ListBucketsTest(TestCase):
-    @raises(TypeError)
-    def test_prefix_fails_on_non_string(self):
-        client = minio.Minio('http://localhost:9000')
-        client.list_buckets(prefix=1234)
-
-    @raises(TypeError)
-    def test_recursive_fails_on_non_boolean(self, mock_request):
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/hello', {}, 200)
-        client = minio.Minio('http://localhost:9000')
-        client.list_buckets(recursive='Hello')
-
     @mock.patch('requests.get')
     def test_empty_list_buckets_works(self, mock_request):
         mock_data = '<ListAllMyBucketsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01"><Buckets>' \

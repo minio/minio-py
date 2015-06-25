@@ -18,10 +18,9 @@ from urlparse import urlparse
 
 import requests
 
-from .exceptions import BucketExistsException, InvalidBucketNameException, BucketNotFoundException
 from .generators import ListObjectsIterator
 from .helpers import get_target_url
-from .parsers import parse_list_buckets, parse_acl, parse_error_xml
+from .parsers import parse_list_buckets, parse_acl, parse_error
 from .region import get_region
 from .signer import sign_v4
 from .xml_requests import bucket_constraint
@@ -260,7 +259,8 @@ class Minio:
         self._stream_put_object(bucket, key, length, data, content_type)
 
     def list_objects(self, bucket, prefix=None, recursive=True):
-        return ListObjectsIterator(self._scheme, self._location, bucket, prefix, recursive)
+        return ListObjectsIterator(self._scheme, self._location, bucket, prefix, recursive, self._access_key,
+                                   self._secret_key)
 
     def stat_key(self, bucket, key):
         pass
@@ -306,15 +306,6 @@ class Minio:
 
     def _stream_put_object(self, bucket, key, length, data, content_type):
         pass
-
-
-def parse_error(response):
-    # TODO handle redirect
-    if response.content is not None:
-        print 'found'
-        parse_error_xml(response.content)
-    print 'not found'
-    raise NotImplementedError()
 
 
 def get_sha256(content):
