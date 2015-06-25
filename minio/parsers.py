@@ -63,14 +63,16 @@ def parse_acl(data):
     return Acl.private()
 
 
+# noinspection PyUnusedLocal
 def parse_list_objects(data):
+    # TODO parse list objects
     return []
 
 
 def parse_error(response):
     if response.content is None:
-        # handle redirect
-        # handle 404
+        # TODO handle redirect
+        # TODO handle 404
         pass
 
     code = None
