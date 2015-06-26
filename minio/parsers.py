@@ -137,9 +137,11 @@ class Bucket(object):
 
 
 class Object(object):
-    def __init__(self, bucket, key, last_modified, etag, size):
+    def __init__(self, bucket, key, last_modified, etag, size, content_type=None):
+        # TODO parse last_modified
         self.bucket = bucket
         self.key = key
         self.last_modified = last_modified
         self.etag = etag
         self.size = size
+        self.content_type = content_type
