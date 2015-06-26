@@ -295,8 +295,32 @@ class Minio:
 
         return Object(bucket, key, content_type=content_type, last_modified=last_modified, etag=etag, size=size)
 
-    def remove_key(self, bucket, key):
-        pass
+    def remove_object(self, bucket, key):
+        # check bucket
+        if not isinstance(bucket, basestring):
+            raise TypeError('bucket')
+        bucket = bucket.strip()
+        if bucket == '':
+            raise ValueError('bucket')
+
+        # check key
+        if not isinstance(key, basestring):
+            raise TypeError('key')
+        key = key.strip()
+        if key == '':
+            raise ValueError('key')
+
+        method = 'DELETE'
+        url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
+        headers = {}
+
+        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+                          secret_key=self._secret_key)
+
+        response = requests.delete(url, headers=headers, stream=True)
+
+        if response.status_code != 200:
+            parse_error(response)
 
     def drop_incomplete_upload(self, bucket, key):
         pass
