@@ -20,7 +20,7 @@ import requests
 
 from .generators import ListObjectsIterator
 from .helpers import get_target_url
-from .parsers import parse_list_buckets, parse_acl, parse_error
+from .parsers import parse_list_buckets, parse_acl, parse_error, Object
 from .region import get_region
 from .signer import sign_v4
 from .xml_requests import bucket_constraint
@@ -260,8 +260,40 @@ class Minio:
         return ListObjectsIterator(self._scheme, self._location, bucket, prefix, recursive, self._access_key,
                                    self._secret_key)
 
-    def stat_key(self, bucket, key):
-        pass
+    def stat_object(self, bucket, key):
+        # check bucket
+        if not isinstance(bucket, basestring):
+            raise TypeError('bucket')
+        bucket = bucket.strip()
+        if bucket == '':
+            raise ValueError('bucket')
+
+        # check key
+        if not isinstance(key, basestring):
+            raise TypeError('key')
+        key = key.strip()
+        if key == '':
+            raise ValueError('key')
+
+        method = 'HEAD'
+        url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
+        headers = {}
+
+        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+                          secret_key=self._secret_key)
+
+        response = requests.head(url, headers=headers, stream=True)
+
+        if response.status_code != 200:
+            parse_error(response)
+        print response.headers
+
+        content_type = response.headers['Content-Type']
+        etag = response.headers['ETag']
+        size = response.headers['Content-Length']
+        last_modified = response.headers['Last-Modified']
+
+        return Object(bucket, key, content_type=content_type, last_modified=last_modified, etag=etag, size=size)
 
     def remove_key(self, bucket, key):
         pass
