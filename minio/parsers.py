@@ -63,10 +63,31 @@ def parse_acl(data):
     return Acl.private()
 
 
-# noinspection PyUnusedLocal
-def parse_list_objects(data):
-    # TODO parse list objects
-    return []
+def parse_list_objects(data, bucket):
+    root = ElementTree.fromstring(data)
+
+    is_truncated = False
+    objects = []
+    for contents in root:
+        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}IsTruncated':
+            is_truncated = contents.text == 'True'
+        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Contents':
+            key = None
+            last_modified = None
+            etag = None
+            size = None
+            for content in contents:
+                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Key':
+                    key = content.text
+                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}LastModified':
+                    last_modified = content.text
+                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}ETag':
+                    etag = content.text
+                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Size':
+                    size = content.text
+            objects.append(Object(bucket, key, last_modified, etag, size))
+
+    return objects, is_truncated
 
 
 def parse_error(response):
@@ -113,7 +134,9 @@ class Bucket(object):
 
 
 class Object(object):
-    def __init__(self, bucket, key, creation_date):
+    def __init__(self, bucket, key, last_modified, etag, size):
         self.bucket = bucket
         self.key = key
-        self.creation_date = creation_date
+        self.last_modified = last_modified
+        self.etag = etag
+        self.size = size
