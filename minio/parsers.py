@@ -92,6 +92,7 @@ def parse_list_objects(data, bucket):
 
     return objects, is_truncated, marker
 
+
 def parse_incomplete_uploads(data, bucket):
     root = ElementTree.fromstring(data)
 
@@ -171,6 +172,7 @@ class Object(object):
         self.etag = etag
         self.size = size
         self.content_type = content_type
+
 
 class IncompleteUpload(object):
     def __init__(self, bucket, key, upload_id):

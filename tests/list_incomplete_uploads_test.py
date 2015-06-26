@@ -14,9 +14,8 @@
 from unittest import TestCase
 
 import mock
-from nose.tools import eq_, timed
+from nose.tools import eq_
 
-from minio import minio
 from minio.generators import ListIncompleteUploads
 from .minio_mocks import MockResponse
 
