@@ -253,9 +253,7 @@ class Minio:
             raise ValueError('content_type')
 
         if length <= 5 * 1024 * 1024:
-            print 'small object'
             return self._do_put_object(bucket, key, length, data, content_type)
-        print 'large object'
         self._stream_put_object(bucket, key, length, data, content_type)
 
     def list_objects(self, bucket, prefix=None, recursive=True):
