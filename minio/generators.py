@@ -123,7 +123,6 @@ class ListIncompleteUploads:
         self._complete = True
         raise StopIteration
 
-
     def _fetch(self):
         query = {}
         if self._key is not None:

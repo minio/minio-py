@@ -192,9 +192,18 @@ class Minio:
             parse_error(response)
 
     def drop_all_incomplete_uploads(self, bucket):
+        # check bucket
+        if not isinstance(bucket, basestring):
+            raise TypeError('bucket')
+        bucket = bucket.strip()
+        if bucket == '':
+            raise ValueError('bucket')
+
         uploads = ListIncompleteUploads(self._scheme, self._location, bucket, None, access_key=self._access_key,
-                              secret_key=self._secret_key)
-        pass
+                                        secret_key=self._secret_key)
+
+        for upload in uploads:
+            self._drop_incomplete_upload(bucket, upload.key, upload.upload_id)
 
     # Object Level
     def get_object(self, bucket, key):
@@ -324,7 +333,23 @@ class Minio:
             parse_error(response)
 
     def drop_incomplete_upload(self, bucket, key):
-        pass
+        # check bucket
+        if not isinstance(bucket, basestring):
+            raise TypeError('bucket')
+        bucket = bucket.strip()
+        if bucket == '':
+            raise ValueError('bucket')
+
+        # check key
+        if not isinstance(key, basestring):
+            raise TypeError('key')
+        key = key.strip()
+        if key == '':
+            raise ValueError('key')
+        uploads = ListIncompleteUploads(self._scheme, self._location, bucket, key, access_key=self._access_key,
+                                        secret_key=self._secret_key)
+        for upload in uploads:
+            self._drop_incomplete_upload(bucket, upload.key, upload.upload_id)
 
     # helper functions
 
@@ -365,6 +390,22 @@ class Minio:
     def _list_incomplete_uploads(self, bucket, key):
         ListIncompleteUploads(self._scheme, self._location, bucket, key, access_key=self._access_key,
                               secret_key=self._secret_key)
+
+    def _drop_incomplete_upload(self, bucket, key, upload_id):
+        method = 'DELETE'
+        query = {
+            'uploadId': upload_id
+        }
+        url = get_target_url(self._scheme, self._location, bucket=bucket, key=key, query=query)
+        headers = {}
+
+        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+                          secret_key=self._secret_key)
+
+        response = requests.delete(url, headers=headers)
+
+        if response.status_code != 200:
+            parse_error(response)
 
 
 def get_sha256(content):
