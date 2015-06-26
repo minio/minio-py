@@ -161,7 +161,8 @@ class ListObjectsTest(TestCase):
         bucket_iter = client.list_objects('bucket')
         buckets = []
         for bucket in bucket_iter:
-            mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket?marker=marker', {}, 200, content=mock_data2)
+            mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket?marker=marker', {}, 200,
+                                                     content=mock_data2)
             buckets.append(bucket)
 
         eq_(4, len(buckets))
