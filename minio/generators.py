@@ -31,18 +31,27 @@ class ListObjectsIterator:
         self._complete = False
         self._access_key = access_key
         self._secret_key = secret_key
+        self._is_truncated = True
 
     def __iter__(self):
         return self
 
     def next(self):
+        # if complete, end iteration
         if self._complete:
             raise StopIteration
+        # if not truncated and we've emitted everything, end iteration
+        if len(self._results) == 0 and self._is_truncated is False:
+            self._complete = True
+            raise StopIteration
+        # perform another fetch
         if len(self._results) == 0:
-            self._results = self._fetch()
+            self._results, self._is_truncated = self._fetch()
+        # if fetch results in no elements, end iteration
         if len(self._results) == 0:
             self._complete = True
             raise StopIteration
+        # return result
         return self._results.pop(0)
 
     def _fetch(self):
@@ -64,4 +73,5 @@ class ListObjectsIterator:
 
         if response.status_code != 200:
             parse_error(response)
-        return parse_list_objects(response.content)
+        objects = parse_list_objects(response.content, bucket=self._bucket)
+        return objects
