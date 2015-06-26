@@ -68,9 +68,12 @@ def parse_list_objects(data, bucket):
 
     is_truncated = False
     objects = []
+    marker = None
     for contents in root:
         if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}IsTruncated':
-            is_truncated = contents.text == 'True'
+            is_truncated = contents.text.lower() == 'true'
+        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Marker':
+            marker = contents.text
         if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Contents':
             key = None
             last_modified = None
@@ -87,7 +90,7 @@ def parse_list_objects(data, bucket):
                     size = content.text
             objects.append(Object(bucket, key, last_modified, etag, size))
 
-    return objects, is_truncated
+    return objects, is_truncated, marker
 
 
 def parse_error(response):
