@@ -109,7 +109,7 @@ class ListIncompleteUploads:
             raise StopIteration
         # perform another fetch
         if len(self._results) == 0:
-            self._results, self._is_truncated, self._key_marker = self._fetch()
+            self._results, self._is_truncated, self._key_marker, self._upload_id_marker = self._fetch()
         # if fetch results in no elements, end iteration
         if len(self._results) == 0:
             self._complete = True

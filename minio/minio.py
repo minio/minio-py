@@ -286,7 +286,6 @@ class Minio:
 
         if response.status_code != 200:
             parse_error(response)
-        print response.headers
 
         content_type = response.headers['Content-Type']
         etag = response.headers['ETag']

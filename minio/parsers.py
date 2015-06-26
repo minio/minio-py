@@ -72,7 +72,7 @@ def parse_list_objects(data, bucket):
     for contents in root:
         if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}IsTruncated':
             is_truncated = contents.text.lower() == 'true'
-        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Marker':
+        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}NextMarker':
             marker = contents.text
         if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Contents':
             key = None
@@ -96,30 +96,27 @@ def parse_incomplete_uploads(data, bucket):
     root = ElementTree.fromstring(data)
 
     is_truncated = False
-    objects = []
-    marker = None
+    uploads = []
+    key_marker = None
+    upload_id_marker = None
     for contents in root:
         if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}IsTruncated':
             is_truncated = contents.text.lower() == 'true'
-        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Marker':
-            marker = contents.text
-        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Contents':
+        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}NextKeyMarker':
+            key_marker = contents.text
+        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}NextUploadIdMarker':
+            upload_id_marker = contents.text
+        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Upload':
             key = None
-            last_modified = None
-            etag = None
-            size = None
+            upload_id = None
             for content in contents:
                 if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Key':
                     key = content.text
-                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}LastModified':
-                    last_modified = content.text
-                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}ETag':
-                    etag = content.text
-                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Size':
-                    size = content.text
-            objects.append(Object(bucket, key, last_modified, etag, size))
+                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}UploadId':
+                    upload_id = content.text
+            uploads.append(IncompleteUpload(bucket, key, upload_id))
 
-    return objects, is_truncated, marker
+    return uploads, is_truncated, key_marker, upload_id_marker
 
 
 def parse_error(response):
@@ -174,3 +171,9 @@ class Object(object):
         self.etag = etag
         self.size = size
         self.content_type = content_type
+
+class IncompleteUpload(object):
+    def __init__(self, bucket, key, upload_id):
+        self.bucket = bucket
+        self.key = key
+        self.upload_id = upload_id

@@ -47,36 +47,148 @@ class ListIncompleteUploadsTest(TestCase):
             uploads.append(upload)
         eq_(0, len(uploads))
 
-    # @timed(1)
-    # @mock.patch('requests.get')
-    # def test_list_uploads_works(self, mock_request):
-    #     mock_data = '''<?xml version="1.0"?>
-    #     '''
-    #     mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data)
-    #     client = minio.Minio('http://localhost:9000')
-    #     bucket_iter = client.list_objects('bucket')
-    #     buckets = []
-    #     for bucket in bucket_iter:
-    #         # cause an xml exception and fail if we try retrieving again
-    #         mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content='')
-    #         buckets.append(bucket)
-    #
-    #     eq_(2, len(buckets))
-    #
-    # @timed(1)
-    # @mock.patch('requests.get')
-    # def test_list_objects_works(self, mock_request):
-    #     mock_data1 = '''<?xml version="1.0"?>
-    #     '''
-    #     mock_data2 = '''<?xml version="1.0"?>
-    #     '''
-    #     mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data1)
-    #     client = minio.Minio('http://localhost:9000')
-    #     bucket_iter = client.list_objects('bucket')
-    #     buckets = []
-    #     for bucket in bucket_iter:
-    #         mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket?marker=marker', {}, 200,
-    #                                                  content=mock_data2)
-    #         buckets.append(bucket)
-    #
-    #     eq_(4, len(buckets))
+    @mock.patch('requests.get')
+    def test_list_uploads_works(self, mock_request):
+        mock_data = '''<?xml version="1.0"?>
+<ListMultipartUploadsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+  <Bucket>golang</Bucket>
+  <KeyMarker/>
+  <UploadIdMarker/>
+  <NextKeyMarker>keymarker</NextKeyMarker>
+  <NextUploadIdMarker>uploadidmarker</NextUploadIdMarker>
+  <EncodingType/>
+  <MaxUploads>1000</MaxUploads>
+  <IsTruncated>false</IsTruncated>
+  <Upload>
+    <Key>go1.4.2</Key>
+    <UploadId>uploadid</UploadId>
+    <Initiator>
+      <ID/>
+      <DisplayName/>
+    </Initiator>
+    <Owner>
+      <ID/>
+      <DisplayName/>
+    </Owner>
+    <StorageClass/>
+    <Initiated>2015-05-30T14:43:35.349Z</Initiated>
+  </Upload>
+  <Upload>
+    <Key>go1.5.0</Key>
+    <UploadId>uploadid2</UploadId>
+    <Initiator>
+      <ID/>
+      <DisplayName/>
+    </Initiator>
+    <Owner>
+      <ID/>
+      <DisplayName/>
+    </Owner>
+    <StorageClass/>
+    <Initiated>2015-05-30T15:00:07.759Z</Initiated>
+  </Upload>
+  <Prefix/>
+  <Delimiter/>
+</ListMultipartUploadsResult>
+        '''
+        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data)
+        upload_iter = ListIncompleteUploads('http', 'localhost:9000', 'bucket')
+        uploads = []
+        for upload in upload_iter:
+            uploads.append(upload)
+        eq_(2, len(uploads))
+
+    @mock.patch('requests.get')
+    def test_list_objects_works(self, mock_request):
+        mock_data1 = '''<?xml version="1.0"?>
+<ListMultipartUploadsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+  <Bucket>golang</Bucket>
+  <KeyMarker/>
+  <UploadIdMarker/>
+  <NextKeyMarker>keymarker</NextKeyMarker>
+  <NextUploadIdMarker>uploadidmarker</NextUploadIdMarker>
+  <EncodingType/>
+  <MaxUploads>1000</MaxUploads>
+  <IsTruncated>true</IsTruncated>
+  <Upload>
+    <Key>go1.4.2</Key>
+    <UploadId>uploadid</UploadId>
+    <Initiator>
+      <ID/>
+      <DisplayName/>
+    </Initiator>
+    <Owner>
+      <ID/>
+      <DisplayName/>
+    </Owner>
+    <StorageClass/>
+    <Initiated>2015-05-30T14:43:35.349Z</Initiated>
+  </Upload>
+  <Upload>
+    <Key>go1.5.0</Key>
+    <UploadId>uploadid2</UploadId>
+    <Initiator>
+      <ID/>
+      <DisplayName/>
+    </Initiator>
+    <Owner>
+      <ID/>
+      <DisplayName/>
+    </Owner>
+    <StorageClass/>
+    <Initiated>2015-05-30T15:00:07.759Z</Initiated>
+  </Upload>
+  <Prefix/>
+  <Delimiter/>
+</ListMultipartUploadsResult>
+        '''
+        mock_data2 = '''<?xml version="1.0"?>
+<ListMultipartUploadsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+  <Bucket>golang</Bucket>
+  <KeyMarker/>
+  <UploadIdMarker/>
+  <NextKeyMarker/>
+  <NextUploadIdMarker/>
+  <EncodingType/>
+  <MaxUploads>1000</MaxUploads>
+  <IsTruncated>false</IsTruncated>
+  <Upload>
+    <Key>go1.4.2</Key>
+    <UploadId>uploadid</UploadId>
+    <Initiator>
+      <ID/>
+      <DisplayName/>
+    </Initiator>
+    <Owner>
+      <ID/>
+      <DisplayName/>
+    </Owner>
+    <StorageClass/>
+    <Initiated>2015-05-30T14:43:35.349Z</Initiated>
+  </Upload>
+  <Upload>
+    <Key>go1.5.0</Key>
+    <UploadId>uploadid2</UploadId>
+    <Initiator>
+      <ID/>
+      <DisplayName/>
+    </Initiator>
+    <Owner>
+      <ID/>
+      <DisplayName/>
+    </Owner>
+    <StorageClass/>
+    <Initiated>2015-05-30T15:00:07.759Z</Initiated>
+  </Upload>
+  <Prefix/>
+  <Delimiter/>
+</ListMultipartUploadsResult>
+        '''
+        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data1)
+        upload_iter = ListIncompleteUploads('http', 'localhost:9000', 'bucket')
+        uploads = []
+        for upload in upload_iter:
+            mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data2)
+            uploads.append(upload)
+
+        eq_(4, len(uploads))
