@@ -192,6 +192,8 @@ class Minio:
             parse_error(response)
 
     def drop_all_incomplete_uploads(self, bucket):
+        uploads = ListIncompleteUploads(self._scheme, self._location, bucket, None, access_key=self._access_key,
+                              secret_key=self._secret_key)
         pass
 
     # Object Level

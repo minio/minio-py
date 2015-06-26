@@ -80,12 +80,12 @@ class ListObjectsIterator:
 
 
 class ListIncompleteUploads:
-    def __init__(self, scheme, location, bucket, prefix=None, access_key=None, secret_key=None):
+    def __init__(self, scheme, location, bucket, key=None, access_key=None, secret_key=None):
         # from user
         self._scheme = scheme
         self._location = location
         self._bucket = bucket
-        self._prefix = prefix
+        self._key = key
         self._access_key = access_key
         self._secret_key = secret_key
 
@@ -115,12 +115,19 @@ class ListIncompleteUploads:
             self._complete = True
             raise StopIteration
         # return result
-        return self._results.pop(0)
+        potential_result = self._results.pop(0)
+        if self._key is None:
+            return potential_result
+        if potential_result.key == potential_result:
+            return potential_result
+        self._complete = True
+        raise StopIteration
+
 
     def _fetch(self):
         query = {}
-        if self._prefix is not None:
-            query['prefix'] = self._prefix
+        if self._key is not None:
+            query['prefix'] = self._key
         if self._key_marker is not None:
             query['key-marker'] = self._key_marker
         if self._upload_id_marker is not None:
