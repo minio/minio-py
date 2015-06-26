@@ -18,7 +18,7 @@ from urlparse import urlparse
 
 import requests
 
-from .generators import ListObjectsIterator
+from .generators import ListObjectsIterator, ListIncompleteUploads
 from .helpers import get_target_url
 from .parsers import parse_list_buckets, parse_acl, parse_error, Object
 from .region import get_region
@@ -360,6 +360,10 @@ class Minio:
 
     def _stream_put_object(self, bucket, key, length, data, content_type):
         pass
+
+    def _list_incomplete_uploads(self, bucket, key):
+        ListIncompleteUploads(self._scheme, self._location, bucket, key, access_key=self._access_key,
+                              secret_key=self._secret_key)
 
 
 def get_sha256(content):
