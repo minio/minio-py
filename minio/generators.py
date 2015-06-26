@@ -32,6 +32,7 @@ class ListObjectsIterator:
         self._access_key = access_key
         self._secret_key = secret_key
         self._is_truncated = True
+        self._marker = None
 
     def __iter__(self):
         return self
@@ -46,7 +47,7 @@ class ListObjectsIterator:
             raise StopIteration
         # perform another fetch
         if len(self._results) == 0:
-            self._results, self._is_truncated = self._fetch()
+            self._results, self._is_truncated, self._marker = self._fetch()
         # if fetch results in no elements, end iteration
         if len(self._results) == 0:
             self._complete = True
@@ -60,6 +61,8 @@ class ListObjectsIterator:
             query['prefix'] = self._prefix
         if not self._recursive:
             query['delim'] = '/'
+        if self._marker is not None:
+            query['marker'] = self._marker
 
         url = get_target_url(self._scheme, self._location, bucket=self._bucket, query=query)
 
@@ -73,5 +76,4 @@ class ListObjectsIterator:
 
         if response.status_code != 200:
             parse_error(response)
-        objects = parse_list_objects(response.content, bucket=self._bucket)
-        return objects
+        return parse_list_objects(response.content, bucket=self._bucket)
