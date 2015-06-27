@@ -29,3 +29,8 @@ def bucket_constraint(region):
 
 class MockFile(object):
     pass
+
+
+def generate_complete_multipart_upload(etags):
+    # TODO generate xml
+    return "" + etags
