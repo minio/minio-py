@@ -14,7 +14,7 @@
 import requests
 
 from .helpers import get_target_url
-from .parsers import parse_list_objects, parse_error, parse_incomplete_uploads
+from .parsers import parse_list_objects, parse_error, parse_incomplete_uploads, parse_uploaded_parts
 from .signer import sign_v4
 
 __author__ = 'minio'
@@ -145,3 +145,69 @@ class ListIncompleteUploads:
         if response.status_code != 200:
             parse_error(response)
         return parse_incomplete_uploads(response.content, bucket=self._bucket)
+
+
+class ListUploadParts:
+    def __init__(self, scheme, location, bucket, key, upload_id, access_key=None, secret_key=None):
+        # from user
+        self._scheme = scheme
+        self._location = location
+        self._bucket = bucket
+        self._key = key
+        self._upload_id = upload_id
+        self._access_key = access_key
+        self._secret_key = secret_key
+
+        # internal variables
+        self._results = []
+        self._complete = False
+        self._is_truncated = True
+        self._part_marker = None
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        # if complete, end iteration
+        if self._complete:
+            raise StopIteration
+        # if not truncated and we've emitted everything, end iteration
+        if len(self._results) == 0 and self._is_truncated is False:
+            self._complete = True
+            raise StopIteration
+        # perform another fetch
+        if len(self._results) == 0:
+            self._results, self._is_truncated, self._part_marker = self._fetch()
+        # if fetch results in no elements, end iteration
+        if len(self._results) == 0:
+            self._complete = True
+            raise StopIteration
+        # return result
+        potential_result = self._results.pop(0)
+        if self._key is None:
+            return potential_result
+        if potential_result.key == potential_result:
+            return potential_result
+        self._complete = True
+        raise StopIteration
+
+    def _fetch(self):
+        query = {
+            'uploadId': self._upload_id
+        }
+        if self._part_marker is not None:
+            query['part-marker'] = self._part_marker
+
+        url = get_target_url(self._scheme, self._location, bucket=self._bucket, key=self._key, query=query)
+
+        method = 'GET'
+        headers = {}
+
+        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+                          secret_key=self._secret_key)
+
+        response = requests.get(url, headers=headers)
+
+        if response.status_code != 200:
+            parse_error(response)
+        return parse_uploaded_parts(response.content, bucket=self._bucket, key=self._key, upload_id=self._upload_id)
