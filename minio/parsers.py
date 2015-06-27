@@ -150,11 +150,10 @@ def parse_uploaded_parts(data, bucket, key, upload_id):
     return parts, is_truncated, part_marker
 
 
-def parse_error(response):
-    if response.content is None:
-        # TODO handle redirect
-        # TODO handle 404
-        pass
+def parse_error(response, url=None):
+    if len(response.content) == 0:
+        if response.status_code == 404:
+            raise ResponseError('NotFound', '404: Not Found', response.headers['x-amz-request-id'], None, url)
 
     code = None
     message = None

@@ -43,9 +43,9 @@ class BucketExists(TestCase):
         eq_(True, result)
 
     @mock.patch('requests.head')
-    @raises(ResponseError)
     def test_bucket_exists_invalid_name(self, mock_request):
         error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
         mock_request.return_value = MockResponse('HEAD', 'http://localhost:9000/hello', {}, 400, content=error_xml)
         client = minio.Minio('http://localhost:9000')
-        client.bucket_exists('1234')
+        result = client.bucket_exists('1234')
+        eq_(False, result)

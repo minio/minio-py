@@ -13,6 +13,8 @@
 # limitations under the License.
 from unittest import TestCase
 
+from nose.tools import eq_
+
 from .credentials import Credentials
 from minio import minio
 
@@ -29,6 +31,13 @@ client = minio.Minio(url, access_key=access_key, secret_key=secret_key)
 
 class MakeBucketIntegrationTests(TestCase):
     def test_make_bucket_works(self):
-        buckets = client.list_buckets()
-        for bucket in buckets:
-            print 'bucket:', bucket.creation_date, bucket.name
+        result = client.bucket_exists('goroutine-py')
+        eq_(True, result)
+
+    def test_bucket_404(self):
+        result = client.bucket_exists('goroutine-py2k')
+        eq_(False, result)
+
+    def test_bucket_not_owned(self):
+        result = client.bucket_exists('test')
+        eq_(False, result)
