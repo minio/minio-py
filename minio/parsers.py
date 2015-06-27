@@ -120,6 +120,36 @@ def parse_incomplete_uploads(data, bucket):
     return uploads, is_truncated, key_marker, upload_id_marker
 
 
+def parse_uploaded_parts(data, bucket, key, upload_id):
+    root = ElementTree.fromstring(data)
+
+    is_truncated = False
+    parts = []
+    part_marker = None
+    for contents in root:
+        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}IsTruncated':
+            is_truncated = contents.text.lower() == 'true'
+        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}NextPartNumberMarker':
+            part_marker = contents.text
+        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Part':
+            part_number = None
+            etag = None
+            last_modified = None
+            size = None
+            for content in contents:
+                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}PartNumber':
+                    part_number = content.text
+                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}ETag':
+                    etag = content.text
+                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}LastModified':
+                    last_modified = content.text
+                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Size':
+                    size = content.text
+            parts.append(UploadPart(bucket, key, upload_id, part_number, etag, last_modified, size))
+
+    return parts, is_truncated, part_marker
+
+
 def parse_error(response):
     if response.content is None:
         # TODO handle redirect
@@ -179,3 +209,14 @@ class IncompleteUpload(object):
         self.bucket = bucket
         self.key = key
         self.upload_id = upload_id
+
+
+class UploadPart(object):
+    def __init__(self, bucket, key, upload_id, part_number, etag, last_modified, size):
+        self.bucket = bucket
+        self.key = key
+        self.upload_id = upload_id
+        self.part_number = part_number
+        self.etag = etag
+        self.last_modified = last_modified
+        self.size = size

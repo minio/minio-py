@@ -387,10 +387,6 @@ class Minio:
     def _stream_put_object(self, bucket, key, length, data, content_type):
         pass
 
-    def _list_incomplete_uploads(self, bucket, key):
-        ListIncompleteUploads(self._scheme, self._location, bucket, key, access_key=self._access_key,
-                              secret_key=self._secret_key)
-
     def _drop_incomplete_upload(self, bucket, key, upload_id):
         method = 'DELETE'
         query = {
