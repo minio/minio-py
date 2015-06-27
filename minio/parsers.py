@@ -146,7 +146,6 @@ def parse_uploaded_parts(data, bucket, key, upload_id):
                 if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Size':
                     size = content.text
             parts.append(UploadPart(bucket, key, upload_id, part_number, etag, last_modified, size))
-
     return parts, is_truncated, part_marker
 
 

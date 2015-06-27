@@ -186,7 +186,7 @@ class ListUploadParts:
         potential_result = self._results.pop(0)
         if self._key is None:
             return potential_result
-        if potential_result.key == potential_result:
+        if potential_result.key == self._key:
             return potential_result
         self._complete = True
         raise StopIteration
