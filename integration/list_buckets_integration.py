@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from unittest import TestCase
-from nose.tools import raises
 
 from .credentials import Credentials
-
 from minio import minio
-from minio.parsers import ResponseError
 
 __author__ = 'minio'
 
@@ -27,19 +24,12 @@ url = credentials.url()
 access_key = credentials.access_key()
 secret_key = credentials.secret_key()
 
-bucket = 'goroutine-py'
-
 client = minio.Minio(url, access_key=access_key, secret_key=secret_key)
 
 
 class MakeBucketIntegrationTests(TestCase):
     def test_make_bucket_works(self):
-        client.make_bucket(bucket)
+        buckets = client.list_buckets()
+        for bucket in buckets:
+            print 'bucket:', bucket.creation_date, bucket.name
 
-    @raises(ResponseError)
-    def test_make_existing_bucket_fails(self):
-        client.make_bucket(bucket)
-
-    @raises(ResponseError)
-    def test_invalid_bucket_name_exception(self):
-        client.make_bucket('1234')
