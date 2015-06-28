@@ -37,7 +37,7 @@ class GetBucketAclTest(TestCase):
     @mock.patch('requests.get')
     def test_public_read_write_response(self, mock_request):
         content = '''
-                  <AccessControlPolicy xmlns="http://s3.amazonaws.com/doc/2006-03-01">
+                  <AccessControlPolicy xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                     <Owner>
                       <ID>75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a</ID>
                       <DisplayName>CustomersName@amazon.com</DisplayName>
@@ -77,7 +77,7 @@ class GetBucketAclTest(TestCase):
     @mock.patch('requests.get')
     def test_public_read(self, mock_request):
         content = '''
-                  <AccessControlPolicy xmlns="http://s3.amazonaws.com/doc/2006-03-01"> \
+                  <AccessControlPolicy xmlns="http://s3.amazonaws.com/doc/2006-03-01/"> \
                     <Owner> \
                       <ID>75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a</ID> \
                       <DisplayName>CustomersName@amazon.com</DisplayName> \
@@ -109,7 +109,7 @@ class GetBucketAclTest(TestCase):
     @mock.patch('requests.get')
     def test_authenticated_users(self, mock_request):
         content = '''
-                  <AccessControlPolicy xmlns="http://s3.amazonaws.com/doc/2006-03-01">
+                  <AccessControlPolicy xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                     <Owner>
                       <ID>75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a</ID>
                       <DisplayName>CustomersName@amazon.com</DisplayName>
@@ -136,12 +136,12 @@ class GetBucketAclTest(TestCase):
         mock_request.return_value = MockResponse('GET', 'http://localhost:9000/hello?acl', {}, 200, content=content)
         client = minio.Minio('http://localhost:9000')
         acl = client.get_bucket_acl('hello')
-        eq_(Acl.authenticated(), acl)
+        eq_(Acl.authenticated_read(), acl)
 
     @mock.patch('requests.get')
     def test_private(self, mock_request):
         content = '''
-                  <AccessControlPolicy xmlns="http://s3.amazonaws.com/doc/2006-03-01">
+                  <AccessControlPolicy xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                     <Owner>
                       <ID>75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a</ID>
                       <DisplayName>CustomersName@amazon.com</DisplayName>
