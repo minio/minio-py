@@ -35,16 +35,16 @@ def parse_acl(data):
     authenticated_write = False
 
     for acls in root:
-        if acls.tag == '{http://s3.amazonaws.com/doc/2006-03-01}AccessControlList':
+        if acls.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}AccessControlList':
             for grant in acls:
                 user_uri = None
                 permission = None
                 for grant_property in grant:
-                    if grant_property.tag == '{http://s3.amazonaws.com/doc/2006-03-01}Grantee':
+                    if grant_property.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Grantee':
                         for grantee in grant_property:
-                            if grantee.tag == '{http://s3.amazonaws.com/doc/2006-03-01}URI':
+                            if grantee.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}URI':
                                 user_uri = grantee.text
-                    if grant_property.tag == '{http://s3.amazonaws.com/doc/2006-03-01}Permission':
+                    if grant_property.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Permission':
                         permission = grant_property.text
                 if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' and permission == 'WRITE':
                     public_write = True
@@ -60,7 +60,7 @@ def parse_acl(data):
     if public_read is True and public_write is False:
         return Acl.public_read()
     if authenticated_read is True and authenticated_write is False:
-        return Acl.authenticated()
+        return Acl.authenticated_read()
     return Acl.private()
 
 

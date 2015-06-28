@@ -67,6 +67,10 @@ def generate_canonical_request(method, parsed_url, headers, content_hash_hex):
 
     split_query = parsed_url.query.split('&')
     split_query.sort()
+    for i in range(0, len(split_query)):
+        if len(split_query[i]) > 0 and '=' not in split_query[i]:
+            split_query[i] += '='
+
     query = '&'.join(split_query)
     lines.append(query)
 
