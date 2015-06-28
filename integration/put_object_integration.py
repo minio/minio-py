@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 from unittest import TestCase
 
 from .credentials import Credentials
@@ -32,3 +33,9 @@ bucket = 'goroutine-py'
 class PutObjectIntegration(TestCase):
     def put_small_object_test(self):
         client.put_object(bucket, 'small_obj', 11, 'hello world', content_type='text/plain')
+
+    def put_small_file_test(self):
+        file_stat = os.stat('CONTRIBUTING.md')
+        data_file = open('CONTRIBUTING.md', 'rb')
+        print 'data type', type(data_file)
+        client.put_object(bucket, 'small_obj2', file_stat.st_size, data_file, content_type='text/plain')
