@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from unittest import TestCase
+
 from nose.tools import eq_
 
 from .credentials import Credentials
@@ -29,6 +30,7 @@ secret_key = credentials.secret_key()
 client = minio.Minio(url, access_key=access_key, secret_key=secret_key)
 
 bucket = 'goroutine-py'
+
 
 class GetAndSetBucketAclIntegration(TestCase):
     def test_bucket_acl(self):
