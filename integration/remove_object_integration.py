@@ -13,8 +13,11 @@
 # limitations under the License.
 from unittest import TestCase
 
+from nose.tools import eq_, raises
+
 from .credentials import Credentials
 from minio import minio
+from minio.parsers import ResponseError
 
 __author__ = 'minio'
 
@@ -29,20 +32,21 @@ client = minio.Minio(url, access_key=access_key, secret_key=secret_key)
 bucket = 'goroutine-py'
 
 
-class ListObjectsIntegration(TestCase):
-    def list_objects_empty_test(self):
-        objects = client.list_objects('goroutine-empty')
-        for obj in objects:
-            print obj
+class RemoveObjectIntegration(TestCase):
+    def test_stat_object_works(self):
+        client.remove_object(bucket, 'object-to-remove')
+        try:
+            client.stat_object(bucket, 'object-to-remove')
+        except ResponseError:
+            pass
 
-    def list_objects_test(self):
-        print 'list objects'
-        objects = client.list_objects(bucket)
-        for obj in objects:
-            print obj.key, obj.size
 
-    def list_objects_without_recursion_test(self):
-        print 'no recursion'
-        objects = client.list_objects(bucket, recursive=False)
-        for obj in objects:
-            print obj.key, obj.size
+    # @raises(ResponseError)
+    # def test_bucket_not_found(self):
+    #     result = client.stat_object('goroutine-no-exist', 'hello')
+    #     eq_(False, result)
+    #
+    # @raises(ResponseError)
+    # def test_object_not_found(self):
+    #     result = client.stat_object(bucket, 'missing-object')
+    #     eq_(False, result)

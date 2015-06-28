@@ -38,7 +38,6 @@ class StatObjectIntegration(TestCase):
         eq_(bucket, result.bucket)
         eq_('hello', result.key)
 
-
     @raises(ResponseError)
     def test_bucket_not_found(self):
         result = client.stat_object('goroutine-no-exist', 'hello')
