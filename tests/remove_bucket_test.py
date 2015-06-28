@@ -37,7 +37,7 @@ class RemoveBucket(TestCase):
 
     @mock.patch('requests.delete')
     def test_remove_bucket_works(self, mock_request):
-        mock_request.return_value = MockResponse('DELETE', 'http://localhost:9000/hello', {}, 200)
+        mock_request.return_value = MockResponse('DELETE', 'http://localhost:9000/hello', {}, 204)
         client = minio.Minio('http://localhost:9000')
         client.remove_bucket('hello')
 
