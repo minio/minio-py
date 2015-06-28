@@ -71,23 +71,23 @@ def parse_list_objects(data, bucket):
     objects = []
     marker = None
     for contents in root:
-        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}IsTruncated':
+        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
             is_truncated = contents.text.lower() == 'true'
-        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}NextMarker':
+        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextMarker':
             marker = contents.text
-        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Contents':
+        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Contents':
             key = None
             last_modified = None
             etag = None
             size = None
             for content in contents:
-                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Key':
+                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
                     key = content.text
-                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}LastModified':
+                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
                     last_modified = content.text
-                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}ETag':
+                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
                     etag = content.text
-                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Size':
+                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
                     size = content.text
             objects.append(Object(bucket, key, last_modified, etag, size))
 
@@ -102,19 +102,19 @@ def parse_incomplete_uploads(data, bucket):
     key_marker = None
     upload_id_marker = None
     for contents in root:
-        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}IsTruncated':
+        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
             is_truncated = contents.text.lower() == 'true'
-        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}NextKeyMarker':
+        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextKeyMarker':
             key_marker = contents.text
-        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}NextUploadIdMarker':
+        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextUploadIdMarker':
             upload_id_marker = contents.text
-        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Upload':
+        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Upload':
             key = None
             upload_id = None
             for content in contents:
-                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Key':
+                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
                     key = content.text
-                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}UploadId':
+                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}UploadId':
                     upload_id = content.text
             uploads.append(IncompleteUpload(bucket, key, upload_id))
 
@@ -128,23 +128,23 @@ def parse_uploaded_parts(data, bucket, key, upload_id):
     parts = []
     part_marker = None
     for contents in root:
-        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}IsTruncated':
+        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
             is_truncated = contents.text.lower() == 'true'
-        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}NextPartNumberMarker':
+        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextPartNumberMarker':
             part_marker = contents.text
-        if contents.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Part':
+        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Part':
             part_number = None
             etag = None
             last_modified = None
             size = None
             for content in contents:
-                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}PartNumber':
+                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}PartNumber':
                     part_number = content.text
-                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}ETag':
+                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
                     etag = content.text
-                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}LastModified':
+                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
                     last_modified = content.text
-                if content.tag == '{http://doc.s3.amazonaws.com/2006-03-01}Size':
+                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
                     size = content.text
             parts.append(UploadPart(bucket, key, upload_id, part_number, etag, last_modified, size))
     return parts, is_truncated, part_marker

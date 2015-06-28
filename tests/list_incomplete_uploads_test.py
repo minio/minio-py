@@ -26,7 +26,7 @@ class ListIncompleteUploadsTest(TestCase):
     @mock.patch('requests.get')
     def test_empty_list_uploads_test(self, mock_request):
         mock_data = '''<?xml version="1.0"?>
-                       <ListMultipartUploadsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+                       <ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                          <Bucket>golang</Bucket>
                          <KeyMarker/>
                          <UploadIdMarker/>
@@ -49,7 +49,7 @@ class ListIncompleteUploadsTest(TestCase):
     @mock.patch('requests.get')
     def test_list_uploads_works(self, mock_request):
         mock_data = '''<?xml version="1.0"?>
-                       <ListMultipartUploadsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+                       <ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                          <Bucket>golang</Bucket>
                          <KeyMarker/>
                          <UploadIdMarker/>
@@ -100,7 +100,7 @@ class ListIncompleteUploadsTest(TestCase):
     @mock.patch('requests.get')
     def test_list_objects_works(self, mock_request):
         mock_data1 = '''<?xml version="1.0"?>
-                        <ListMultipartUploadsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+                        <ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                           <Bucket>golang</Bucket>
                           <KeyMarker/>
                           <UploadIdMarker/>
@@ -142,7 +142,7 @@ class ListIncompleteUploadsTest(TestCase):
                         </ListMultipartUploadsResult>
                      '''
         mock_data2 = '''<?xml version="1.0"?>
-                        <ListMultipartUploadsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+                        <ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                           <Bucket>golang</Bucket>
                           <KeyMarker/>
                           <UploadIdMarker/>

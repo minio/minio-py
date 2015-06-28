@@ -26,7 +26,7 @@ class ListPartsTest(TestCase):
     @mock.patch('requests.get')
     def test_empty_list_parts_works(self, mock_request):
         mock_data = '''<?xml version="1.0"?>
-                       <ListPartsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+                       <ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                          <Bucket>bucket</Bucket>
                          <Key>go1.4.2</Key>
                          <UploadId>ntWSjzBytPT2xKLaMRonzXncsO10EH4Fc-Iq2-4hG-ulRYB</UploadId>
@@ -55,7 +55,7 @@ class ListPartsTest(TestCase):
     @mock.patch('requests.get')
     def test_list_objects_works(self, mock_request):
         mock_data = '''<?xml version="1.0"?>
-                       <ListPartsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+                       <ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                          <Bucket>bucket</Bucket>
                          <Key>go1.4.2</Key>
                          <UploadId>ntWSjzBytPT2xKLaMRonzXncsO10EH4Fc-Iq2-4hG-ulRYB</UploadId>
@@ -97,7 +97,7 @@ class ListPartsTest(TestCase):
     @mock.patch('requests.get')
     def test_list_objects_works(self, mock_request):
         mock_data1 = '''<?xml version="1.0"?>
-                        <ListPartsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+                        <ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                           <Bucket>bucket</Bucket>
                           <Key>go1.4.2</Key>
                           <UploadId>ntWSjzBytPT2xKLaMRonzXncsO10EH4Fc-Iq2-4hG-ulRYB</UploadId>
@@ -129,7 +129,7 @@ class ListPartsTest(TestCase):
                         </ListPartsResult>
                         '''
         mock_data2 = '''<?xml version="1.0"?>
-                        <ListPartsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+                        <ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                           <Bucket>bucket</Bucket>
                           <Key>go1.4.2</Key>
                           <UploadId>ntWSjzBytPT2xKLaMRonzXncsO10EH4Fc-Iq2-4hG-ulRYB</UploadId>

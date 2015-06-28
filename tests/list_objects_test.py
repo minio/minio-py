@@ -26,7 +26,7 @@ class ListObjectsTest(TestCase):
     @mock.patch('requests.get')
     def test_empty_list_objects_works(self, mock_request):
         mock_data = '''<?xml version="1.0"?>
-<ListBucketResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
   <Prefix/>
   <Marker/>
@@ -47,7 +47,7 @@ class ListObjectsTest(TestCase):
     @mock.patch('requests.get')
     def test_list_objects_works(self, mock_request):
         mock_data = '''<?xml version="1.0"?>
-<ListBucketResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
   <Prefix/>
   <Marker/>
@@ -93,7 +93,7 @@ class ListObjectsTest(TestCase):
     @mock.patch('requests.get')
     def test_list_objects_works(self, mock_request):
         mock_data1 = '''<?xml version="1.0"?>
-<ListBucketResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
   <Prefix/>
   <Marker>marker</Marker>
@@ -125,7 +125,7 @@ class ListObjectsTest(TestCase):
 </ListBucketResult>
         '''
         mock_data2 = '''<?xml version="1.0"?>
-<ListBucketResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
   <Prefix/>
   <Marker/>
