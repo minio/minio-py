@@ -17,7 +17,6 @@ import mock
 from nose.tools import raises, eq_
 
 from minio import minio
-from minio.parsers import ResponseError
 from .minio_mocks import MockResponse
 from .helpers import generate_error
 

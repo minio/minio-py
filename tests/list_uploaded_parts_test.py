@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from unittest import TestCase
+
 import mock
 from nose.tools import eq_
+
 from minio.generators import ListUploadParts
 from .minio_mocks import MockResponse
 

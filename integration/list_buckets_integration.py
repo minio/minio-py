@@ -27,7 +27,7 @@ secret_key = credentials.secret_key()
 client = minio.Minio(url, access_key=access_key, secret_key=secret_key)
 
 
-class MakeBucketIntegrationTests(TestCase):
+class ListBucketsIntegration(TestCase):
     def test_make_bucket_works(self):
         buckets = client.list_buckets()
         for bucket in buckets:

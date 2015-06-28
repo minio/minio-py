@@ -15,7 +15,6 @@ from unittest import TestCase
 from datetime import datetime
 
 import mock
-
 from nose.tools import eq_
 import pytz
 
