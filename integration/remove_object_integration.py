@@ -33,20 +33,16 @@ bucket = 'goroutine-py'
 
 
 class RemoveObjectIntegration(TestCase):
-    def test_stat_object_works(self):
+    def test_remove_object_works(self):
         client.remove_object(bucket, 'object-to-remove')
         try:
-            client.stat_object(bucket, 'object-to-remove')
+            client.remove_object(bucket, 'object-to-remove')
         except ResponseError:
             pass
 
+    @raises(ResponseError)
+    def test_bucket_not_found(self):
+        client.remove_object('goroutine-no-exist', 'hello')
 
-    # @raises(ResponseError)
-    # def test_bucket_not_found(self):
-    #     result = client.stat_object('goroutine-no-exist', 'hello')
-    #     eq_(False, result)
-    #
-    # @raises(ResponseError)
-    # def test_object_not_found(self):
-    #     result = client.stat_object(bucket, 'missing-object')
-    #     eq_(False, result)
+    def test_object_not_found(self):
+        client.remove_object(bucket, 'missing-object')
