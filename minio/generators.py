@@ -60,7 +60,7 @@ class ListObjectsIterator:
         if self._prefix is not None:
             query['prefix'] = self._prefix
         if not self._recursive:
-            query['delim'] = '/'
+            query['delimiter'] = '%2F'
         if self._marker is not None:
             query['marker'] = self._marker
 
