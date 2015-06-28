@@ -150,7 +150,7 @@ class Minio:
 
         response = requests.delete(url, headers=headers)
 
-        if response.status_code != 200:
+        if response.status_code != 204:
             parse_error(response)
 
     def get_bucket_acl(self, bucket):
