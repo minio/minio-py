@@ -28,6 +28,12 @@ from .xml_requests import bucket_constraint, generate_complete_multipart_upload
 __author__ = 'minio'
 
 
+def _calculate_part_size(length):
+    minimum_part_size = 5 * 1024 * 1024
+    proposed_part_size = length / 9999
+    return max(minimum_part_size, proposed_part_size)
+
+
 class Minio:
     def __init__(self, url, access_key=None, secret_key=None):
         if not isinstance(url, basestring):
@@ -385,7 +391,7 @@ class Minio:
             parse_error(response)
 
     def _stream_put_object(self, bucket, key, length, data, content_type):
-        part_size = 5 * 1024 * 1024
+        part_size = _calculate_part_size(length)
 
         current_uploads = ListIncompleteUploads(self._scheme, self._location, bucket, key, access_key=self._access_key,
                                                 secret_key=self._secret_key)

@@ -77,8 +77,12 @@ def generate_canonical_request(method, parsed_url, headers, content_hash_hex):
     signed_headers = []
     header_lines = []
     for header in headers:
-        signed_headers.append(header.lower().strip())
-        header_lines.append(header.lower().strip() + ':' + headers[header].strip())
+        value = headers[header]
+        if isinstance(value, basestring):
+            value = value.strip()
+        header = header.lower().strip()
+        signed_headers.append(header)
+        header_lines.append(header.lower().strip() + ':' + str(value))
     signed_headers.sort()
     header_lines.sort()
     lines = lines + header_lines
