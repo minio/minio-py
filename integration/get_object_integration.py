@@ -53,4 +53,4 @@ class GetObjectIntegration(TestCase):
 
     @raises(ResponseError)
     def get_from_unknown_bucket_test(self):
-        client.get_object('goroutine-noexist', 'hello')
+        client.get_object('goroutine-no-exist', 'hello')

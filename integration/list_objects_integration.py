@@ -13,11 +13,8 @@
 # limitations under the License.
 from unittest import TestCase
 
-from nose.tools import raises
-
 from .credentials import Credentials
 from minio import minio
-from minio.parsers import ResponseError
 
 __author__ = 'minio'
 
@@ -39,6 +36,13 @@ class ListObjectsIntegration(TestCase):
             print obj
 
     def list_objects_test(self):
+        print 'list objects'
         objects = client.list_objects(bucket)
+        for obj in objects:
+            print obj.key, obj.size
+
+    def list_objects_without_recursion_test(self):
+        print 'no recurssion'
+        objects = client.list_objects(bucket, recursive=False)
         for obj in objects:
             print obj.key, obj.size
