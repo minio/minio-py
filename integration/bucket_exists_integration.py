@@ -29,7 +29,7 @@ secret_key = credentials.secret_key()
 client = minio.Minio(url, access_key=access_key, secret_key=secret_key)
 
 
-class MakeBucketIntegrationTests(TestCase):
+class BucketExistsIntegration(TestCase):
     def test_make_bucket_works(self):
         result = client.bucket_exists('goroutine-py')
         eq_(True, result)

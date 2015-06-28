@@ -20,7 +20,7 @@ import requests
 
 from .generators import ListObjectsIterator, ListIncompleteUploads, ListUploadParts
 from .helpers import get_target_url
-from .parsers import parse_list_buckets, parse_acl, parse_error, Object, ResponseError
+from .parsers import parse_list_buckets, parse_acl, parse_error, Object
 from .region import get_region
 from .signer import sign_v4
 from .xml_requests import bucket_constraint, generate_complete_multipart_upload

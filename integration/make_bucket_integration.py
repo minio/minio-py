@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from unittest import TestCase
+
 from nose.tools import raises
 
 from .credentials import Credentials
@@ -32,7 +33,7 @@ bucket = 'goroutine-py'
 client = minio.Minio(url, access_key=access_key, secret_key=secret_key)
 
 
-class MakeBucketIntegrationTests(TestCase):
+class MakeBucketIntegration(TestCase):
     def test_make_bucket_works(self):
         client.make_bucket(bucket)
 
