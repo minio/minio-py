@@ -329,7 +329,7 @@ class Minio:
 
         response = requests.delete(url, headers=headers, stream=True)
 
-        if response.status_code != 200:
+        if response.status_code != 204:
             parse_error(response)
 
     def drop_incomplete_upload(self, bucket, key):
