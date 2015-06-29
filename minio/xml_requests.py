@@ -31,6 +31,17 @@ class MockFile(object):
     pass
 
 
-def generate_complete_multipart_upload(etags):
-    # TODO generate xml
-    return "" + etags
+def generate_complete_multipart_upload(upload_id, etags):
+    root = ElementTree.Element('CompleteMultipartUpload', {'xmlns': 'http://s3.amazonaws.com/doc/2006-03-01/'})
+
+    for i in range(0, len(etags)):
+        part = ElementTree.SubElement(root, 'Part')
+        part_number = ElementTree.SubElement(part, 'PartNumber')
+        part_number.text = str(i+1)
+        etag = ElementTree.SubElement(part, 'ETag')
+        etag.text = etags[i]
+    data = []
+    mock_file = MockFile()
+    mock_file.write = data.append
+    ElementTree.ElementTree(root).write(mock_file, encoding=None, xml_declaration=False)
+    return b''.join(data)

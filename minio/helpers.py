@@ -32,7 +32,7 @@ def get_target_url(scheme, location, bucket=None, key=None, query=None):
             single_component = [component_key]
             if ordered_query[component_key] is not None:
                 single_component.append('=')
-                single_component.append(ordered_query[component_key])
+                single_component.append(str(ordered_query[component_key]))
             query_components.append(''.join(single_component))
 
         query_string = '&'.join(query_components)

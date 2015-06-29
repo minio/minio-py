@@ -18,18 +18,18 @@ __author__ = 'minio'
 
 
 class MockResponse(object):
-    def __init__(self, method, url, headers, status_code, return_headers=None, content=None):
+    def __init__(self, method, url, headers, status_code, response_headers=None, content=None):
         self.method = method
         self.url = url
-        self.headers = headers
+        self.request_headers = headers
         self.status_code = status_code
-        self.return_headers = return_headers
+        self.headers = response_headers
         self.content = content
 
     def mock_verify(self, method, url, headers):
         eq_(self.method, method)
         eq_(self.url, url)
-        eq_(self.headers, headers)
+        eq_(self.request_headers, headers)
 
     # noinspection PyUnusedLocal
     def iter_content(self, chunk_size=1, decode_unicode=False):
