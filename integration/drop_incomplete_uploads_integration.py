@@ -48,5 +48,5 @@ class DropIncompleteUploadsIntegration(TestCase):
     def drop_incomplete_uploads_test(self):
         client.drop_incomplete_upload(bucket, 'incomplete/2')
 
-    # def drop_incomplete_uploads_test(self):
-    #     client.drop_all_incomplete_uploads(bucket)
+        # def drop_incomplete_uploads_test(self):
+        #     client.drop_all_incomplete_uploads(bucket)
