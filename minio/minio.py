@@ -423,14 +423,15 @@ class Minio:
         current_part_number = 1
         etags = []
         while total_uploaded < length:
-            current_data = data.read(5 * 1024 * 1024)
+            current_data = data.read(part_size)
             current_data_sha256 = get_sha256(current_data)
             previously_uploaded_part = None
-            if uploaded_parts.has_key(current_part_number):
+            if current_part_number in uploaded_parts:
                 previously_uploaded_part = uploaded_parts[current_part_number]
             if previously_uploaded_part is None or previously_uploaded_part.etag != current_data_sha256:
                 etag = self._do_put_object(bucket=bucket, key=key, length=len(current_data), data=current_data,
-                                           content_type=content_type, upload_id=upload_id, part_number=current_part_number)
+                                           content_type=content_type, upload_id=upload_id,
+                                           part_number=current_part_number)
             else:
                 etag = previously_uploaded_part.etag
             etags.append(etag)
@@ -479,7 +480,7 @@ class Minio:
         url = get_target_url(self._scheme, self._location, bucket=bucket, key=key, query=query)
         headers = {}
 
-        data = generate_complete_multipart_upload(upload_id, etags)
+        data = generate_complete_multipart_upload(etags)
         data_sha256 = get_sha256(data)
 
         headers['Content-Length'] = len(data)
