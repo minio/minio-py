@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import hashlib
+from io import RawIOBase
 import platform
 from urlparse import urlparse
 
@@ -270,6 +271,9 @@ class Minio:
             raise ValueError('content_type')
 
         if length <= 5 * 1024 * 1024:
+            # we reference 'file' for python 2.7 compatibility, RawIOBase for 3.X
+            if type(data).__name__ == 'file' or isinstance(data, RawIOBase):
+                data = data.read(length)
             return self._do_put_object(bucket, key, length, data, content_type)
         self._stream_put_object(bucket, key, length, data, content_type)
 
