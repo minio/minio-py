@@ -35,18 +35,18 @@ class DropIncompleteUploadsIntegration(TestCase):
     #     file_stat = os.stat(file_name)
     #     with open(file_name, 'rb') as data_file:
     #         try:
-    #             client.put_object(bucket, 'incomplete-1', file_stat.st_size - (2 * 1024 * 1024), data_file)
+    #             client.put_object(bucket, 'incomplete/1', file_stat.st_size - (2 * 1024 * 1024), data_file)
     #         except ValueError:
     #             pass
     #
     #     with open(file_name, 'rb') as data_file:
     #         try:
-    #             client.put_object(bucket, 'incomplete-2', file_stat.st_size - (2 * 1024 * 1024), data_file)
+    #             client.put_object(bucket, 'incomplete/2', file_stat.st_size - (2 * 1024 * 1024), data_file)
     #         except ValueError:
     #             pass
 
-    # def drop_incomplete_uploads_test(self):
-    #     client.drop_incomplete_upload(bucket, 'incomplete-1')
-
     def drop_incomplete_uploads_test(self):
-        client.drop_all_incomplete_uploads(bucket)
+        client.drop_incomplete_upload(bucket, 'incomplete/2')
+
+    # def drop_incomplete_uploads_test(self):
+    #     client.drop_all_incomplete_uploads(bucket)

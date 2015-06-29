@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import cgi
 import collections
 
 __author__ = 'minio'
@@ -32,7 +33,7 @@ def get_target_url(scheme, location, bucket=None, key=None, query=None):
             single_component = [component_key]
             if ordered_query[component_key] is not None:
                 single_component.append('=')
-                single_component.append(str(ordered_query[component_key]))
+                single_component.append(cgi.escape(str(ordered_query[component_key])).replace('/', '%2F'))
             query_components.append(''.join(single_component))
 
         query_string = '&'.join(query_components)
