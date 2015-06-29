@@ -150,6 +150,18 @@ def parse_uploaded_parts(data, bucket, key, upload_id):
     return parts, is_truncated, part_marker
 
 
+def parse_new_multipart_upload(data):
+    root = ElementTree.fromstring(data)
+
+    upload_id = None
+
+    for contents in root:
+        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}UploadId':
+            upload_id = contents.text
+
+    return upload_id
+
+
 def parse_error(response, url=None):
     if len(response.content) == 0:
         if response.status_code == 404:

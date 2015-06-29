@@ -53,7 +53,8 @@ class StatObject(TestCase):
             'Content-Length': 11,
             'ETag': '5eb63bbbe01eeed093cb22bb8f5acdc3'
         }
-        mock_request.return_value = MockResponse('HEAD', 'http://localhost:9000/hello', mock_headers, 200)
+        mock_request.return_value = MockResponse('HEAD', 'http://localhost:9000/hello', {}, 200,
+                                                 response_headers=mock_headers)
         client = minio.Minio('http://localhost:9000')
         client.stat_object('hello', 'world')
 

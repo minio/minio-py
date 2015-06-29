@@ -62,7 +62,8 @@ class PutObjectTest(TestCase):
             'Content-Length': len(data),
             'Content-Type': 'application/octet-stream'
         }
-        mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello', expected_headers, 200)
+        mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello', expected_headers, 200,
+                                                 response_headers={'ETag': 'ETag'})
         client.put_object('hello', 'world', len(data), data)
 
         # @mock.patch('requests.put')

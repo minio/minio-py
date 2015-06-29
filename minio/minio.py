@@ -14,6 +14,7 @@
 
 import hashlib
 from io import RawIOBase
+import io
 import platform
 from urlparse import urlparse
 
@@ -21,7 +22,7 @@ import requests
 
 from .generators import ListObjectsIterator, ListIncompleteUploads, ListUploadParts
 from .helpers import get_target_url
-from .parsers import parse_list_buckets, parse_acl, parse_error, Object
+from .parsers import parse_list_buckets, parse_acl, parse_error, Object, parse_new_multipart_upload
 from .region import get_region
 from .signer import sign_v4
 from .xml_requests import bucket_constraint, generate_complete_multipart_upload
@@ -364,18 +365,18 @@ class Minio:
     # helper functions
 
     def _do_put_object(self, bucket, key, length, data, content_type='application/octet-stream',
-                       upload_id=None, part_id=None):
+                       upload_id=None, part_number=None):
         method = 'PUT'
 
         # guard against inconsistent upload_id/part_id states
-        if upload_id is None and part_id is not None:
+        if upload_id is None and part_number is not None:
             raise ValueError('part_id')
-        if upload_id is not None and part_id is None:
+        if upload_id is not None and part_number is None:
             raise ValueError('upload_id')
 
-        if upload_id is not None and part_id is not None:
+        if upload_id is not None and part_number is not None:
             url = get_target_url(self._scheme, self._location, bucket=bucket, key=key,
-                                 query={'uploadId': upload_id, 'partId': part_id})
+                                 query={'uploadId': upload_id, 'partNumber': part_number})
         else:
             url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
 
@@ -394,7 +395,14 @@ class Minio:
         if response.status_code != 200:
             parse_error(response)
 
+        return response.headers['ETag']
+
     def _stream_put_object(self, bucket, key, length, data, content_type):
+        if not isinstance(data, RawIOBase):
+            data = io.BytesIO(data)
+
+        data = io.BufferedReader(data)
+
         part_size = _calculate_part_size(length)
 
         current_uploads = ListIncompleteUploads(self._scheme, self._location, bucket, key, access_key=self._access_key,
@@ -415,16 +423,18 @@ class Minio:
         current_part_number = 1
         etags = []
         while total_uploaded < length:
-            current_data = [0x01, 0x02]
+            current_data = data.read(5 * 1024 * 1024)
             current_data_sha256 = get_sha256(current_data)
-            previously_uploaded_part = uploaded_parts[current_part_number]
+            previously_uploaded_part = None
+            if uploaded_parts.has_key(current_part_number):
+                previously_uploaded_part = uploaded_parts[current_part_number]
             if previously_uploaded_part is None or previously_uploaded_part.etag != current_data_sha256:
-                etag = self._do_put_object(bucket=bucket, key=key, length=length, data=current_data,
-                                           content_type=content_type, upload_id=upload_id, part_id=current_part_number)
+                etag = self._do_put_object(bucket=bucket, key=key, length=len(current_data), data=current_data,
+                                           content_type=content_type, upload_id=upload_id, part_number=current_part_number)
             else:
                 etag = previously_uploaded_part.etag
             etags.append(etag)
-            total_uploaded += part_size
+            total_uploaded += len(current_data)
             current_part_number += 1
         self._complete_multipart_upload(bucket, key, upload_id, etags)
 
@@ -445,7 +455,7 @@ class Minio:
             parse_error(response)
 
     def _new_multipart_upload(self, bucket, key):
-        method = 'PUT'
+        method = 'POST'
         query = {
             'uploads': None
         }
@@ -455,22 +465,21 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.put(url, headers=headers)
+        response = requests.post(url, headers=headers)
 
         if response.status_code != 200:
             parse_error(response)
-        return response.content.decode('utf-8')
+        return parse_new_multipart_upload(response.content)
 
     def _complete_multipart_upload(self, bucket, key, upload_id, etags):
-        method = 'PUT'
+        method = 'POST'
         query = {
-            'uploads': None,
             'uploadId': upload_id
         }
         url = get_target_url(self._scheme, self._location, bucket=bucket, key=key, query=query)
         headers = {}
 
-        data = generate_complete_multipart_upload(etags)
+        data = generate_complete_multipart_upload(upload_id, etags)
         data_sha256 = get_sha256(data)
 
         headers['Content-Length'] = len(data)
@@ -479,7 +488,7 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key, content_hash=data_sha256)
 
-        response = requests.put(url, headers=headers, data=data)
+        response = requests.post(url, headers=headers, data=data)
 
         if response.status_code != 200:
             parse_error(response)
