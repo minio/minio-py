@@ -16,7 +16,6 @@ from unittest import TestCase
 from nose.tools import raises
 
 from .credentials import Credentials
-
 from minio import minio
 from minio.parsers import ResponseError
 
