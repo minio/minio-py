@@ -42,3 +42,18 @@ def get_target_url(scheme, location, bucket=None, key=None, query=None):
             url_components.append(query_string)
 
     return ''.join(url_components)
+
+
+def is_non_empty_string(name, input_string):
+    if not isinstance(input_string, basestring):
+        raise TypeError(name)
+    input_string = input_string.strip()
+    if input_string == '':
+        raise ValueError(name)
+
+
+def is_positive_int(name, input_int):
+    if not isinstance(input_int, int):
+        raise TypeError(name)
+    if input_int <= 0:
+        raise ValueError(name)

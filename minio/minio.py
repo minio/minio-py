@@ -21,7 +21,7 @@ from urlparse import urlparse
 import requests
 
 from .generators import ListObjectsIterator, ListIncompleteUploads, ListUploadParts
-from .helpers import get_target_url
+from .helpers import get_target_url, is_non_empty_string, is_positive_int
 from .parsers import parse_list_buckets, parse_acl, parse_error, Object, parse_new_multipart_upload
 from .region import get_region
 from .signer import sign_v4
@@ -38,15 +38,13 @@ def _calculate_part_size(length):
 
 class Minio:
     def __init__(self, url, access_key=None, secret_key=None):
-        if not isinstance(url, basestring):
-            raise TypeError(url)
+        is_non_empty_string('url', url)
+
         url_components = urlparse(url)
 
-        if url_components.scheme is '':
-            raise ValueError('url')
+        is_non_empty_string('url scheme', url_components.scheme)
 
-        if url_components.netloc is '':
-            raise ValueError('url')
+        is_non_empty_string('url location', url_components.netloc)
 
         self._scheme = url_components.scheme
         self._location = url_components.netloc
@@ -56,21 +54,11 @@ class Minio:
 
     # Client level
     def add_user_agent(self, name, version, parameters):
-        if not isinstance(name, basestring):
-            raise TypeError('name')
-        name = name.strip()
-        if name == '':
-            raise ValueError('name')
-
-        if not isinstance(version, basestring):
-            raise TypeError('version')
-        version = version.strip()
-        if version == '':
-            raise ValueError('version')
+        is_non_empty_string('name', name)
+        is_non_empty_string('version', version)
 
         for parameter in parameters:
-            if parameter == '':
-                raise ValueError('parameters')
+            is_non_empty_string('parameters', parameter)
 
         joined_parameters = '; '.join(parameters)
         components = [' ', name, '/', version, ' (', joined_parameters, ')']
@@ -79,11 +67,7 @@ class Minio:
     # Bucket level
     # noinspection PyUnusedLocal
     def make_bucket(self, bucket, acl=None):
-        if not isinstance(bucket, basestring):
-            raise TypeError('bucket')
-        bucket = bucket.strip()
-        if bucket == '':
-            raise ValueError
+        is_non_empty_string('bucket', bucket)
 
         method = 'PUT'
         url = get_target_url(self._scheme, self._location, bucket=bucket)
@@ -122,11 +106,7 @@ class Minio:
         return parse_list_buckets(response.content)
 
     def bucket_exists(self, bucket):
-        if not isinstance(bucket, basestring):
-            raise TypeError('bucket')
-        bucket = bucket.strip()
-        if bucket == '':
-            raise ValueError
+        is_non_empty_string('bucket', bucket)
 
         method = 'HEAD'
         url = get_target_url(self._scheme, self._location, bucket=bucket)
@@ -143,11 +123,7 @@ class Minio:
         return False
 
     def remove_bucket(self, bucket):
-        if not isinstance(bucket, basestring):
-            raise TypeError('bucket')
-        bucket = bucket.strip()
-        if bucket == '':
-            raise ValueError
+        is_non_empty_string('bucket', bucket)
 
         method = 'DELETE'
         url = get_target_url(self._scheme, self._location, bucket=bucket)
@@ -162,11 +138,7 @@ class Minio:
             parse_error(response)
 
     def get_bucket_acl(self, bucket):
-        if not isinstance(bucket, basestring):
-            raise TypeError('bucket')
-        bucket = bucket.strip()
-        if bucket == '':
-            raise ValueError
+        is_non_empty_string('bucket', bucket)
 
         method = 'GET'
         url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
@@ -180,11 +152,8 @@ class Minio:
         return parse_acl(response.content)
 
     def set_bucket_acl(self, bucket, acl):
-        if not isinstance(bucket, basestring):
-            raise TypeError('bucket')
-        bucket = bucket.strip()
-        if bucket == '':
-            raise ValueError
+        is_non_empty_string('bucket', bucket)
+
         method = 'PUT'
         url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
         headers = {
@@ -201,11 +170,7 @@ class Minio:
 
     def drop_all_incomplete_uploads(self, bucket):
         # check bucket
-        if not isinstance(bucket, basestring):
-            raise TypeError('bucket')
-        bucket = bucket.strip()
-        if bucket == '':
-            raise ValueError('bucket')
+        is_non_empty_string('bucket', bucket)
 
         uploads = ListIncompleteUploads(self._scheme, self._location, bucket, None, access_key=self._access_key,
                                         secret_key=self._secret_key)
@@ -215,17 +180,8 @@ class Minio:
 
     # Object Level
     def get_object(self, bucket, key):
-        if not isinstance(bucket, basestring):
-            raise TypeError('bucket')
-        bucket = bucket.strip()
-        if bucket == '':
-            raise ValueError
-
-        if not isinstance(key, basestring):
-            raise TypeError('key')
-        key = key.strip()
-        if key == '':
-            raise ValueError
+        is_non_empty_string('bucket', bucket)
+        is_non_empty_string('key', key)
 
         method = 'GET'
         url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
@@ -242,25 +198,9 @@ class Minio:
         return response.iter_content()
 
     def put_object(self, bucket, key, length, data, content_type="application/octet-stream"):
-        # check bucket
-        if not isinstance(bucket, basestring):
-            raise TypeError('bucket')
-        bucket = bucket.strip()
-        if bucket == '':
-            raise ValueError('bucket')
-
-        # check key
-        if not isinstance(key, basestring):
-            raise TypeError('key')
-        key = key.strip()
-        if key == '':
-            raise ValueError('key')
-
-        # check length
-        if not isinstance(length, int):
-            raise TypeError('length')
-        if length <= 0:
-            raise ValueError('length')
+        is_non_empty_string('bucket', bucket)
+        is_non_empty_string('key', key)
+        is_positive_int('length', length)
 
         # check content_type
         if not isinstance(content_type, basestring):
@@ -279,23 +219,13 @@ class Minio:
         self._stream_put_object(bucket, key, length, data, content_type)
 
     def list_objects(self, bucket, prefix=None, recursive=True):
+        is_non_empty_string('bucket', bucket)
         return ListObjectsIterator(self._scheme, self._location, bucket, prefix, recursive, self._access_key,
                                    self._secret_key)
 
     def stat_object(self, bucket, key):
-        # check bucket
-        if not isinstance(bucket, basestring):
-            raise TypeError('bucket')
-        bucket = bucket.strip()
-        if bucket == '':
-            raise ValueError('bucket')
-
-        # check key
-        if not isinstance(key, basestring):
-            raise TypeError('key')
-        key = key.strip()
-        if key == '':
-            raise ValueError('key')
+        is_non_empty_string('bucket', bucket)
+        is_non_empty_string('key', key)
 
         method = 'HEAD'
         url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
@@ -317,19 +247,8 @@ class Minio:
         return Object(bucket, key, content_type=content_type, last_modified=last_modified, etag=etag, size=size)
 
     def remove_object(self, bucket, key):
-        # check bucket
-        if not isinstance(bucket, basestring):
-            raise TypeError('bucket')
-        bucket = bucket.strip()
-        if bucket == '':
-            raise ValueError('bucket')
-
-        # check key
-        if not isinstance(key, basestring):
-            raise TypeError('key')
-        key = key.strip()
-        if key == '':
-            raise ValueError('key')
+        is_non_empty_string('bucket', bucket)
+        is_non_empty_string('key', key)
 
         method = 'DELETE'
         url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
@@ -344,19 +263,10 @@ class Minio:
             parse_error(response)
 
     def drop_incomplete_upload(self, bucket, key):
-        # check bucket
-        if not isinstance(bucket, basestring):
-            raise TypeError('bucket')
-        bucket = bucket.strip()
-        if bucket == '':
-            raise ValueError('bucket')
+        is_non_empty_string('bucket', bucket)
+        is_non_empty_string('key', key)
 
         # check key
-        if not isinstance(key, basestring):
-            raise TypeError('key')
-        key = key.strip()
-        if key == '':
-            raise ValueError('key')
         uploads = ListIncompleteUploads(self._scheme, self._location, bucket, key, access_key=self._access_key,
                                         secret_key=self._secret_key)
         for upload in uploads:
