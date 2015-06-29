@@ -456,7 +456,7 @@ class Minio:
 
         response = requests.delete(url, headers=headers)
 
-        if response.status_code != 200:
+        if response.status_code != 204:
             parse_error(response)
 
     def _new_multipart_upload(self, bucket, key):
