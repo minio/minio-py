@@ -37,7 +37,7 @@ def generate_complete_multipart_upload(etags):
     for i in range(0, len(etags)):
         part = ElementTree.SubElement(root, 'Part')
         part_number = ElementTree.SubElement(part, 'PartNumber')
-        part_number.text = str(i+1)
+        part_number.text = str(i + 1)
         etag = ElementTree.SubElement(part, 'ETag')
         etag.text = etags[i]
     data = []
