@@ -424,6 +424,8 @@ class Minio:
         etags = []
         while total_uploaded < length:
             current_data = data.read(part_size)
+            if len(current_data) == 0:
+                break
             current_data_sha256 = get_sha256(current_data)
             previously_uploaded_part = None
             if current_part_number in uploaded_parts:
@@ -437,6 +439,8 @@ class Minio:
             etags.append(etag)
             total_uploaded += len(current_data)
             current_part_number += 1
+        if total_uploaded != length:
+            raise ValueError('len(data) does not match length')
         self._complete_multipart_upload(bucket, key, upload_id, etags)
 
     def _drop_incomplete_upload(self, bucket, key, upload_id):
