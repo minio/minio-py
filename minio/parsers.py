@@ -139,7 +139,7 @@ def parse_uploaded_parts(data, bucket, key, upload_id):
             size = None
             for content in contents:
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}PartNumber':
-                    part_number = content.text
+                    part_number = int(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
                     etag = content.text
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':

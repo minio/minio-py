@@ -118,13 +118,15 @@ class ListIncompleteUploads:
         potential_result = self._results.pop(0)
         if self._key is None:
             return potential_result
-        if potential_result.key == potential_result:
+        if potential_result.key == self._key:
             return potential_result
         self._complete = True
         raise StopIteration
 
     def _fetch(self):
-        query = {}
+        query = {
+            'uploads': None
+        }
         if self._key is not None:
             query['prefix'] = self._key
         if self._key_marker is not None:

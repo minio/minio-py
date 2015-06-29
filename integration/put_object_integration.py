@@ -31,23 +31,35 @@ bucket = 'goroutine-py'
 
 
 class PutObjectIntegration(TestCase):
-    def put_small_object_test(self):
-        client.put_object(bucket, 'small_obj', 11, 'hello world', content_type='text/plain')
-
-    def put_small_file_test(self):
-        file_stat = os.stat('CONTRIBUTING.md')
-        with open('CONTRIBUTING.md', 'rb') as data_file:
-            client.put_object(bucket, 'small_obj2', file_stat.st_size, data_file, content_type='text/plain')
-
-    def put_large_object_test(self):
-        a = []
-        for i in range(0, 11 * 1024 * 1024):
-            a.append('a')
-        a = ''.join(a)
-        client.put_object(bucket, 'large_obj', 11 * 1024 * 1024, a, content_type='text/plain')
+    # def put_small_object_test(self):
+    #     client.put_object(bucket, 'small_obj', 11, 'hello world', content_type='text/plain')
+    #
+    # def put_small_file_test(self):
+    #     file_stat = os.stat('CONTRIBUTING.md')
+    #     with open('CONTRIBUTING.md', 'rb') as data_file:
+    #         client.put_object(bucket, 'small_obj2', file_stat.st_size, data_file, content_type='text/plain')
+    #
+    # def put_large_object_test(self):
+    #     a = []
+    #     for i in range(0, 11 * 1024 * 1024):
+    #         a.append('a')
+    #     a = ''.join(a)
+    #     client.put_object(bucket, 'large_obj', 11 * 1024 * 1024, a, content_type='text/plain')
+    #
+    # def put_large_file_test(self):
+    #     file_name = '11mb'
+    #     file_stat = os.stat(file_name)
+    #     with open(file_name, 'rb') as data_file:
+    #         client.put_object(bucket, 'large_obj2', file_stat.st_size, data_file)
 
     def put_large_file_test(self):
         file_name = '11mb'
         file_stat = os.stat(file_name)
+        with open(file_name, 'rb') as data_file:
+            try:
+                client.put_object(bucket, 'large_obj2', file_stat.st_size - (2 * 1024 * 1024), data_file)
+            except ValueError:
+                pass
+
         with open(file_name, 'rb') as data_file:
             client.put_object(bucket, 'large_obj2', file_stat.st_size, data_file)
