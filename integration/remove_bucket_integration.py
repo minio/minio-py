@@ -27,18 +27,19 @@ url = credentials.url()
 access_key = credentials.access_key()
 secret_key = credentials.secret_key()
 
-bucket = 'goroutine-py'
+bucket = 'goroutine-delete-me'
 
 client = minio.Minio(url, access_key=access_key, secret_key=secret_key)
 
 
 class RemoveBucketIntegration(TestCase):
     def test_remove_bucket_works(self):
+        client.make_bucket(bucket)
         client.remove_bucket(bucket)
 
     @raises(ResponseError)
-    def test_remove_existing_bucket_fails(self):
-        client.remove_bucket(bucket)
+    def test_remove_bucket_with_data_fails(self):
+        client.remove_bucket('goroutine-py')
 
     @raises(ResponseError)
     def test_invalid_bucket_name_exception(self):
