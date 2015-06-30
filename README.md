@@ -1,6 +1,6 @@
 # Minimal object storage library for Python [![Build Status](https://travis-ci.org/minio/minio-py.svg)](https://travis-ci.org/minio/minio-py)
 
-## Install from npm
+## Install
 
 -- TODO --
 
