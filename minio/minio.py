@@ -309,9 +309,10 @@ class Minio:
 
     def _stream_put_object(self, bucket, key, length, data, content_type):
         if type(data).__name__ != 'file':
-            if not isinstance(data, RawIOBase) and type(data).__name__:
-                data = io.BytesIO(data)
-            data = io.BufferedReader(data)
+            if not isinstance(data, io.BufferedReader):
+                if not isinstance(data, RawIOBase):
+                    data = io.BytesIO(data)
+                data = io.BufferedReader(data)
 
         part_size = _calculate_part_size(length)
 
