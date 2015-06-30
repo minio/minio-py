@@ -35,7 +35,7 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
 
     content_hash_hex = empty_sha256
     if content_hash is not None:
-        content_hash_hex = binascii.hexlify(content_hash)
+        content_hash_hex = binascii.hexlify(content_hash).decode('utf-8')
 
     headers['host'] = parsed_url.hostname
     headers['x-amz-date'] = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
@@ -63,6 +63,7 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
 
 
 def generate_canonical_request(method, parsed_url, headers, content_hash_hex):
+    content_hash_hex = str(content_hash_hex)
     lines = [method, parsed_url.path]
 
     split_query = parsed_url.query.split('&')
@@ -90,7 +91,7 @@ def generate_canonical_request(method, parsed_url, headers, content_hash_hex):
     lines.append('')
 
     lines.append(';'.join(signed_headers))
-    lines.append(content_hash_hex)
+    lines.append(str(content_hash_hex))
 
     return '\n'.join(lines), signed_headers
 
