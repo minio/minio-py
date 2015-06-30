@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 from unittest import TestCase
 
 from .credentials import Credentials
@@ -30,23 +31,27 @@ bucket = 'goroutine-py'
 
 
 class DropIncompleteUploadsIntegration(TestCase):
-    # def put_large_file_test(self):
-    #     file_name = '11mb'
-    #     file_stat = os.stat(file_name)
-    #     with open(file_name, 'rb') as data_file:
-    #         try:
-    #             client.put_object(bucket, 'incomplete/1', file_stat.st_size - (2 * 1024 * 1024), data_file)
-    #         except ValueError:
-    #             pass
-    #
-    #     with open(file_name, 'rb') as data_file:
-    #         try:
-    #             client.put_object(bucket, 'incomplete/2', file_stat.st_size - (2 * 1024 * 1024), data_file)
-    #         except ValueError:
-    #             pass
+    def put_large_file_test(self):
+        file_name = '11mb'
+        file_stat = os.stat(file_name)
+        with open(file_name, 'rb') as data_file:
+            try:
+                client.put_object(bucket, 'incomplete/1', file_stat.st_size - (2 * 1024 * 1024), data_file)
+            except ValueError:
+                pass
 
-    def drop_incomplete_uploads_test(self):
+        with open(file_name, 'rb') as data_file:
+            try:
+                client.put_object(bucket, 'incomplete/2', file_stat.st_size - (2 * 1024 * 1024), data_file)
+            except ValueError:
+                pass
+
+        with open(file_name, 'rb') as data_file:
+            try:
+                client.put_object(bucket, 'incomplete/3', file_stat.st_size - (2 * 1024 * 1024), data_file)
+            except ValueError:
+                pass
+
         client.drop_incomplete_upload(bucket, 'incomplete/2')
 
-        # def drop_incomplete_uploads_test(self):
-        #     client.drop_all_incomplete_uploads(bucket)
+        client.drop_all_incomplete_uploads(bucket)
