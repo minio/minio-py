@@ -186,20 +186,35 @@ class Minio:
             self._drop_incomplete_upload(bucket, upload.key, upload.upload_id)
 
     # Object Level
-    def get_object(self, bucket, key):
+    def get_object(self, bucket, key, offset=None, length=None):
         is_non_empty_string('bucket', bucket)
         is_non_empty_string('key', key)
+        if offset is not None:
+            is_positive_int('offset', offset, True)
+        if length is not None:
+            is_positive_int('length', length, True)
+
+        request_range = None
+        if offset is not None and length is not None:
+            request_range = str(offset) + "-" + str(offset + length)
+        if offset is not None and length is None:
+            request_range = str(offset) + "-"
+        if offset is None and length is not None:
+            request_range = "-" + str(length)
 
         method = 'GET'
         url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
         headers = {}
+
+        if request_range is not None:
+            headers['Range'] = 'bytes=' + request_range
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = requests.get(url, headers=headers, stream=True)
 
-        if response.status_code != 200:
+        if not (response.status_code == 200 or response.status_code == 206):
             parse_error(response)
 
         return response.iter_content()
