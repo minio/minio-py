@@ -31,14 +31,21 @@ from .xml_requests import bucket_constraint, generate_complete_multipart_upload
 __author__ = 'minio'
 
 
-def _calculate_part_size(length):
-    minimum_part_size = 5 * 1024 * 1024
-    proposed_part_size = length / 9999
-    return max(minimum_part_size, proposed_part_size)
-
-
 class Minio:
     def __init__(self, url, access_key=None, secret_key=None):
+        """
+        Creates a new object storage client.
+
+        Examples:
+
+            client = Minio('http://localhost:9000', 'ACCESS_KEY', 'SECRET_KEY')
+            client = Minio('http://s3-us-west-2.amazonaws.com:9000', 'ACCESS_KEY', 'SECRET_KEY')
+
+        :param url: A string of the URL of the object storage server.
+        :param access_key: Access key to sign requests with.
+        :param secret_key: Secret key to sign requests with.
+        :return: Minio object
+        """
         is_non_empty_string('url', url)
 
         url_components = urlparse(url)
@@ -55,6 +62,18 @@ class Minio:
 
     # Client level
     def add_user_agent(self, name, version, parameters):
+        """
+        Adds an entry to the list of user agents.
+
+        Example:
+            minio.add_user_agent('my_app', '1.0.0', ['ex', 'parrot'])
+            # Results in my_app/1.0.0 (ex; parrot) appended to user agent
+
+        :param name: user agent name
+        :param version: user agent version
+        :param parameters: list of string parameters to include in parameters section
+        :return: None
+        """
         is_non_empty_string('name', name)
         is_non_empty_string('version', version)
 
@@ -68,6 +87,24 @@ class Minio:
     # Bucket level
     # noinspection PyUnusedLocal
     def make_bucket(self, bucket, acl=None):
+        """
+        Make a new bucket on the server.
+
+        Optionally include an ACL. Valid ACLs are as follows:
+
+            Acl.public_read_write()
+            Acl.public_read()
+            Acl.authenticated_read()
+            Acl.private()
+
+        Examples:
+            minio.make_bucket('foo')
+            minio.make_bucket('foo', Acl.public_read())
+
+        :param bucket: Bucket to create on server
+        :param acl: Canned ACL to use. Default is Acl.private()
+        :return:
+        """
         is_non_empty_string('bucket', bucket)
 
         method = 'PUT'
@@ -81,8 +118,8 @@ class Minio:
             content = bucket_constraint(region)
             headers['Content-Length'] = str(len(content))
 
-        content_sha256 = get_sha256(content)
-        content_md5 = get_md5_as_base64(content)
+        content_sha256 = _get_sha256(content)
+        content_md5 = _get_md5_as_base64(content)
         headers['Content-MD5'] = content_md5
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
@@ -94,6 +131,18 @@ class Minio:
             parse_error(response)
 
     def list_buckets(self):
+        """
+        List all buckets owned by the user.
+
+
+        Example:
+            bucket_list = minio.list_buckets()j
+            for bucket in bucket_list:
+                print bucket.name
+                print bucket.created_date
+
+        :return: A list of buckets owned by the current user.
+        """
         url = get_target_url(self._scheme, self._location)
         method = 'GET'
         headers = {}
@@ -109,6 +158,12 @@ class Minio:
         return parse_list_buckets(response.content)
 
     def bucket_exists(self, bucket):
+        """
+        Check if the bucket exists and if the user has access to it.
+
+        :param bucket: A bucket to test the existence and access of.
+        :return: True if the bucket exists and the user has access. Otherwise, returns False
+        """
         is_non_empty_string('bucket', bucket)
 
         method = 'HEAD'
@@ -126,6 +181,12 @@ class Minio:
         return False
 
     def remove_bucket(self, bucket):
+        """
+        Remove a bucket.
+
+        :param bucket: Bucket to remove
+        :return: None
+        """
         is_non_empty_string('bucket', bucket)
 
         method = 'DELETE'
@@ -141,6 +202,17 @@ class Minio:
             parse_error(response)
 
     def get_bucket_acl(self, bucket):
+        """
+        Get a bucket's canned ACL, if any.
+
+        Example:
+            canned_acl = minio.get_bucket_acl('foo')
+            if canned_acl == Acl.private():
+                # do something
+
+        :param bucket: Bucket to check canned ACL of.
+        :return: A string representing the currently used canned ACL if one is set.
+        """
         is_non_empty_string('bucket', bucket)
 
         method = 'GET'
@@ -155,12 +227,30 @@ class Minio:
         return parse_acl(response.content)
 
     def set_bucket_acl(self, bucket, acl):
+        """
+        Set a bucket's canned acl
+
+        Valid ACLs include:
+            Acl.public_read_write()
+            Acl.public_read()
+            Acl.authenticated_read()
+            Acl.private()
+
+        Example:
+            canned_acl = minio.get_bucket_acl('foo')
+            if canned_acl == Acl.private():
+                # do something
+
+        :param bucket: Bucket to set
+        :param acl: ACL to set
+        :return: None
+        """
         is_non_empty_string('bucket', bucket)
 
         method = 'PUT'
         url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
 
-        md5_sum = get_md5_as_base64('')
+        md5_sum = _get_md5_as_base64('')
 
         headers = {
             'x-amz-acl': acl,
@@ -176,6 +266,12 @@ class Minio:
             parse_error(response)
 
     def drop_all_incomplete_uploads(self, bucket):
+        """
+        Drop all incomplete uploads in a bucket.
+
+        :param bucket: Bucket to drop all incomplete uploads.
+        :return: None
+        """
         # check bucket
         is_non_empty_string('bucket', bucket)
 
@@ -187,6 +283,21 @@ class Minio:
 
     # Object Level
     def get_object(self, bucket, key, offset=None, length=None):
+        """
+        Retrieves an object from a bucket.
+
+        Optionally takes an offset and length of data to retrieve.
+
+        Examples:
+            my_object = minio.get_object('foo', 'bar')
+            my_partial_object = minio.get_object('foo', 'bar', 2, 4)
+
+        :param bucket: Bucket to retrieve object from
+        :param key: Key to retrieve
+        :param offset: Optional offset to retrieve bytes from
+        :param length: Optional number of bytes to retrieve
+        :return: An iterable containing a byte stream of the data.
+        """
         is_non_empty_string('bucket', bucket)
         is_non_empty_string('key', key)
         if offset is not None:
@@ -220,6 +331,26 @@ class Minio:
         return response.iter_content()
 
     def put_object(self, bucket, key, length, data, content_type="application/octet-stream"):
+        """
+        Add a new object to the object storage server.
+
+        Data can either be a string, byte array, or reader (e.g. open('foo'))
+
+        Examples:
+            minio.put('foo', 'bar', 11, 'hello world')
+
+            minio.put('foo', 'bar', 11, b'hello world', 'text/plain')
+
+            with open('hello.txt', 'rb') as data:
+                minio.put('foo', 'bar', 11, b'hello world', 'text/plain')
+
+        :param bucket: Bucket of new object.
+        :param key: Key of new object.
+        :param length: Total length of object. Used to ensure complete upload and chunking size.
+        :param data: Contents to upload.
+        :param content_type: mime type of object as a string.
+        :return: None
+        """
         is_non_empty_string('bucket', bucket)
         is_non_empty_string('key', key)
         is_positive_int('length', length)
@@ -241,11 +372,55 @@ class Minio:
         self._stream_put_object(bucket, key, length, data, content_type)
 
     def list_objects(self, bucket, prefix=None, recursive=True):
+        """
+        List objects in the given bucket.
+
+
+        Objects may be filtered by a given prefix, delimited without recursion, or both.
+
+        Examples:
+            objects = minio.list_objects('foo')
+            for current_object in objects:
+                print current_object
+            # hello
+            # hello/world/1
+            # hello/world/2
+            # world/wide/web
+
+            objects = minio.list_objects('foo', prefix='hello/')
+            for current_object in objects:
+                print current_object
+            # hello/world/1
+            # hello/world/2
+
+            objects = minio.list_objects('foo', recursive=False)
+            for current_object in objects:
+                print current_object
+            # hello/
+            # world/
+
+            objects = minio.list_objects('foo', prefix='hello/', recursive=False)
+            for current_object in objects:
+                print current_object
+            # hello/world/
+
+        :param bucket: Bucket to list objects from
+        :param prefix: String specifying what all objects returned must begin with
+        :param recursive: Boolean specifying whether to return as flat namespace or delimited by '/'
+        :return: An iterator of objects in alphabetical order.
+        """
         is_non_empty_string('bucket', bucket)
         return ListObjectsIterator(self._scheme, self._location, bucket, prefix, recursive, self._access_key,
                                    self._secret_key)
 
     def stat_object(self, bucket, key):
+        """
+        Check if an object exists.
+
+        :param bucket: Bucket of object.
+        :param key: Key of object
+        :return: True if object exists and the user has access.
+        """
         is_non_empty_string('bucket', bucket)
         is_non_empty_string('key', key)
 
@@ -269,6 +444,13 @@ class Minio:
         return Object(bucket, key, content_type=content_type, last_modified=last_modified, etag=etag, size=size)
 
     def remove_object(self, bucket, key):
+        """
+        Remove an object from the bucket.
+
+        :param bucket: Bucket of object to remove
+        :param key: Key of object to remove
+        :return: None
+        """
         is_non_empty_string('bucket', bucket)
         is_non_empty_string('key', key)
 
@@ -285,6 +467,13 @@ class Minio:
             parse_error(response)
 
     def drop_incomplete_upload(self, bucket, key):
+        """
+        Drops all in complete uploads for a given bucket and key.
+
+        :param bucket: Bucket to drop incomplete uploads
+        :param key: Key of object to drop incomplete uploads of
+        :return: None
+        """
         is_non_empty_string('bucket', bucket)
         is_non_empty_string('key', key)
 
@@ -312,8 +501,8 @@ class Minio:
         else:
             url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
 
-        content_sha256 = get_sha256(data)
-        content_md5 = get_md5_as_base64(data)
+        content_sha256 = _get_sha256(data)
+        content_md5 = _get_md5_as_base64(data)
 
         headers = {
             'Content-Length': length,
@@ -361,7 +550,7 @@ class Minio:
             current_data = data.read(part_size)
             if len(current_data) == 0:
                 break
-            current_data_sha256 = get_sha256(current_data)
+            current_data_sha256 = _get_sha256(current_data)
             previously_uploaded_part = None
             if current_part_number in uploaded_parts:
                 previously_uploaded_part = uploaded_parts[current_part_number]
@@ -401,7 +590,7 @@ class Minio:
         }
         url = get_target_url(self._scheme, self._location, bucket=bucket, key=key, query=query)
 
-        md5_sum = get_md5_as_base64(b'')
+        md5_sum = _get_md5_as_base64(b'')
         headers = {
             'Content-MD5': md5_sum
         }
@@ -424,8 +613,8 @@ class Minio:
         headers = {}
 
         data = generate_complete_multipart_upload(etags)
-        data_sha256 = get_sha256(data)
-        data_md5 = get_md5_as_base64(data)
+        data_sha256 = _get_sha256(data)
+        data_md5 = _get_md5_as_base64(data)
 
         headers['Content-Length'] = len(data)
         headers['Content-Type'] = 'application/xml'
@@ -440,16 +629,22 @@ class Minio:
             parse_error(response)
 
 
-def get_sha256(content):
+def _get_sha256(content):
     hasher = hashlib.sha256()
     hasher.update(content)
     return hasher.digest()
 
 
-def get_md5_as_base64(content):
+def _get_md5_as_base64(content):
     if isinstance(content, basestring):
         content = content.encode('utf-8')
     hasher = hashlib.md5()
     hasher.update(content)
     content_hash = hasher.digest()
     return binascii.b2a_base64(content_hash).strip().decode('utf-8')
+
+
+def _calculate_part_size(length):
+    minimum_part_size = 5 * 1024 * 1024
+    proposed_part_size = length / 9999
+    return max(minimum_part_size, proposed_part_size)

@@ -17,16 +17,20 @@ __author__ = 'minio'
 class Acl(object):
     @staticmethod
     def public_read_write():
+        """ Public Read Write ACL """
         return 'public-read-write'
 
     @staticmethod
     def public_read():
+        """ Public Read ACL"""
         return 'public-read'
 
     @staticmethod
     def authenticated_read():
+        """ Authenticated Users Read """
         return 'authenticated-read'
 
     @staticmethod
     def private():
+        """ Owner Read Write ACL"""
         return 'private'
