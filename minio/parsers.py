@@ -20,8 +20,7 @@ def parse_list_buckets(data):
                     if attribute.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Name':
                         name = attribute.text
                     if attribute.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}CreationDate':
-                        creation_date = datetime.strptime(attribute.text, '%Y-%m-%dT%H:%M:%S.%fZ')
-                        creation_date = pytz.utc.localize(creation_date)
+                        creation_date = _parse_date(attribute.text)
                 bucket_list.append(Bucket(name, creation_date))
     return bucket_list
 
@@ -84,7 +83,7 @@ def parse_list_objects(data, bucket):
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
                     key = content.text
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
-                    last_modified = content.text
+                    last_modified = _parse_date(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
                     etag = content.text
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
@@ -143,7 +142,7 @@ def parse_uploaded_parts(data, bucket, key, upload_id):
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
                     etag = content.text
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
-                    last_modified = content.text
+                    last_modified = _parse_date(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
                     size = content.text
             parts.append(UploadPart(bucket, key, upload_id, part_number, etag, last_modified, size))
@@ -231,3 +230,8 @@ class UploadPart(object):
         self.etag = etag
         self.last_modified = last_modified
         self.size = size
+
+def _parse_date(date_string):
+    parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
+    localized_time = pytz.utc.localize(parsed_date)
+    return localized_time
