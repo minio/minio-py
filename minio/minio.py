@@ -294,8 +294,8 @@ class Minio:
 
         :param bucket: Bucket to retrieve object from
         :param key: Key to retrieve
-        :param offset: Optional offset to retrieve bytes from
-        :param length: Optional number of bytes to retrieve
+        :param offset: Optional offset to retrieve bytes from. Must be >= 0
+        :param length: Optional number of bytes to retrieve. Must be > 0
         :return: An iterable containing a byte stream of the data.
         """
         is_non_empty_string('bucket', bucket)
@@ -303,15 +303,15 @@ class Minio:
         if offset is not None:
             is_positive_int('offset', offset, True)
         if length is not None:
-            is_positive_int('length', length, True)
+            is_positive_int('length', length)
 
         request_range = None
         if offset is not None and length is not None:
-            request_range = str(offset) + "-" + str(offset + length)
+            request_range = str(offset) + "-" + str(offset + length - 1)
         if offset is not None and length is None:
             request_range = str(offset) + "-"
         if offset is None and length is not None:
-            request_range = "-" + str(length)
+            request_range = "-" + str(length-1)
 
         method = 'GET'
         url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
