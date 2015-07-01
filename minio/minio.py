@@ -17,6 +17,7 @@ from io import RawIOBase
 import io
 import platform
 from urlparse import urlparse
+import binascii
 
 import requests
 
@@ -81,6 +82,8 @@ class Minio:
             headers['Content-Length'] = str(len(content))
 
         content_sha256 = get_sha256(content)
+        content_md5 = get_md5_as_base64(content)
+        headers['Content-MD5'] = content_md5
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key, content_hash=content_sha256)
@@ -156,8 +159,12 @@ class Minio:
 
         method = 'PUT'
         url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
+
+        md5_sum = get_md5_as_base64('')
+
         headers = {
-            'x-amz-acl': acl
+            'x-amz-acl': acl,
+            'Content-MD5': md5_sum
         }
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
@@ -291,10 +298,12 @@ class Minio:
             url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
 
         content_sha256 = get_sha256(data)
+        content_md5 = get_md5_as_base64(data)
 
         headers = {
             'Content-Length': length,
-            'Content-Type': content_type
+            'Content-Type': content_type,
+            'Content-MD5': content_md5
         }
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
@@ -376,7 +385,11 @@ class Minio:
             'uploads': None
         }
         url = get_target_url(self._scheme, self._location, bucket=bucket, key=key, query=query)
-        headers = {}
+
+        md5_sum = get_md5_as_base64(b'')
+        headers = {
+            'Content-MD5': md5_sum
+        }
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
@@ -397,9 +410,11 @@ class Minio:
 
         data = generate_complete_multipart_upload(etags)
         data_sha256 = get_sha256(data)
+        data_md5 = get_md5_as_base64(data)
 
         headers['Content-Length'] = len(data)
         headers['Content-Type'] = 'application/xml'
+        headers['Content-MD5'] = data_md5
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key, content_hash=data_sha256)
@@ -414,3 +429,12 @@ def get_sha256(content):
     hasher = hashlib.sha256()
     hasher.update(content)
     return hasher.digest()
+
+
+def get_md5_as_base64(content):
+    if isinstance(content, basestring):
+        content = content.encode('utf-8')
+    hasher = hashlib.md5()
+    hasher.update(content)
+    content_hash = hasher.digest()
+    return binascii.b2a_base64(content_hash).strip().decode('utf-8')
