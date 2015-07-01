@@ -311,7 +311,7 @@ class Minio:
         if offset is not None and length is None:
             request_range = str(offset) + "-"
         if offset is None and length is not None:
-            request_range = "-" + str(length-1)
+            request_range = "-" + str(length - 1)
 
         method = 'GET'
         url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
