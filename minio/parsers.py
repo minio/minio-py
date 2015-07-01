@@ -231,6 +231,7 @@ class UploadPart(object):
         self.last_modified = last_modified
         self.size = size
 
+
 def _parse_date(date_string):
     parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
     localized_time = pytz.utc.localize(parsed_date)
