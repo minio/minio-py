@@ -52,8 +52,10 @@ def is_non_empty_string(name, input_string):
         raise ValueError(name)
 
 
-def is_positive_int(name, input_int):
+def is_positive_int(name, input_int, include_zero=False):
     if not isinstance(input_int, int):
         raise TypeError(name)
-    if input_int <= 0:
+    if include_zero and input_int < 0:
+        raise ValueError(name)
+    if not include_zero and input_int <= 0:
         raise ValueError(name)
