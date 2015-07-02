@@ -52,7 +52,7 @@ class PutObjectIntegration(TestCase):
         with open(file_name, 'rb') as data_file:
             client.put_object(bucket, 'large_obj2', file_stat.st_size, data_file)
 
-    def put_large_file_test(self):
+    def put_large_file_with_resume_test(self):
         file_name = '11mb'
         file_stat = os.stat(file_name)
         with open(file_name, 'rb') as data_file:
