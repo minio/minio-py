@@ -14,6 +14,8 @@
 
 # __author__ = 'minio'
 #
-# __version__ = '0.0.1'
-#
 # __all__ = ['Minio', 'foo', 'exceptions']
+
+from .minio import Minio
+from .acl import Acl
+from .parsers import Bucket, Object, ResponseError
