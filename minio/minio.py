@@ -346,7 +346,7 @@ class Minio:
 
         :param bucket: Bucket of new object.
         :param key: Key of new object.
-        :param length: Total length of object. Used to ensure complete upload and chunking size.
+        :param length: Total length of object. Used to ensure complete upload and calculate upload part size.
         :param data: Contents to upload.
         :param content_type: mime type of object as a string.
         :return: None
