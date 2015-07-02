@@ -57,9 +57,9 @@ class PutObjectIntegration(TestCase):
         file_stat = os.stat(file_name)
         with open(file_name, 'rb') as data_file:
             try:
-                client.put_object(bucket, 'large_obj2', file_stat.st_size - (2 * 1024 * 1024), data_file)
+                client.put_object(bucket, 'large_obj3', file_stat.st_size - (2 * 1024 * 1024), data_file)
             except ValueError:
                 pass
 
         with open(file_name, 'rb') as data_file:
-            client.put_object(bucket, 'large_obj2', file_stat.st_size, data_file)
+            client.put_object(bucket, 'large_obj3', file_stat.st_size, data_file)

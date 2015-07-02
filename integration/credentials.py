@@ -29,7 +29,11 @@ class Credentials(object):
         return self._json['host']
 
     def access_key(self):
-        return self._json['accesskey']
+        if 'accesskey' in self._json:
+            return self._json['accesskey']
+        return None
 
     def secret_key(self):
-        return self._json['secretkey']
+        if 'secretkey' in self._json:
+            return self._json['secretkey']
+        return None
