@@ -16,7 +16,7 @@ from minio.minio import Minio
 __author__ = 'minio'
 
 client = Minio('https://play.client.io:9000')
-if client.bucket_exists('hello'):
+if client.bucket_exists('my_bucket'):
     print 'Bucket exists'
 else:
     print 'Bucket does not exist'
