@@ -13,9 +13,9 @@ $ pip install minio
 
 ```python
 # Instantiate a client
-client = minio.Minio('https://s3.amazonaws.com', 
-                     access_key='access_key', 
-                     secret_key='secret_key')
+client = Minio('https://s3.amazonaws.com', 
+                access_key='access_key', 
+                secret_key='secret_key')
                      
 # Make a new bucket
 client.make_bucket('my_bucket')
