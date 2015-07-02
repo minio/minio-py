@@ -13,6 +13,8 @@
 # limitations under the License.
 import cgi
 import collections
+import binascii
+import hashlib
 
 __author__ = 'minio'
 
@@ -59,3 +61,33 @@ def is_positive_int(name, input_int, include_zero=False):
         raise ValueError(name)
     if not include_zero and input_int <= 0:
         raise ValueError(name)
+
+
+def get_sha256(content):
+    if isinstance(content, basestring):
+        content = content.encode('utf-8')
+    hasher = hashlib.sha256()
+    hasher.update(content)
+    return hasher.digest()
+
+
+def get_md5(content):
+    if isinstance(content, basestring):
+        content = content.encode('utf-8')
+    hasher = hashlib.md5()
+    hasher.update(content)
+    return hasher.digest()
+
+
+def convert_binary_to_base64(content):
+    return binascii.b2a_base64(content).strip().decode('utf-8')
+
+
+def convert_binary_to_hex(content):
+    return binascii.hexlify(content)
+
+
+def calculate_part_size(length):
+    minimum_part_size = 5 * 1024 * 1024
+    proposed_part_size = length / 9999
+    return max(minimum_part_size, proposed_part_size)

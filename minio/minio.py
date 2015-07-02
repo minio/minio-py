@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import hashlib
 from io import RawIOBase
 import io
 import platform
 from urlparse import urlparse
-import binascii
 
 import requests
 
 from .generators import ListObjectsIterator, ListIncompleteUploads, ListUploadParts
-from .helpers import get_target_url, is_non_empty_string, is_positive_int
+from .helpers import get_target_url, is_non_empty_string, is_positive_int, get_sha256, convert_binary_to_base64, \
+    get_md5, calculate_part_size, convert_binary_to_hex
 from .parsers import parse_list_buckets, parse_acl, parse_error, Object, parse_new_multipart_upload
 from .region import get_region
 from .signer import sign_v4
@@ -118,8 +117,8 @@ class Minio:
             content = bucket_constraint(region)
             headers['Content-Length'] = str(len(content))
 
-        content_sha256 = _get_sha256(content)
-        content_md5 = _get_md5_as_base64(content)
+        content_sha256 = get_sha256(content)
+        content_md5 = convert_binary_to_base64(get_md5(content))
         headers['Content-MD5'] = content_md5
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
@@ -250,7 +249,7 @@ class Minio:
         method = 'PUT'
         url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
 
-        md5_sum = _get_md5_as_base64('')
+        md5_sum = convert_binary_to_base64(get_md5(''))
 
         headers = {
             'x-amz-acl': acl,
@@ -504,8 +503,8 @@ class Minio:
         else:
             url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
 
-        content_sha256 = _get_sha256(data)
-        content_md5 = _get_md5_as_base64(data)
+        content_sha256 = get_sha256(data)
+        content_md5 = convert_binary_to_base64(get_md5(data))
 
         headers = {
             'Content-Length': length,
@@ -530,7 +529,7 @@ class Minio:
                     data = io.BytesIO(data)
                 data = io.BufferedReader(data)
 
-        part_size = _calculate_part_size(length)
+        part_size = calculate_part_size(length)
 
         current_uploads = ListIncompleteUploads(self._scheme, self._location, bucket, key, access_key=self._access_key,
                                                 secret_key=self._secret_key)
@@ -553,11 +552,11 @@ class Minio:
             current_data = data.read(part_size)
             if len(current_data) == 0:
                 break
-            current_data_sha256 = _get_sha256(current_data)
+            current_data_md5 = convert_binary_to_hex(get_md5(current_data))
             previously_uploaded_part = None
             if current_part_number in uploaded_parts:
                 previously_uploaded_part = uploaded_parts[current_part_number]
-            if previously_uploaded_part is None or previously_uploaded_part.etag != current_data_sha256:
+            if previously_uploaded_part is None or previously_uploaded_part.etag != current_data_md5:
                 etag = self._do_put_object(bucket=bucket, key=key, length=len(current_data), data=current_data,
                                            content_type=content_type, upload_id=upload_id,
                                            part_number=current_part_number)
@@ -593,7 +592,7 @@ class Minio:
         }
         url = get_target_url(self._scheme, self._location, bucket=bucket, key=key, query=query)
 
-        md5_sum = _get_md5_as_base64(b'')
+        md5_sum = convert_binary_to_base64(get_md5(b''))
         headers = {
             'Content-MD5': md5_sum
         }
@@ -616,8 +615,8 @@ class Minio:
         headers = {}
 
         data = generate_complete_multipart_upload(etags)
-        data_sha256 = _get_sha256(data)
-        data_md5 = _get_md5_as_base64(data)
+        data_sha256 = get_sha256(data)
+        data_md5 = convert_binary_to_base64(get_md5(data))
 
         headers['Content-Length'] = len(data)
         headers['Content-Type'] = 'application/xml'
@@ -630,24 +629,3 @@ class Minio:
 
         if response.status_code != 200:
             parse_error(response)
-
-
-def _get_sha256(content):
-    hasher = hashlib.sha256()
-    hasher.update(content)
-    return hasher.digest()
-
-
-def _get_md5_as_base64(content):
-    if isinstance(content, basestring):
-        content = content.encode('utf-8')
-    hasher = hashlib.md5()
-    hasher.update(content)
-    content_hash = hasher.digest()
-    return binascii.b2a_base64(content_hash).strip().decode('utf-8')
-
-
-def _calculate_part_size(length):
-    minimum_part_size = 5 * 1024 * 1024
-    proposed_part_size = length / 9999
-    return max(minimum_part_size, proposed_part_size)
