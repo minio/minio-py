@@ -38,5 +38,6 @@ setup(
     scripts=[],
     setup_requires=['nose>=1.0'],
     test_suite='tests',
-    use_2to3=True
+    use_2to3=True,
+    license='ALv2'
 )
