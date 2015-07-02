@@ -28,7 +28,7 @@ setup(
     description='Minimal Object Storage Library for Python',
     author='Minio Inc.',
     url='https://github.com/minio/minio-py',
-    download_url='git+https://github.com/minio/minio-py.git',
+    download_url='https://github.com/minio/minio-py.git',
     author_email='dev@minio.io',
     version='0.0.1',
     install_requires=['requests', 'pytz'],

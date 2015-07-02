@@ -17,7 +17,6 @@ import mock
 from nose.tools import raises
 
 from minio import minio
-from minio.exceptions import InvalidBucketNameException
 from minio.parsers import ResponseError
 from .minio_mocks import MockResponse
 from .helpers import generate_error
@@ -56,7 +55,6 @@ class GetObjectTest(TestCase):
             actual_object.append(object_chunk)
 
     @mock.patch('requests.get')
-    @raises(InvalidBucketNameException)
     def test_get_object_invalid_name(self, mock_request):
         mock_request.return_value = MockResponse('GET', 'http://localhost:9000/hello', {}, 400)
         client = minio.Minio('http://localhost:9000')
