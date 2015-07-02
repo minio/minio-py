@@ -26,7 +26,7 @@ from minio.signer import generate_canonical_request, generate_string_to_sign, ge
 __author__ = 'minio'
 
 empty_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-dt = datetime(2015, 06, 20, 1, 2, 3, 0, pytz.utc)
+dt = datetime(2015, 6, 20, 1, 2, 3, 0, pytz.utc)
 
 
 class CanonicalRequestTest(TestCase):
