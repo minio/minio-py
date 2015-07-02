@@ -43,7 +43,7 @@ for object_chunk in object_data:
 
 [make_bucket(bucket, acl=Acl.private())](examples/make_bucket.py)
 
-[list_buckets() : Stream](examples/list_buckets.py)
+[list_buckets()](examples/list_buckets.py)
 
 [bucket_exists(bucket)](examples/bucket_exists.py)
 
@@ -57,11 +57,11 @@ for object_chunk in object_data:
 
 ### Object
 
-[get_object(bucket, key, offset=None, length=None) Stream](examples/get_object.py)
+[get_object(bucket, key, offset=None, length=None)](examples/get_object.py)
 
 [put_object(bucket, key, length, data, content_type='application/octet_stream')](examples/put_object.py)
 
-[list_objects(bucket, prefix=None, recursive=True) : Stream](examples/list_objects.py)
+[list_objects(bucket, prefix=None, recursive=True)](examples/list_objects.py)
 
 [stat_object(bucket, key)](examples/stat_object.py)
 
