@@ -166,7 +166,10 @@ def parse_new_multipart_upload(data):
 def parse_error(response, url=None):
     if len(response.content) == 0:
         if response.status_code == 404:
-            raise ResponseError('NotFound', '404: Not Found', response.headers['x-amz-request-id'], None, url)
+            amz_request_id = None
+            if 'x-amz-request-id' in response.headers:
+                amz_request_id = response.headers['x-amz-request-id']
+            raise ResponseError('NotFound', '404: Not Found', amz_request_id, None, url)
 
     code = None
     message = None
