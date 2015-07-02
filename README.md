@@ -12,17 +12,17 @@ $ pip install minio
 ## Example
 
 ```python
-client = minio.Minio(‘https://s3.amazonaws.com’, access_key=’access_key’, secret_key=’secret_key’)
-client.make_bucket(‘my_bucket’)
+client = minio.Minio('https://s3.amazonaws.com', access_key='access_key', secret_key='secret_key')
+client.make_bucket('my_bucket')
 
-file_stat = os.stat(‘data.json’)
-with open(‘data.json’, 'rb') as data_file:
-    client.put_object(‘my_bucket’, 'data.json', file_stat.st_size, data_file)
+file_stat = os.stat('data.json')
+with open('data.json', 'rb') as data_file:
+    client.put_object('my_bucket', 'data.json', file_stat.st_size, data_file)
 
 
 objects = client.list_objects('my_bucket')
 for obj in objects:
-    print ‘object:‘, obj.key, obj.last_modified
+    print 'object:', obj.key, obj.last_modified
 
 object_data = client.get_object(bucket, 'hello/world')
 for object_chunk in object_data:
