@@ -12,29 +12,20 @@ $ pip install minio
 ## Example
 
 ```python
+#!/usr/bin/env python
+
+from minio.minio import Minio
+
 # Instantiate a client
 client = Minio('https://s3.amazonaws.com', 
                 access_key='access_key', 
                 secret_key='secret_key')
                      
-# Make a new bucket
-client.make_bucket('my_bucket')
+# List buckets
+buckets = client.list_buckets()
+for bucket in buckets:
+    print 'bucket:', bucket.name, bucket.creation_date
 
-# Upload a file
-file_stat = os.stat('data.json')
-with open('data.json', 'rb') as data_file:
-    client.put_object('my_bucket', 'data.json', file_stat.st_size, data_file)
-
-
-# List objects on server
-objects = client.list_objects('my_bucket')
-for obj in objects:
-    print 'object:', obj.key, obj.last_modified
-
-# Get an object and print each chunk to console
-object_data = client.get_object(bucket, 'hello/world')
-for object_chunk in object_data:
-    print object_chunk
 ```
 
 ## Examples:
