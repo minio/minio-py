@@ -11,16 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from minio.acl import Acl
+
 from minio.minio import Minio
 
 __author__ = 'minio'
 
-client = Minio('https://play.client.io:9000')
+client = Minio('https://play.minio.io:9000')
 
-# Set private ACL
-client.set_bucket_acl('my_bucket', Acl.private())
-
-# Print current ACL
-acl = client.get_bucket_acl('my_bucket')
-print acl
+# Remove a bucket
+client.remove_object('my_bucket', 'my_key')
