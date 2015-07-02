@@ -364,9 +364,12 @@ class Minio:
         if content_type == '':
             raise ValueError('content_type')
 
+        if isinstance(data, basestring):
+            data = data.encode('utf-8')
+
         if length <= 5 * 1024 * 1024:
             # we reference 'file' for python 2.7 compatibility, RawIOBase for 3.X
-            if type(data).__name__ == 'file' or isinstance(data, RawIOBase):
+            if type(data).__name__ == 'file' or isinstance(data, io.BufferedReader):
                 data = data.read(length)
             return self._do_put_object(bucket, key, length, data, content_type)
         self._stream_put_object(bucket, key, length, data, content_type)
