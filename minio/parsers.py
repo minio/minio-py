@@ -86,6 +86,7 @@ def parse_list_objects(data, bucket):
                     last_modified = _parse_date(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
                     etag = content.text
+                    etag = etag.replace('"', '')
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
                     size = content.text
             objects.append(Object(bucket, key, last_modified, etag, size))
@@ -141,6 +142,7 @@ def parse_uploaded_parts(data, bucket, key, upload_id):
                     part_number = int(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
                     etag = content.text
+                    etag = etag.replace('"', '')
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
                     last_modified = _parse_date(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
