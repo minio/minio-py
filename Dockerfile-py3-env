@@ -1,5 +1,0 @@
-FROM minio-py3
-RUN 2to3 -w .
-#RUN apt-get update && apt-get install -y vim-nox && apt-get clean
-ADD credentials.json /root/credentials.json
-CMD /bin/bash
