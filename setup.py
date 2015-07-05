@@ -39,6 +39,7 @@ setup(
     description='Minimal Object Storage Library for Python',
     author='Minio, Inc.',
     url='https://github.com/minio/minio-py',
+    long_description=open('README.md').read(),
     download_url='https://github.com/minio/minio-py',
     author_email='dev@minio.io',
     version=get_version(),
@@ -64,5 +65,4 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    long_description=open('README.md').read(),
 )

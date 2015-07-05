@@ -16,7 +16,7 @@ from minio.minio import Minio
 
 __author__ = 'minio'
 
-client = Minio('https://play.minio.io:9000')
+client = Minio('https://s3.amazonaws.com')
 
 # Remove a bucket
 client.remove_bucket('my_bucket')

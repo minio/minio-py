@@ -14,7 +14,12 @@
 import hashlib
 import hmac
 from unittest import TestCase
-from urlparse import urlparse
+
+try:
+    import urllib.parse as compat_urlparse
+except ImportError: # Python 2
+    import urlparse as compat_urlparse
+
 from datetime import datetime
 
 from nose.tools import eq_
@@ -31,7 +36,7 @@ dt = datetime(2015, 6, 20, 1, 2, 3, 0, pytz.utc)
 
 class CanonicalRequestTest(TestCase):
     def test_simple_request(self):
-        url = urlparse('http://localhost:9000/hello')
+        url = compat_urlparse('http://localhost:9000/hello')
         expected_signed_headers = ['x-amz-content-sha256', 'x-amz-date']
         expected_request_array = ['PUT', '/hello', '', 'x-amz-content-sha256:' + empty_hash, 'x-amz-date:dateString',
                                   '', ';'.join(expected_signed_headers),

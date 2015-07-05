@@ -15,7 +15,11 @@
 from io import RawIOBase
 import io
 import platform
-from urlparse import urlparse
+
+try:
+    import urllib.parse as compat_urlparse
+except ImportError: # Python 2
+    import urlparse as compat_urlparse
 
 import requests
 
@@ -47,7 +51,7 @@ class Minio:
         """
         is_non_empty_string('url', url)
 
-        url_components = urlparse(url)
+        url_components = compat_urlparse(url)
 
         is_non_empty_string('url scheme', url_components.scheme)
 

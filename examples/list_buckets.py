@@ -16,7 +16,7 @@ from minio.minio import Minio
 
 __author__ = 'minio'
 
-client = Minio('https://play.client.io:9000')
+client = Minio('https://s3.amazonaws.com')
 
 buckets = client.list_buckets()
 
