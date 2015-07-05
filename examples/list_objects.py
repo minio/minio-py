@@ -16,7 +16,7 @@ from minio.minio import Minio
 
 __author__ = 'minio'
 
-client = Minio('https://play.client.io:9000')
+client = Minio('https://s3.amazonaws.com')
 
 # List all objects in bucket
 objects = client.list_objects('my_bucket')

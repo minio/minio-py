@@ -17,7 +17,7 @@ from minio.minio import Minio
 
 __author__ = 'minio'
 
-client = Minio('https://play.minio.io:9000')
+client = Minio('https://s3.amazonaws.com')
 
 # Put a new object
 client.put_object('my_bucket', 'my_key', 11, 'hello world', content_type='text/plain')
