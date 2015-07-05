@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# __author__ = 'minio'
-#
-# __all__ = ['Minio', 'foo', 'exceptions']
-
 from .minio import Minio
 from .acl import Acl
 from .parsers import Bucket, Object, ResponseError
+
+__author__ = "Minio, Inc."
+__version__ = "0.1.0"

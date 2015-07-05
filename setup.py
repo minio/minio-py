@@ -21,23 +21,48 @@ Minio Python is a library for accessing S3 compatible object storage servers.
 It is designed to be easy to use and minimal, exposing only the most used functionality.
 """
 
-from setuptools import setup
+import re
+import os
+import sys
+
+from setuptools import setup, find_packages
+
+ROOT = os.path.dirname(__file__)
+VERSION_RE = re.compile(r'''__version__ = ['"]([0-9.]+)['"]''')
+
+def get_version():
+    init = open(os.path.join(ROOT, 'minio', '__init__.py')).read()
+    return VERSION_RE.search(init).group(1)
 
 setup(
     name='minio',
     description='Minimal Object Storage Library for Python',
-    author='Minio Inc.',
+    author='Minio, Inc.',
     url='https://github.com/minio/minio-py',
-    download_url='https://github.com/minio/minio-py.git',
+    download_url='https://github.com/minio/minio-py',
     author_email='dev@minio.io',
-    version='0.1.0',
+    version=get_version(),
     install_requires=['requests', 'pytz'],
     tests_require=['nose', 'mock'],
-    packages=['minio', 'tests'],
-    py_modules=['minio', 'tests'],
+    packages=find_packages(exclude=['tests*']),
     scripts=[],
     setup_requires=['nose>=1.0'],
     test_suite='tests',
     use_2to3=True,
-    license='ALv2'
+    license='Apache License 2.0',
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Developers',
+        'Natural Language :: English',
+        'License :: OSI Approved :: Apache Software License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+    ],
+    long_description=open('README.md').read(),
 )
