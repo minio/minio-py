@@ -2,8 +2,7 @@
 
 ## Install
 
-This library is tested against both python 2.7 and python 3.4. The recommended technique for installing this package
-is through pip.
+The recommended technique for installing this package is through pip.
 
 ```sh
 $ pip install minio
@@ -17,10 +16,10 @@ $ pip install minio
 from minio.minio import Minio
 
 # Instantiate a client
-client = Minio('https://s3.amazonaws.com', 
-                access_key='access_key', 
+client = Minio('https://s3.amazonaws.com',
+                access_key='access_key',
                 secret_key='secret_key')
-                     
+
 # List buckets
 buckets = client.list_buckets()
 for bucket in buckets:
@@ -67,3 +66,8 @@ for bucket in buckets:
 ## Contribute
 
 [Contributors Guide](./CONTRIBUTING.md)
+
+[![PYPI](https://img.shields.io/pypi/v/minio.svg)](https://pypi.python.org/pypi/minio)
+[![PYPI](https://img.shields.io/pypi/l/minio.svg)](https://pypi.python.org/pypi/minio)
+[![PYPI](https://img.shields.io/pypi/pyversions/minio.svg)](https://pypi.python.org/pypi/minio)
+[![PYPI](https://img.shields.io/pypi/dm/minio.svg)](https://pypi.python.org/pypi/minio)
