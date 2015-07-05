@@ -16,7 +16,7 @@ from minio.minio import Minio
 
 __author__ = 'minio'
 
-client = Minio('https://play.minio.io:9000')
+client = Minio('https://s3.amazonaws.com')
 
 # Make a new bucket
 client.make_bucket('my_new_bucket')

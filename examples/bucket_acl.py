@@ -16,7 +16,7 @@ from minio.minio import Minio
 
 __author__ = 'minio'
 
-client = Minio('https://play.client.io:9000')
+client = Minio('https://s3.amazonaws.com')
 
 # Set private ACL
 client.set_bucket_acl('my_bucket', Acl.private())

@@ -13,7 +13,12 @@
 # limitations under the License.
 import hashlib
 import hmac
-from urlparse import urlparse
+
+try:
+    import urllib.parse as compat_urlparse
+except ImportError: # Python 2
+    import urlparse as compat_urlparse
+
 from datetime import datetime
 import binascii
 

@@ -15,7 +15,7 @@ from minio.minio import Minio
 
 __author__ = 'minio'
 
-client = Minio('https://play.client.io:9000')
+client = Minio('https://s3.amazonaws.com')
 
 # Drop incomplete uploads for a given bucket and key
 client.drop_incomplete_upload('my_bucket', 'my_key')
