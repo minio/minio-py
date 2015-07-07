@@ -60,7 +60,7 @@ class Minio:
         self._user_agent = 'minio-py/' + '0.0.1' + ' (' + platform.system() + '; ' + platform.machine() + ')'
 
     # Client level
-    def add_user_agent(self, name, version, parameters):
+    def set_user_agent(self, name, version, parameters):
         """
         Adds an entry to the list of user agents.
 
