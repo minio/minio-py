@@ -198,7 +198,7 @@ class ListUploadParts:
             'uploadId': self._upload_id
         }
         if self._part_marker is not None:
-            query['part-marker'] = self._part_marker
+            query['part-number-marker'] = self._part_marker
 
         url = get_target_url(self._scheme, self._location, bucket=self._bucket, key=self._key, query=query)
 
