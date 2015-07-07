@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from minio.minio import Minio
+from minio import Minio
 
 __author__ = 'minio'
 
-client = Minio('https://s3.amazonaws.com')
+client = Minio('https://s3.amazonaws.com',
+               access_key='YOUR-ACCESSKEYID',
+               secret_key='YOUR-SECRETACCESSKEY')
 
 # Drop incomplete uploads for a given bucket and key
 client.drop_incomplete_upload('my_bucket', 'my_key')
