@@ -16,6 +16,8 @@ import collections
 import binascii
 import hashlib
 
+from .compat import compat_str_type
+
 __author__ = 'minio'
 
 
@@ -47,7 +49,7 @@ def get_target_url(scheme, location, bucket=None, key=None, query=None):
 
 
 def is_non_empty_string(name, input_string):
-    if not isinstance(input_string, basestring):
+    if not isinstance(input_string, compat_str_type):
         raise TypeError(name)
     input_string = input_string.strip()
     if input_string == '':
@@ -64,7 +66,7 @@ def is_positive_int(name, input_int, include_zero=False):
 
 
 def get_sha256(content):
-    if isinstance(content, basestring):
+    if isinstance(content, compat_str_type):
         content = content.encode('utf-8')
     hasher = hashlib.sha256()
     hasher.update(content)
@@ -72,7 +74,7 @@ def get_sha256(content):
 
 
 def get_md5(content):
-    if isinstance(content, basestring):
+    if isinstance(content, compat_str_type):
         content = content.encode('utf-8')
     hasher = hashlib.md5()
     hasher.update(content)

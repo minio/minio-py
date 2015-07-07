@@ -38,14 +38,14 @@ class GetObjectIntegration(TestCase):
         collected_data = []
         for d in data:
             collected_data.append(d)
-        print ''.join(str(collected_data))
+        print(''.join(str(collected_data)))
 
     def get_object_range_test(self):
         data = client.get_object(bucket, 'hello/world', 2, 4)
         collected_data = []
         for d in data:
             collected_data.append(d)
-        print 'object range:', ''.join(str(collected_data))
+        print('object range:', ''.join(str(collected_data)))
 
     @raises(ResponseError)
     def get_nonexistent_object_test(self):

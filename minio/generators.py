@@ -38,6 +38,9 @@ class ListObjectsIterator:
         return self
 
     def next(self):
+        return self.__next__()
+
+    def __next__(self):
         # if complete, end iteration
         if self._complete:
             raise StopIteration
@@ -100,6 +103,9 @@ class ListIncompleteUploads:
         return self
 
     def next(self):
+        return self.__next__()
+
+    def __next__(self):
         # if complete, end iteration
         if self._complete:
             raise StopIteration
@@ -170,6 +176,9 @@ class ListUploadParts:
         return self
 
     def next(self):
+        return self.__next__()
+
+    def __next__(self):
         # if complete, end iteration
         if self._complete:
             raise StopIteration

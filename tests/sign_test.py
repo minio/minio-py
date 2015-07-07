@@ -14,7 +14,7 @@
 import hashlib
 import hmac
 from unittest import TestCase
-from urlparse import urlparse
+from .compat import compat_urllib_parse
 from datetime import datetime
 
 from nose.tools import eq_
@@ -31,7 +31,7 @@ dt = datetime(2015, 6, 20, 1, 2, 3, 0, pytz.utc)
 
 class CanonicalRequestTest(TestCase):
     def test_simple_request(self):
-        url = urlparse('http://localhost:9000/hello')
+        url = compat_urllib_parse('http://localhost:9000/hello')
         expected_signed_headers = ['x-amz-content-sha256', 'x-amz-date']
         expected_request_array = ['PUT', '/hello', '', 'x-amz-content-sha256:' + empty_hash, 'x-amz-date:dateString',
                                   '', ';'.join(expected_signed_headers),
@@ -51,7 +51,7 @@ class CanonicalRequestTest(TestCase):
         eq_(expected_signed_headers, actual_signed_headers)
 
     def test_request_with_query(self):
-        url = urlparse('http://localhost:9000/hello?c=d&e=f&a=b')
+        url = compat_urllib_parse('http://localhost:9000/hello?c=d&e=f&a=b')
         expected_signed_headers = ['x-amz-content-sha256', 'x-amz-date']
         expected_request_array = ['PUT', '/hello', 'a=b&c=d&e=f', 'x-amz-content-sha256:' + empty_hash,
                                   'x-amz-date:dateString',

@@ -23,6 +23,8 @@ class LazyIterator(object):
         return self
 
     def next(self):
+        return self.__next__()
+    def __next__(self):
         if self.generator is None:
             # should never see this, but we'll be defensive
             raise StopIteration()
