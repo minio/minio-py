@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-
-from minio.minio import Minio
+from minio import Minio
 
 __author__ = 'minio'
 
-client = Minio('https://s3.amazonaws.com')
+client = Minio('https://s3.amazonaws.com',
+               access_key='YOUR-ACCESSKEYID',
+               secret_key='YOUR-SECRETACCESSKEY')
 
 # Put a new object
 client.put_object('my_bucket', 'my_key', 11, 'hello world', content_type='text/plain')
