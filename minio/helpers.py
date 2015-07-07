@@ -64,16 +64,12 @@ def is_positive_int(name, input_int, include_zero=False):
 
 
 def get_sha256(content):
-    if isinstance(content, basestring):
-        content = content.encode('utf-8')
     hasher = hashlib.sha256()
     hasher.update(content)
     return hasher.digest()
 
 
 def get_md5(content):
-    if isinstance(content, basestring):
-        content = content.encode('utf-8')
     hasher = hashlib.md5()
     hasher.update(content)
     return hasher.digest()
