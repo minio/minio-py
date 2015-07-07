@@ -31,4 +31,4 @@ class ListBucketsIntegration(TestCase):
     def test_make_bucket_works(self):
         buckets = client.list_buckets()
         for bucket in buckets:
-            print 'bucket:', bucket.creation_date, bucket.name
+            print('bucket:', bucket.creation_date, bucket.name)

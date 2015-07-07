@@ -13,7 +13,7 @@
 # limitations under the License.
 import hashlib
 import hmac
-from urlparse import urlparse
+from .compat import compat_urllib_parse, compat_str_type
 from datetime import datetime
 import binascii
 
@@ -31,7 +31,7 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
     if headers is None:
         headers = {}
 
-    parsed_url = urlparse(url)
+    parsed_url = compat_urllib_parse(url)
 
     content_hash_hex = empty_sha256
     if content_hash is not None:
@@ -79,7 +79,7 @@ def generate_canonical_request(method, parsed_url, headers, content_hash_hex):
     header_lines = []
     for header in headers:
         value = headers[header]
-        if isinstance(value, basestring):
+        if isinstance(value, compat_str_type):
             value = value.strip()
         header = header.lower().strip()
         signed_headers.append(header)

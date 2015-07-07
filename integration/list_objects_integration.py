@@ -33,16 +33,16 @@ class ListObjectsIntegration(TestCase):
     def list_objects_empty_test(self):
         objects = client.list_objects('goroutine-empty')
         for obj in objects:
-            print obj
+            print(obj)
 
     def list_objects_test(self):
-        print 'list objects'
+        print('list objects')
         objects = client.list_objects(bucket)
         for obj in objects:
-            print obj.key, obj.size
+            print(obj.key, obj.size)
 
     def list_objects_without_recursion_test(self):
-        print 'no recursion'
+        print('no recursion')
         objects = client.list_objects(bucket, recursive=False)
         for obj in objects:
-            print obj.key, obj.size
+            print(obj.key, obj.size)

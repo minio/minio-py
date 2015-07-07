@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__author__ = 'minio'
+
 from io import RawIOBase
 import io
 import platform
-from urlparse import urlparse
 
 import requests
 
+from .compat import compat_urllib_parse, compat_str_type
 from .generators import ListObjectsIterator, ListIncompleteUploads, ListUploadParts
 from .helpers import get_target_url, is_non_empty_string, is_positive_int, get_sha256, convert_binary_to_base64, \
     get_md5, calculate_part_size, convert_binary_to_hex
@@ -26,9 +28,6 @@ from .parsers import parse_list_buckets, parse_acl, parse_error, Object, parse_n
 from .region import get_region
 from .signer import sign_v4
 from .xml_requests import bucket_constraint, generate_complete_multipart_upload
-
-__author__ = 'minio'
-
 
 class Minio:
     def __init__(self, url, access_key=None, secret_key=None):
@@ -47,7 +46,7 @@ class Minio:
         """
         is_non_empty_string('url', url)
 
-        url_components = urlparse(url)
+        url_components = compat_urllib_parse(url)
 
         is_non_empty_string('url scheme', url_components.scheme)
 
@@ -355,7 +354,7 @@ class Minio:
         is_positive_int('length', length)
 
         # check content_type
-        if not isinstance(content_type, basestring):
+        if not isinstance(content_type, compat_str_type):
             raise TypeError('content_type')
             # TODO implement this feature
 
@@ -363,7 +362,7 @@ class Minio:
         if content_type == '':
             raise ValueError('content_type')
 
-        if isinstance(data, basestring):
+        if isinstance(data, compat_str_type):
             data = data.encode('utf-8')
 
         if length <= 5 * 1024 * 1024:
