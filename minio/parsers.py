@@ -174,7 +174,12 @@ def parse_error(response, url=None):
         amz_request_id = None
         if 'x-amz-request-id' in response.headers:
             amz_request_id = response.headers['x-amz-request-id']
-        raise ResponseError('NotFound', str(response.status) + ": " + response.reason, amz_request_id, None, url, response.data)
+        if response.status == 404:
+            raise ResponseError('ObjectNotFoundException', response.reason, amz_request_id, None, url, response.data)
+        if response.status == 403:
+            raise ResponseError('AccessDeniedException', response.reason, amz_request_id, None, url, response.data)
+        if response.status == 400:
+            raise ResponseError('BadRequest', response.reason, amz_request_id, None, url, response.data)
 
     code = None
     message = None
