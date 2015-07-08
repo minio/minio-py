@@ -1,4 +1,3 @@
-import locale
 from xml.etree import ElementTree
 from datetime import datetime
 
@@ -213,13 +212,17 @@ class ResponseError(BaseException):
         self.xml = xml
 
     def __str__(self):
-        return 'ResponseError: code: {0}, message: {1}, request_id: {2}, host_id: {3}, resource: {4}, xml: {5}'.format(self.code, self.message, self.request_id, self.host_id, self.resource, self.xml)
+        return 'ResponseError: code: {0}, message: {1}, request_id: {2}, host_id: {3}, resource: {4}, xml: {5}'.format(
+            self.code, self.message, self.request_id, self.host_id, self.resource, self.xml)
 
 
 class Bucket(object):
     def __init__(self, name, created):
         self.name = name
         self.creation_date = created
+
+    def __str__(self):
+        return '<Bucket: {0} {1}>'.format(self.name, self.creation_date)
 
 
 class Object(object):
