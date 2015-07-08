@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import certifi as certifi
 
 __author__ = 'minio'
 
@@ -31,7 +32,7 @@ from .xml_requests import bucket_constraint, generate_complete_multipart_upload
 
 
 class Minio:
-    def __init__(self, url, access_key=None, secret_key=None):
+    def __init__(self, url, access_key=None, secret_key=None, certs=None, skip_ssl_cert_check=False):
         """
         Creates a new object storage client.
 
@@ -43,6 +44,8 @@ class Minio:
         :param url: A string of the URL of the object storage server.
         :param access_key: Access key to sign self._http.request with.
         :param secret_key: Secret key to sign self._http.request with.
+        :param certs: Path to SSL certificates, defaults to using certifi library
+        :param skip_ssl_cert_check: Allow insecure ssl certificate requests, defaults to False
         :return: Minio object
         """
         is_non_empty_string('url', url)
@@ -58,7 +61,15 @@ class Minio:
         self._access_key = access_key
         self._secret_key = secret_key
         self._user_agent = 'minio-py/' + '0.0.1' + ' (' + platform.system() + '; ' + platform.machine() + ')'
-        self._http = urllib3.PoolManager()
+        if certs is None and skip_ssl_cert_check is False:
+            certs = certifi.where()
+        if self._scheme == 'https' and certs is not None:
+            self._http = urllib3.PoolManager(
+                cert_reqs='CERT_REQUIRED',
+                ca_certs=certs
+            )
+        else:
+            self._http = urllib3.PoolManager()
 
     # Client level
     def set_user_agent(self, name, version, parameters):
