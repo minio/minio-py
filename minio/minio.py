@@ -18,16 +18,17 @@ from io import RawIOBase
 import io
 import platform
 
-import requests
+import urllib3
 
 from .compat import compat_urllib_parse, compat_str_type
-from .generators import ListObjectsIterator, ListIncompleteUploads, ListUploadParts
+from .generators import ListObjectsIterator, ListIncompleteUploads, ListUploadParts, DataStreamer
 from .helpers import get_target_url, is_non_empty_string, is_positive_int, get_sha256, convert_binary_to_base64, \
     get_md5, calculate_part_size, convert_binary_to_hex
 from .parsers import parse_list_buckets, parse_acl, parse_error, Object, parse_new_multipart_upload
 from .region import get_region
 from .signer import sign_v4
 from .xml_requests import bucket_constraint, generate_complete_multipart_upload
+
 
 class Minio:
     def __init__(self, url, access_key=None, secret_key=None):
@@ -40,8 +41,8 @@ class Minio:
             client = Minio('http://s3-us-west-2.amazonaws.com:9000', 'ACCESS_KEY', 'SECRET_KEY')
 
         :param url: A string of the URL of the object storage server.
-        :param access_key: Access key to sign requests with.
-        :param secret_key: Secret key to sign requests with.
+        :param access_key: Access key to sign self._http.request with.
+        :param secret_key: Secret key to sign self._http.request with.
         :return: Minio object
         """
         is_non_empty_string('url', url)
@@ -57,6 +58,7 @@ class Minio:
         self._access_key = access_key
         self._secret_key = secret_key
         self._user_agent = 'minio-py/' + '0.0.1' + ' (' + platform.system() + '; ' + platform.machine() + ')'
+        self._http = urllib3.PoolManager()
 
     # Client level
     def set_user_agent(self, name, version, parameters):
@@ -123,9 +125,9 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key, content_hash=content_sha256)
 
-        response = requests.put(url, data=content, headers=headers)
+        response = self._http.urlopen(method, url, body=content, headers=headers)
 
-        if response.status_code != 200:
+        if response.status != 200:
             parse_error(response)
 
     def list_buckets(self):
@@ -148,12 +150,12 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.get(url, headers=headers)
+        response = self._http.request(method, url, headers=headers)
 
-        if response.status_code != 200:
+        if response.status != 200:
             parse_error(response)
 
-        return parse_list_buckets(response.content)
+        return parse_list_buckets(response.data)
 
     def bucket_exists(self, bucket):
         """
@@ -171,9 +173,9 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.head(url, headers=headers)
+        response = self._http.request(method, url, headers=headers)
 
-        if response.status_code == 200:
+        if response.status == 200:
             return True
 
         return False
@@ -194,9 +196,9 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.delete(url, headers=headers)
+        response = self._http.request(method, url, headers=headers)
 
-        if response.status_code != 204:
+        if response.status != 204:
             parse_error(response)
 
     def get_bucket_acl(self, bucket):
@@ -220,9 +222,9 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.get(url, headers=headers)
+        response = self._http.request(method, url, headers=headers)
 
-        return parse_acl(response.content)
+        return parse_acl(response.data)
 
     def set_bucket_acl(self, bucket, acl):
         """
@@ -258,9 +260,9 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.put(url, headers=headers)
+        response = self._http.urlopen(method, url, headers=headers)
 
-        if response.status_code != 200:
+        if response.status != 200:
             parse_error(response)
 
     def drop_all_incomplete_uploads(self, bucket):
@@ -273,7 +275,8 @@ class Minio:
         # check bucket
         is_non_empty_string('bucket', bucket)
 
-        uploads = ListIncompleteUploads(self._scheme, self._location, bucket, None, access_key=self._access_key,
+        uploads = ListIncompleteUploads(self._http, self._scheme, self._location, bucket, None,
+                                        access_key=self._access_key,
                                         secret_key=self._secret_key)
 
         for upload in uploads:
@@ -321,12 +324,12 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.get(url, headers=headers, stream=True)
+        response = self._http.urlopen(method, url, headers=headers, preload_content=False)
 
-        if not (response.status_code == 200 or response.status_code == 206):
+        if not (response.status == 200 or response.status == 206):
             parse_error(response)
 
-        return response.iter_content()
+        return DataStreamer(response)
 
     def put_object(self, bucket, key, length, data, content_type="application/octet-stream"):
         """
@@ -411,8 +414,8 @@ class Minio:
         :return: An iterator of objects in alphabetical order.
         """
         is_non_empty_string('bucket', bucket)
-        return ListObjectsIterator(self._scheme, self._location, bucket, prefix, recursive, self._access_key,
-                                   self._secret_key)
+        return ListObjectsIterator(self._http, self._scheme, self._location, bucket, prefix, recursive,
+                                   self._access_key, self._secret_key)
 
     def stat_object(self, bucket, key):
         """
@@ -432,9 +435,9 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.head(url, headers=headers, stream=True)
+        response = self._http.request(method, url, headers=headers)
 
-        if response.status_code != 200:
+        if response.status != 200:
             parse_error(response)
 
         content_type = response.headers['Content-Type']
@@ -462,9 +465,9 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.delete(url, headers=headers, stream=True)
+        response = self._http.urlopen(method, url, headers=headers)
 
-        if response.status_code != 204:
+        if response.status != 204:
             parse_error(response)
 
     def drop_incomplete_upload(self, bucket, key):
@@ -479,7 +482,8 @@ class Minio:
         is_non_empty_string('key', key)
 
         # check key
-        uploads = ListIncompleteUploads(self._scheme, self._location, bucket, key, access_key=self._access_key,
+        uploads = ListIncompleteUploads(self._http, self._scheme, self._location, bucket, key,
+                                        access_key=self._access_key,
                                         secret_key=self._secret_key)
         for upload in uploads:
             self._drop_incomplete_upload(bucket, upload.key, upload.upload_id)
@@ -514,9 +518,9 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key, content_hash=content_sha256)
 
-        response = requests.put(url, headers=headers, data=data)
+        response = self._http.urlopen(method, url, headers=headers, body=data)
 
-        if response.status_code != 200:
+        if response.status != 200:
             parse_error(response)
 
         return response.headers['ETag']
@@ -530,7 +534,8 @@ class Minio:
 
         part_size = calculate_part_size(length)
 
-        current_uploads = ListIncompleteUploads(self._scheme, self._location, bucket, key, access_key=self._access_key,
+        current_uploads = ListIncompleteUploads(self._http, self._scheme, self._location, bucket, key,
+                                                access_key=self._access_key,
                                                 secret_key=self._secret_key)
 
         upload_id = None
@@ -538,7 +543,7 @@ class Minio:
             upload_id = upload.upload_id
         uploaded_parts = {}
         if upload_id is not None:
-            part_iter = ListUploadParts(self._scheme, self._location, bucket, key, upload_id,
+            part_iter = ListUploadParts(self._http, self._scheme, self._location, bucket, key, upload_id,
                                         access_key=self._access_key, secret_key=self._secret_key)
             for part in part_iter:
                 uploaded_parts[part.part_number] = part
@@ -579,9 +584,9 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.delete(url, headers=headers)
+        response = self._http.request(method, url, headers=headers)
 
-        if response.status_code != 204:
+        if response.status != 204:
             parse_error(response)
 
     def _new_multipart_upload(self, bucket, key):
@@ -599,11 +604,11 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.post(url, headers=headers)
+        response = self._http.urlopen(method, url, headers=headers, body=None)
 
-        if response.status_code != 200:
+        if response.status != 200:
             parse_error(response)
-        return parse_new_multipart_upload(response.content)
+        return parse_new_multipart_upload(response.data)
 
     def _complete_multipart_upload(self, bucket, key, upload_id, etags):
         method = 'POST'
@@ -624,7 +629,7 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key, content_hash=data_sha256)
 
-        response = requests.post(url, headers=headers, data=data)
+        response = self._http.urlopen(method, url, headers=headers, body=data)
 
-        if response.status_code != 200:
+        if response.status != 200:
             parse_error(response)

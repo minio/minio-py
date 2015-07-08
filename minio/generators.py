@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import requests
 
 from .helpers import get_target_url
 from .parsers import parse_list_objects, parse_error, parse_incomplete_uploads, parse_uploaded_parts
@@ -21,7 +20,8 @@ __author__ = 'minio'
 
 
 class ListObjectsIterator:
-    def __init__(self, scheme, location, bucket, prefix, recursive, access_key, secret_key):
+    def __init__(self, client, scheme, location, bucket, prefix, recursive, access_key, secret_key):
+        self._http = client
         self._scheme = scheme
         self._location = location
         self._bucket = bucket
@@ -75,16 +75,17 @@ class ListObjectsIterator:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.get(url, headers=headers)
+        response = self._http.request(method, url, headers=headers)
 
-        if response.status_code != 200:
+        if response.status != 200:
             parse_error(response)
-        return parse_list_objects(response.content, bucket=self._bucket)
+        return parse_list_objects(response.data, bucket=self._bucket)
 
 
 class ListIncompleteUploads:
-    def __init__(self, scheme, location, bucket, key=None, access_key=None, secret_key=None):
+    def __init__(self, client, scheme, location, bucket, key=None, access_key=None, secret_key=None):
         # from user
+        self._http = client
         self._scheme = scheme
         self._location = location
         self._bucket = bucket
@@ -148,16 +149,17 @@ class ListIncompleteUploads:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.get(url, headers=headers)
+        response = self._http.request(method, url, headers=headers)
 
-        if response.status_code != 200:
+        if response.status != 200:
             parse_error(response)
-        return parse_incomplete_uploads(response.content, bucket=self._bucket)
+        return parse_incomplete_uploads(response.data, bucket=self._bucket)
 
 
 class ListUploadParts:
-    def __init__(self, scheme, location, bucket, key, upload_id, access_key=None, secret_key=None):
+    def __init__(self, client, scheme, location, bucket, key, upload_id, access_key=None, secret_key=None):
         # from user
+        self._http = client
         self._scheme = scheme
         self._location = location
         self._bucket = bucket
@@ -217,8 +219,39 @@ class ListUploadParts:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = requests.get(url, headers=headers)
+        response = self._http.request(method, url, headers=headers)
 
-        if response.status_code != 200:
+        if response.status != 200:
             parse_error(response)
-        return parse_uploaded_parts(response.content, bucket=self._bucket, key=self._key, upload_id=self._upload_id)
+        return parse_uploaded_parts(response.data, bucket=self._bucket, key=self._key, upload_id=self._upload_id)
+
+
+class DataStreamer:
+    def __init__(self, response):
+        self._response = response
+        self._stream = iter(response.stream())
+
+        self._length = int(response.headers['Content-Length'])
+        self._total_read = 0
+        self._is_complete = False
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        return self.__next__()
+
+    def __next__(self):
+        if self._is_complete:
+            raise StopIteration
+        data = self._response.read(1024)
+        self._total_read += len(data)
+        if self._total_read == self._length:
+            self._is_complete = True
+        return data
+
+    def _release(self):
+        if not self._is_complete:
+            self._response.release_conn()
+            self._is_complete = True
+        raise StopIteration

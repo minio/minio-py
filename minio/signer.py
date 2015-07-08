@@ -13,10 +13,10 @@
 # limitations under the License.
 import hashlib
 import hmac
-from .compat import compat_urllib_parse, compat_str_type
 from datetime import datetime
 import binascii
 
+from .compat import compat_urllib_parse, compat_str_type
 from .region import get_region
 
 __author__ = 'minio'

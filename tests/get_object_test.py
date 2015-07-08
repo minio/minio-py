@@ -18,7 +18,7 @@ from nose.tools import raises
 
 from minio import minio
 from minio.parsers import ResponseError
-from .minio_mocks import MockResponse
+from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
 __author__ = 'minio'
@@ -45,25 +45,34 @@ class GetObjectTest(TestCase):
         client = minio.Minio('http://localhost:9000')
         client.get_object('hello', ' \t \n ')
 
-    @mock.patch('requests.get')
-    def test_get_object_works(self, mock_request):
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/hello', {}, 200, content='hello world')
+    @mock.patch('urllib3.PoolManager')
+    def test_get_object_works(self, mock_connection):
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(
+            MockResponse('GET', 'http://localhost:9000/hello/world', {}, 200, content='hello world',
+                         response_headers={'Content-Length': 11}))
         client = minio.Minio('http://localhost:9000')
         object_iter = client.get_object('hello', 'world')
         actual_object = []
         for object_chunk in object_iter:
             actual_object.append(object_chunk)
 
-    @mock.patch('requests.get')
-    def test_get_object_invalid_name(self, mock_request):
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/hello', {}, 400)
+    @mock.patch('urllib3.PoolManager')
+    def test_get_object_invalid_name(self, mock_connection):
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello', {}, 400))
         client = minio.Minio('http://localhost:9000')
         client.get_object('1234', 'world')
 
-    @mock.patch('requests.get')
+    @mock.patch('urllib3.PoolManager')
     @raises(ResponseError)
-    def test_get_object_invalid_name(self, mock_request):
+    def test_get_object_invalid_name(self, mock_connection):
         error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/hello', {}, 400, content=error_xml)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(
+            MockResponse('GET', 'http://localhost:9000/hello/world', {}, 400, content=error_xml))
         client = minio.Minio('http://localhost:9000')
         client.get_object('hello', 'world')

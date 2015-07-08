@@ -18,7 +18,7 @@ from nose.tools import raises
 
 from minio import minio
 from minio.parsers import ResponseError
-from .minio_mocks import MockResponse
+from .minio_mocks import MockResponse, MockConnection
 from tests.helpers import generate_error
 
 __author__ = 'minio'
@@ -45,23 +45,28 @@ class StatObject(TestCase):
         client = minio.Minio('http://localhost:9000')
         client.stat_object('hello', '  \t \n  ')
 
-    @mock.patch('requests.head')
-    def test_stat_object_works(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_stat_object_works(self, mock_connection):
         mock_headers = {
             'Content-Type': 'application/octet-stream',
             'Last-Modified': 'Fri, 26 Jun 2015 19:05:37 GMT',
             'Content-Length': 11,
             'ETag': '5eb63bbbe01eeed093cb22bb8f5acdc3'
         }
-        mock_request.return_value = MockResponse('HEAD', 'http://localhost:9000/hello', {}, 200,
-                                                 response_headers=mock_headers)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('HEAD', 'http://localhost:9000/hello/world', {}, 200,
+                                                  response_headers=mock_headers))
         client = minio.Minio('http://localhost:9000')
         client.stat_object('hello', 'world')
 
-    @mock.patch('requests.head')
+    @mock.patch('urllib3.PoolManager')
     @raises(ResponseError)
-    def test_stat_object_invalid_name(self, mock_request):
+    def test_stat_object_invalid_name(self, mock_connection):
         error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
-        mock_request.return_value = MockResponse('HEAD', 'http://localhost:9000/hello', {}, 400, content=error_xml)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(
+            MockResponse('HEAD', 'http://localhost:9000/1234/world', {}, 400, content=error_xml))
         client = minio.Minio('http://localhost:9000')
         client.stat_object('1234', 'world')

@@ -17,7 +17,7 @@ import mock
 from nose.tools import raises, eq_
 
 from minio import minio
-from .minio_mocks import MockResponse
+from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
 __author__ = 'minio'
@@ -34,17 +34,21 @@ class BucketExists(TestCase):
         client = minio.Minio('http://localhost:9000')
         client.bucket_exists('  \t \n  ')
 
-    @mock.patch('requests.head')
-    def test_bucket_exists_works(self, mock_request):
-        mock_request.return_value = MockResponse('HEAD', 'http://localhost:9000/hello', {}, 200)
+    @mock.patch('urllib3.PoolManager')
+    def test_bucket_exists_works(self, mock_connection):
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('HEAD', 'http://localhost:9000/hello', {}, 200))
         client = minio.Minio('http://localhost:9000')
         result = client.bucket_exists('hello')
         eq_(True, result)
 
-    @mock.patch('requests.head')
-    def test_bucket_exists_invalid_name(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_bucket_exists_invalid_name(self, mock_connection):
         error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
-        mock_request.return_value = MockResponse('HEAD', 'http://localhost:9000/hello', {}, 400, content=error_xml)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('HEAD', 'http://localhost:9000/1234', {}, 400, content=error_xml))
         client = minio.Minio('http://localhost:9000')
         result = client.bucket_exists('1234')
         eq_(False, result)

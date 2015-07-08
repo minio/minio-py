@@ -23,16 +23,17 @@ It is designed to be easy to use and minimal, exposing only the most used functi
 
 import re
 import os
-import sys
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 ROOT = os.path.dirname(__file__)
-VERSION_RE = re.compile(r'''__version__ = ['"]([0-9.]+)['"]''')
+VERSION_RE = re.compile(r'''__version__ = ['"](.+)['"]''')
+
 
 def get_version():
     init = open(os.path.join(ROOT, 'minio', '__init__.py')).read()
     return VERSION_RE.search(init).group(1)
+
 
 setup(
     name='minio',
@@ -42,7 +43,7 @@ setup(
     download_url='https://github.com/minio/minio-py',
     author_email='dev@minio.io',
     version=get_version(),
-    install_requires=['requests', 'pytz'],
+    install_requires=['urllib3', 'pytz'],
     tests_require=['nose', 'mock'],
     packages=['minio'],
     py_modules=['minio'],
@@ -65,4 +66,6 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
     long_description=open('README.md').read(),
+    package_data={'': ['LICENSE', 'README.md']},
+    include_package_data=True,
 )

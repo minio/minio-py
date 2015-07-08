@@ -18,7 +18,7 @@ from nose.tools import raises
 
 from minio import minio
 from minio.parsers import ResponseError
-from .minio_mocks import MockResponse
+from .minio_mocks import MockResponse, MockConnection
 from tests.helpers import generate_error
 
 __author__ = 'minio'
@@ -35,16 +35,20 @@ class RemoveBucket(TestCase):
         client = minio.Minio('http://localhost:9000')
         client.remove_bucket('  \t \n  ')
 
-    @mock.patch('requests.delete')
-    def test_remove_bucket_works(self, mock_request):
-        mock_request.return_value = MockResponse('DELETE', 'http://localhost:9000/hello', {}, 204)
+    @mock.patch('urllib3.PoolManager')
+    def test_remove_bucket_works(self, mock_connection):
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('DELETE', 'http://localhost:9000/hello', {}, 204))
         client = minio.Minio('http://localhost:9000')
         client.remove_bucket('hello')
 
-    @mock.patch('requests.delete')
+    @mock.patch('urllib3.PoolManager')
     @raises(ResponseError)
-    def test_remove_bucket_invalid_name(self, mock_request):
+    def test_remove_bucket_invalid_name(self, mock_connection):
         error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
-        mock_request.return_value = MockResponse('DELETE', 'http://localhost:9000/hello', {}, 400, content=error_xml)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('DELETE', 'http://localhost:9000/1234', {}, 400, content=error_xml))
         client = minio.Minio('http://localhost:9000')
         client.remove_bucket('1234')

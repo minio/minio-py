@@ -17,14 +17,14 @@ import mock
 from nose.tools import eq_, timed
 
 from minio import minio
-from .minio_mocks import MockResponse
+from .minio_mocks import MockResponse, MockConnection
 
 __author__ = 'minio'
 
 
 class ListObjectsTest(TestCase):
-    @mock.patch('requests.get')
-    def test_empty_list_objects_works(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_empty_list_objects_works(self, mock_connection):
         mock_data = '''<?xml version="1.0"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
@@ -35,7 +35,9 @@ class ListObjectsTest(TestCase):
   <IsTruncated>true</IsTruncated>
 </ListBucketResult>
         '''
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data))
         client = minio.Minio('http://localhost:9000')
         bucket_iter = client.list_objects('bucket')
         buckets = []
@@ -44,8 +46,8 @@ class ListObjectsTest(TestCase):
         eq_(0, len(buckets))
 
     @timed(1)
-    @mock.patch('requests.get')
-    def test_list_objects_works(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_list_objects_works(self, mock_connection):
         mock_data = '''<?xml version="1.0"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
@@ -78,25 +80,28 @@ class ListObjectsTest(TestCase):
   </Contents>
 </ListBucketResult>
         '''
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data))
         client = minio.Minio('http://localhost:9000')
         bucket_iter = client.list_objects('bucket')
         buckets = []
         for bucket in bucket_iter:
             # cause an xml exception and fail if we try retrieving again
-            mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content='')
+            mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=''))
             buckets.append(bucket)
 
         eq_(2, len(buckets))
 
     @timed(1)
-    @mock.patch('requests.get')
-    def test_list_objects_works(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_list_objects_works(self, mock_connection):
         mock_data1 = '''<?xml version="1.0"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
   <Prefix/>
-  <Marker>marker</Marker>
+  <Marker />
+  <NextMarker>marker</NextMarker>
   <MaxKeys>1000</MaxKeys>
   <Delimiter/>
   <IsTruncated>true</IsTruncated>
@@ -156,13 +161,15 @@ class ListObjectsTest(TestCase):
   </Contents>
 </ListBucketResult>
         '''
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data1)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data1))
         client = minio.Minio('http://localhost:9000')
         bucket_iter = client.list_objects('bucket')
         buckets = []
         for bucket in bucket_iter:
-            mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket?marker=marker', {}, 200,
-                                                     content=mock_data2)
+            mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket?marker=marker', {}, 200,
+                                                      content=mock_data2))
             buckets.append(bucket)
 
         eq_(4, len(buckets))

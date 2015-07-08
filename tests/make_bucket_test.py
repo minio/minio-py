@@ -18,7 +18,7 @@ from nose.tools import raises
 
 from minio import minio
 from minio.parsers import ResponseError
-from .minio_mocks import MockResponse
+from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
 __author__ = 'minio'
@@ -35,15 +35,23 @@ class MakeBucket(TestCase):
         client = minio.Minio('http://localhost:9000')
         client.make_bucket('  \t \n  ')
 
-    @mock.patch('requests.put')
-    def test_make_bucket_works(self, mock_request):
-        mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello', {}, 200)
+    @mock.patch('urllib3.PoolManager')
+    def test_make_bucket_works(self, mock_connection):
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('PUT', 'http://localhost:9000/hello',
+                                                  {'Content-Length': '152', 'Content-MD5': 'SBBIY3Vm9HFpFlECujfyyw=='},
+                                                  200))
         minio.Minio('http://localhost:9000')
 
-    @mock.patch('requests.put')
+    @mock.patch('urllib3.PoolManager')
     @raises(ResponseError)
-    def test_make_bucket_throws_fail(self, mock_request):
+    def test_make_bucket_throws_fail(self, mock_connection):
         error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
-        mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello', {}, 409, content=error_xml)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('PUT', 'http://localhost:9000/hello',
+                                                  {'Content-Length': '152', 'Content-MD5': 'SBBIY3Vm9HFpFlECujfyyw=='},
+                                                  409, content=error_xml))
         client = minio.Minio('http://localhost:9000')
         client.make_bucket('hello')

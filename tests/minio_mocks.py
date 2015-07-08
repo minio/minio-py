@@ -22,9 +22,13 @@ class MockResponse(object):
         self.method = method
         self.url = url
         self.request_headers = headers
-        self.status_code = status_code
+        self.status = status_code
         self.headers = response_headers
-        self.content = content
+        self.data = content
+
+    # noinspection PyUnusedLocal
+    def read(self, amt=1024):
+        return self.data
 
     def mock_verify(self, method, url, headers):
         eq_(self.method, method)
@@ -32,9 +36,9 @@ class MockResponse(object):
         eq_(self.request_headers, headers)
 
     # noinspection PyUnusedLocal
-    def iter_content(self, chunk_size=1, decode_unicode=False):
-        if self.content is not None:
-            return iter(bytearray(self.content, 'utf-8'))
+    def stream(self, chunk_size=1, decode_unicode=False):
+        if self.data is not None:
+            return iter(bytearray(self.data, 'utf-8'))
         return iter([])
 
 
@@ -49,3 +53,7 @@ class MockConnection(object):
         return_request = self.requests.pop(0)
         return_request.mock_verify(method, url, headers)
         return return_request
+
+    # noinspection PyRedeclaration,PyUnusedLocal,PyUnusedLocal
+    def urlopen(self, method, url, headers, preload_content=False, body=None):
+        return self.request(method, url, headers)

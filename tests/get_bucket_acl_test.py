@@ -18,7 +18,7 @@ from nose.tools import raises, eq_
 
 from minio import minio
 from minio.acl import Acl
-from tests.minio_mocks import MockResponse
+from tests.minio_mocks import MockResponse, MockConnection
 
 __author__ = 'minio'
 
@@ -34,8 +34,8 @@ class GetBucketAclTest(TestCase):
         client = minio.Minio('http://localhost:9000')
         client.get_bucket_acl('  \t \n  ')
 
-    @mock.patch('requests.get')
-    def test_public_read_write_response(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_public_read_write_response(self, mock_connection):
         content = '''
                   <AccessControlPolicy xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                     <Owner>
@@ -69,13 +69,15 @@ class GetBucketAclTest(TestCase):
                     </AccessControlList>
                   </AccessControlPolicy>
                   '''
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/hello?acl', {}, 200, content=content)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello?acl', {}, 200, content=content))
         client = minio.Minio('http://localhost:9000')
         acl = client.get_bucket_acl('hello')
         eq_(Acl.public_read_write(), acl)
 
-    @mock.patch('requests.get')
-    def test_public_read(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_public_read(self, mock_connection):
         content = '''
                   <AccessControlPolicy xmlns="http://s3.amazonaws.com/doc/2006-03-01/"> \
                     <Owner> \
@@ -101,13 +103,15 @@ class GetBucketAclTest(TestCase):
                     </AccessControlList> \
                   </AccessControlPolicy>
                   '''
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/hello?acl', {}, 200, content=content)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello?acl', {}, 200, content=content))
         client = minio.Minio('http://localhost:9000')
         acl = client.get_bucket_acl('hello')
         eq_(Acl.public_read(), acl)
 
-    @mock.patch('requests.get')
-    def test_authenticated_users(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_authenticated_users(self, mock_connection):
         content = '''
                   <AccessControlPolicy xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                     <Owner>
@@ -133,13 +137,15 @@ class GetBucketAclTest(TestCase):
                     </AccessControlList>
                   </AccessControlPolicy>
                   '''
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/hello?acl', {}, 200, content=content)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello?acl', {}, 200, content=content))
         client = minio.Minio('http://localhost:9000')
         acl = client.get_bucket_acl('hello')
         eq_(Acl.authenticated_read(), acl)
 
-    @mock.patch('requests.get')
-    def test_private(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_private(self, mock_connection):
         content = '''
                   <AccessControlPolicy xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                     <Owner>
@@ -158,7 +164,9 @@ class GetBucketAclTest(TestCase):
                   </AccessControlPolicy>
                   '''
 
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/hello?acl', {}, 200, content=content)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello?acl', {}, 200, content=content))
         client = minio.Minio('http://localhost:9000')
         acl = client.get_bucket_acl('hello')
         eq_(Acl.private(), acl)

@@ -19,7 +19,7 @@ from nose.tools import raises
 from minio import minio
 from minio.acl import Acl
 from minio.parsers import ResponseError
-from .minio_mocks import MockResponse
+from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
 __author__ = 'minio'
@@ -36,16 +36,24 @@ class SetBucketAclTest(TestCase):
         client = minio.Minio('http://localhost:9000')
         client.set_bucket_acl('  \t \n  ', Acl.private())
 
-    @mock.patch('requests.put')
-    def test_set_bucket_acl_works(self, mock_request):
-        mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello?acl', {}, 200)
+    @mock.patch('urllib3.PoolManager')
+    def test_set_bucket_acl_works(self, mock_connection):
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('PUT', 'http://localhost:9000/hello?acl',
+                                                  {'x-amz-acl': 'private', 'Content-MD5': '1B2M2Y8AsgTpgAmY7PhCfg=='},
+                                                  200))
         client = minio.Minio('http://localhost:9000')
         client.set_bucket_acl('hello', Acl.private())
 
-    @mock.patch('requests.put')
+    @mock.patch('urllib3.PoolManager')
     @raises(ResponseError)
-    def test_set_bucket_acl_invalid_name(self, mock_request):
+    def test_set_bucket_acl_invalid_name(self, mock_connection):
         error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
-        mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello?acl', {}, 400, content=error_xml)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('PUT', 'http://localhost:9000/1234?acl',
+                                                  {'x-amz-acl': 'private', 'Content-MD5': '1B2M2Y8AsgTpgAmY7PhCfg=='},
+                                                  400, content=error_xml))
         client = minio.Minio('http://localhost:9000')
         client.set_bucket_acl('1234', Acl.private())
