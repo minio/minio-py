@@ -65,7 +65,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    long_description=open('README.md').read(),
-    package_data={'': ['LICENSE', 'README.md']},
+    long_description=open('README.rst').read(),
+    package_data={'': ['LICENSE', 'README.rst']},
     include_package_data=True,
 )
