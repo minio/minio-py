@@ -14,12 +14,12 @@
 import hashlib
 import hmac
 from unittest import TestCase
-from .compat import compat_urllib_parse
 from datetime import datetime
 
 from nose.tools import eq_
 import pytz as pytz
 
+from .compat import compat_urllib_parse
 from minio.signer import generate_canonical_request, generate_string_to_sign, generate_signing_key, \
     generate_authorization_header
 

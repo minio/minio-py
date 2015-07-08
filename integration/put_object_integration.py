@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import io
 import os
 from unittest import TestCase
 
@@ -64,8 +65,8 @@ class PutObjectIntegration(TestCase):
         with open(file_name, 'rb') as data_file:
             client.put_object(bucket, 'large_obj3', file_stat.st_size, data_file)
 
-    def put_binary_object(self):
+    def put_binary_object_test(self):
         file_name = '/bin/ls'
         file_stat = os.stat(file_name)
-        with open(file_name, 'rb') as data_file:
+        with io.open(file_name, 'rb') as data_file:
             client.put_object(bucket, 'binary_object', file_stat.st_size, data_file)
