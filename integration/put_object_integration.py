@@ -63,3 +63,9 @@ class PutObjectIntegration(TestCase):
 
         with open(file_name, 'rb') as data_file:
             client.put_object(bucket, 'large_obj3', file_stat.st_size, data_file)
+
+    def put_binary_object(self):
+        file_name = '/bin/ls'
+        file_stat = os.stat(file_name)
+        with open(file_name, 'rb') as data_file:
+            client.put_object(bucket, 'binary_object', file_stat.st_size, data_file)

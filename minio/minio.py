@@ -523,6 +523,8 @@ class Minio:
         if response.status != 200:
             parse_error(response)
 
+        response.data # force read
+
         return response.headers['ETag']
 
     def _stream_put_object(self, bucket, key, length, data, content_type):
@@ -633,3 +635,4 @@ class Minio:
 
         if response.status != 200:
             parse_error(response)
+        response.data # force to read
