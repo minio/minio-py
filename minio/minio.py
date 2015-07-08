@@ -250,7 +250,7 @@ class Minio:
         method = 'PUT'
         url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
 
-        md5_sum = convert_binary_to_base64(get_md5(''))
+        md5_sum = convert_binary_to_base64(get_md5(''.encode('utf-8')))
 
         headers = {
             'x-amz-acl': acl,
@@ -518,12 +518,14 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key, content_hash=content_sha256)
 
+        data = io.BytesIO(data)
         response = self._http.urlopen(method, url, headers=headers, body=data)
 
         if response.status != 200:
             parse_error(response)
 
-        response.data # force read
+        # noinspection PyStatementEffect
+        response.data  # force read
 
         return response.headers['ETag']
 
@@ -635,4 +637,5 @@ class Minio:
 
         if response.status != 200:
             parse_error(response)
-        response.data # force to read
+        # noinspection PyStatementEffect
+        response.data  # force to read
