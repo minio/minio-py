@@ -19,28 +19,32 @@ from nose.tools import eq_
 import pytz
 
 from minio import minio
-from .minio_mocks import MockResponse
+from .minio_mocks import MockResponse, MockConnection
 
 __author__ = 'minio'
 
 
 class ListBucketsTest(TestCase):
-    @mock.patch('requests.get')
-    def test_empty_list_buckets_works(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_empty_list_buckets_works(self, mock_connection):
         mock_data = '<ListAllMyBucketsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Buckets>' \
                     '</Buckets><Owner><ID>minio</ID><DisplayName>minio</DisplayName></Owner></ListAllMyBucketsResult>'
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/', {}, 200, content=mock_data)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/', {}, 200, content=mock_data))
         client = minio.Minio('http://localhost:9000')
         buckets = client.list_buckets()
         eq_([], buckets)
 
-    @mock.patch('requests.get')
-    def test_list_buckets_works(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_list_buckets_works(self, mock_connection):
         mock_data = '<ListAllMyBucketsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Buckets>' \
                     '<Bucket><Name>hello</Name><CreationDate>2015-06-22T23:07:43.240Z</CreationDate></Bucket><Bucket>' \
                     '<Name>world</Name><CreationDate>2015-06-22T23:07:56.766Z</CreationDate></Bucket>' \
                     '</Buckets><Owner><ID>minio</ID><DisplayName>minio</DisplayName></Owner></ListAllMyBucketsResult>'
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/', {}, 200, content=mock_data)
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/', {}, 200, content=mock_data))
         client = minio.Minio('http://localhost:9000')
         buckets = client.list_buckets()
 

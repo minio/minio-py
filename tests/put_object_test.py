@@ -13,39 +13,40 @@
 # limitations under the License.
 from unittest import TestCase
 
-import mock
 from nose.tools import raises
 
 from minio import minio
-from minio.acl import Acl
-from minio.parsers import ResponseError
-from .minio_mocks import MockResponse
-from .helpers import generate_error
 
 __author__ = 'minio'
 
 
-class SetBucketAclTest(TestCase):
+class PutObjectTest(TestCase):
     @raises(TypeError)
     def test_bucket_is_string(self):
         client = minio.Minio('http://localhost:9000')
-        client.set_bucket_acl(1234, Acl.private())
+        client.put_object(1234, 'world', 1, iter([1, 2, 3]))
 
     @raises(ValueError)
     def test_bucket_is_not_empty_string(self):
         client = minio.Minio('http://localhost:9000')
-        client.set_bucket_acl('  \t \n  ', Acl.private())
+        client.put_object('  \t \n  ', 'world', 1, iter([1, 2, 3]))
 
-    @mock.patch('requests.put')
-    def test_set_bucket_acl_works(self, mock_request):
-        mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello?acl', {}, 200)
+    @raises(TypeError)
+    def test_object_is_string(self):
         client = minio.Minio('http://localhost:9000')
-        client.set_bucket_acl('hello', Acl.private())
+        client.put_object('hello', 1234, 1, iter([1, 2, 3]))
 
-    @mock.patch('requests.put')
-    @raises(ResponseError)
-    def test_set_bucket_acl_invalid_name(self, mock_request):
-        error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
-        mock_request.return_value = MockResponse('PUT', 'http://localhost:9000/hello?acl', {}, 400, content=error_xml)
+    @raises(ValueError)
+    def test_object_is_not_empty_string(self):
         client = minio.Minio('http://localhost:9000')
-        client.set_bucket_acl('1234', Acl.private())
+        client.put_object('hello', ' \t \n ', 1, iter([1, 2, 3]))
+
+    @raises(TypeError)
+    def test_length_is_string(self):
+        client = minio.Minio('http://localhost:9000')
+        client.put_object('hello', 1234, '1', iter([1, 2, 3]))
+
+    @raises(ValueError)
+    def test_length_is_not_empty_string(self):
+        client = minio.Minio('http://localhost:9000')
+        client.put_object('hello', ' \t \n ', -1, iter([1, 2, 3]))

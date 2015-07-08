@@ -17,14 +17,14 @@ import mock
 from nose.tools import eq_
 
 from minio.generators import ListUploadParts
-from .minio_mocks import MockResponse
+from .minio_mocks import MockResponse, MockConnection
 
 __author__ = 'minio'
 
 
 class ListPartsTest(TestCase):
-    @mock.patch('requests.get')
-    def test_empty_list_parts_works(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_empty_list_parts_works(self, mock_connection):
         mock_data = '''<?xml version="1.0"?>
                        <ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                          <Bucket>bucket</Bucket>
@@ -45,15 +45,18 @@ class ListPartsTest(TestCase):
                          <IsTruncated>false</IsTruncated>
                        </ListPartsResult>
                     '''
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data)
-        part_iter = ListUploadParts('http', 'localhost:9000', 'bucket', 'key', 'upload_id')
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(
+            MockResponse('GET', 'http://localhost:9000/bucket/key?uploadId=upload_id', {}, 200, content=mock_data))
+        part_iter = ListUploadParts(mock_server, 'http', 'localhost:9000', 'bucket', 'key', 'upload_id')
         parts = []
         for part in part_iter:
             parts.append(part)
         eq_(0, len(parts))
 
-    @mock.patch('requests.get')
-    def test_list_objects_works(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_list_objects_works(self, mock_connection):
         mock_data = '''<?xml version="1.0"?>
                        <ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                          <Bucket>bucket</Bucket>
@@ -86,16 +89,18 @@ class ListPartsTest(TestCase):
                          </Part>
                        </ListPartsResult>
                     '''
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket?uploadId=upload_id', {}, 200,
-                                                 content=mock_data)
-        part_iter = ListUploadParts('http', 'localhost:9000', 'bucket', 'key', 'upload_id')
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket?uploadId=upload_id', {}, 200,
+                                                  content=mock_data))
+        part_iter = ListUploadParts(mock_server, 'http', 'localhost:9000', 'bucket', 'key', 'upload_id')
         parts = []
         for part in part_iter:
             parts.append(part)
         eq_(2, len(parts))
 
-    @mock.patch('requests.get')
-    def test_list_objects_works(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_list_objects_works(self, mock_connection):
         mock_data1 = '''<?xml version="1.0"?>
                         <ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                           <Bucket>bucket</Bucket>
@@ -160,12 +165,15 @@ class ListPartsTest(TestCase):
                           </Part>
                         </ListPartsResult>
                      '''
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket?uploadId=upload_id', {}, 200,
-                                                 content=mock_data1)
-        part_iter = ListUploadParts('http', 'localhost:9000', 'bucket', 'key', 'upload_id')
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket/key?uploadId=upload_id', {}, 200,
+                                                  content=mock_data1))
+        part_iter = ListUploadParts(mock_server, 'http', 'localhost:9000', 'bucket', 'key', 'upload_id')
         parts = []
         for part in part_iter:
-            mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket?uploadId=upload_id', {}, 200,
-                                                     content=mock_data2)
+            mock_server.mock_add_request(
+                MockResponse('GET', 'http://localhost:9000/bucket/key?part-number-marker=2&uploadId=upload_id', {}, 200,
+                             content=mock_data2))
             parts.append(part)
         eq_(4, len(parts))

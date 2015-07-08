@@ -17,14 +17,14 @@ import mock
 from nose.tools import eq_
 
 from minio.generators import ListIncompleteUploads
-from .minio_mocks import MockResponse
+from .minio_mocks import MockResponse, MockConnection
 
 __author__ = 'minio'
 
 
 class ListIncompleteUploadsTest(TestCase):
-    @mock.patch('requests.get')
-    def test_empty_list_uploads_test(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_empty_list_uploads_test(self, mock_connection):
         mock_data = '''<?xml version="1.0"?>
                        <ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                          <Bucket>golang</Bucket>
@@ -39,15 +39,18 @@ class ListIncompleteUploadsTest(TestCase):
                          <Delimiter/>
                        </ListMultipartUploadsResult>
                     '''
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data)
-        upload_iter = ListIncompleteUploads('http', 'localhost:9000', 'bucket')
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(
+            MockResponse('GET', 'http://localhost:9000/bucket?uploads', {}, 200, content=mock_data))
+        upload_iter = ListIncompleteUploads(mock_server, 'http', 'localhost:9000', 'bucket')
         uploads = []
         for upload in upload_iter:
             uploads.append(upload)
         eq_(0, len(uploads))
 
-    @mock.patch('requests.get')
-    def test_list_uploads_works(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_list_uploads_works(self, mock_connection):
         mock_data = '''<?xml version="1.0"?>
                        <ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                          <Bucket>golang</Bucket>
@@ -90,15 +93,18 @@ class ListIncompleteUploadsTest(TestCase):
                          <Delimiter/>
                        </ListMultipartUploadsResult>
                     '''
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data)
-        upload_iter = ListIncompleteUploads('http', 'localhost:9000', 'bucket')
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(
+            MockResponse('GET', 'http://localhost:9000/bucket?uploads', {}, 200, content=mock_data))
+        upload_iter = ListIncompleteUploads(mock_server, 'http', 'localhost:9000', 'bucket')
         uploads = []
         for upload in upload_iter:
             uploads.append(upload)
         eq_(2, len(uploads))
 
-    @mock.patch('requests.get')
-    def test_list_objects_works(self, mock_request):
+    @mock.patch('urllib3.PoolManager')
+    def test_list_objects_works(self, mock_connection):
         mock_data1 = '''<?xml version="1.0"?>
                         <ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                           <Bucket>golang</Bucket>
@@ -183,11 +189,18 @@ class ListIncompleteUploadsTest(TestCase):
                           <Delimiter/>
                         </ListMultipartUploadsResult>
                      '''
-        mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data1)
-        upload_iter = ListIncompleteUploads('http', 'localhost:9000', 'bucket')
+        mock_server = MockConnection()
+        mock_connection.return_value = mock_server
+        mock_server.mock_add_request(
+            MockResponse('GET', 'http://localhost:9000/bucket?uploads', {}, 200, content=mock_data1))
+        upload_iter = ListIncompleteUploads(mock_server, 'http', 'localhost:9000', 'bucket')
         uploads = []
         for upload in upload_iter:
-            mock_request.return_value = MockResponse('GET', 'http://localhost:9000/bucket', {}, 200, content=mock_data2)
+            mock_server.mock_add_request(MockResponse('GET',
+                                                      'http://localhost:9000/bucket?'
+                                                      'key-marker=keymarker&'
+                                                      'upload-id-marker=uploadidmarker&uploads',
+                                                      {}, 200, content=mock_data2))
             uploads.append(upload)
 
         eq_(4, len(uploads))

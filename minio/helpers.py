@@ -23,6 +23,7 @@ __author__ = 'minio'
 
 def get_target_url(scheme, location, bucket=None, key=None, query=None):
     url_components = [scheme, '://', location, '/']
+    # url_components = ['/']
 
     if bucket is not None:
         url_components.append(bucket)

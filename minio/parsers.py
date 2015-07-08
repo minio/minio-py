@@ -164,8 +164,8 @@ def parse_new_multipart_upload(data):
 
 
 def parse_error(response, url=None):
-    if len(response.content) == 0:
-        if response.status_code == 404:
+    if len(response.data) == 0:
+        if response.status == 404:
             amz_request_id = None
             if 'x-amz-request-id' in response.headers:
                 amz_request_id = response.headers['x-amz-request-id']
@@ -177,7 +177,7 @@ def parse_error(response, url=None):
     host_id = None
     resource = None
 
-    root = ElementTree.fromstring(response.content)
+    root = ElementTree.fromstring(response.data)
     for attribute in root:
         if attribute.tag == 'Code':
             code = attribute.text

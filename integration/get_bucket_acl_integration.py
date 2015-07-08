@@ -14,6 +14,7 @@
 from unittest import TestCase
 
 from nose.tools import eq_
+import urllib3
 
 from .credentials import Credentials
 from minio import minio
@@ -23,11 +24,12 @@ __author__ = 'minio'
 
 credentials = Credentials()
 
-url = credentials.url()
+url = credentials.url().replace('https', 'http')
 access_key = credentials.access_key()
 secret_key = credentials.secret_key()
 
 client = minio.Minio(url, access_key=access_key, secret_key=secret_key)
+urllib3.add_stderr_logger()
 
 bucket = 'goroutine-py'
 
