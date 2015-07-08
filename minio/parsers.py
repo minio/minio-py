@@ -1,3 +1,4 @@
+import locale
 from xml.etree import ElementTree
 from datetime import datetime
 
@@ -170,11 +171,10 @@ def parse_new_multipart_upload(data):
 
 def parse_error(response, url=None):
     if len(response.data) == 0:
-        if response.status == 404:
-            amz_request_id = None
-            if 'x-amz-request-id' in response.headers:
-                amz_request_id = response.headers['x-amz-request-id']
-            raise ResponseError('NotFound', '404: Not Found', amz_request_id, None, url)
+        amz_request_id = None
+        if 'x-amz-request-id' in response.headers:
+            amz_request_id = response.headers['x-amz-request-id']
+        raise ResponseError('NotFound', str(response.status) + ": " + response.reason, amz_request_id, None, url, response.data)
 
     code = None
     message = None
@@ -195,16 +195,20 @@ def parse_error(response, url=None):
         if attribute.tag == 'Resource':
             resource = attribute.text
 
-    raise ResponseError(code, message, request_id, host_id, resource)
+    raise ResponseError(code, message, request_id, host_id, resource, response.data)
 
 
 class ResponseError(BaseException):
-    def __init__(self, code, message, request_id, host_id, resource):
+    def __init__(self, code, message, request_id, host_id, resource, xml):
         self.code = code
         self.message = message
         self.request_id = request_id
         self.host_id = host_id
         self.resource = resource
+        self.xml = xml
+
+    def __str__(self):
+        return 'ResponseError: code: {0}, message: {1}, request_id: {2}, host_id: {3}, resource: {4}, xml: {5}'.format(self.code, self.message, self.request_id, self.host_id, self.resource, self.xml)
 
 
 class Bucket(object):
