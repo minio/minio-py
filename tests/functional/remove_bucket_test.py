@@ -19,7 +19,7 @@ from nose.tools import raises
 from minio import minio
 from minio.parsers import ResponseError
 from .minio_mocks import MockResponse
-from tests.helpers import generate_error
+from .helpers import generate_error
 
 __author__ = 'minio'
 

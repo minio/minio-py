@@ -17,7 +17,7 @@ import mock
 from nose.tools import raises
 
 from minio import minio
-from tests.minio_mocks import MockResponse
+from .minio_mocks import MockResponse
 
 __author__ = 'minio'
 

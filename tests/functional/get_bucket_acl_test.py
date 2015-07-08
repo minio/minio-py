@@ -18,7 +18,7 @@ from nose.tools import raises, eq_
 
 from minio import minio
 from minio.acl import Acl
-from tests.minio_mocks import MockResponse
+from .minio_mocks import MockResponse
 
 __author__ = 'minio'
 

@@ -34,6 +34,9 @@ def get_version():
     init = open(os.path.join(ROOT, 'minio', '__init__.py')).read()
     return VERSION_RE.search(init).group(1)
 
+with open('README.md') as file:
+    long_description = file.read()
+
 setup(
     name='minio',
     description='Minimal Object Storage Library for Python',
@@ -44,8 +47,7 @@ setup(
     version=get_version(),
     install_requires=['requests', 'pytz'],
     tests_require=['nose', 'mock'],
-    packages=['minio'],
-    py_modules=['minio'],
+    packages=find_packages(exclude=['tests*', 'integration']),
     scripts=[],
     setup_requires=['nose>=1.0'],
     test_suite='tests',
@@ -64,5 +66,5 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    long_description=open('README.md').read(),
+    long_description=long_description,
 )
