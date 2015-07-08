@@ -47,7 +47,7 @@ setup(
     version=get_version(),
     install_requires=['requests', 'pytz'],
     tests_require=['nose', 'mock'],
-    packages=find_packages(exclude=['tests*']),
+    packages=find_packages(exclude=['tests*', 'integration']),
     scripts=[],
     setup_requires=['nose>=1.0'],
     test_suite='tests',
