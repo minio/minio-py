@@ -558,7 +558,7 @@ class Minio:
         if type(data).__name__ != 'file':
             if not isinstance(data, io.BufferedReader):
                 if not isinstance(data, RawIOBase):
-                    if sys.version_info >= (3,0):
+                    if sys.version_info >= (3, 0):
                         if isinstance(data, compat_str_type):
                             data = data.encode('utf-8')
                     data = io.BytesIO(data)
@@ -580,7 +580,7 @@ class Minio:
             for part in part_iter:
                 uploaded_parts[part.part_number] = part
         else:
-            upload_id = self._new_multipart_upload(bucket, key)
+            upload_id = self._new_multipart_upload(bucket, key, content_type)
         total_uploaded = 0
         current_part_number = 1
         etags = []
@@ -621,7 +621,7 @@ class Minio:
         if response.status != 204:
             parse_error(response)
 
-    def _new_multipart_upload(self, bucket, key):
+    def _new_multipart_upload(self, bucket, key, content_type):
         method = 'POST'
         query = {
             'uploads': None
@@ -630,7 +630,8 @@ class Minio:
 
         md5_sum = convert_binary_to_base64(get_md5(b''))
         headers = {
-            'Content-MD5': md5_sum
+            'Content-MD5': md5_sum,
+            'Content-Type': content_type
         }
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
