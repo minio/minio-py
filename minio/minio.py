@@ -393,6 +393,8 @@ class Minio:
             # we reference 'file' for python 2.7 compatibility, RawIOBase for 3.X
             if type(data).__name__ == 'file' or isinstance(data, io.BufferedReader):
                 data = data.read(length)
+            if isinstance(data, io.TextIOWrapper):
+                data = data.read(length).encode('utf-8')
             return self._do_put_object(bucket, key, length, data, content_type)
         self._stream_put_object(bucket, key, length, data, content_type)
 
