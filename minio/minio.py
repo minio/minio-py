@@ -235,7 +235,10 @@ class Minio:
 
         response = self._http.request(method, url, headers=headers)
 
-        return parse_acl(response.data)
+        if response.status == 200:
+            return parse_acl(response.data)
+
+        parse_error(response, url=url)
 
     def set_bucket_acl(self, bucket, acl):
         """
