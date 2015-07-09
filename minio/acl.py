@@ -34,3 +34,10 @@ class Acl(object):
     def private():
         """ Owner Read Write ACL"""
         return 'private'
+
+
+def is_valid_acl(name, acl):
+    if acl == Acl.public_read_write() or acl == Acl.public_read() \
+            or acl == Acl.authenticated_read() or acl == Acl.private():
+        return
+    raise ValueError(name)
