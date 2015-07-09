@@ -523,6 +523,9 @@ class Minio:
         if upload_id is not None and part_number is None:
             raise ValueError('upload_id')
 
+        if len(data) != length:
+            raise DataSizeMismatchError()
+
         if upload_id is not None and part_number is not None:
             url = get_target_url(self._scheme, self._location, bucket=bucket, key=key,
                                  query={'uploadId': upload_id, 'partNumber': part_number})
@@ -662,3 +665,7 @@ class Minio:
             parse_error(response)
         # noinspection PyStatementEffect
         response.data  # force to read
+
+
+class DataSizeMismatchError(BaseException):
+    pass
