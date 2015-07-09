@@ -464,7 +464,7 @@ class Minio:
             parse_error(response)
 
         content_type = response.headers['Content-Type']
-        etag = response.headers['ETag']
+        etag = response.headers['ETag'].replace('"', '')
         size = response.headers['Content-Length']
         last_modified = response.headers['Last-Modified']
 
