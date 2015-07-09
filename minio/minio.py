@@ -24,7 +24,7 @@ import urllib3
 from .compat import compat_urllib_parse, compat_str_type
 from .generators import ListObjectsIterator, ListIncompleteUploads, ListUploadParts, DataStreamer
 from .helpers import get_target_url, is_non_empty_string, is_positive_int, get_sha256, convert_binary_to_base64, \
-    get_md5, calculate_part_size, convert_binary_to_hex
+    get_md5, calculate_part_size, convert_binary_to_hex, is_valid_bucket_name
 from .parsers import parse_list_buckets, parse_acl, parse_error, Object, parse_new_multipart_upload
 from .region import get_region
 from .signer import sign_v4
@@ -116,7 +116,7 @@ class Minio:
         :param acl: Canned ACL to use. Default is Acl.private()
         :return:
         """
-        is_non_empty_string('bucket', bucket)
+        is_valid_bucket_name('bucket', bucket)
 
         method = 'PUT'
         url = get_target_url(self._scheme, self._location, bucket=bucket)
@@ -178,7 +178,7 @@ class Minio:
         :param bucket: A bucket to test the existence and access of.
         :return: True if the bucket exists and the user has access. Otherwise, returns False
         """
-        is_non_empty_string('bucket', bucket)
+        is_valid_bucket_name('bucket', bucket)
 
         method = 'HEAD'
         url = get_target_url(self._scheme, self._location, bucket=bucket)
@@ -201,7 +201,7 @@ class Minio:
         :param bucket: Bucket to remove
         :return: None
         """
-        is_non_empty_string('bucket', bucket)
+        is_valid_bucket_name('bucket', bucket)
 
         method = 'DELETE'
         url = get_target_url(self._scheme, self._location, bucket=bucket)
@@ -227,7 +227,7 @@ class Minio:
         :param bucket: Bucket to check canned ACL of.
         :return: A string representing the currently used canned ACL if one is set.
         """
-        is_non_empty_string('bucket', bucket)
+        is_valid_bucket_name('bucket', bucket)
 
         method = 'GET'
         url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
@@ -262,7 +262,7 @@ class Minio:
         :param acl: ACL to set
         :return: None
         """
-        is_non_empty_string('bucket', bucket)
+        is_valid_bucket_name('bucket', bucket)
 
         method = 'PUT'
         url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
@@ -290,7 +290,7 @@ class Minio:
         :return: None
         """
         # check bucket
-        is_non_empty_string('bucket', bucket)
+        is_valid_bucket_name('bucket', bucket)
 
         uploads = ListIncompleteUploads(self._http, self._scheme, self._location, bucket, None,
                                         access_key=self._access_key,
@@ -316,7 +316,7 @@ class Minio:
         :param length: Optional number of bytes to retrieve. Must be > 0
         :return: An iterable containing a byte stream of the data.
         """
-        is_non_empty_string('bucket', bucket)
+        is_valid_bucket_name('bucket', bucket)
         is_non_empty_string('key', key)
         if offset is not None:
             is_positive_int('offset', offset, True)
@@ -369,7 +369,7 @@ class Minio:
         :param content_type: mime type of object as a string.
         :return: None
         """
-        is_non_empty_string('bucket', bucket)
+        is_valid_bucket_name('bucket', bucket)
         is_non_empty_string('key', key)
         is_positive_int('length', length)
 
@@ -430,7 +430,7 @@ class Minio:
         :param recursive: Boolean specifying whether to return as flat namespace or delimited by '/'
         :return: An iterator of objects in alphabetical order.
         """
-        is_non_empty_string('bucket', bucket)
+        is_valid_bucket_name('bucket', bucket)
         return ListObjectsIterator(self._http, self._scheme, self._location, bucket, prefix, recursive,
                                    self._access_key, self._secret_key)
 
@@ -442,7 +442,7 @@ class Minio:
         :param key: Key of object
         :return: True if object exists and the user has access.
         """
-        is_non_empty_string('bucket', bucket)
+        is_valid_bucket_name('bucket', bucket)
         is_non_empty_string('key', key)
 
         method = 'HEAD'
@@ -472,7 +472,7 @@ class Minio:
         :param key: Key of object to remove
         :return: None
         """
-        is_non_empty_string('bucket', bucket)
+        is_valid_bucket_name('bucket', bucket)
         is_non_empty_string('key', key)
 
         method = 'DELETE'
@@ -495,7 +495,7 @@ class Minio:
         :param key: Key of object to drop incomplete uploads of
         :return: None
         """
-        is_non_empty_string('bucket', bucket)
+        is_valid_bucket_name('bucket', bucket)
         is_non_empty_string('key', key)
 
         # check key
