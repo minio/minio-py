@@ -78,12 +78,16 @@ def is_positive_int(name, input_int, include_zero=False):
 
 
 def get_sha256(content):
+    if len(content) == 0:
+        content = b''
     hasher = hashlib.sha256()
     hasher.update(content)
     return hasher.digest()
 
 
 def get_md5(content):
+    if len(content) == 0:
+        content = b''
     hasher = hashlib.md5()
     hasher.update(content)
     return hasher.digest()

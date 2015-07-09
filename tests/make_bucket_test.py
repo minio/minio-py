@@ -40,7 +40,7 @@ class MakeBucket(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('PUT', 'http://localhost:9000/hello',
-                                                  {'Content-Length': '152', 'Content-MD5': 'SBBIY3Vm9HFpFlECujfyyw=='},
+                                                  {'Content-MD5': '1B2M2Y8AsgTpgAmY7PhCfg=='},
                                                   200))
         minio.Minio('http://localhost:9000')
 
@@ -51,7 +51,7 @@ class MakeBucket(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('PUT', 'http://localhost:9000/hello',
-                                                  {'Content-Length': '152', 'Content-MD5': 'SBBIY3Vm9HFpFlECujfyyw=='},
+                                                  {'Content-MD5': '1B2M2Y8AsgTpgAmY7PhCfg=='},
                                                   409, content=error_xml))
         client = minio.Minio('http://localhost:9000')
         client.make_bucket('hello')
