@@ -128,7 +128,7 @@ class Minio:
         region = get_region(self._location)
 
         content = ''
-        if region is not 'us-east-1':
+        if region != 'us-east-1':
             content = bucket_constraint(region)
             headers['Content-Length'] = str(len(content))
 
