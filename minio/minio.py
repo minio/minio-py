@@ -21,6 +21,7 @@ import platform
 
 import urllib3
 
+from .acl import is_valid_acl
 from .compat import compat_urllib_parse, compat_str_type
 from .generators import ListObjectsIterator, ListIncompleteUploads, ListUploadParts, DataStreamer
 from .helpers import get_target_url, is_non_empty_string, is_positive_int, get_sha256, convert_binary_to_base64, \
@@ -117,6 +118,8 @@ class Minio:
         :return:
         """
         is_valid_bucket_name('bucket', bucket)
+        if acl is not None:
+            is_valid_acl('acl', acl)
 
         method = 'PUT'
         url = get_target_url(self._scheme, self._location, bucket=bucket)
@@ -263,6 +266,7 @@ class Minio:
         :return: None
         """
         is_valid_bucket_name('bucket', bucket)
+        is_valid_acl('acl', acl)
 
         method = 'PUT'
         url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
