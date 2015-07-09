@@ -122,6 +122,9 @@ class Minio:
         url = get_target_url(self._scheme, self._location, bucket=bucket)
         headers = {}
 
+        if acl is not None:
+            headers['x-amz-acl'] = acl
+
         region = get_region(self._location)
 
         content = ''
