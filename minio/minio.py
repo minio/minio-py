@@ -602,7 +602,7 @@ class Minio:
             total_uploaded += len(current_data)
             current_part_number += 1
         if total_uploaded != length:
-            raise ValueError('len(data) does not match length')
+            raise DataSizeMismatchError('len(data) does not match actual length')
         self._complete_multipart_upload(bucket, key, upload_id, etags)
 
     def _drop_incomplete_upload(self, bucket, key, upload_id):
