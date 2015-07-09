@@ -15,8 +15,9 @@ import cgi
 import collections
 import binascii
 import hashlib
+import urllib
 
-from .compat import compat_str_type
+from .compat import compat_str_type, compat_pathname2url
 
 __author__ = 'minio'
 
@@ -61,6 +62,10 @@ def is_non_empty_string(name, input_string):
     input_string = input_string.strip()
     if input_string == '':
         raise ValueError(name)
+
+def encode_object_key(name, input_string):
+    is_non_empty_string(name, input_string)
+    return compat_pathname2url(input_string)
 
 
 def is_positive_int(name, input_int, include_zero=False):
