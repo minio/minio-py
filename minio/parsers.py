@@ -235,6 +235,10 @@ class Object(object):
         self.size = size
         self.content_type = content_type
 
+    def __str__(self):
+        return '<Object: bucket: {0} key: {1} last_modified: {2} etag: {3} size: {4} content_type: {5}>'.format(
+            self.bucket, self.key, self.last_modified, self.etag, self.size, self.content_type)
+
 
 class IncompleteUpload(object):
     def __init__(self, bucket, key, upload_id):
