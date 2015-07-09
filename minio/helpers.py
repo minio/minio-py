@@ -49,6 +49,12 @@ def get_target_url(scheme, location, bucket=None, key=None, query=None):
     return ''.join(url_components)
 
 
+def is_valid_bucket_name(name, input_string):
+    is_non_empty_string(name, input_string)
+    if '/' in input_string:
+        raise ValueError(name)
+
+
 def is_non_empty_string(name, input_string):
     if not isinstance(input_string, compat_str_type):
         raise TypeError(name)
