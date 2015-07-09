@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import sys
+
 import certifi as certifi
 
 __author__ = 'minio'
@@ -386,9 +388,6 @@ class Minio:
         if content_type == '':
             raise ValueError('content_type')
 
-        if isinstance(data, compat_str_type):
-            data = data.encode('utf-8')
-
         if length <= 5 * 1024 * 1024:
             # we reference 'file' for python 2.7 compatibility, RawIOBase for 3.X
             if type(data).__name__ == 'file' or isinstance(data, io.BufferedReader):
@@ -559,6 +558,9 @@ class Minio:
         if type(data).__name__ != 'file':
             if not isinstance(data, io.BufferedReader):
                 if not isinstance(data, RawIOBase):
+                    if sys.version_info >= (3,0):
+                        if isinstance(data, compat_str_type):
+                            data = data.encode('utf-8')
                     data = io.BytesIO(data)
                 data = io.BufferedReader(data)
 
