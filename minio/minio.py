@@ -550,7 +550,7 @@ class Minio:
         # noinspection PyStatementEffect
         response.data  # force read
 
-        return response.headers['ETag']
+        return response.headers['ETag'].replace('"', '')
 
     def _stream_put_object(self, bucket, key, length, data, content_type):
         if type(data).__name__ != 'file':
