@@ -2,8 +2,10 @@ from xml.etree import ElementTree
 from datetime import datetime
 
 import pytz
+import sys
 
 from .acl import Acl
+from .compat import compat_url2pathname
 
 __author__ = 'minio'
 
@@ -82,7 +84,10 @@ def parse_list_objects(data, bucket):
             size = None
             for content in contents:
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
-                    key = content.text
+                    if(sys.version_info < (3,0)):
+                        key = compat_url2pathname(content.text.encode('utf-8'))
+                    else:
+                        key = compat_url2pathname(content.text)
                     last_key = key
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
                     last_modified = _parse_date(content.text)

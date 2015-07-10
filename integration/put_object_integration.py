@@ -17,6 +17,7 @@ from unittest import TestCase
 
 from .credentials import Credentials
 from minio import minio
+from minio.minio import DataSizeMismatchError
 
 __author__ = 'minio'
 
@@ -59,7 +60,7 @@ class PutObjectIntegration(TestCase):
         with open(file_name, 'rb') as data_file:
             try:
                 client.put_object(bucket, 'large_obj3', file_stat.st_size - (2 * 1024 * 1024), data_file)
-            except ValueError:
+            except DataSizeMismatchError:
                 pass
 
         with open(file_name, 'rb') as data_file:
