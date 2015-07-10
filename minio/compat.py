@@ -10,6 +10,10 @@ try:
 except ImportError:  # python 2
     from urllib import pathname2url as compat_pathname2url
 
+try:
+    from urllib.request import url2pathname as compat_url2pathname
+except ImportError:  # python 2
+    from urllib import url2pathname as compat_url2pathname
 
 compat_str_type = None
 if sys.version_info < (3, 0):

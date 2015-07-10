@@ -15,7 +15,6 @@ import cgi
 import collections
 import binascii
 import hashlib
-import urllib
 
 from .compat import compat_str_type, compat_pathname2url
 
@@ -39,7 +38,7 @@ def get_target_url(scheme, location, bucket=None, key=None, query=None):
             single_component = [component_key]
             if ordered_query[component_key] is not None:
                 single_component.append('=')
-                single_component.append(cgi.escape(str(ordered_query[component_key])).replace('/', '%2F'))
+                single_component.append(compat_pathname2url(cgi.escape(str(ordered_query[component_key]))).replace('/', '%2F'))
             query_components.append(''.join(single_component))
 
         query_string = '&'.join(query_components)
@@ -62,6 +61,7 @@ def is_non_empty_string(name, input_string):
     input_string = input_string.strip()
     if input_string == '':
         raise ValueError(name)
+
 
 def encode_object_key(name, input_string):
     is_non_empty_string(name, input_string)
