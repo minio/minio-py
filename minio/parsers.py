@@ -2,10 +2,9 @@ from xml.etree import ElementTree
 from datetime import datetime
 
 import pytz
-import sys
 
 from .acl import Acl
-from .compat import compat_url2pathname
+from .compat import compat_urldecode_key
 
 __author__ = 'minio'
 
@@ -76,7 +75,7 @@ def parse_list_objects(data, bucket):
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
             is_truncated = contents.text.lower() == 'true'
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextMarker':
-            marker = contents.text
+            marker = compat_urldecode_key(contents.text)
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Contents':
             key = None
             last_modified = None
@@ -84,10 +83,7 @@ def parse_list_objects(data, bucket):
             size = None
             for content in contents:
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
-                    if(sys.version_info < (3,0)):
-                        key = compat_url2pathname(content.text.encode('utf-8'))
-                    else:
-                        key = compat_url2pathname(content.text)
+                    key = compat_urldecode_key(content.text)
                     last_key = key
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
                     last_modified = _parse_date(content.text)

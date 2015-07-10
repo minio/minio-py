@@ -38,7 +38,8 @@ def get_target_url(scheme, location, bucket=None, key=None, query=None):
             single_component = [component_key]
             if ordered_query[component_key] is not None:
                 single_component.append('=')
-                single_component.append(compat_pathname2url(cgi.escape(str(ordered_query[component_key]))).replace('/', '%2F'))
+                single_component.append(
+                    compat_pathname2url(cgi.escape(str(ordered_query[component_key]))).replace('/', '%2F'))
             query_components.append(''.join(single_component))
 
         query_string = '&'.join(query_components)
