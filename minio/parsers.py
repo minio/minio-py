@@ -75,7 +75,8 @@ def parse_list_objects(data, bucket):
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
             is_truncated = contents.text.lower() == 'true'
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextMarker':
-            marker = compat_urldecode_key(contents.text)
+            if contents.text is not None:
+                marker = compat_urldecode_key(contents.text)
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Contents':
             key = None
             last_modified = None
@@ -116,7 +117,8 @@ def parse_incomplete_uploads(data, bucket):
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
             is_truncated = contents.text.lower() == 'true'
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextKeyMarker':
-            key_marker = contents.text
+            if contents.text is not None:
+                key_marker = compat_urldecode_key(contents.text)
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextUploadIdMarker':
             upload_id_marker = contents.text
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Upload':
