@@ -81,7 +81,7 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
 
     for ignored_header in ignored_headers:
         if ignored_header in headers_to_sign:
-            del headers_to_sign
+            del headers_to_sign[ignored_header]
 
     canonical_request, signed_headers = generate_canonical_request(method, parsed_url, headers_to_sign,
                                                                    content_hash_hex)
