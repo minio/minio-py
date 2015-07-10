@@ -48,7 +48,43 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
     headers['x-amz-date'] = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
     headers['x-amz-content-sha256'] = content_hash_hex
 
-    canonical_request, signed_headers = generate_canonical_request(method, parsed_url, headers, content_hash_hex)
+    headers_to_sign = dict(headers)
+
+    # Excerpts from @lsegal - https://github.com/aws/aws-sdk-js/issues/659#issuecomment-120477258
+    #
+    #  User-Agent:
+    #
+    #      This is ignored from signing because signing this causes problems with generating pre-signed URLs
+    #      (that are executed by other agents) or when customers pass requests through proxies, which may
+    #      modify the user-agent.
+    #
+    #  Content-Length:
+    #
+    #      This is ignored from signing because generating a pre-signed URL should not provide a content-length
+    #      constraint, specifically when vending a S3 pre-signed PUT URL. The corollary to this is that when
+    #      sending regular requests (non-pre-signed), the signature contains a checksum of the body, which
+    #      implicitly validates the payload length (since changing the number of bytes would change the checksum)
+    #      and therefore this header is not valuable in the signature.
+    #
+    #  Content-Type:
+    #
+    #      Signing this header causes quite a number of problems in browser environments, where browsers
+    #      like to modify and normalize the content-type header in different ways. There is more information
+    #      on this in https://github.com/aws/aws-sdk-js/issues/244. Avoiding this field simplifies logic
+    #      and reduces the possibility of future bugs
+    #
+    #  Authorization:
+    #
+    #      Is skipped for obvious reasons
+
+    ignored_headers = ['Authorization', 'Content-Length', 'Content-Type', 'User-Agent']
+
+    for ignored_header in ignored_headers:
+        if ignored_header in headers_to_sign:
+            del headers_to_sign
+
+    canonical_request, signed_headers = generate_canonical_request(method, parsed_url, headers_to_sign,
+                                                                   content_hash_hex)
 
     region = get_region(parsed_url.hostname)
 
