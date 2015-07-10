@@ -394,6 +394,8 @@ class Minio:
                 data = data.read(length)
             if isinstance(data, io.TextIOWrapper):
                 data = data.read(length).encode('utf-8')
+            if sys.version_info >= (3, 0) and isinstance(data, compat_str_type):
+                data = data.encode('utf-8')
             return self._do_put_object(bucket, key, length, data, content_type)
         self._stream_put_object(bucket, key, length, data, content_type)
 
