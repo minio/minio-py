@@ -40,7 +40,7 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
     host = parsed_url.hostname
     if parsed_url.port is not None:
         if parsed_url.scheme == 'http' and parsed_url.port != 80:
-            host = host + ":" + parsed_url.port
+            host = host + ":" + str(parsed_url.port)
         if parsed_url.scheme == 'https' and parsed_url.port != 443:
             host = host + ":" + str(parsed_url.port)
 
