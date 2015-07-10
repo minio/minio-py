@@ -67,6 +67,8 @@ def parse_acl(data):
 def parse_list_objects(data, bucket):
     root = ElementTree.fromstring(data)
 
+    print(data)
+
     is_truncated = False
     objects = []
     marker = None
@@ -92,7 +94,12 @@ def parse_list_objects(data, bucket):
                     etag = etag.replace('"', '')
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
                     size = content.text
-            objects.append(Object(bucket, key, last_modified, etag, size))
+            objects.append(Object(bucket, key, last_modified, etag, size, content_type=None))
+        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}CommonPrefixes':
+            for content in contents:
+                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Prefix':
+                    key = compat_urldecode_key(content.text)
+                objects.append(Object(bucket, key, None, '', 0, content_type=None, is_dir=True))
 
     if is_truncated and marker is None:
         marker = last_key
@@ -227,7 +234,7 @@ class Bucket(object):
 
 
 class Object(object):
-    def __init__(self, bucket, key, last_modified, etag, size, content_type=None):
+    def __init__(self, bucket, key, last_modified, etag, size, content_type=None, is_dir=False):
         # TODO parse last_modified
         self.bucket = bucket
         self.key = key
@@ -235,10 +242,11 @@ class Object(object):
         self.etag = etag
         self.size = size
         self.content_type = content_type
+        self.is_dir = is_dir
 
     def __str__(self):
-        return '<Object: bucket: {0} key: {1} last_modified: {2} etag: {3} size: {4} content_type: {5}>'.format(
-            self.bucket, self.key, self.last_modified, self.etag, self.size, self.content_type)
+        return '<Object: bucket: {0} key: {1} last_modified: {2} etag: {3} size: {4} content_type: {5}, is_dir: {6}>'.format(
+            self.bucket, self.key, self.last_modified, self.etag, self.size, self.content_type, self.is_dir)
 
 
 class IncompleteUpload(object):
