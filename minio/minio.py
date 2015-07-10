@@ -450,10 +450,10 @@ class Minio:
         :return: True if object exists and the user has access.
         """
         is_valid_bucket_name('bucket', bucket)
-        key = encode_object_key('key', key)
+        encoded_key = encode_object_key('key', key)
 
         method = 'HEAD'
-        url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
+        url = get_target_url(self._scheme, self._location, bucket=bucket, key=encoded_key)
         headers = {}
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
