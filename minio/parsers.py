@@ -67,8 +67,6 @@ def parse_acl(data):
 def parse_list_objects(data, bucket):
     root = ElementTree.fromstring(data)
 
-    print(data)
-
     is_truncated = False
     objects = []
     marker = None
