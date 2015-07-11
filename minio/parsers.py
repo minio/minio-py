@@ -126,7 +126,7 @@ def parse_incomplete_uploads(data, bucket):
             upload_id = None
             for content in contents:
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
-                    key = content.text
+                    key = compat_urldecode_key(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}UploadId':
                     upload_id = content.text
             uploads.append(IncompleteUpload(bucket, key, upload_id))
@@ -245,8 +245,10 @@ class Object(object):
         self.is_dir = is_dir
 
     def __str__(self):
-        return '<Object: bucket: {0} key: {1} last_modified: {2} etag: {3} size: {4} content_type: {5}, is_dir: {6}>'.format(
-            self.bucket, self.key, self.last_modified, self.etag, self.size, self.content_type, self.is_dir)
+        string_format = '<Object: bucket: {0} key: {1} last_modified: {2}' \
+                        ' etag: {3} size: {4} content_type: {5}, is_dir: {6}>'
+        return string_format.format(self.bucket, self.key, self.last_modified,
+                                    self.etag, self.size, self.content_type, self.is_dir)
 
 
 class IncompleteUpload(object):
@@ -254,6 +256,9 @@ class IncompleteUpload(object):
         self.bucket = bucket
         self.key = key
         self.upload_id = upload_id
+
+    def __str__(self):
+        return '<IncompleteUpload: {0} {1} {2}>'.format(self.bucket, self.key, self.upload_id)
 
 
 class UploadPart(object):

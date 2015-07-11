@@ -27,7 +27,7 @@ from .acl import is_valid_acl
 from .compat import compat_urllib_parse, compat_str_type
 from .generators import ListObjectsIterator, ListIncompleteUploads, ListUploadParts, DataStreamer
 from .helpers import get_target_url, is_non_empty_string, is_positive_int, get_sha256, convert_binary_to_base64, \
-    get_md5, calculate_part_size, convert_binary_to_hex, is_valid_bucket_name, encode_object_key
+    get_md5, calculate_part_size, convert_binary_to_hex, is_valid_bucket_name
 from .parsers import parse_list_buckets, parse_acl, parse_error, Object, parse_new_multipart_upload
 from .region import get_region
 from .signer import sign_v4
@@ -305,6 +305,14 @@ class Minio:
         for upload in uploads:
             self._drop_incomplete_upload(bucket, upload.key, upload.upload_id)
 
+    # def list_incomplete_uploads(self, bucket):
+    #     is_valid_bucket_name('bucket', bucket)
+    #
+    #     uploads = ListIncompleteUploads(self._http, self._scheme, self._location, bucket, None,
+    #                                     access_key=self._access_key,
+    #                                     secret_key=self._secret_key)
+    #     return uploads
+
     # Object Level
     def get_object(self, bucket, key, offset=None, length=None):
         """
@@ -323,7 +331,7 @@ class Minio:
         :return: An iterable containing a byte stream of the data.
         """
         is_valid_bucket_name('bucket', bucket)
-        key = encode_object_key('key', key)
+        is_non_empty_string('key', key)
         if offset is not None:
             is_positive_int('offset', offset, True)
         if length is not None:
@@ -376,7 +384,7 @@ class Minio:
         :return: None
         """
         is_valid_bucket_name('bucket', bucket)
-        key = encode_object_key('key', key)
+        is_non_empty_string('key', key)
         is_positive_int('length', length)
 
         # check content_type
@@ -450,10 +458,10 @@ class Minio:
         :return: True if object exists and the user has access.
         """
         is_valid_bucket_name('bucket', bucket)
-        encoded_key = encode_object_key('key', key)
+        is_non_empty_string('key', key)
 
         method = 'HEAD'
-        url = get_target_url(self._scheme, self._location, bucket=bucket, key=encoded_key)
+        url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
         headers = {}
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
@@ -480,7 +488,7 @@ class Minio:
         :return: None
         """
         is_valid_bucket_name('bucket', bucket)
-        key = encode_object_key('key', key)
+        is_non_empty_string('key', key)
 
         method = 'DELETE'
         url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
@@ -503,7 +511,7 @@ class Minio:
         :return: None
         """
         is_valid_bucket_name('bucket', bucket)
-        key = encode_object_key('key', key)
+        is_non_empty_string('key', key)
 
         # check key
         uploads = ListIncompleteUploads(self._http, self._scheme, self._location, bucket, key,
