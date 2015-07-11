@@ -305,10 +305,10 @@ class Minio:
         for upload in uploads:
             self._drop_incomplete_upload(bucket, upload.key, upload.upload_id)
 
-    # def list_incomplete_uploads(self, bucket):
+    # def list_incomplete_uploads(self, bucket, key=None):
     #     is_valid_bucket_name('bucket', bucket)
     #
-    #     uploads = ListIncompleteUploads(self._http, self._scheme, self._location, bucket, None,
+    #     uploads = ListIncompleteUploads(self._http, self._scheme, self._location, bucket, key,
     #                                     access_key=self._access_key,
     #                                     secret_key=self._secret_key)
     #     return uploads
