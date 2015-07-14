@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from io import BytesIO
 from xml.etree import ElementTree
 
 __author__ = 'minio'
@@ -20,15 +21,9 @@ def bucket_constraint(region):
     root = ElementTree.Element('CreateBucketConfiguration', {'xmlns': 'http://s3.amazonaws.com/doc/2006-03-01/'})
     location_constraint = ElementTree.SubElement(root, 'LocationConstraint')
     location_constraint.text = region
-    data = []
-    mock_file = MockFile()
-    mock_file.write = data.append
-    ElementTree.ElementTree(root).write(mock_file, encoding=None, xml_declaration=False)
-    return b''.join(data)
-
-
-class MockFile(object):
-    pass
+    data = BytesIO()
+    ElementTree.ElementTree(root).write(data, encoding=None, xml_declaration=False)
+    return data.getvalue()
 
 
 def generate_complete_multipart_upload(etags):
@@ -40,8 +35,6 @@ def generate_complete_multipart_upload(etags):
         part_number.text = str(i + 1)
         etag = ElementTree.SubElement(part, 'ETag')
         etag.text = etags[i]
-    data = []
-    mock_file = MockFile()
-    mock_file.write = data.append
-    ElementTree.ElementTree(root).write(mock_file, encoding=None, xml_declaration=False)
-    return b''.join(data)
+        data = BytesIO()
+        ElementTree.ElementTree(root).write(data, encoding=None, xml_declaration=False)
+        return data.getvalue()
