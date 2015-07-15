@@ -28,7 +28,7 @@ from .compat import compat_urllib_parse, compat_str_type
 from .generators import ListObjectsIterator, ListIncompleteUploads, ListUploadParts, DataStreamer
 from .helpers import get_target_url, is_non_empty_string, is_positive_int, get_sha256, convert_binary_to_base64, \
     get_md5, calculate_part_size, convert_binary_to_hex, is_valid_bucket_name
-from .parsers import parse_list_buckets, parse_acl, parse_error, Object, parse_new_multipart_upload
+from .parsers import parse_list_buckets, parse_acl, parse_error, Object, parse_new_multipart_upload, ResponseError
 from .region import get_region
 from .signer import sign_v4
 from .xml_requests import bucket_constraint, generate_complete_multipart_upload
@@ -169,11 +169,15 @@ class Minio:
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = self._http.request(method, url, headers=headers)
+        response = self._http.request(method, url, headers=headers, redirect=False)
 
         if response.status != 200:
-            parse_error(response)
-
+            try:
+                parse_error(response)
+            except ResponseError as err:
+                if err.code == 'Redirect':
+                    err.code = 'AccessDeniedException'
+                raise err
         return parse_list_buckets(response.data)
 
     def bucket_exists(self, bucket):

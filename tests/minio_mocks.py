@@ -49,11 +49,12 @@ class MockConnection(object):
     def mock_add_request(self, request):
         self.requests.append(request)
 
-    def request(self, method, url, headers):
+    # noinspection PyUnusedLocal
+    def request(self, method, url, headers, redirect=False):
         return_request = self.requests.pop(0)
         return_request.mock_verify(method, url, headers)
         return return_request
 
     # noinspection PyRedeclaration,PyUnusedLocal,PyUnusedLocal
-    def urlopen(self, method, url, headers, preload_content=False, body=None):
+    def urlopen(self, method, url, headers, preload_content=False, body=None, redirect=False):
         return self.request(method, url, headers)
