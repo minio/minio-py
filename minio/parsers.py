@@ -98,6 +98,7 @@ def parse_list_objects(data, bucket):
             for content in contents:
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Prefix':
                     key = compat_urldecode_key(content.text)
+                # noinspection PyUnboundLocalVariable
                 objects.append(Object(bucket, key, None, '', 0, content_type=None, is_dir=True))
 
     if is_truncated and marker is None:
@@ -177,7 +178,7 @@ def parse_new_multipart_upload(data):
 
 
 def parse_error(response, url=None):
-    if len(response.data) == 0:
+    if len(response.data) == 0 or response.status == 301 or response.status == 307:
         amz_request_id = None
         if 'x-amz-request-id' in response.headers:
             amz_request_id = response.headers['x-amz-request-id']
@@ -187,6 +188,8 @@ def parse_error(response, url=None):
             raise ResponseError('AccessDeniedException', response.reason, amz_request_id, None, url, response.data)
         if response.status == 400:
             raise ResponseError('BadRequest', response.reason, amz_request_id, None, url, response.data)
+        if response.status == 301 or response.status == 307:
+            raise ResponseError('Redirect', response.reason, amz_request_id, None, url, response.data)
 
     code = None
     message = None
