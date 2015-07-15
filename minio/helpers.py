@@ -15,6 +15,7 @@ import cgi
 import collections
 import binascii
 import hashlib
+import re
 
 from .compat import compat_str_type, compat_pathname2url
 
@@ -54,7 +55,13 @@ def get_target_url(scheme, location, bucket=None, key=None, query=None):
 
 def is_valid_bucket_name(name, input_string):
     is_non_empty_string(name, input_string)
+    if len(input_string) < 3 or len(input_string) > 63:
+        raise ValueError(name)
     if '/' in input_string:
+        raise ValueError(name)
+    if not re.match("^[a-z0-9]+[a-z0-9\-]*[a-z0-9]+$", name):
+        raise ValueError(name)
+    if re.match("/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/", name):
         raise ValueError(name)
 
 
