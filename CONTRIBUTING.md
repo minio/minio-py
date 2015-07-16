@@ -1,4 +1,4 @@
-### Setup your minio-java Github Repository
+### Setup your minio-py Github Repository
 Fork [minio-py upstream](https://github.com/minio/minio-py/fork) source repository to your own personal repository.
 
 ```sh
