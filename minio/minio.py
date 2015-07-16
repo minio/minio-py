@@ -318,6 +318,16 @@ class Minio:
     #     return uploads
 
     def get_object(self, bucket, key):
+        """
+        Retrieves an object from a bucket.
+
+        Examples:
+            my_partial_object = minio.get_partial_object('foo', 'bar')
+
+        :param bucket: Bucket to retrieve object from
+        :param key: Key to retrieve
+        :return: An iterable containing a byte stream of the data.
+        """
         return self.get_partial_object(bucket, key)
 
     # Object Level
@@ -328,8 +338,7 @@ class Minio:
         Optionally takes an offset and length of data to retrieve.
 
         Examples:
-            my_object = minio.get_object('foo', 'bar')
-            my_partial_object = minio.get_object('foo', 'bar', 2, 4)
+            my_partial_object = minio.get_partial_object('foo', 'bar', 2, 4)
 
         :param bucket: Bucket to retrieve object from
         :param key: Key to retrieve
