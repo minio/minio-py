@@ -49,7 +49,7 @@ for bucket in buckets:
 
 [get_object(bucket, key)](examples/get_object.py)
 
-[get_partial_object(bucket, key)](examples/get_partial_object.py)
+[get_partial_object(bucket, key, offset, length)](examples/get_partial_object.py)
 
 [put_object(bucket, key, length, data, content_type='application/octet_stream')](examples/put_object.py)
 
