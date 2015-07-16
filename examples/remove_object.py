@@ -20,4 +20,4 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Remove a bucket
-client.remove_object('my_bucket', 'my_key')
+client.remove_object('my-bucket', 'my_key')

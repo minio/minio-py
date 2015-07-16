@@ -21,7 +21,7 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Set private ACL
-client.set_bucket_acl('my_bucket', Acl.private())
+client.set_bucket_acl('my-bucket', Acl.private())
 
 # Print current ACL
-print client.get_bucket_acl('my_bucket')
+print client.get_bucket_acl('my-bucket')

@@ -20,7 +20,7 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Drop incomplete uploads for a given bucket and key
-client.drop_incomplete_upload('my_bucket', 'my_key')
+client.drop_incomplete_upload('my-bucket', 'my_key')
 
 # Drop incomplete uploads for the entire bucket
-client.drop_all_incomplete_uploads('my_bucket')
+client.drop_all_incomplete_uploads('my-bucket')

@@ -20,12 +20,12 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # List all objects in bucket
-objects = client.list_objects('my_bucket')
+objects = client.list_objects('my-bucket')
 for obj in objects:
     print obj.bucket, obj.key, obj.last_modified, obj.etag, obj.size, obj.content_type
 
 # List all objects in bucket that begin with hello
-objects = client.list_objects('my_bucket', prefix='hello')
+objects = client.list_objects('my-bucket', prefix='hello')
 for obj in objects:
     print obj.bucket, obj.key, obj.last_modified, obj.etag, obj.size, obj.content_type
 
@@ -34,6 +34,6 @@ for obj in objects:
 # hello/object
 # hello/dir/
 
-objects = client.list_objects('my_bucket', prefix='hello/', recursive=False)
+objects = client.list_objects('my-bucket', prefix='hello/', recursive=False)
 for obj in objects:
     print obj.bucket, obj.key, obj.last_modified, obj.etag, obj.size, obj.content_type
