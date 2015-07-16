@@ -317,8 +317,11 @@ class Minio:
     #                                     secret_key=self._secret_key)
     #     return uploads
 
+    def get_object(self, bucket, key):
+        return self.get_partial_object(bucket, key)
+
     # Object Level
-    def get_object(self, bucket, key, offset=None, length=None):
+    def get_partial_object(self, bucket, key, offset=None, length=None):
         """
         Retrieves an object from a bucket.
 
