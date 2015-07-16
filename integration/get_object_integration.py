@@ -41,7 +41,7 @@ class GetObjectIntegration(TestCase):
         print(''.join(str(collected_data)))
 
     def get_object_range_test(self):
-        data = client.get_object(bucket, 'hello/world', 2, 4)
+        data = client.get_partial_object(bucket, 'hello/world', 2, 4)
         collected_data = []
         for d in data:
             collected_data.append(d)

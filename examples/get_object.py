@@ -31,7 +31,7 @@ for datum in data:
 print sha256.hexdigest()
 
 # Offset the download by 2 bytes and retrieve a total of 4 bytes.
-data = client.get_object('bucket', 'key', 2, 4)
+data = client.get_partial_object('bucket', 'key', 2, 4)
 
 # Example generating sha256 of partial data
 sha256 = hashlib.sha256()
