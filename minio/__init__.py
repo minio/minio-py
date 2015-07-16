@@ -17,4 +17,4 @@ from .acl import Acl
 from .parsers import Bucket, Object, ResponseError
 
 __author__ = "Minio, Inc."
-__version__ = "0.1.dev7"
+__version__ = "0.1.dev8"

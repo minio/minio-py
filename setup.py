@@ -24,7 +24,7 @@ It is designed to be easy to use and minimal, exposing only the most used functi
 import re
 import os
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 ROOT = os.path.dirname(__file__)
 VERSION_RE = re.compile(r'''__version__ = ['"](.+)['"]''')
@@ -45,8 +45,7 @@ setup(
     version=get_version(),
     install_requires=['urllib3', 'pytz', 'certifi'],
     tests_require=['nose', 'mock'],
-    packages=['minio'],
-    py_modules=['minio'],
+    packages=find_packages(exclude=['tests*', 'integration']),
     scripts=[],
     setup_requires=['nose>=1.0'],
     test_suite='tests',
