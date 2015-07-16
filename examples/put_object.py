@@ -22,10 +22,10 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Put a new object
-client.put_object('my_bucket', 'my_key', 11, 'hello world',
+client.put_object('my-bucket', 'my_key', 11, 'hello world',
                   content_type='text/plain')
 
 # Put a file
 file_stat = os.stat('file.dat')
 with open('file.dat', 'rb') as file_data:
-    client.put_object('my_bucket', 'my_key', file_stat.st_size, file_data)
+    client.put_object('my-bucket', 'my_key', file_stat.st_size, file_data)
