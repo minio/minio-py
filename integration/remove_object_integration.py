@@ -28,6 +28,7 @@ access_key = credentials.access_key()
 secret_key = credentials.secret_key()
 
 client = minio.Minio(url, access_key=access_key, secret_key=secret_key)
+play_client = minio.Minio("https://play.minio.io:9000")
 
 bucket = 'goroutine-py'
 
@@ -46,3 +47,7 @@ class RemoveObjectIntegration(TestCase):
 
     def test_object_not_found(self):
         client.remove_object(bucket, 'missing-object')
+
+    @raises(ResponseError)
+    def test_remove_bucket_not_allowed(self):
+        play_client.remove_bucket("foo")

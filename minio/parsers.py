@@ -182,6 +182,9 @@ def parse_error(response, url=None):
         amz_request_id = None
         if 'x-amz-request-id' in response.headers:
             amz_request_id = response.headers['x-amz-request-id']
+            raise ResponseError('MethodNotAllowedException', response.reason, amz_request_id, None, url, response.data)
+        if response.status == 405 or response.status == 501:
+            raise ResponseError('MethodNotAllowedException', response.reason, amz_request_id, None, url, response.data)
         if response.status == 404:
             raise ResponseError('ObjectNotFoundException', response.reason, amz_request_id, None, url, response.data)
         if response.status == 403:

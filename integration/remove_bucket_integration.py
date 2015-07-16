@@ -30,6 +30,7 @@ secret_key = credentials.secret_key()
 bucket = 'goroutine-delete-me'
 
 client = minio.Minio(url, access_key=access_key, secret_key=secret_key)
+play_client = minio.Minio("https://play.minio.io:9000")
 
 
 class RemoveBucketIntegration(TestCase):
@@ -44,3 +45,7 @@ class RemoveBucketIntegration(TestCase):
     @raises(ResponseError)
     def test_invalid_bucket_name_exception(self):
         client.remove_bucket('1234')
+
+    @raises(ResponseError)
+    def test_remove_object_not_allowed(self):
+        play_client.remove_object("foo", "bar")
