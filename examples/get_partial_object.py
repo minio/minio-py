@@ -21,10 +21,10 @@ client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-# Get a full object
-data = client.get_object('bucket', 'key')
+# Offset the download by 2 bytes and retrieve a total of 4 bytes.
+data = client.get_partial_object('bucket', 'key', 2, 4)
 
-# Example generating sha256 of data
+# Example generating sha256 of partial data
 sha256 = hashlib.sha256()
 for datum in data:
     sha256.update(datum)
