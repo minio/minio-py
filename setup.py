@@ -51,7 +51,7 @@ setup(
     test_suite='tests',
     license='Apache License 2.0',
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Natural Language :: English',
         'License :: OSI Approved :: Apache Software License',
