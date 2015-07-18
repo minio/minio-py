@@ -48,7 +48,6 @@ setup(
     packages=find_packages(exclude=['tests*', 'integration']),
     scripts=[],
     setup_requires=['nose>=1.0'],
-    test_suite='tests',
     license='Apache License 2.0',
     classifiers=[
         'Development Status :: 4 - Beta',
