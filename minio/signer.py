@@ -75,13 +75,16 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
     #
     #      Is skipped for obvious reasons
 
-    ignored_headers = ['Authorization', 'Content-Length', 'Content-Type', 'User-Agent']
+    ignored_headers = ['Authorization', 'Content-Length', 'Content-Type',
+                       'User-Agent']
 
     for ignored_header in ignored_headers:
         if ignored_header in headers_to_sign:
             del headers_to_sign[ignored_header]
 
-    canonical_request, signed_headers = generate_canonical_request(method, parsed_url, headers_to_sign,
+    canonical_request, signed_headers = generate_canonical_request(method,
+                                                                   parsed_url,
+                                                                   headers_to_sign,
                                                                    content_hash_hex)
 
     region = get_region(parsed_url.hostname)
@@ -92,11 +95,15 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
     canonical_request_hasher.update(canonical_request.encode('utf-8'))
     canonical_request_sha256 = canonical_request_hasher.hexdigest()
 
-    string_to_sign = generate_string_to_sign(dt, region, canonical_request_sha256)
+    string_to_sign = generate_string_to_sign(dt, region,
+                                             canonical_request_sha256)
     signing_key = generate_signing_key(dt, region, secret_key)
-    signed_request = hmac.new(signing_key, string_to_sign.encode('utf-8'), hashlib.sha256).hexdigest()
+    signed_request = hmac.new(signing_key, string_to_sign.encode('utf-8'),
+                              hashlib.sha256).hexdigest()
 
-    authorization_header = generate_authorization_header(access_key, dt, region, signed_headers, signed_request)
+    authorization_header = generate_authorization_header(access_key, dt, region,
+                                                         signed_headers,
+                                                         signed_request)
 
     headers['authorization'] = authorization_header
 
@@ -141,9 +148,15 @@ def generate_string_to_sign(dt, region, request_hash):
     formatted_date_time = dt.strftime("%Y%m%dT%H%M%SZ")
     formatted_date = dt.strftime("%Y%m%d")
 
-    scope = '/'.join([formatted_date, region, 's3', 'aws4_request'])
+    scope = '/'.join([formatted_date,
+                      region,
+                      's3',
+                      'aws4_request'])
 
-    return '\n'.join(['AWS4-HMAC-SHA256', formatted_date_time, scope, request_hash])
+    return '\n'.join(['AWS4-HMAC-SHA256',
+                      formatted_date_time,
+                      scope,
+                      request_hash])
 
 
 def generate_signing_key(dt, region, secret):
@@ -158,8 +171,13 @@ def generate_signing_key(dt, region, secret):
     return hmac.new(key4, 'aws4_request'.encode('utf-8'), hashlib.sha256).digest()
 
 
-def generate_authorization_header(access_key, dt, region, signed_headers, signed_request):
+def generate_authorization_header(access_key, dt, region, signed_headers,
+                                  signed_request):
     formatted_date = dt.strftime("%Y%m%d")
     signed_headers_string = ';'.join(signed_headers)
-    return "AWS4-HMAC-SHA256 Credential=" + access_key + "/" + formatted_date + "/" + region + \
-           "/s3/aws4_request,SignedHeaders=" + signed_headers_string + ",Signature=" + signed_request
+    auth_header = "AWS4-HMAC-SHA256 Credential=" + access_key + "/" + \
+                  formatted_date + "/" + region + \
+                  "/s3/aws4_request, SignedHeaders=" + signed_headers_string + \
+                                                     ", Signature=" + \
+                                                                    signed_request
+    return auth_header

@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-__author__ = 'minio'
-
 
 class Acl(object):
     @staticmethod
@@ -36,8 +34,8 @@ class Acl(object):
         return 'private'
 
 
-def is_valid_acl(name, acl):
+def is_valid_acl(acl):
     if acl == Acl.public_read_write() or acl == Acl.public_read() \
             or acl == Acl.authenticated_read() or acl == Acl.private():
         return
-    raise ValueError(name)
+    raise ValueError()
