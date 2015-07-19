@@ -16,10 +16,13 @@
 import pytz
 
 from xml.etree import cElementTree
+from xml.etree.cElementTree import ParseError
 from datetime import datetime
 
 from .acl import Acl
 from ._compat import urlencode
+from .error import ResponseError
+from .definitions import (Object, Bucket, IncompleteUpload, UploadPart)
 
 def parse_list_buckets(data):
     root = cElementTree.fromstring(data)
@@ -181,14 +184,11 @@ def parse_uploaded_parts(data, bucket, key, upload_id):
 def parse_new_multipart_upload(data):
     root = cElementTree.fromstring(data)
 
-    upload_id = None
-
     for contents in root:
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}UploadId':
-            upload_id = contents.text
+            return contents.text
 
-    return upload_id
-
+    raise ParseError('uploadId')
 
 def parse_error(response, resource=None):
     if len(response.data) == 0:
@@ -238,71 +238,6 @@ def parse_error(response, resource=None):
     raise ResponseError(code, message,
                         request_id, host_id, resource,
                         response.data)
-
-class ResponseError(BaseException):
-    def __init__(self, code, message, request_id, host_id, resource, xml=None):
-        self.code = code
-        self.message = message
-        self.request_id = request_id
-        self.host_id = host_id
-        self.resource = resource
-        self.xml = xml
-
-    def __str__(self):
-        return 'ResponseError: code: {0}, message: {1}, request_id: {2},'
-        'host_id: {3}, resource: {4}, xml: {5}'.format(self.code, self.message,
-                                                       self.request_id,
-                                                       self.host_id,
-                                                       self.resource, self.xml)
-
-
-class Bucket(object):
-    def __init__(self, name, created):
-        self.name = name
-        self.creation_date = created
-
-    def __str__(self):
-        return '<Bucket: {0} {1}>'.format(self.name, self.creation_date)
-
-
-class Object(object):
-    def __init__(self, bucket, key, last_modified, etag, size,
-                 content_type=None, is_dir=False):
-        self.bucket = bucket
-        self.key = key
-        self.last_modified = last_modified
-        self.etag = etag
-        self.size = size
-        self.content_type = content_type
-        self.is_dir = is_dir
-
-    def __str__(self):
-        string_format = '<Object: bucket: {0} key: {1} last_modified: {2}' \
-                        ' etag: {3} size: {4} content_type: {5}, is_dir: {6}>'
-        return string_format.format(self.bucket, self.key, self.last_modified,
-                                    self.etag, self.size, self.content_type,
-                                    self.is_dir)
-
-class IncompleteUpload(object):
-    def __init__(self, bucket, key, upload_id):
-        self.bucket = bucket
-        self.key = key
-        self.upload_id = upload_id
-
-    def __str__(self):
-        return '<IncompleteUpload: {0} {1} {2}>'.format(self.bucket, self.key,
-                                                        self.upload_id)
-
-class UploadPart(object):
-    def __init__(self, bucket, key, upload_id, part_number, etag,
-                 last_modified, size):
-        self.bucket = bucket
-        self.key = key
-        self.upload_id = upload_id
-        self.part_number = part_number
-        self.etag = etag
-        self.last_modified = last_modified
-        self.size = size
 
 def _parse_date(date_string):
     parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')

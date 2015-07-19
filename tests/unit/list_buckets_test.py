@@ -11,18 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest import TestCase
-from datetime import datetime
 
 import mock
-from nose.tools import eq_
 import pytz
+
+from nose.tools import eq_
+from unittest import TestCase
+from datetime import datetime
 
 from minio import minio
 from .minio_mocks import MockResponse, MockConnection
 
 __author__ = 'minio'
-
 
 class ListBucketsTest(TestCase):
     @mock.patch('urllib3.PoolManager')

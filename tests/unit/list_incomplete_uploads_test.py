@@ -11,16 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest import TestCase
 
 import mock
+
 from nose.tools import eq_
+from unittest import TestCase
 
 from minio.generators import ListIncompleteUploads
 from .minio_mocks import MockResponse, MockConnection
 
 __author__ = 'minio'
-
 
 class ListIncompleteUploadsTest(TestCase):
     @mock.patch('urllib3.PoolManager')

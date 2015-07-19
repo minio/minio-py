@@ -34,7 +34,9 @@ from .helpers import (get_target_url, is_non_empty_string, is_valid_url,
                       calculate_part_size, encode_to_hex,
                       is_valid_bucket_name, get_region)
 from .parsers import (parse_list_buckets, parse_acl, parse_error,
-                      Object, parse_new_multipart_upload, ResponseError)
+                      parse_new_multipart_upload)
+from .error import ResponseError
+from .definitions import Object
 from .signer import sign_v4
 from .xml_requests import bucket_constraint, generate_complete_multipart_upload
 

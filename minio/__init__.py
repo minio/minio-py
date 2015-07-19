@@ -16,4 +16,5 @@
 from .minio import Minio
 from .__version__ import get_version
 from .acl import Acl
-from .parsers import Bucket, Object, ResponseError
+from .error import ResponseError
+from .definitions import Bucket, Object

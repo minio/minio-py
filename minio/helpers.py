@@ -82,13 +82,13 @@ def is_valid_url(input_string):
         raise TypeError()
 
     regex = re.compile(
-            r'^(?:http)s?://' # http:// or https://
-            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' # domain...
-            r'localhost|' # localhost...
-            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|' # ...or ipv4
-            r'\[?[A-F0-9]*:[A-F0-9:]+\]?)' # ...or ipv6
-            r'(?::\d+)?' # optional port
-            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        r'^(?:http)s?://' # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' # domain...
+        r'localhost|' # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|' # ...or ipv4
+        r'\[?[A-F0-9]*:[A-F0-9:]+\]?)' # ...or ipv6
+        r'(?::\d+)?' # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
     if not regex.match(input_string):
         raise ValueError()
@@ -99,9 +99,9 @@ def is_valid_bucket_name(input_string):
         raise ValueError()
     if '/' in input_string:
         raise ValueError()
-    if not re.match("^[a-z0-9]+[a-z0-9\-]*[a-z0-9]+$", input_string):
+    if not re.match("^[a-z0-9]+[a-z0-9\\-]*[a-z0-9]+$", input_string):
         raise ValueError()
-    if re.match("/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/", input_string):
+    if re.match("/[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/", input_string):
         raise ValueError()
 
 def is_non_empty_string(input_string):

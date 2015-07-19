@@ -11,17 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest import TestCase
 
 import mock
+
 from nose.tools import raises, eq_
+from unittest import TestCase
 
 from minio import minio
 from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
 __author__ = 'minio'
-
 
 class BucketExists(TestCase):
     @raises(TypeError)
