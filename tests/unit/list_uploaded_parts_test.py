@@ -11,16 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest import TestCase
 
 import mock
+
 from nose.tools import eq_
+from unittest import TestCase
 
 from minio.generators import ListUploadParts
 from .minio_mocks import MockResponse, MockConnection
 
 __author__ = 'minio'
-
 
 class ListPartsTest(TestCase):
     @mock.patch('urllib3.PoolManager')
@@ -169,7 +169,8 @@ class ListPartsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket/key?uploadId=upload_id', {}, 200,
                                                   content=mock_data1))
-        part_iter = ListUploadParts(mock_server, 'http', 'localhost:9000', 'bucket', 'key', 'upload_id')
+        part_iter = ListUploadParts(mock_server, 'http', 'localhost:9000',
+                                    'bucket', 'key', 'upload_id')
         parts = []
         for part in part_iter:
             mock_server.mock_add_request(
