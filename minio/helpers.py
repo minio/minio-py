@@ -19,8 +19,32 @@ import re
 
 from .compat import compat_str_type, compat_pathname2url
 
-__author__ = 'minio'
-
+def get_region(hostname):
+    if hostname == 's3.amazonaws.com':
+        return 'us-east-1'
+    if hostname == 's3-ap-northeast-1.amazonaws.com':
+        return 'ap-northeast-1'
+    if hostname == 's3-ap-southeast-1.amazonaws.com':
+        return 'ap-southeast-1'
+    if hostname == 's3-ap-southeast-2.amazonaws.com':
+        return 'ap-southeast-2'
+    if hostname == 's3-eu-central-1.amazonaws.com':
+        return 'eu-central-1'
+    if hostname == 's3-eu-west-1.amazonaws.com':
+        return 'eu-west-1'
+    if hostname == 's3-sa-east-1.amazonaws.com':
+        return 'sa-east-1'
+    if hostname == 's3-external-1.amazonaws.com':
+        return 'us-east-1'
+    if hostname == 's3-us-west-1.amazonaws.com':
+        return 'us-west-1'
+    if hostname == 's3-us-west-2.amazonaws.com':
+        return 'us-west-2'
+    if hostname == 's3.cn-north-1.amazonaws.com.cn':
+        return 'cn-north-1'
+    if hostname == 's3-fips-us-gov-west-1.amazonaws.com':
+        return 'us-gov-west-1'
+    return 'milkyway'
 
 def get_target_url(scheme, location, bucket=None, key=None, query=None):
     url_components = [scheme, '://', location, '/']
@@ -52,7 +76,6 @@ def get_target_url(scheme, location, bucket=None, key=None, query=None):
 
     return ''.join(url_components)
 
-
 def is_valid_bucket_name(name, input_string):
     is_non_empty_string(name, input_string)
     if len(input_string) < 3 or len(input_string) > 63:
@@ -64,28 +87,15 @@ def is_valid_bucket_name(name, input_string):
     if re.match("/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/", name):
         raise ValueError(name)
 
-
 def is_non_empty_string(name, input_string):
     if not isinstance(input_string, compat_str_type):
         raise TypeError(name)
-    input_string = input_string.strip()
-    if input_string == '':
+    if not input_string.strip():
         raise ValueError(name)
-
 
 def encode_object_key(name, input_string):
     is_non_empty_string(name, input_string)
     return compat_pathname2url(input_string)
-
-
-def is_positive_int(name, input_int, include_zero=False):
-    if not isinstance(input_int, int):
-        raise TypeError(name)
-    if include_zero and input_int < 0:
-        raise ValueError(name)
-    if not include_zero and input_int <= 0:
-        raise ValueError(name)
-
 
 def get_sha256(content):
     if len(content) == 0:
@@ -94,7 +104,6 @@ def get_sha256(content):
     hasher.update(content)
     return hasher.digest()
 
-
 def get_md5(content):
     if len(content) == 0:
         content = b''
@@ -102,16 +111,16 @@ def get_md5(content):
     hasher.update(content)
     return hasher.digest()
 
-
 def convert_binary_to_base64(content):
     return binascii.b2a_base64(content).strip().decode('utf-8')
-
 
 def convert_binary_to_hex(content):
     return binascii.hexlify(content)
 
-
 def calculate_part_size(length):
-    minimum_part_size = 5 * 1024 * 1024
+    minimum_part_size = 1024 * 1024 * 5
+    maximum_part_size = 1024 * 1024 * 1024 * 5
     proposed_part_size = length / 9999
+    if proposed_part_size > maximum_part_size:
+        return maximum_part_size
     return max(minimum_part_size, proposed_part_size)
