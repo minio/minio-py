@@ -22,18 +22,23 @@ from minio.helpers import get_target_url
 
 class GetUrlTests(TestCase):
     def test_get_target_url_works(self):
-        scheme = 'https'
+        scheme = 'http'
         location = 'localhost:9000'
-        eq_(get_target_url(scheme, location), 'https://localhost:9000/')
-        eq_(get_target_url(scheme, location), 'https://localhost:9000/')
-        eq_(get_target_url(scheme, location, 'bucket'), 'https://localhost:9000/bucket')
-        eq_(get_target_url(scheme, location, 'bucket', 'key'), 'https://localhost:9000/bucket/key')
-        eq_(get_target_url(scheme, location, 'bucket', 'key', None), 'https://localhost:9000/bucket/key')
+        eq_(get_target_url(scheme, location), 'http://localhost:9000/')
+        eq_(get_target_url(scheme, location), 'http://localhost:9000/')
+        eq_(get_target_url(scheme, location, 'bucket'),
+            'http://localhost:9000/bucket')
+        eq_(get_target_url(scheme, location, 'bucket', 'key'),
+            'http://localhost:9000/bucket/key')
+        eq_(get_target_url(scheme, location, 'bucket', 'key', None),
+            'http://localhost:9000/bucket/key')
         eq_(get_target_url(scheme, location, 'bucket', 'key', {'foo': 'bar'}),
-            'https://localhost:9000/bucket/key?foo=bar')
-        eq_(get_target_url(scheme, location, 'bucket', 'key', {'foo': 'bar', 'b': 'c', 'a': 'b'}),
-            'https://localhost:9000/bucket/key?a=b&b=c&foo=bar')
-        eq_(get_target_url('http', 'play.minio.io'), 'http://play.minio.io/')
+            'http://localhost:9000/bucket/key?foo=bar')
+        eq_(get_target_url(scheme, location, 'bucket', 'key',
+                           {'foo': 'bar', 'b': 'c', 'a': 'b'}),
+            'http://localhost:9000/bucket/key?a=b&b=c&foo=bar')
+        eq_(get_target_url('https', 's3.amazonaws.com'),
+            'https://s3.amazonaws.com/')
 
     @raises(TypeError)
     def test_minio_requires_string(self):
@@ -51,12 +56,14 @@ class GetUrlTests(TestCase):
 class UserAgentTests(TestCase):
     def test_default_user_agent(self):
         client = minio.Minio('http://localhost')
-        eq_(client._user_agent, 'minio-py/0.0.1 (' + platform.system() + '; ' + platform.machine() + ')')
+        eq_(client._user_agent, 'minio-py/0.2.1 (' + platform.system() + \
+            '; ' + platform.machine() + ')')
 
     def test_set_user_agent(self):
         client = minio.Minio('http://localhost')
 
-        expected_user_agent = 'minio-py/0.0.1 (' + platform.system() + '; ' + platform.machine() + ')'
+        expected_user_agent = 'minio-py/0.2.1 (' + platform.system() + '; ' + \
+                              platform.machine() + ')'
         expected_user_agent += ' hello/1.0.0 (World; Edition)'
 
         client.set_user_agent('hello', '1.0.0', ['World', 'Edition'])
@@ -64,35 +71,35 @@ class UserAgentTests(TestCase):
 
     @raises(TypeError)
     def test_set_user_agent_requires_string_name(self):
-        client = minio.Minio('http://localhost')
+        client = minio.Minio('http://localhost:9000')
         client.set_user_agent(10, '1.0.0', ['World', 'Edition'])
 
     @raises(ValueError)
     def test_set_user_agent_requires_non_empty_name(self):
-        client = minio.Minio('http://localhost')
+        client = minio.Minio('http://localhost:9000')
         client.set_user_agent('', '1.0.0', ['World', 'Edition'])
 
     @raises(TypeError)
     def test_set_user_agent_requires_version(self):
-        client = minio.Minio('http://localhost')
+        client = minio.Minio('http://localhost:9000')
         client.set_user_agent('hello', 10, ['World', 'Edition'])
 
     @raises(ValueError)
     def test_set_user_agent_requires_non_empty_version(self):
-        client = minio.Minio('http://localhost')
+        client = minio.Minio('http://localhost:9000')
         client.set_user_agent('hello', '', ['World', 'Edition'])
 
     @raises(TypeError)
     def test_set_user_agent_parameter(self):
-        client = minio.Minio('http://localhost')
+        client = minio.Minio('http://localhost:9000')
         client.set_user_agent('hello', '1.0.0', ['World', 10])
 
     @raises(TypeError)
     def test_parameter_must_be_string(self):
-        client = minio.Minio('http://localhost')
+        client = minio.Minio('http://localhost:9000')
         client.set_user_agent('hello', '1.0.0', ['World', 10])
 
     @raises(ValueError)
     def test_parameter_must_not_be_empty(self):
-        client = minio.Minio('http://localhost')
+        client = minio.Minio('http://localhost:9000')
         client.set_user_agent('hello', '1.0.0', ['World', ''])

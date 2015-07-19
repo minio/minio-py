@@ -1,5 +1,0 @@
-mock
-nose
-pytz
-urllib3
-certifi
