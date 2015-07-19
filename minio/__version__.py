@@ -19,7 +19,7 @@
 # (1, 2, 0, 'beta', 2) => "1.2b2"
 version_info = (0, 2, 1, 'final', 0)
 
-def _get_version():
+def get_version():
     " Returns a PEP 386-compliant version number from version_info. "
     assert len(version_info) == 5
     assert version_info[3] in ('alpha', 'beta', 'rc', 'final')
@@ -36,5 +36,3 @@ def _get_version():
         sub = mapping[version_info[3]] + str(version_info[4])
 
     return str(main + sub)
-
-version = _get_version()
