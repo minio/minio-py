@@ -17,7 +17,7 @@ import hmac
 import binascii
 
 from datetime import datetime
-from .compat import compat_urllib_parse, compat_str_type
+from ._compat import compat_urllib_parse, compat_str_type
 from .helpers import get_region
 
 empty_sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'

@@ -20,12 +20,12 @@ import urllib3
 import certifi
 
 __author__ = "Minio, Inc."
-__version__ = "0.2.1"
 
 from io import RawIOBase
 
+from .__version__ import version
 from .acl import is_valid_acl
-from .compat import compat_urllib_parse, compat_str_type
+from ._compat import compat_urllib_parse, compat_str_type
 from .generators import (ListObjectsIterator, ListIncompleteUploads,
                          ListUploadParts, DataStreamer)
 from .helpers import (get_target_url, is_non_empty_string, is_valid_url,
@@ -62,7 +62,7 @@ class Minio:
         self._location = url_components.netloc
         self._access_key = access_key
         self._secret_key = secret_key
-        self._user_agent = 'minio-py/' + __version__ + \
+        self._user_agent = 'minio-py/' + version + \
                            ' (' + platform.system() + '; ' + \
                            platform.machine() + ')'
         if certs is None and insecure is False:

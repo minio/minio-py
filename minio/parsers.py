@@ -18,7 +18,7 @@ from xml.etree import ElementTree
 from datetime import datetime
 
 from .acl import Acl
-from .compat import compat_urldecode_key
+from ._compat import compat_urldecode_key
 
 def parse_list_buckets(data):
     root = ElementTree.fromstring(data)
