@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from io import RawIOBase
 import sys
 import io
 import platform
@@ -23,13 +22,15 @@ import certifi
 __author__ = "Minio, Inc."
 __version__ = "0.2.1"
 
+from io import RawIOBase
+
 from .acl import is_valid_acl
 from .compat import compat_urllib_parse, compat_str_type
 from .generators import (ListObjectsIterator, ListIncompleteUploads,
                          ListUploadParts, DataStreamer)
 from .helpers import (get_target_url, is_non_empty_string,
-                      get_sha256, convert_binary_to_base64, get_md5,
-                      calculate_part_size, convert_binary_to_hex,
+                      get_sha256, encode_to_base64, get_md5,
+                      calculate_part_size, encode_to_hex,
                       is_valid_bucket_name, get_region)
 from .parsers import (parse_list_buckets, parse_acl, parse_error,
                       Object, parse_new_multipart_upload, ResponseError)
@@ -44,7 +45,7 @@ class Minio:
 
         Examples:
 
-          client = Minio('http://localhost:9000', 'ACCESS_KEY', 'SECRET_KEY')
+          client = Minio('https://play.minio.io:9000')
           client = Minio('https://s3.amazonaws.com', 'ACCESS_KEY', 'SECRET_KEY')
 
         :param url: A string of the URL of the object storage server.
@@ -59,7 +60,6 @@ class Minio:
         url_components = compat_urllib_parse(url)
 
         is_non_empty_string('url scheme', url_components.scheme)
-
         is_non_empty_string('url location', url_components.netloc)
 
         self._scheme = url_components.scheme
@@ -150,7 +150,7 @@ class Minio:
 
         content_sha256 = get_sha256(content)
         if content.strip():
-            content_md5 = convert_binary_to_base64(get_md5(content))
+            content_md5 = encode_to_base64(get_md5(content))
             headers['Content-MD5'] = content_md5
 
         headers = sign_v4(method=method, url=url, headers=headers,
@@ -550,7 +550,7 @@ class Minio:
                                  bucket=bucket, key=key)
 
         content_sha256 = get_sha256(data)
-        content_md5 = convert_binary_to_base64(get_md5(data))
+        content_md5 = encode_to_base64(get_md5(data))
 
         headers = {
             'Content-Length': length,
@@ -611,7 +611,7 @@ class Minio:
             current_data = data.read(part_size)
             if len(current_data) == 0:
                 break
-            current_data_md5 = convert_binary_to_hex(get_md5(current_data))
+            current_data_md5 = encode_to_hex(get_md5(current_data))
             previously_uploaded_part = None
             if current_part_number in uploaded_parts:
                 previously_uploaded_part = uploaded_parts[current_part_number]
@@ -679,7 +679,7 @@ class Minio:
 
         data = generate_complete_multipart_upload(etags)
         data_sha256 = get_sha256(data)
-        data_md5 = convert_binary_to_base64(get_md5(data))
+        data_md5 = encode_to_base64(get_md5(data))
 
         headers['Content-Length'] = len(data)
         headers['Content-Type'] = 'application/xml'

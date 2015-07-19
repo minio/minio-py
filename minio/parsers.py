@@ -1,13 +1,24 @@
-from xml.etree import ElementTree
-from datetime import datetime
+# Minimal Object Storage Library, (C) 2015 Minio, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import pytz
 
+from xml.etree import ElementTree
+from datetime import datetime
+
 from .acl import Acl
 from .compat import compat_urldecode_key
-
-__author__ = 'minio'
-
 
 def parse_list_buckets(data):
     root = ElementTree.fromstring(data)
@@ -177,22 +188,28 @@ def parse_new_multipart_upload(data):
     return upload_id
 
 
-def parse_error(response, url=None):
-    if len(response.data) == 0 or response.status == 301 or response.status == 307:
-        amz_request_id = None
+def parse_error(response, resource=None):
+    if len(response.data) == 0:
+        amz_request_id = ''
         if 'x-amz-request-id' in response.headers:
             amz_request_id = response.headers['x-amz-request-id']
-            raise ResponseError('MethodNotAllowedException', response.reason, amz_request_id, None, url, response.data)
         if response.status == 405 or response.status == 501:
-            raise ResponseError('MethodNotAllowedException', response.reason, amz_request_id, None, url, response.data)
+            raise ResponseError('MethodNotAllowedException', response.reason,
+                                amz_request_id, None, resource, None)
         if response.status == 404:
-            raise ResponseError('ObjectNotFoundException', response.reason, amz_request_id, None, url, response.data)
+            raise ResponseError('ObjectNotFoundException', response.reason,
+                                amz_request_id, None, resource, None)
         if response.status == 403:
-            raise ResponseError('AccessDeniedException', response.reason, amz_request_id, None, url, response.data)
+            raise ResponseError('AccessDeniedException', response.reason,
+                                amz_request_id, None, resource, None)
         if response.status == 400:
-            raise ResponseError('BadRequest', response.reason, amz_request_id, None, url, response.data)
+            raise ResponseError('BadRequestException', response.reason,
+                                amz_request_id, None, resource, None)
         if response.status == 301 or response.status == 307:
-            raise ResponseError('Redirect', response.reason, amz_request_id, None, url, response.data)
+            raise ResponseError('Redirect', response.reason,
+                                amz_request_id, None, resource, None)
+        raise ResponseError('UnknownException', response.reason,
+                            amz_request_id, None, resource, None)
 
     code = None
     message = None
@@ -213,11 +230,12 @@ def parse_error(response, url=None):
         if attribute.tag == 'Resource':
             resource = attribute.text
 
-    raise ResponseError(code, message, request_id, host_id, resource, response.data)
-
+    raise ResponseError(code, message,
+                        request_id, host_id, resource,
+                        response.data)
 
 class ResponseError(BaseException):
-    def __init__(self, code, message, request_id, host_id, resource, xml):
+    def __init__(self, code, message, request_id, host_id, resource, xml=None):
         self.code = code
         self.message = message
         self.request_id = request_id
@@ -226,8 +244,11 @@ class ResponseError(BaseException):
         self.xml = xml
 
     def __str__(self):
-        return 'ResponseError: code: {0}, message: {1}, request_id: {2}, host_id: {3}, resource: {4}, xml: {5}'.format(
-            self.code, self.message, self.request_id, self.host_id, self.resource, self.xml)
+        return 'ResponseError: code: {0}, message: {1}, request_id: {2},'
+        'host_id: {3}, resource: {4}, xml: {5}'.format(self.code, self.message,
+                                                       self.request_id,
+                                                       self.host_id,
+                                                       self.resource, self.xml)
 
 
 class Bucket(object):
@@ -240,8 +261,8 @@ class Bucket(object):
 
 
 class Object(object):
-    def __init__(self, bucket, key, last_modified, etag, size, content_type=None, is_dir=False):
-        # TODO parse last_modified
+    def __init__(self, bucket, key, last_modified, etag, size,
+                 content_type=None, is_dir=False):
         self.bucket = bucket
         self.key = key
         self.last_modified = last_modified
@@ -254,8 +275,8 @@ class Object(object):
         string_format = '<Object: bucket: {0} key: {1} last_modified: {2}' \
                         ' etag: {3} size: {4} content_type: {5}, is_dir: {6}>'
         return string_format.format(self.bucket, self.key, self.last_modified,
-                                    self.etag, self.size, self.content_type, self.is_dir)
-
+                                    self.etag, self.size, self.content_type,
+                                    self.is_dir)
 
 class IncompleteUpload(object):
     def __init__(self, bucket, key, upload_id):
@@ -264,11 +285,12 @@ class IncompleteUpload(object):
         self.upload_id = upload_id
 
     def __str__(self):
-        return '<IncompleteUpload: {0} {1} {2}>'.format(self.bucket, self.key, self.upload_id)
-
+        return '<IncompleteUpload: {0} {1} {2}>'.format(self.bucket, self.key,
+                                                        self.upload_id)
 
 class UploadPart(object):
-    def __init__(self, bucket, key, upload_id, part_number, etag, last_modified, size):
+    def __init__(self, bucket, key, upload_id, part_number, etag,
+                 last_modified, size):
         self.bucket = bucket
         self.key = key
         self.upload_id = upload_id
@@ -276,7 +298,6 @@ class UploadPart(object):
         self.etag = etag
         self.last_modified = last_modified
         self.size = size
-
 
 def _parse_date(date_string):
     parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
