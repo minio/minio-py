@@ -50,7 +50,7 @@ def get_target_url(scheme, location, bucket=None, key=None, query=None):
     url_components = [scheme, '://', location, '/']
     # url_components = ['/']
     if key is not None:
-        key = encode_object_key('key', key)
+        key = encode_object_key(key)
 
     if bucket is not None:
         url_components.append(bucket)
@@ -76,25 +76,41 @@ def get_target_url(scheme, location, bucket=None, key=None, query=None):
 
     return ''.join(url_components)
 
-def is_valid_bucket_name(name, input_string):
-    is_non_empty_string(name, input_string)
-    if len(input_string) < 3 or len(input_string) > 63:
-        raise ValueError(name)
-    if '/' in input_string:
-        raise ValueError(name)
-    if not re.match("^[a-z0-9]+[a-z0-9\-]*[a-z0-9]+$", name):
-        raise ValueError(name)
-    if re.match("/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/", name):
-        raise ValueError(name)
-
-def is_non_empty_string(name, input_string):
+def is_valid_url(input_string):
     if not isinstance(input_string, compat_str_type):
-        raise TypeError(name)
-    if not input_string.strip():
-        raise ValueError(name)
+        raise TypeError()
 
-def encode_object_key(name, input_string):
-    is_non_empty_string(name, input_string)
+    regex = re.compile(
+            r'^(?:http)s?://' # http:// or https://
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' # domain...
+            r'localhost|' # localhost...
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|' # ...or ipv4
+            r'\[?[A-F0-9]*:[A-F0-9:]+\]?)' # ...or ipv6
+            r'(?::\d+)?' # optional port
+            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+
+    if not regex.match(input_string):
+        raise ValueError()
+
+def is_valid_bucket_name(input_string):
+    is_non_empty_string(input_string)
+    if len(input_string) < 3 or len(input_string) > 63:
+        raise ValueError()
+    if '/' in input_string:
+        raise ValueError()
+    if not re.match("^[a-z0-9]+[a-z0-9\-]*[a-z0-9]+$", input_string):
+        raise ValueError()
+    if re.match("/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/", input_string):
+        raise ValueError()
+
+def is_non_empty_string(input_string):
+    if not isinstance(input_string, compat_str_type):
+        raise TypeError()
+    if not input_string.strip():
+        raise ValueError()
+
+def encode_object_key(input_string):
+    is_non_empty_string(input_string)
     return compat_pathname2url(input_string)
 
 def get_sha256(content):

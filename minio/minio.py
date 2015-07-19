@@ -28,7 +28,7 @@ from .acl import is_valid_acl
 from .compat import compat_urllib_parse, compat_str_type
 from .generators import (ListObjectsIterator, ListIncompleteUploads,
                          ListUploadParts, DataStreamer)
-from .helpers import (get_target_url, is_non_empty_string,
+from .helpers import (get_target_url, is_non_empty_string, is_valid_url,
                       get_sha256, encode_to_base64, get_md5,
                       calculate_part_size, encode_to_hex,
                       is_valid_bucket_name, get_region)
@@ -55,13 +55,9 @@ class Minio:
         :param insecure: Allow insecure ssl requests, defaults to False
         :return: Minio object
         """
-        is_non_empty_string('url', url)
+        is_valid_url(url)
 
         url_components = compat_urllib_parse(url)
-
-        is_non_empty_string('url scheme', url_components.scheme)
-        is_non_empty_string('url location', url_components.netloc)
-
         self._scheme = url_components.scheme
         self._location = url_components.netloc
         self._access_key = access_key
@@ -130,9 +126,9 @@ class Minio:
         :param acl: Canned ACL to use. Default is Acl.private()
         :return:
         """
-        is_valid_bucket_name('bucket', bucket)
+        is_valid_bucket_name(bucket)
         if acl is not None:
-            is_valid_acl('acl', acl)
+            is_valid_acl(acl)
 
         method = 'PUT'
         url = get_target_url(self._scheme, self._location, bucket=bucket)
@@ -203,13 +199,14 @@ class Minio:
         :param bucket: A bucket to test the existence and access of.
         :return: True if the bucket exists and the user has access. Otherwise, returns False
         """
-        is_valid_bucket_name('bucket', bucket)
+        is_valid_bucket_name(bucket)
 
         method = 'HEAD'
         url = get_target_url(self._scheme, self._location, bucket=bucket)
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
@@ -226,13 +223,14 @@ class Minio:
         :param bucket: Bucket to remove
         :return: None
         """
-        is_valid_bucket_name('bucket', bucket)
+        is_valid_bucket_name(bucket)
 
         method = 'DELETE'
         url = get_target_url(self._scheme, self._location, bucket=bucket)
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
@@ -252,7 +250,7 @@ class Minio:
         :param bucket: Bucket to check canned ACL of.
         :return: A string representing the currently used canned ACL if one is set.
         """
-        is_valid_bucket_name('bucket', bucket)
+        is_valid_bucket_name(bucket)
 
         method = 'GET'
         url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
@@ -287,8 +285,8 @@ class Minio:
         :param acl: ACL to set
         :return: None
         """
-        is_valid_bucket_name('bucket', bucket)
-        is_valid_acl('acl', acl)
+        is_valid_bucket_name(bucket)
+        is_valid_acl(acl)
 
         method = 'PUT'
         url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
@@ -313,7 +311,7 @@ class Minio:
         :return: None
         """
         # check bucket
-        is_valid_bucket_name('bucket', bucket)
+        is_valid_bucket_name(bucket)
 
         uploads = ListIncompleteUploads(self._http, self._scheme, self._location, bucket, None,
                                         access_key=self._access_key,
@@ -351,8 +349,8 @@ class Minio:
         :param length: Optional number of bytes to retrieve. Must be > 0
         :return: An iterable containing a byte stream of the data.
         """
-        is_valid_bucket_name('bucket', bucket)
-        is_non_empty_string('key', key)
+        is_valid_bucket_name(bucket)
+        is_non_empty_string(key)
 
         request_range = ''
         if offset is not 0 and length is not 0:
@@ -401,8 +399,8 @@ class Minio:
         :param content_type: mime type of object as a string.
         :return: None
         """
-        is_valid_bucket_name('bucket', bucket)
-        is_non_empty_string('key', key)
+        is_valid_bucket_name(bucket)
+        is_non_empty_string(key)
 
         if length is 0:
             raise ValueError('length')
@@ -456,8 +454,9 @@ class Minio:
         :param recursive: Boolean specifying whether to return as flat namespace or delimited by '/'
         :return: An iterator of objects in alphabetical order.
         """
-        is_valid_bucket_name('bucket', bucket)
-        return ListObjectsIterator(self._http, self._scheme, self._location, bucket, prefix, recursive,
+        is_valid_bucket_name(bucket)
+        return ListObjectsIterator(self._http, self._scheme, self._location,
+                                   bucket, prefix, recursive,
                                    self._access_key, self._secret_key)
 
     def stat_object(self, bucket, key):
@@ -468,14 +467,16 @@ class Minio:
         :param key: Key of object
         :return: True if object exists and the user has access.
         """
-        is_valid_bucket_name('bucket', bucket)
-        is_non_empty_string('key', key)
+        is_valid_bucket_name(bucket)
+        is_non_empty_string(key)
 
         method = 'HEAD'
-        url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
+        url = get_target_url(self._scheme, self._location, bucket=bucket,
+                             key=key)
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
@@ -498,14 +499,16 @@ class Minio:
         :param key: Key of object to remove
         :return: None
         """
-        is_valid_bucket_name('bucket', bucket)
-        is_non_empty_string('key', key)
+        is_valid_bucket_name(bucket)
+        is_non_empty_string(key)
 
         method = 'DELETE'
-        url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
+        url = get_target_url(self._scheme, self._location, bucket=bucket,
+                             key=key)
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.urlopen(method, url, headers=headers)
@@ -521,11 +524,12 @@ class Minio:
         :param key: Key of object to drop incomplete uploads of
         :return: None
         """
-        is_valid_bucket_name('bucket', bucket)
-        is_non_empty_string('key', key)
+        is_valid_bucket_name(bucket)
+        is_non_empty_string(key)
 
         # check key
-        uploads = ListIncompleteUploads(self._http, self._scheme, self._location, bucket, key,
+        uploads = ListIncompleteUploads(self._http, self._scheme,
+                                        self._location, bucket, key,
                                         access_key=self._access_key,
                                         secret_key=self._secret_key)
         for upload in uploads:
