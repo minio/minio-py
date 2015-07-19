@@ -27,13 +27,12 @@ from .acl import is_valid_acl
 from .compat import compat_urllib_parse, compat_str_type
 from .generators import (ListObjectsIterator, ListIncompleteUploads,
                          ListUploadParts, DataStreamer)
-from .helpers import (get_target_url, is_non_empty_string, is_positive_int,
+from .helpers import (get_target_url, is_non_empty_string,
                       get_sha256, convert_binary_to_base64, get_md5,
                       calculate_part_size, convert_binary_to_hex,
-                      is_valid_bucket_name)
+                      is_valid_bucket_name, get_region)
 from .parsers import (parse_list_buckets, parse_acl, parse_error,
                       Object, parse_new_multipart_upload, ResponseError)
-from .region import get_region
 from .signer import sign_v4
 from .xml_requests import bucket_constraint, generate_complete_multipart_upload
 
@@ -81,7 +80,7 @@ class Minio:
             self._http = urllib3.PoolManager()
 
     # Client level
-    def set_user_agent(self, name, version, parameters):
+    def set_user_agent(self, name=None, version=None, comments=None):
         """
         Adds an entry to the list of user agents.
 
@@ -91,18 +90,24 @@ class Minio:
 
         :param name: user agent name
         :param version: user agent version
-        :param parameters: list of string parameters to include in parameters section
+        :param comments: list of comments to include in comments section
         :return: None
         """
-        is_non_empty_string('name', name)
-        is_non_empty_string('version', version)
+        if name is None or version is None:
+            raise TypeError()
+        if not isinstance(name, compat_str_type) or \
+           not isinstance(version, compat_str_type):
+            raise TypeError()
+        if not name.strip() or not version.strip():
+            raise ValueError()
 
-        for parameter in parameters:
-            is_non_empty_string('parameters', parameter)
-
-        joined_parameters = '; '.join(parameters)
-        components = [' ', name, '/', version, ' (', joined_parameters, ')']
-        self._user_agent += ''.join(components)
+        if comments is not None:
+            joined_comments = '; '.join(comments)
+            components = [' ', name, '/', version, ' (', joined_comments, ')']
+            self._user_agent += ''.join(components)
+        else:
+            components = [' ', name, '/', version, ' ']
+            self._user_agent += ''.join(components)
 
     # Bucket level
     # noinspection PyUnusedLocal
@@ -144,13 +149,17 @@ class Minio:
             headers['Content-Length'] = str(len(content))
 
         content_sha256 = get_sha256(content)
-        content_md5 = convert_binary_to_base64(get_md5(content))
-        headers['Content-MD5'] = content_md5
+        if content.strip():
+            content_md5 = convert_binary_to_base64(get_md5(content))
+            headers['Content-MD5'] = content_md5
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
-                          secret_key=self._secret_key, content_hash=content_sha256)
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key,
+                          content_hash=content_sha256)
 
-        response = self._http.urlopen(method, url, body=content, headers=headers)
+        response = self._http.urlopen(method, url, body=content,
+                                      headers=headers)
 
         if response.status != 200:
             parse_error(response)
@@ -172,7 +181,8 @@ class Minio:
         method = 'GET'
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers, redirect=False)
@@ -283,11 +293,8 @@ class Minio:
         method = 'PUT'
         url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
 
-        md5_sum = convert_binary_to_base64(get_md5(''.encode('utf-8')))
-
         headers = {
             'x-amz-acl': acl,
-            'Content-MD5': md5_sum
         }
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
@@ -315,14 +322,6 @@ class Minio:
         for upload in uploads:
             self._drop_incomplete_upload(bucket, upload.key, upload.upload_id)
 
-    # def list_incomplete_uploads(self, bucket, key=None):
-    #     is_valid_bucket_name('bucket', bucket)
-    #
-    #     uploads = ListIncompleteUploads(self._http, self._scheme, self._location, bucket, key,
-    #                                     access_key=self._access_key,
-    #                                     secret_key=self._secret_key)
-    #     return uploads
-
     def get_object(self, bucket, key):
         """
         Retrieves an object from a bucket.
@@ -337,7 +336,7 @@ class Minio:
         return self.get_partial_object(bucket, key)
 
     # Object Level
-    def get_partial_object(self, bucket, key, offset=None, length=None):
+    def get_partial_object(self, bucket, key, offset=0, length=0):
         """
         Retrieves an object from a bucket.
 
@@ -354,24 +353,20 @@ class Minio:
         """
         is_valid_bucket_name('bucket', bucket)
         is_non_empty_string('key', key)
-        if offset is not None:
-            is_positive_int('offset', offset, True)
-        if length is not None:
-            is_positive_int('length', length)
 
-        request_range = None
-        if offset is not None and length is not None:
+        request_range = ''
+        if offset is not 0 and length is not 0:
             request_range = str(offset) + "-" + str(offset + length - 1)
-        if offset is not None and length is None:
+        if offset is not 0 and length is 0:
             request_range = str(offset) + "-"
-        if offset is None and length is not None:
+        if offset is 0 and length is not 0:
             request_range = "0-" + str(length - 1)
 
         method = 'GET'
         url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
         headers = {}
 
-        if request_range is not None:
+        if request_range:
             headers['Range'] = 'bytes=' + request_range
 
         headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
@@ -384,19 +379,20 @@ class Minio:
 
         return DataStreamer(response)
 
-    def put_object(self, bucket, key, length, data, content_type="application/octet-stream"):
+    def put_object(self, bucket, key, data, length=0,
+                   content_type="application/octet-stream"):
         """
         Add a new object to the object storage server.
 
         Data can either be a string, byte array, or reader (e.g. open('foo'))
 
         Examples:
-            minio.put('foo', 'bar', 11, 'hello world')
+            minio.put('foo', 'bar', 'hello world', 11)
 
-            minio.put('foo', 'bar', 11, b'hello world', 'text/plain')
+            minio.put('foo', 'bar', b'hello world', 11, 'text/plain')
 
             with open('hello.txt', 'rb') as data:
-                minio.put('foo', 'bar', 11, b'hello world', 'text/plain')
+                minio.put('foo', 'bar', b'hello world', 11, 'text/plain')
 
         :param bucket: Bucket of new object.
         :param key: Key of new object.
@@ -407,16 +403,9 @@ class Minio:
         """
         is_valid_bucket_name('bucket', bucket)
         is_non_empty_string('key', key)
-        is_positive_int('length', length)
 
-        # check content_type
-        if not isinstance(content_type, compat_str_type):
-            raise TypeError('content_type')
-            # TODO implement this feature
-
-        content_type = content_type.strip()
-        if content_type == '':
-            raise ValueError('content_type')
+        if length is 0:
+            raise ValueError('length')
 
         if length <= 5 * 1024 * 1024:
             # we reference 'file' for python 2.7 compatibility, RawIOBase for 3.X
@@ -544,24 +533,21 @@ class Minio:
 
     # helper functions
 
-    def _do_put_object(self, bucket, key, length, data, content_type='application/octet-stream',
-                       upload_id=None, part_number=None):
+    def _do_put_object(self, bucket, key, length, data,
+                       content_type='application/octet-stream',
+                       upload_id='', part_number=0):
         method = 'PUT'
-
-        # guard against inconsistent upload_id/part_id states
-        if upload_id is None and part_number is not None:
-            raise ValueError('part_id')
-        if upload_id is not None and part_number is None:
-            raise ValueError('upload_id')
 
         if len(data) != length:
             raise DataSizeMismatchError()
 
-        if upload_id is not None and part_number is not None:
-            url = get_target_url(self._scheme, self._location, bucket=bucket, key=key,
-                                 query={'uploadId': upload_id, 'partNumber': part_number})
+        if upload_id.strip() and part_number is not 0:
+            url = get_target_url(self._scheme, self._location, bucket=bucket,
+                                 key=key, query={'uploadId': upload_id,
+                                                 'partNumber': part_number})
         else:
-            url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
+            url = get_target_url(self._scheme, self._location,
+                                 bucket=bucket, key=key)
 
         content_sha256 = get_sha256(data)
         content_md5 = convert_binary_to_base64(get_md5(data))
@@ -572,8 +558,10 @@ class Minio:
             'Content-MD5': content_md5
         }
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
-                          secret_key=self._secret_key, content_hash=content_sha256)
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key,
+                          content_hash=content_sha256)
 
         data = io.BytesIO(data)
         response = self._http.urlopen(method, url, headers=headers, body=data)
@@ -598,7 +586,8 @@ class Minio:
 
         part_size = calculate_part_size(length)
 
-        current_uploads = ListIncompleteUploads(self._http, self._scheme, self._location, bucket, key,
+        current_uploads = ListIncompleteUploads(self._http, self._scheme,
+                                                self._location, bucket, key,
                                                 access_key=self._access_key,
                                                 secret_key=self._secret_key)
 
@@ -607,8 +596,10 @@ class Minio:
             upload_id = upload.upload_id
         uploaded_parts = {}
         if upload_id is not None:
-            part_iter = ListUploadParts(self._http, self._scheme, self._location, bucket, key, upload_id,
-                                        access_key=self._access_key, secret_key=self._secret_key)
+            part_iter = ListUploadParts(self._http, self._scheme,
+                                        self._location, bucket, key, upload_id,
+                                        access_key=self._access_key,
+                                        secret_key=self._secret_key)
             for part in part_iter:
                 uploaded_parts[part.part_number] = part
         else:
@@ -624,9 +615,13 @@ class Minio:
             previously_uploaded_part = None
             if current_part_number in uploaded_parts:
                 previously_uploaded_part = uploaded_parts[current_part_number]
-            if previously_uploaded_part is None or previously_uploaded_part.etag != current_data_md5:
-                etag = self._do_put_object(bucket=bucket, key=key, length=len(current_data), data=current_data,
-                                           content_type=content_type, upload_id=upload_id,
+            if previously_uploaded_part is None or \
+               previously_uploaded_part.etag != current_data_md5:
+                etag = self._do_put_object(bucket=bucket, key=key,
+                                           length=len(current_data),
+                                           data=current_data,
+                                           content_type=content_type,
+                                           upload_id=upload_id,
                                            part_number=current_part_number)
             else:
                 etag = previously_uploaded_part.etag
@@ -634,7 +629,7 @@ class Minio:
             total_uploaded += len(current_data)
             current_part_number += 1
         if total_uploaded != length:
-            raise DataSizeMismatchError('len(data) does not match actual length')
+            raise DataSizeMismatchError('uploaded length does not match actual length')
         self._complete_multipart_upload(bucket, key, upload_id, etags)
 
     def _drop_incomplete_upload(self, bucket, key, upload_id):
@@ -658,11 +653,10 @@ class Minio:
         query = {
             'uploads': None
         }
+
         url = get_target_url(self._scheme, self._location, bucket=bucket, key=key, query=query)
 
-        md5_sum = convert_binary_to_base64(get_md5(b''))
         headers = {
-            'Content-MD5': md5_sum,
             'Content-Type': content_type
         }
 

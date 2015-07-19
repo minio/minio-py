@@ -39,19 +39,22 @@ class MakeBucket(TestCase):
     def test_make_bucket_works(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('PUT', 'http://localhost:9000/hello',
-                                                  {'Content-MD5': '1B2M2Y8AsgTpgAmY7PhCfg=='},
+        mock_server.mock_add_request(MockResponse('PUT',
+                                                  'http://localhost:9000/hello',
+                                                  {},
                                                   200))
         minio.Minio('http://localhost:9000')
 
     @mock.patch('urllib3.PoolManager')
     @raises(ResponseError)
     def test_make_bucket_throws_fail(self, mock_connection):
-        error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
+        error_xml = generate_error('code', 'message', 'request_id',
+                                   'host_id', 'resource')
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('PUT', 'http://localhost:9000/hello',
-                                                  {'Content-MD5': '1B2M2Y8AsgTpgAmY7PhCfg=='},
+        mock_server.mock_add_request(MockResponse('PUT',
+                                                  'http://localhost:9000/hello',
+                                                  {},
                                                   409, content=error_xml))
         client = minio.Minio('http://localhost:9000')
         client.make_bucket('hello')

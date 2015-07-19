@@ -13,16 +13,13 @@
 # limitations under the License.
 import hashlib
 import hmac
-from datetime import datetime
 import binascii
 
+from datetime import datetime
 from .compat import compat_urllib_parse, compat_str_type
-from .region import get_region
-
-__author__ = 'minio'
+from .helpers import get_region
 
 empty_sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-
 
 def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content_hash=None):
     if access_key is None or secret_key is None:

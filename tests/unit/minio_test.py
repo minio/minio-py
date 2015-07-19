@@ -88,18 +88,3 @@ class UserAgentTests(TestCase):
     def test_set_user_agent_requires_non_empty_version(self):
         client = minio.Minio('http://localhost:9000')
         client.set_user_agent('hello', '', ['World', 'Edition'])
-
-    @raises(TypeError)
-    def test_set_user_agent_parameter(self):
-        client = minio.Minio('http://localhost:9000')
-        client.set_user_agent('hello', '1.0.0', ['World', 10])
-
-    @raises(TypeError)
-    def test_parameter_must_be_string(self):
-        client = minio.Minio('http://localhost:9000')
-        client.set_user_agent('hello', '1.0.0', ['World', 10])
-
-    @raises(ValueError)
-    def test_parameter_must_not_be_empty(self):
-        client = minio.Minio('http://localhost:9000')
-        client.set_user_agent('hello', '1.0.0', ['World', ''])
