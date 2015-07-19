@@ -33,7 +33,7 @@ setup(
     url='https://github.com/minio/minio-py',
     download_url='https://github.com/minio/minio-py',
     author_email='dev@minio.io',
-    version='0.2.1',
+    version="0.2.1",
     install_requires=['urllib3', 'pytz', 'certifi'],
     tests_require=['nose', 'mock'],
     packages=find_packages(exclude=['tests*', 'integration']),

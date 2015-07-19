@@ -24,7 +24,7 @@ __author__ = "Minio, Inc."
 
 from io import RawIOBase
 
-from .__version__ import version
+from .__version__ import get_version
 from .acl import is_valid_acl
 from ._compat import compat_urllib_parse, compat_str_type
 from .generators import (ListObjectsIterator, ListIncompleteUploads,
@@ -38,7 +38,7 @@ from .parsers import (parse_list_buckets, parse_acl, parse_error,
 from .signer import sign_v4
 from .xml_requests import bucket_constraint, generate_complete_multipart_upload
 
-class Minio:
+class Minio(object):
     def __init__(self, url, access_key=None, secret_key=None,
                  certs=None, insecure=False):
         """
@@ -52,7 +52,7 @@ class Minio:
         :param url: A string of the URL of the object storage server.
         :param access_key: Access key to sign self._http.request with.
         :param secret_key: Secret key to sign self._http.request with.
-        :param certs: Path to SSL certificates, defaults to using certifi library
+        :param certs: Path to SSL certificates
         :param insecure: Allow insecure ssl requests, defaults to False
         :return: Minio object
         """
@@ -63,7 +63,7 @@ class Minio:
         self._location = url_components.netloc
         self._access_key = access_key
         self._secret_key = secret_key
-        self._user_agent = 'minio-py/' + version + \
+        self._user_agent = 'minio-py/' + get_version() + \
                            ' (' + platform.system() + '; ' + \
                            platform.machine() + ')'
         if certs is None and insecure is False:
@@ -181,7 +181,8 @@ class Minio:
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = self._http.request(method, url, headers=headers, redirect=False)
+        response = self._http.request(method, url, headers=headers,
+                                      redirect=False)
 
         if response.status != 200:
             try:
@@ -196,8 +197,8 @@ class Minio:
         """
         Check if the bucket exists and if the user has access to it.
 
-        :param bucket: A bucket to test the existence and access of.
-        :return: True if the bucket exists and the user has access. Otherwise, returns False
+        :param bucket: To test the existence and user access.
+        :return: True on success. Otherwise, returns False
         """
         is_valid_bucket_name(bucket)
 
@@ -248,23 +249,25 @@ class Minio:
                 # do something
 
         :param bucket: Bucket to check canned ACL of.
-        :return: A string representing the currently used canned ACL if one is set.
+        :return: A string representing canned ACL on the bucket.
         """
         is_valid_bucket_name(bucket)
 
         method = 'GET'
-        url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
+        url = get_target_url(self._scheme, self._location, bucket=bucket,
+                             query={"acl": None})
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
 
-        if response.status == 200:
-            return parse_acl(response.data)
+        if response.status != 200:
+            parse_error(response, url)
 
-        parse_error(response, url=url)
+        return parse_acl(response.data)
 
     def set_bucket_acl(self, bucket, acl):
         """
@@ -289,13 +292,15 @@ class Minio:
         is_valid_acl(acl)
 
         method = 'PUT'
-        url = get_target_url(self._scheme, self._location, bucket=bucket, query={"acl": None})
+        url = get_target_url(self._scheme, self._location, bucket=bucket,
+                             query={"acl": None})
 
         headers = {
             'x-amz-acl': acl,
         }
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.urlopen(method, url, headers=headers)
@@ -313,7 +318,8 @@ class Minio:
         # check bucket
         is_valid_bucket_name(bucket)
 
-        uploads = ListIncompleteUploads(self._http, self._scheme, self._location, bucket, None,
+        uploads = ListIncompleteUploads(self._http, self._scheme,
+                                        self._location, bucket, None,
                                         access_key=self._access_key,
                                         secret_key=self._secret_key)
 
@@ -361,16 +367,19 @@ class Minio:
             request_range = "0-" + str(length - 1)
 
         method = 'GET'
-        url = get_target_url(self._scheme, self._location, bucket=bucket, key=key)
+        url = get_target_url(self._scheme, self._location, bucket=bucket,
+                             key=key)
         headers = {}
 
         if request_range:
             headers['Range'] = 'bytes=' + request_range
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = self._http.urlopen(method, url, headers=headers, preload_content=False)
+        response = self._http.urlopen(method, url, headers=headers,
+                                      preload_content=False)
 
         if not (response.status == 200 or response.status == 206):
             parse_error(response)
@@ -394,7 +403,7 @@ class Minio:
 
         :param bucket: Bucket of new object.
         :param key: Key of new object.
-        :param length: Total length of object. Used to ensure complete upload and calculate upload part size.
+        :param length: Total length of object.
         :param data: Contents to upload.
         :param content_type: mime type of object as a string.
         :return: None
@@ -406,8 +415,9 @@ class Minio:
             raise ValueError('length')
 
         if length <= 5 * 1024 * 1024:
-            # we reference 'file' for python 2.7 compatibility, RawIOBase for 3.X
-            if type(data).__name__ == 'file' or isinstance(data, io.BufferedReader):
+            # reference 'file' for python 2.7 compatibility, RawIOBase for 3.X
+            if type(data).__name__ == 'file' or \
+               isinstance(data, io.BufferedReader):
                 data = data.read(length)
             if isinstance(data, io.TextIOWrapper):
                 data = data.read(length).encode('utf-8')
@@ -419,9 +429,6 @@ class Minio:
     def list_objects(self, bucket, prefix=None, recursive=True):
         """
         List objects in the given bucket.
-
-
-        Objects may be filtered by a given prefix, delimited without recursion, or both.
 
         Examples:
             objects = minio.list_objects('foo')
@@ -444,14 +451,15 @@ class Minio:
             # hello/
             # world/
 
-            objects = minio.list_objects('foo', prefix='hello/', recursive=False)
+            objects = minio.list_objects('foo', prefix='hello/',
+                                         recursive=False)
             for current_object in objects:
                 print current_object
             # hello/world/
 
         :param bucket: Bucket to list objects from
-        :param prefix: String specifying what all objects returned must begin with
-        :param recursive: Boolean specifying whether to return as flat namespace or delimited by '/'
+        :param prefix: String specifying objects returned must begin with
+        :param recursive: If yes, returns all objects for a specified prefix
         :return: An iterator of objects in alphabetical order.
         """
         is_valid_bucket_name(bucket)
@@ -465,7 +473,7 @@ class Minio:
 
         :param bucket: Bucket of object.
         :param key: Key of object
-        :return: True if object exists and the user has access.
+        :return: Object metadata if object exists
         """
         is_valid_bucket_name(bucket)
         is_non_empty_string(key)
@@ -489,7 +497,8 @@ class Minio:
         size = response.headers['Content-Length']
         last_modified = response.headers['Last-Modified']
 
-        return Object(bucket, key, content_type=content_type, last_modified=last_modified, etag=etag, size=size)
+        return Object(bucket, key, content_type=content_type,
+                      last_modified=last_modified, etag=etag, size=size)
 
     def remove_object(self, bucket, key):
         """
@@ -573,9 +582,6 @@ class Minio:
         if response.status != 200:
             parse_error(response)
 
-        # noinspection PyStatementEffect
-        response.data  # force read
-
         return response.headers['ETag'].replace('"', '')
 
     def _stream_put_object(self, bucket, key, length, data, content_type):
@@ -633,7 +639,7 @@ class Minio:
             total_uploaded += len(current_data)
             current_part_number += 1
         if total_uploaded != length:
-            raise DataSizeMismatchError('uploaded length does not match actual length')
+            raise DataSizeMismatchError()
         self._complete_multipart_upload(bucket, key, upload_id, etags)
 
     def _drop_incomplete_upload(self, bucket, key, upload_id):
@@ -641,10 +647,12 @@ class Minio:
         query = {
             'uploadId': upload_id
         }
-        url = get_target_url(self._scheme, self._location, bucket=bucket, key=key, query=query)
+        url = get_target_url(self._scheme, self._location, bucket=bucket,
+                             key=key, query=query)
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
@@ -658,13 +666,15 @@ class Minio:
             'uploads': None
         }
 
-        url = get_target_url(self._scheme, self._location, bucket=bucket, key=key, query=query)
+        url = get_target_url(self._scheme, self._location, bucket=bucket,
+                             key=key, query=query)
 
         headers = {
             'Content-Type': content_type
         }
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.urlopen(method, url, headers=headers, body=None)
@@ -678,7 +688,8 @@ class Minio:
         query = {
             'uploadId': upload_id
         }
-        url = get_target_url(self._scheme, self._location, bucket=bucket, key=key, query=query)
+        url = get_target_url(self._scheme, self._location, bucket=bucket,
+                             key=key, query=query)
         headers = {}
 
         data = generate_complete_multipart_upload(etags)
@@ -689,16 +700,14 @@ class Minio:
         headers['Content-Type'] = 'application/xml'
         headers['Content-MD5'] = data_md5
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
                           secret_key=self._secret_key, content_hash=data_sha256)
 
         response = self._http.urlopen(method, url, headers=headers, body=data)
 
         if response.status != 200:
             parse_error(response)
-        # noinspection PyStatementEffect
-        response.data  # force to read
-
 
 class DataSizeMismatchError(BaseException):
     pass

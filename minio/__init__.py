@@ -14,6 +14,6 @@
 # limitations under the License.
 
 from .minio import Minio
-from .__version__ import version
+from .__version__ import get_version
 from .acl import Acl
 from .parsers import Bucket, Object, ResponseError
