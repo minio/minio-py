@@ -18,7 +18,7 @@ from xml.etree import ElementTree
 from datetime import datetime
 
 from .acl import Acl
-from ._compat import compat_urldecode_key
+from ._compat import urlencode
 
 def parse_list_buckets(data):
     root = ElementTree.fromstring(data)
@@ -87,7 +87,7 @@ def parse_list_objects(data, bucket):
             is_truncated = contents.text.lower() == 'true'
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextMarker':
             if contents.text is not None:
-                marker = compat_urldecode_key(contents.text)
+                marker = urlencode(contents.text)
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Contents':
             key = None
             last_modified = None
@@ -95,7 +95,7 @@ def parse_list_objects(data, bucket):
             size = None
             for content in contents:
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
-                    key = compat_urldecode_key(content.text)
+                    key = urlencode(content.text)
                     last_key = key
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
                     last_modified = _parse_date(content.text)
@@ -108,7 +108,7 @@ def parse_list_objects(data, bucket):
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}CommonPrefixes':
             for content in contents:
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Prefix':
-                    key = compat_urldecode_key(content.text)
+                    key = urlencode(content.text)
                 # noinspection PyUnboundLocalVariable
                 objects.append(Object(bucket, key, None, '', 0, content_type=None, is_dir=True))
 
@@ -130,7 +130,7 @@ def parse_incomplete_uploads(data, bucket):
             is_truncated = contents.text.lower() == 'true'
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextKeyMarker':
             if contents.text is not None:
-                key_marker = compat_urldecode_key(contents.text)
+                key_marker = urlencode(contents.text)
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextUploadIdMarker':
             upload_id_marker = contents.text
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Upload':
@@ -138,7 +138,7 @@ def parse_incomplete_uploads(data, bucket):
             upload_id = None
             for content in contents:
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
-                    key = compat_urldecode_key(content.text)
+                    key = urlencode(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}UploadId':
                     upload_id = content.text
             uploads.append(IncompleteUpload(bucket, key, upload_id))
