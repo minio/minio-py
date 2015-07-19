@@ -15,14 +15,14 @@
 
 import pytz
 
-from xml.etree import ElementTree
+from xml.etree import cElementTree
 from datetime import datetime
 
 from .acl import Acl
 from ._compat import urlencode
 
 def parse_list_buckets(data):
-    root = ElementTree.fromstring(data)
+    root = cElementTree.fromstring(data)
     bucket_list = []
     for buckets in root:
         if buckets.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Buckets':
@@ -39,7 +39,7 @@ def parse_list_buckets(data):
 
 
 def parse_acl(data):
-    root = ElementTree.fromstring(data)
+    root = cElementTree.fromstring(data)
 
     public_read = False
     public_write = False
@@ -77,7 +77,7 @@ def parse_acl(data):
 
 
 def parse_list_objects(data, bucket):
-    root = ElementTree.fromstring(data)
+    root = cElementTree.fromstring(data)
 
     is_truncated = False
     objects = []
@@ -120,7 +120,7 @@ def parse_list_objects(data, bucket):
 
 
 def parse_incomplete_uploads(data, bucket):
-    root = ElementTree.fromstring(data)
+    root = cElementTree.fromstring(data)
 
     is_truncated = False
     uploads = []
@@ -148,7 +148,7 @@ def parse_incomplete_uploads(data, bucket):
 
 
 def parse_uploaded_parts(data, bucket, key, upload_id):
-    root = ElementTree.fromstring(data)
+    root = cElementTree.fromstring(data)
 
     is_truncated = False
     parts = []
@@ -173,12 +173,13 @@ def parse_uploaded_parts(data, bucket, key, upload_id):
                     last_modified = _parse_date(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
                     size = content.text
-            parts.append(UploadPart(bucket, key, upload_id, part_number, etag, last_modified, size))
+            parts.append(UploadPart(bucket, key, upload_id, part_number, etag,
+                                    last_modified, size))
     return parts, is_truncated, part_marker
 
 
 def parse_new_multipart_upload(data):
-    root = ElementTree.fromstring(data)
+    root = cElementTree.fromstring(data)
 
     upload_id = None
 
@@ -192,25 +193,28 @@ def parse_new_multipart_upload(data):
 def parse_error(response, resource=None):
     if len(response.data) == 0:
         amz_request_id = ''
+        amz_host_id = ''
         if 'x-amz-request-id' in response.headers:
             amz_request_id = response.headers['x-amz-request-id']
+        if 'x-amz-id-2' in response.headers:
+            amz_host_id = response.headers['x-amz-id-2']
         if response.status == 405 or response.status == 501:
             raise ResponseError('MethodNotAllowedException', response.reason,
-                                amz_request_id, None, resource, None)
+                                amz_request_id, amz_host_id, resource, None)
         if response.status == 404:
             raise ResponseError('ObjectNotFoundException', response.reason,
-                                amz_request_id, None, resource, None)
+                                amz_request_id, amz_host_id, resource, None)
         if response.status == 403:
             raise ResponseError('AccessDeniedException', response.reason,
-                                amz_request_id, None, resource, None)
+                                amz_request_id, amz_host_id, resource, None)
         if response.status == 400:
             raise ResponseError('BadRequestException', response.reason,
-                                amz_request_id, None, resource, None)
+                                amz_request_id, amz_host_id, resource, None)
         if response.status == 301 or response.status == 307:
             raise ResponseError('Redirect', response.reason,
-                                amz_request_id, None, resource, None)
+                                amz_request_id, amz_host_id, resource, None)
         raise ResponseError('UnknownException', response.reason,
-                            amz_request_id, None, resource, None)
+                            amz_request_id, amz_host_id, resource, None)
 
     code = None
     message = None
@@ -218,7 +222,7 @@ def parse_error(response, resource=None):
     host_id = None
     resource = None
 
-    root = ElementTree.fromstring(response.data)
+    root = cElementTree.fromstring(response.data)
     for attribute in root:
         if attribute.tag == 'Code':
             code = attribute.text
