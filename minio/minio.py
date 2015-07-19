@@ -11,44 +11,48 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import sys
-
-import certifi as certifi
-
-__author__ = 'minio'
 
 from io import RawIOBase
+import sys
 import io
 import platform
 
 import urllib3
+import certifi
+
+__author__ = "Minio, Inc."
+__version__ = "0.2.1"
 
 from .acl import is_valid_acl
 from .compat import compat_urllib_parse, compat_str_type
-from .generators import ListObjectsIterator, ListIncompleteUploads, ListUploadParts, DataStreamer
-from .helpers import get_target_url, is_non_empty_string, is_positive_int, get_sha256, convert_binary_to_base64, \
-    get_md5, calculate_part_size, convert_binary_to_hex, is_valid_bucket_name
-from .parsers import parse_list_buckets, parse_acl, parse_error, Object, parse_new_multipart_upload, ResponseError
+from .generators import (ListObjectsIterator, ListIncompleteUploads,
+                         ListUploadParts, DataStreamer)
+from .helpers import (get_target_url, is_non_empty_string, is_positive_int,
+                      get_sha256, convert_binary_to_base64, get_md5,
+                      calculate_part_size, convert_binary_to_hex,
+                      is_valid_bucket_name)
+from .parsers import (parse_list_buckets, parse_acl, parse_error,
+                      Object, parse_new_multipart_upload, ResponseError)
 from .region import get_region
 from .signer import sign_v4
 from .xml_requests import bucket_constraint, generate_complete_multipart_upload
 
-
 class Minio:
-    def __init__(self, url, access_key=None, secret_key=None, certs=None, skip_ssl_cert_check=False):
+    def __init__(self, url, access_key=None, secret_key=None,
+                 certs=None, insecure=False):
         """
         Creates a new object storage client.
 
         Examples:
 
-            client = Minio('http://localhost:9000', 'ACCESS_KEY', 'SECRET_KEY')
-            client = Minio('http://s3-us-west-2.amazonaws.com:9000', 'ACCESS_KEY', 'SECRET_KEY')
+          client = Minio('http://localhost:9000', 'ACCESS_KEY', 'SECRET_KEY')
+          client = Minio('https://s3.amazonaws.com', 'ACCESS_KEY', 'SECRET_KEY')
 
         :param url: A string of the URL of the object storage server.
         :param access_key: Access key to sign self._http.request with.
         :param secret_key: Secret key to sign self._http.request with.
         :param certs: Path to SSL certificates, defaults to using certifi library
-        :param skip_ssl_cert_check: Allow insecure ssl certificate requests, defaults to False
+        :param insecure: Allow insecure ssl requests, defaults to False
         :return: Minio object
         """
         is_non_empty_string('url', url)
@@ -63,8 +67,10 @@ class Minio:
         self._location = url_components.netloc
         self._access_key = access_key
         self._secret_key = secret_key
-        self._user_agent = 'minio-py/' + '0.0.1' + ' (' + platform.system() + '; ' + platform.machine() + ')'
-        if certs is None and skip_ssl_cert_check is False:
+        self._user_agent = 'minio-py/' + __version__ + \
+                           ' (' + platform.system() + '; ' + \
+                           platform.machine() + ')'
+        if certs is None and insecure is False:
             certs = certifi.where()
         if self._scheme == 'https' and certs is not None:
             self._http = urllib3.PoolManager(

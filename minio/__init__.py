@@ -15,6 +15,3 @@
 from .minio import Minio
 from .acl import Acl
 from .parsers import Bucket, Object, ResponseError
-
-__author__ = "Minio, Inc."
-__version__ = "0.2.1"

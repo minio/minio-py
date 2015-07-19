@@ -31,7 +31,7 @@ VERSION_RE = re.compile(r'''__version__ = ['"](.+)['"]''')
 
 
 def get_version():
-    init = open(os.path.join(ROOT, 'minio', '__init__.py')).read()
+    init = open(os.path.join(ROOT, 'minio', 'minio.py')).read()
     return VERSION_RE.search(init).group(1)
 
 
