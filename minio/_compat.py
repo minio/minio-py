@@ -30,7 +30,7 @@ except ImportError:  # python 2
     from urllib import url2pathname as compat_url2pathname
 
 
-def compat_urldecode_key(text):
+def urlencode(text):
     if sys.version_info < (3, 0):
         return compat_url2pathname(text.encode('utf-8'))
     else:
