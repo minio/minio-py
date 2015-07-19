@@ -17,7 +17,7 @@ import binascii
 import hashlib
 import re
 
-from .compat import compat_str_type, compat_pathname2url
+from ._compat import compat_str_type, compat_pathname2url
 
 def get_region(hostname):
     if hostname == 's3.amazonaws.com':
