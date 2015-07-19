@@ -111,10 +111,10 @@ def get_md5(content):
     hasher.update(content)
     return hasher.digest()
 
-def convert_binary_to_base64(content):
+def encode_to_base64(content):
     return binascii.b2a_base64(content).strip().decode('utf-8')
 
-def convert_binary_to_hex(content):
+def encode_to_hex(content):
     return binascii.hexlify(content)
 
 def calculate_part_size(length):

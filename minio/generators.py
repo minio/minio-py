@@ -13,14 +13,13 @@
 # limitations under the License.
 
 from .helpers import get_target_url
-from .parsers import parse_list_objects, parse_error, parse_incomplete_uploads, parse_uploaded_parts
+from .parsers import (parse_list_objects, parse_error,
+                      parse_incomplete_uploads, parse_uploaded_parts)
 from .signer import sign_v4
 
-__author__ = 'minio'
-
-
 class ListObjectsIterator:
-    def __init__(self, client, scheme, location, bucket, prefix, recursive, access_key, secret_key):
+    def __init__(self, client, scheme, location, bucket, prefix,
+                 recursive, access_key, secret_key):
         self._http = client
         self._scheme = scheme
         self._location = location
@@ -67,12 +66,14 @@ class ListObjectsIterator:
         if self._marker is not None:
             query['marker'] = self._marker
 
-        url = get_target_url(self._scheme, self._location, bucket=self._bucket, query=query)
+        url = get_target_url(self._scheme, self._location,
+                             bucket=self._bucket, query=query)
 
         method = 'GET'
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
@@ -83,7 +84,8 @@ class ListObjectsIterator:
 
 
 class ListIncompleteUploads:
-    def __init__(self, client, scheme, location, bucket, key=None, access_key=None, secret_key=None):
+    def __init__(self, client, scheme, location, bucket, key=None,
+                 access_key=None, secret_key=None):
         # from user
         self._http = client
         self._scheme = scheme
@@ -116,7 +118,8 @@ class ListIncompleteUploads:
             raise StopIteration
         # perform another fetch
         if len(self._results) == 0:
-            self._results, self._is_truncated, self._key_marker, self._upload_id_marker = self._fetch()
+            self._results, self._is_truncated, self._key_marker, \
+                self._upload_id_marker = self._fetch()
         # if fetch results in no elements, end iteration
         if len(self._results) == 0:
             self._complete = True
@@ -141,12 +144,14 @@ class ListIncompleteUploads:
         if self._upload_id_marker is not None:
             query['upload-id-marker'] = self._upload_id_marker
 
-        url = get_target_url(self._scheme, self._location, bucket=self._bucket, query=query)
+        url = get_target_url(self._scheme, self._location,
+                             bucket=self._bucket, query=query)
 
         method = 'GET'
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
@@ -157,7 +162,8 @@ class ListIncompleteUploads:
 
 
 class ListUploadParts:
-    def __init__(self, client, scheme, location, bucket, key, upload_id, access_key=None, secret_key=None):
+    def __init__(self, client, scheme, location, bucket, key, upload_id,
+                 access_key=None, secret_key=None):
         # from user
         self._http = client
         self._scheme = scheme
@@ -211,19 +217,23 @@ class ListUploadParts:
         if self._part_marker is not None:
             query['part-number-marker'] = self._part_marker
 
-        url = get_target_url(self._scheme, self._location, bucket=self._bucket, key=self._key, query=query)
+        url = get_target_url(self._scheme, self._location, bucket=self._bucket,
+                             key=self._key, query=query)
 
         method = 'GET'
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers, access_key=self._access_key,
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
             parse_error(response)
-        return parse_uploaded_parts(response.data, bucket=self._bucket, key=self._key, upload_id=self._upload_id)
+
+        return parse_uploaded_parts(response.data, bucket=self._bucket,
+                                    key=self._key, upload_id=self._upload_id)
 
 
 class DataStreamer:
