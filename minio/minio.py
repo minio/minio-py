@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Minimal Object Storage Library, (C) 2015 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -106,7 +107,6 @@ class Minio:
             self._user_agent += ''.join(components)
 
     # Bucket level
-    # noinspection PyUnusedLocal
     def make_bucket(self, bucket, acl=None):
         """
         Make a new bucket on the server.
