@@ -532,8 +532,8 @@ class Minio(object):
         is_non_empty_string(key)
 
         # check key
-        uploads = ListIncompleteUploads(self._http, self._scheme,
-                                        self._location, bucket, key,
+        uploads = ListIncompleteUploads(self._http, self._url,
+                                        bucket, key,
                                         access_key=self._access_key,
                                         secret_key=self._secret_key)
         for upload in uploads:

@@ -13,14 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-class InvalidBucketError(BaseException):
+class InvalidBucketError(Exception):
     pass
 
-class InvalidArgumentError(BaseException):
+class InvalidArgumentError(Exception):
     pass
 
-class ResponseError(BaseException):
-    def __init__(self, code, message, request_id, host_id, resource, xml=None):
+class ResponseError(Exception):
+    def __init__(self, code, message, request_id, host_id, resource, xml=None,
+                 **kwargs):
+        super(ResponseError, self).__init__(**kwargs)
         self.code = code
         self.message = message
         self.request_id = request_id
@@ -29,8 +31,10 @@ class ResponseError(BaseException):
         self.xml = xml
 
     def __str__(self):
-        return 'ResponseError: code: {0}, message: {1}, request_id: {2},'
-        'host_id: {3}, resource: {4}, xml: {5}'.format(self.code, self.message,
-                                                       self.request_id,
-                                                       self.host_id,
-                                                       self.resource, self.xml)
+        return 'ResponseError: code: {0}, message: {1}, request_id: {2},' \
+            'host_id: {3}, resource: {4}, xml: {5}'.format(self.code,
+                                                           self.message,
+                                                           self.request_id,
+                                                           self.host_id,
+                                                           self.resource,
+                                                           self.xml)
