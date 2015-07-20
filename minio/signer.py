@@ -31,18 +31,11 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content
         headers = {}
 
     parsed_url = compat_urllib_parse(url)
-
     content_hash_hex = empty_sha256
     if content_hash is not None:
         content_hash_hex = binascii.hexlify(content_hash).decode('utf-8')
 
-    host = parsed_url.hostname
-    if parsed_url.port is not None:
-        if parsed_url.scheme == 'http' and parsed_url.port != 80:
-            host = host + ":" + str(parsed_url.port)
-        if parsed_url.scheme == 'https' and parsed_url.port != 443:
-            host = host + ":" + str(parsed_url.port)
-
+    host = parsed_url.netloc
     headers['host'] = host
     headers['x-amz-date'] = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
     headers['x-amz-content-sha256'] = content_hash_hex
@@ -165,11 +158,13 @@ def generate_signing_key(dt, region, secret):
 
     key1_string = 'AWS4' + secret
     key1 = key1_string.encode('utf-8')
-    key2 = hmac.new(key1, formatted_date.encode('utf-8'), hashlib.sha256).digest()
+    key2 = hmac.new(key1, formatted_date.encode('utf-8'),
+                    hashlib.sha256).digest()
     key3 = hmac.new(key2, region.encode('utf-8'), hashlib.sha256).digest()
     key4 = hmac.new(key3, 's3'.encode('utf-8'), hashlib.sha256).digest()
 
-    return hmac.new(key4, 'aws4_request'.encode('utf-8'), hashlib.sha256).digest()
+    return hmac.new(key4, 'aws4_request'.encode('utf-8'),
+                    hashlib.sha256).digest()
 
 
 def generate_authorization_header(access_key, dt, region, signed_headers,
@@ -178,7 +173,8 @@ def generate_authorization_header(access_key, dt, region, signed_headers,
     signed_headers_string = ';'.join(signed_headers)
     auth_header = "AWS4-HMAC-SHA256 Credential=" + access_key + "/" + \
                   formatted_date + "/" + region + \
-                  "/s3/aws4_request, SignedHeaders=" + signed_headers_string + \
+                  "/s3/aws4_request, SignedHeaders=" + \
+                                                     signed_headers_string + \
                                                      ", Signature=" + \
                                                                     signed_request
     return auth_header
