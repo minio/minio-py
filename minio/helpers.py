@@ -12,6 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""
+Helper functions
+"""
+
 import cgi
 import collections
 import binascii
@@ -21,35 +26,33 @@ import re
 from ._compat import compat_str_type, compat_pathname2url
 
 def get_region(hostname):
-    if hostname == 's3.amazonaws.com':
-        return 'us-east-1'
-    if hostname == 's3-ap-northeast-1.amazonaws.com':
-        return 'ap-northeast-1'
-    if hostname == 's3-ap-southeast-1.amazonaws.com':
-        return 'ap-southeast-1'
-    if hostname == 's3-ap-southeast-2.amazonaws.com':
-        return 'ap-southeast-2'
-    if hostname == 's3-eu-central-1.amazonaws.com':
-        return 'eu-central-1'
-    if hostname == 's3-eu-west-1.amazonaws.com':
-        return 'eu-west-1'
-    if hostname == 's3-sa-east-1.amazonaws.com':
-        return 'sa-east-1'
-    if hostname == 's3-external-1.amazonaws.com':
-        return 'us-east-1'
-    if hostname == 's3-us-west-1.amazonaws.com':
-        return 'us-west-1'
-    if hostname == 's3-us-west-2.amazonaws.com':
-        return 'us-west-2'
-    if hostname == 's3.cn-north-1.amazonaws.com.cn':
-        return 'cn-north-1'
-    if hostname == 's3-fips-us-gov-west-1.amazonaws.com':
-        return 'us-gov-west-1'
-    return 'milkyway'
+    """
+    Get region based on hostname, defaults to "milkyway" if KeyError
+    """
+    region = {
+        's3.amazonaws.com': 'us-east-1',
+        's3-ap-northeast-1.amazonaws.com': 'ap-northeast-1',
+        's3-ap-southeast-1.amazonaws.com': 'ap-southeast-1',
+        's3-ap-southeast-2.amazonaws.com': 'ap-southeast-2',
+        's3-eu-central-1.amazonaws.com': 'eu-central-1',
+        's3-sa-east-1.amazonaws.com': 'sa-east-1',
+        's3-external-1.amazonaws.com': 'us-east-1',
+        's3-us-west-1.amazonaws.com': 'us-west-1',
+        's3-us-west-2.amazonaws.com': 'us-west-2',
+        's3.cn-north-1.amazonaws.com.cn': 'cn-north-1',
+        's3-fips-us-gov-west-1.amazonaws.com': 'us-gov-west-1',
+    }
 
-def get_target_url(scheme, location, bucket=None, key=None, query=None):
-    url_components = [scheme, '://', location, '/']
-    # url_components = ['/']
+    try:
+        return region[hostname]
+    except KeyError:
+        return 'milkyway'
+
+def get_target_url(url, bucket=None, key=None, query=None):
+    """
+    Construct target url
+    """
+    url_components = [url, '/']
     if key is not None:
         key = encode_object_key(key)
 
@@ -71,14 +74,17 @@ def get_target_url(scheme, location, bucket=None, key=None, query=None):
             query_components.append(''.join(single_component))
 
         query_string = '&'.join(query_components)
-        if query_string is not '':
+        if query_string:
             url_components.append('?')
             url_components.append(query_string)
 
     return ''.join(url_components)
 
-def is_valid_url(input_string):
-    if not isinstance(input_string, compat_str_type):
+def is_valid_url(url):
+    """
+    validate a given url
+    """
+    if not isinstance(url, compat_str_type):
         raise TypeError('url')
 
     regex = re.compile(
@@ -90,31 +96,43 @@ def is_valid_url(input_string):
         r'(?::\d+)?' # optional port
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
-    if not regex.match(input_string):
+    if not regex.match(url):
         raise ValueError('url')
 
-def is_valid_bucket_name(input_string):
-    is_non_empty_string(input_string)
-    if len(input_string) < 3 or len(input_string) > 63:
+def is_valid_bucket_name(bucketname):
+    """
+    validate a given bucketname
+    """
+    is_non_empty_string(bucketname)
+    if len(bucketname) < 3 or len(bucketname) > 63:
         raise ValueError('bucket')
-    if '/' in input_string:
+    if '/' in bucketname:
         raise ValueError('bucket')
-    if not re.match("^[a-z0-9]+[a-z0-9\\-]*[a-z0-9]+$", input_string):
+    if not re.match("^[a-z0-9]+[a-z0-9\\-]*[a-z0-9]+$", bucketname):
         raise ValueError('bucket')
-    if re.match("/[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/", input_string):
+    if re.match("/[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/", bucketname):
         raise ValueError('bucket')
 
 def is_non_empty_string(input_string):
+    """
+    validate if non empty string
+    """
     if not isinstance(input_string, compat_str_type):
         raise TypeError()
     if not input_string.strip():
         raise ValueError()
 
-def encode_object_key(input_string):
-    is_non_empty_string(input_string)
-    return compat_pathname2url(input_string)
+def encode_object_key(key):
+    """
+    url encode object key
+    """
+    is_non_empty_string(key)
+    return compat_pathname2url(key)
 
 def get_sha256(content):
+    """
+    calculate sha256 for given content
+    """
     if len(content) == 0:
         content = b''
     hasher = hashlib.sha256()
@@ -122,6 +140,9 @@ def get_sha256(content):
     return hasher.digest()
 
 def get_md5(content):
+    """
+    calculate md5 for given content
+    """
     if len(content) == 0:
         content = b''
     hasher = hashlib.md5()
@@ -129,12 +150,21 @@ def get_md5(content):
     return hasher.digest()
 
 def encode_to_base64(content):
+    """
+    calculate base64 for given content
+    """
     return binascii.b2a_base64(content).strip().decode('utf-8')
 
 def encode_to_hex(content):
+    """
+    calculate hex for given content
+    """
     return binascii.hexlify(content)
 
 def calculate_part_size(length):
+    """
+    calculate optimal part size for multipart uploads
+    """
     minimum_part_size = 1024 * 1024 * 5
     maximum_part_size = 1024 * 1024 * 1024 * 5
     proposed_part_size = length / 9999

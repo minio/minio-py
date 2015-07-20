@@ -22,23 +22,22 @@ from minio.helpers import get_target_url
 
 class GetUrlTests(TestCase):
     def test_get_target_url_works(self):
-        scheme = 'http'
-        location = 'localhost:9000'
-        eq_(get_target_url(scheme, location), 'http://localhost:9000/')
-        eq_(get_target_url(scheme, location), 'http://localhost:9000/')
-        eq_(get_target_url(scheme, location, 'bucket'),
+        url = 'http://localhost:9000'
+        eq_(get_target_url(url, 'bucket'),
             'http://localhost:9000/bucket')
-        eq_(get_target_url(scheme, location, 'bucket', 'key'),
+        eq_(get_target_url(url, 'bucket', 'key'),
             'http://localhost:9000/bucket/key')
-        eq_(get_target_url(scheme, location, 'bucket', 'key', None),
+        eq_(get_target_url(url, 'bucket', 'key', None),
             'http://localhost:9000/bucket/key')
-        eq_(get_target_url(scheme, location, 'bucket', 'key', {'foo': 'bar'}),
+        eq_(get_target_url(url, 'bucket', 'key', {'foo': 'bar'}),
             'http://localhost:9000/bucket/key?foo=bar')
-        eq_(get_target_url(scheme, location, 'bucket', 'key',
-                           {'foo': 'bar', 'b': 'c', 'a': 'b'}),
+        eq_(get_target_url(url, 'bucket', 'key',
+                           {'foo': 'bar',
+                            'b': 'c',
+                            'a': 'b'}),
             'http://localhost:9000/bucket/key?a=b&b=c&foo=bar')
-        eq_(get_target_url('https', 's3.amazonaws.com'),
-            'https://s3.amazonaws.com/')
+        s3_url = 'https://s3.amazonaws.com'
+        eq_(get_target_url(s3_url), 'https://s3.amazonaws.com/')
 
     @raises(TypeError)
     def test_minio_requires_string(self):
@@ -56,14 +55,16 @@ class GetUrlTests(TestCase):
 class UserAgentTests(TestCase):
     def test_default_user_agent(self):
         client = minio.Minio('http://localhost')
-        eq_(client._user_agent, 'minio-py/' + get_version()+ ' (' + platform.system() + \
+        eq_(client._user_agent, 'minio-py/' + get_version()+ ' (' + \
+            platform.system() + \
             '; ' + platform.machine() + ')')
 
     def test_set_user_agent(self):
         client = minio.Minio('http://localhost')
 
-        expected_user_agent = 'minio-py/' + get_version() + ' (' + platform.system() + '; ' + \
-                              platform.machine() + ')'
+        expected_user_agent = 'minio-py/' + get_version() + ' (' + \
+            platform.system() + '; ' + \
+            platform.machine() + ')'
         expected_user_agent += ' hello/1.0.0 (World; Edition)'
 
         client.set_user_agent('hello', '1.0.0', ['World', 'Edition'])

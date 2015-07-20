@@ -18,12 +18,11 @@ from .parsers import (parse_list_objects, parse_error,
                       parse_incomplete_uploads, parse_uploaded_parts)
 from .signer import sign_v4
 
-class ListObjectsIterator:
-    def __init__(self, client, scheme, location, bucket, prefix,
+class ListObjectsIterator(object):
+    def __init__(self, client, url, bucket, prefix,
                  recursive, access_key, secret_key):
         self._http = client
-        self._scheme = scheme
-        self._location = location
+        self._url = url
         self._bucket = bucket
         self._prefix = prefix
         self._recursive = recursive
@@ -68,8 +67,7 @@ class ListObjectsIterator:
         if self._marker is not None:
             query['marker'] = self._marker
 
-        url = get_target_url(self._scheme, self._location,
-                             bucket=self._bucket, query=query)
+        url = get_target_url(self._url, bucket=self._bucket, query=query)
 
         method = 'GET'
         headers = {}
@@ -81,18 +79,17 @@ class ListObjectsIterator:
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, bucket)
+            parse_error(response, self._bucket)
 
         return parse_list_objects(response.data, bucket=self._bucket)
 
 
-class ListIncompleteUploads:
-    def __init__(self, client, scheme, location, bucket, key=None,
+class ListIncompleteUploads(object):
+    def __init__(self, client, url, bucket, key=None,
                  access_key=None, secret_key=None):
         # from user
         self._http = client
-        self._scheme = scheme
-        self._location = location
+        self._url = url
         self._bucket = bucket
         self._key = key
         self._access_key = access_key
@@ -148,8 +145,7 @@ class ListIncompleteUploads:
         if self._upload_id_marker is not None:
             query['upload-id-marker'] = self._upload_id_marker
 
-        url = get_target_url(self._scheme, self._location,
-                             bucket=self._bucket, query=query)
+        url = get_target_url(self._url, bucket=self._bucket, query=query)
 
         method = 'GET'
         headers = {}
@@ -161,18 +157,17 @@ class ListIncompleteUploads:
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, bucket)
+            parse_error(response, self._bucket)
 
         return parse_incomplete_uploads(response.data, bucket=self._bucket)
 
 
-class ListUploadParts:
-    def __init__(self, client, scheme, location, bucket, key, upload_id,
+class ListUploadParts(object):
+    def __init__(self, client, url, bucket, key, upload_id,
                  access_key=None, secret_key=None):
         # from user
         self._http = client
-        self._scheme = scheme
-        self._location = location
+        self._url = url
         self._bucket = bucket
         self._key = key
         self._upload_id = upload_id
@@ -223,8 +218,8 @@ class ListUploadParts:
         if self._part_marker is not None:
             query['part-number-marker'] = self._part_marker
 
-        url = get_target_url(self._scheme, self._location, bucket=self._bucket,
-                             key=self._key, query=query)
+        url = get_target_url(self._url, bucket=self._bucket, key=self._key,
+                             query=query)
 
         method = 'GET'
         headers = {}
@@ -236,13 +231,13 @@ class ListUploadParts:
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, bucket+"/"+key)
+            parse_error(response, self._bucket+"/"+self._key)
 
         return parse_uploaded_parts(response.data, bucket=self._bucket,
                                     key=self._key, upload_id=self._upload_id)
 
 
-class DataStreamer:
+class DataStreamer(object):
     def __init__(self, response):
         self._response = response
         self._stream = iter(response.stream())

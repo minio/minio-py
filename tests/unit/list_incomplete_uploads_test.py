@@ -43,7 +43,7 @@ class ListIncompleteUploadsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('GET', 'http://localhost:9000/bucket?max-uploads=1000&uploads', {}, 200, content=mock_data))
-        upload_iter = ListIncompleteUploads(mock_server, 'http', 'localhost:9000', 'bucket')
+        upload_iter = ListIncompleteUploads(mock_server, 'http://localhost:9000', 'bucket')
         uploads = []
         for upload in upload_iter:
             uploads.append(upload)
@@ -97,7 +97,7 @@ class ListIncompleteUploadsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('GET', 'http://localhost:9000/bucket?max-uploads=1000&uploads', {}, 200, content=mock_data))
-        upload_iter = ListIncompleteUploads(mock_server, 'http', 'localhost:9000', 'bucket')
+        upload_iter = ListIncompleteUploads(mock_server, 'http://localhost:9000', 'bucket')
         uploads = []
         for upload in upload_iter:
             uploads.append(upload)
@@ -193,7 +193,7 @@ class ListIncompleteUploadsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('GET', 'http://localhost:9000/bucket?max-uploads=1000&uploads', {}, 200, content=mock_data1))
-        upload_iter = ListIncompleteUploads(mock_server, 'http', 'localhost:9000', 'bucket')
+        upload_iter = ListIncompleteUploads(mock_server, 'http://localhost:9000', 'bucket')
         uploads = []
         for upload in upload_iter:
             mock_server.mock_add_request(MockResponse('GET',

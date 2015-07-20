@@ -49,7 +49,7 @@ class ListPartsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('GET', 'http://localhost:9000/bucket/key?max-parts=1000&uploadId=upload_id', {}, 200, content=mock_data))
-        part_iter = ListUploadParts(mock_server, 'http', 'localhost:9000', 'bucket', 'key', 'upload_id')
+        part_iter = ListUploadParts(mock_server, 'http://localhost:9000', 'bucket', 'key', 'upload_id')
         parts = []
         for part in part_iter:
             parts.append(part)
@@ -93,7 +93,7 @@ class ListPartsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket?max-uploads=1000&uploadId=upload_id', {}, 200,
                                                   content=mock_data))
-        part_iter = ListUploadParts(mock_server, 'http', 'localhost:9000', 'bucket', 'key', 'upload_id')
+        part_iter = ListUploadParts(mock_server, 'http://localhost:9000', 'bucket', 'key', 'upload_id')
         parts = []
         for part in part_iter:
             parts.append(part)
@@ -169,7 +169,7 @@ class ListPartsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket/key?max-parts=1000&uploadId=upload_id', {}, 200,
                                                   content=mock_data1))
-        part_iter = ListUploadParts(mock_server, 'http', 'localhost:9000',
+        part_iter = ListUploadParts(mock_server, 'http://localhost:9000',
                                     'bucket', 'key', 'upload_id')
         parts = []
         for part in part_iter:
