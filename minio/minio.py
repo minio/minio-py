@@ -41,8 +41,7 @@ from .signer import sign_v4
 from .xml_requests import bucket_constraint, generate_complete_multipart_upload
 
 class Minio(object):
-    def __init__(self, url, access_key=None, secret_key=None,
-                 certs=None, insecure=False):
+    def __init__(self, url, access_key=None, secret_key=None, certs=None):
         """
         Creates a new object storage client.
 
@@ -55,7 +54,6 @@ class Minio(object):
         :param access_key: Access key to sign self._http.request with.
         :param secret_key: Secret key to sign self._http.request with.
         :param certs: Path to SSL certificates
-        :param insecure: Allow insecure ssl requests, defaults to False
         :return: Minio object
         """
         is_valid_url(url)
@@ -68,15 +66,13 @@ class Minio(object):
         self._user_agent = 'minio-py/' + get_version() + \
                            ' (' + platform.system() + '; ' + \
                            platform.machine() + ')'
-        if certs is None and insecure is False:
+        if certs is None:
             certs = certifi.where()
-        if self._scheme == 'https' and certs is not None:
-            self._http = urllib3.PoolManager(
-                cert_reqs='CERT_REQUIRED',
-                ca_certs=certs
-            )
-        else:
-            self._http = urllib3.PoolManager()
+
+        self._http = urllib3.PoolManager(
+            cert_reqs='CERT_REQUIRED',
+            ca_certs=certs
+        )
 
     # Client level
     def set_user_agent(self, name=None, version=None, comments=None):
@@ -160,7 +156,7 @@ class Minio(object):
                                       headers=headers)
 
         if response.status != 200:
-            parse_error(response)
+            parse_error(response, bucket)
 
     def list_buckets(self):
         """
@@ -168,10 +164,9 @@ class Minio(object):
 
 
         Example:
-            bucket_list = minio.list_buckets()j
+            bucket_list = minio.list_buckets()
             for bucket in bucket_list:
-                print bucket.name
-                print bucket.created_date
+                print bucket.name,bucket.created_date
 
         :return: A list of buckets owned by the current user.
         """
@@ -188,7 +183,7 @@ class Minio(object):
 
         if response.status != 200:
             try:
-                parse_error(response)
+                parse_error(response, bucket)
             except ResponseError as err:
                 if err.code == 'Redirect':
                     err.code = 'AccessDeniedException'
@@ -214,10 +209,12 @@ class Minio(object):
 
         response = self._http.request(method, url, headers=headers)
 
-        if response.status == 200:
-            return True
+        if response.status != 200:
+            if response.status == "404":
+                return False
+            parse_error(response, bucket)
 
-        return False
+        return True
 
     def remove_bucket(self, bucket):
         """
@@ -239,7 +236,7 @@ class Minio(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 204:
-            parse_error(response)
+            parse_error(response, bucket)
 
     def get_bucket_acl(self, bucket):
         """
@@ -267,7 +264,7 @@ class Minio(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, url)
+            parse_error(response, bucket)
 
         return parse_acl(response.data)
 
@@ -308,7 +305,7 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response)
+            parse_error(response, bucket)
 
     def drop_all_incomplete_uploads(self, bucket):
         """
@@ -383,8 +380,8 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers,
                                       preload_content=False)
 
-        if not (response.status == 200 or response.status == 206):
-            parse_error(response)
+        if response.status != 206 and response.status != 200:
+            parse_error(response, bucket+"/"+key)
 
         return DataStreamer(response)
 
@@ -492,7 +489,7 @@ class Minio(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response)
+            parse_error(response, bucket+"/"+key)
 
         content_type = response.headers['Content-Type']
         etag = response.headers['ETag'].replace('"', '')
@@ -525,7 +522,7 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers)
 
         if response.status != 204:
-            parse_error(response)
+            parse_error(response, bucket+"/"+key)
 
     def drop_incomplete_upload(self, bucket, key):
         """
@@ -582,7 +579,7 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers, body=data)
 
         if response.status != 200:
-            parse_error(response)
+            parse_error(response, bucket+"/"+key)
 
         return response.headers['ETag'].replace('"', '')
 
@@ -660,7 +657,7 @@ class Minio(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 204:
-            parse_error(response)
+            parse_error(response, bucket+"/"+key)
 
     def _new_multipart_upload(self, bucket, key, content_type):
         method = 'POST'
@@ -682,7 +679,8 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers, body=None)
 
         if response.status != 200:
-            parse_error(response)
+            parse_error(response, bucket+"/"+key)
+
         return parse_new_multipart_upload(response.data)
 
     def _complete_multipart_upload(self, bucket, key, upload_id, etags):
@@ -709,7 +707,7 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers, body=data)
 
         if response.status != 200:
-            parse_error(response)
+            parse_error(response, bucket+"/"+key)
 
 class DataSizeMismatchError(BaseException):
     pass

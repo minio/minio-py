@@ -79,7 +79,7 @@ def get_target_url(scheme, location, bucket=None, key=None, query=None):
 
 def is_valid_url(input_string):
     if not isinstance(input_string, compat_str_type):
-        raise TypeError()
+        raise TypeError('url')
 
     regex = re.compile(
         r'^(?:http)s?://' # http:// or https://
@@ -91,18 +91,18 @@ def is_valid_url(input_string):
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
     if not regex.match(input_string):
-        raise ValueError()
+        raise ValueError('url')
 
 def is_valid_bucket_name(input_string):
     is_non_empty_string(input_string)
     if len(input_string) < 3 or len(input_string) > 63:
-        raise ValueError()
+        raise ValueError('bucket')
     if '/' in input_string:
-        raise ValueError()
+        raise ValueError('bucket')
     if not re.match("^[a-z0-9]+[a-z0-9\\-]*[a-z0-9]+$", input_string):
-        raise ValueError()
+        raise ValueError('bucket')
     if re.match("/[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/", input_string):
-        raise ValueError()
+        raise ValueError('bucket')
 
 def is_non_empty_string(input_string):
     if not isinstance(input_string, compat_str_type):

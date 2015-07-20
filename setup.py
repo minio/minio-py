@@ -26,6 +26,8 @@ import os
 
 from setuptools import setup, find_packages
 
+from minio.__version__ import get_version
+
 setup(
     name='minio',
     description='Minimal Object Storage Library for Python',
@@ -33,7 +35,7 @@ setup(
     url='https://github.com/minio/minio-py',
     download_url='https://github.com/minio/minio-py',
     author_email='dev@minio.io',
-    version="0.2.1",
+    version=get_version(),
     install_requires=['urllib3', 'pytz', 'certifi'],
     tests_require=['nose', 'mock'],
     packages=find_packages(exclude=['tests*', 'integration']),

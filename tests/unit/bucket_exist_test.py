@@ -17,7 +17,7 @@ import mock
 from nose.tools import raises, eq_
 from unittest import TestCase
 
-from minio import minio
+from minio import minio, ResponseError
 from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
@@ -43,6 +43,7 @@ class BucketExists(TestCase):
         result = client.bucket_exists('hello')
         eq_(True, result)
 
+    @raises(ResponseError)
     @mock.patch('urllib3.PoolManager')
     def test_bucket_exists_invalid_name(self, mock_connection):
         error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
@@ -50,5 +51,4 @@ class BucketExists(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('HEAD', 'http://localhost:9000/1234', {}, 400, content=error_xml))
         client = minio.Minio('http://localhost:9000')
-        result = client.bucket_exists('1234')
-        eq_(False, result)
+        client.bucket_exists('1234')

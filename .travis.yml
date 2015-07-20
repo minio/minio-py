@@ -6,7 +6,8 @@ python:
   - "3.4"
 # command to install dependencies
 install:
-  - "python setup.py install"
+  - "pip install urllib3 certifi pytz"
 # command to run tests
 script:
+  - "python setup.py install"
   - "python setup.py nosetests"

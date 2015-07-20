@@ -60,6 +60,7 @@ class ListObjectsIterator:
 
     def _fetch(self):
         query = {}
+        query['max-keys'] = 1000
         if self._prefix is not None:
             query['prefix'] = self._prefix
         if not self._recursive:
@@ -80,7 +81,8 @@ class ListObjectsIterator:
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response)
+            parse_error(response, bucket)
+
         return parse_list_objects(response.data, bucket=self._bucket)
 
 
@@ -138,6 +140,7 @@ class ListIncompleteUploads:
         query = {
             'uploads': None
         }
+        query['max-uploads'] = 1000
         if self._key is not None:
             query['prefix'] = self._key
         if self._key_marker is not None:
@@ -158,7 +161,8 @@ class ListIncompleteUploads:
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response)
+            parse_error(response, bucket)
+
         return parse_incomplete_uploads(response.data, bucket=self._bucket)
 
 
@@ -215,6 +219,7 @@ class ListUploadParts:
         query = {
             'uploadId': self._upload_id
         }
+        query['max-parts'] = 1000
         if self._part_marker is not None:
             query['part-number-marker'] = self._part_marker
 
@@ -231,7 +236,7 @@ class ListUploadParts:
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response)
+            parse_error(response, bucket+"/"+key)
 
         return parse_uploaded_parts(response.data, bucket=self._bucket,
                                     key=self._key, upload_id=self._upload_id)
