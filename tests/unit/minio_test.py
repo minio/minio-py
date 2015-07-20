@@ -16,7 +16,7 @@ from unittest import TestCase
 
 from nose.tools import *
 
-from minio import minio
+from minio import minio, get_version
 from minio.helpers import get_target_url
 
 
@@ -56,13 +56,13 @@ class GetUrlTests(TestCase):
 class UserAgentTests(TestCase):
     def test_default_user_agent(self):
         client = minio.Minio('http://localhost')
-        eq_(client._user_agent, 'minio-py/0.2.1 (' + platform.system() + \
+        eq_(client._user_agent, 'minio-py/' + get_version()+ ' (' + platform.system() + \
             '; ' + platform.machine() + ')')
 
     def test_set_user_agent(self):
         client = minio.Minio('http://localhost')
 
-        expected_user_agent = 'minio-py/0.2.1 (' + platform.system() + '; ' + \
+        expected_user_agent = 'minio-py/' + get_version() + ' (' + platform.system() + '; ' + \
                               platform.machine() + ')'
         expected_user_agent += ' hello/1.0.0 (World; Edition)'
 
