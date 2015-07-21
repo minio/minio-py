@@ -23,7 +23,7 @@ import binascii
 import hashlib
 import re
 
-from ._compat import compat_str_type, compat_pathname2url
+from ._compat import strtype, compat_pathname2url
 
 def get_region(hostname):
     """
@@ -84,7 +84,7 @@ def is_valid_url(url):
     """
     validate a given url
     """
-    if not isinstance(url, compat_str_type):
+    if not isinstance(url, strtype):
         raise TypeError('url')
 
     regex = re.compile(
@@ -117,7 +117,7 @@ def is_non_empty_string(input_string):
     """
     validate if non empty string
     """
-    if not isinstance(input_string, compat_str_type):
+    if not isinstance(input_string, strtype):
         raise TypeError()
     if not input_string.strip():
         raise ValueError()

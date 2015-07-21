@@ -47,8 +47,9 @@ class IncompleteUpload(object):
         self.upload_id = upload_id
 
     def __str__(self):
-        return '<IncompleteUpload: {0} {1} {2}>'.format(self.bucket, self.key,
-                                                        self.upload_id)
+        string_format = '<IncompleteUpload: bucket: {0} key: {1}' \
+                        ' upload_id: {2}>'
+        return string_format.format(self.bucket, self.key, self.upload_id)
 
 class UploadPart(object):
     def __init__(self, bucket, key, upload_id, part_number, etag,
@@ -60,3 +61,15 @@ class UploadPart(object):
         self.etag = etag
         self.last_modified = last_modified
         self.size = size
+
+    def __str__(self):
+        string_format = '<UploadPart: bucket: {0} key: {1} upload_id: {2}' \
+                        ' part_number: {3} etag: {4} last_modified: {5}' \
+                        ' size: {6}>'
+        return string_format.format(self.bucket,
+                                    self.key,
+                                    self.upload_id,
+                                    self.part_number,
+                                    self.etag,
+                                    self.last_modified,
+                                    self.size)

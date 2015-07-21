@@ -5,8 +5,8 @@ try:
 except ImportError:  # python 2
     from urlparse import urlparse as compat_urllib_parse
 
-compat_str_type = None
+strtype = None
 if sys.version_info < (3, 0):
-    compat_str_type = basestring
+    strtype = basestring
 else:
-    compat_str_type = str
+    strtype = str
