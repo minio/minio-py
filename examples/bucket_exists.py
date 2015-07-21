@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Minimal Object Storage Library, (C) 2015 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +20,7 @@ client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-if client.bucket_exists('my_bucket'):
+if client.bucket_exists('my-bucket'):
     print 'Bucket exists'
 else:
     print 'Bucket does not exist'

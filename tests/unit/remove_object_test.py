@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Minimal Object Storage Library, (C) 2015 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
