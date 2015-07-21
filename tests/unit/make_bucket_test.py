@@ -17,7 +17,9 @@ import mock
 from nose.tools import raises
 from unittest import TestCase
 
-from minio import minio, ResponseError
+from minio import minio
+from minio.error import ResponseError, InvalidBucketError
+
 from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
@@ -29,7 +31,7 @@ class MakeBucket(TestCase):
         client = minio.Minio('http://localhost:9000')
         client.make_bucket(1234)
 
-    @raises(ValueError)
+    @raises(InvalidBucketError)
     def test_bucket_is_not_empty_string(self):
         client = minio.Minio('http://localhost:9000')
         client.make_bucket('  \t \n  ')

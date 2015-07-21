@@ -17,7 +17,10 @@ import mock
 from nose.tools import raises
 from unittest import TestCase
 
-from minio import minio, ResponseError, Acl
+from minio import minio
+from minio.error import ResponseError, InvalidBucketError
+from minio.acl import Acl
+
 from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
@@ -29,7 +32,7 @@ class SetBucketAclTest(TestCase):
         client = minio.Minio('http://localhost:9000')
         client.set_bucket_acl(1234, Acl.private())
 
-    @raises(ValueError)
+    @raises(InvalidBucketError)
     def test_bucket_is_not_empty_string(self):
         client = minio.Minio('http://localhost:9000')
         client.set_bucket_acl('  \t \n  ', Acl.private())

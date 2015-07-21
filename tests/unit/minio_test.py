@@ -17,6 +17,7 @@ from unittest import TestCase
 from nose.tools import *
 
 from minio import minio, get_version
+from minio.error import InvalidURLError
 from minio.helpers import get_target_url
 
 
@@ -43,11 +44,11 @@ class GetUrlTests(TestCase):
     def test_minio_requires_string(self):
         minio.Minio(10)
 
-    @raises(ValueError)
+    @raises(InvalidURLError)
     def test_minio_requires_scheme(self):
         minio.Minio('play.minio.io')
 
-    @raises(ValueError)
+    @raises(InvalidURLError)
     def test_minio_requires_netloc(self):
         minio.Minio('http://')
 

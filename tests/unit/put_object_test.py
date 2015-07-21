@@ -11,26 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest import TestCase
 
+from unittest import TestCase
 from nose.tools import raises
 
 from minio import minio
 
-__author__ = 'minio'
-
-
 class PutObjectTest(TestCase):
-    @raises(TypeError)
-    def test_bucket_is_string(self):
-        client = minio.Minio('http://localhost:9000')
-        client.put_object(1234, 'world', 1, iter([1, 2, 3]))
-
-    @raises(ValueError)
-    def test_bucket_is_not_empty_string(self):
-        client = minio.Minio('http://localhost:9000')
-        client.put_object('  \t \n  ', 'world', 1, iter([1, 2, 3]))
-
     @raises(TypeError)
     def test_object_is_string(self):
         client = minio.Minio('http://localhost:9000')

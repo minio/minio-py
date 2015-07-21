@@ -18,19 +18,20 @@ import hmac
 import binascii
 
 from datetime import datetime
-from ._compat import compat_urllib_parse, strtype
+from .compat import urlsplit, strtype
 from .helpers import get_region
 
 empty_sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
-def sign_v4(method, url, headers=None, access_key=None, secret_key=None, content_hash=None):
+def sign_v4(method, url, headers=None, access_key=None, secret_key=None,
+            content_hash=None):
     if access_key is None or secret_key is None:
         return headers
 
     if headers is None:
         headers = {}
 
-    parsed_url = compat_urllib_parse(url)
+    parsed_url = urlsplit(url)
     content_hash_hex = empty_sha256
     if content_hash is not None:
         content_hash_hex = binascii.hexlify(content_hash).decode('utf-8')

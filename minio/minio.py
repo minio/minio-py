@@ -26,7 +26,7 @@ from io import RawIOBase
 
 from .__version__ import get_version
 from .acl import is_valid_acl
-from ._compat import compat_urllib_parse, strtype
+from .compat import urlsplit, strtype
 from .generators import (ListObjectsIterator, ListIncompleteUploads,
                          ListUploadParts, DataStreamer)
 from .helpers import (get_target_url, is_non_empty_string, is_valid_url,
@@ -58,9 +58,9 @@ class Minio(object):
         """
         is_valid_url(url)
 
-        url_components = compat_urllib_parse(url)
+        url_components = urlsplit(url)
         self._location = url_components.netloc
-        self._url = url_components.geturl()
+        self._endpoint_url = url_components.geturl()
         self._access_key = access_key
         self._secret_key = secret_key
         self._user_agent = 'minio-py/' + get_version() + \
@@ -129,7 +129,7 @@ class Minio(object):
             is_valid_acl(acl)
 
         method = 'PUT'
-        url = get_target_url(self._url, bucket=bucket)
+        url = get_target_url(self._endpoint_url, bucket=bucket)
         headers = {}
 
         if acl is not None:
@@ -170,7 +170,7 @@ class Minio(object):
 
         :return: A list of buckets owned by the current user.
         """
-        url = get_target_url(self._url)
+        url = get_target_url(self._endpoint_url)
         method = 'GET'
         headers = {}
 
@@ -200,7 +200,7 @@ class Minio(object):
         is_valid_bucket_name(bucket)
 
         method = 'HEAD'
-        url = get_target_url(self._url, bucket=bucket)
+        url = get_target_url(self._endpoint_url, bucket=bucket)
         headers = {}
 
         headers = sign_v4(method=method, url=url, headers=headers,
@@ -226,7 +226,7 @@ class Minio(object):
         is_valid_bucket_name(bucket)
 
         method = 'DELETE'
-        url = get_target_url(self._url, bucket=bucket)
+        url = get_target_url(self._endpoint_url, bucket=bucket)
         headers = {}
 
         headers = sign_v4(method=method, url=url, headers=headers,
@@ -253,7 +253,7 @@ class Minio(object):
         is_valid_bucket_name(bucket)
 
         method = 'GET'
-        url = get_target_url(self._url, bucket=bucket,
+        url = get_target_url(self._endpoint_url, bucket=bucket,
                              query={"acl": None})
         headers = {}
 
@@ -291,7 +291,7 @@ class Minio(object):
         is_valid_acl(acl)
 
         method = 'PUT'
-        url = get_target_url(self._url, bucket=bucket,
+        url = get_target_url(self._endpoint_url, bucket=bucket,
                              query={"acl": None})
 
         headers = {
@@ -317,7 +317,7 @@ class Minio(object):
         # check bucket
         is_valid_bucket_name(bucket)
 
-        uploads = ListIncompleteUploads(self._http, self._url, bucket, None,
+        uploads = ListIncompleteUploads(self._http, self._endpoint_url, bucket, None,
                                         access_key=self._access_key,
                                         secret_key=self._secret_key)
 
@@ -365,7 +365,7 @@ class Minio(object):
             request_range = "0-" + str(length - 1)
 
         method = 'GET'
-        url = get_target_url(self._url, bucket=bucket, key=key)
+        url = get_target_url(self._endpoint_url, bucket=bucket, key=key)
         headers = {}
 
         if request_range:
@@ -423,7 +423,7 @@ class Minio(object):
             return self._do_put_object(bucket, key, length, data, content_type)
         self._stream_put_object(bucket, key, length, data, content_type)
 
-    def list_objects(self, bucket, prefix=None, recursive=True):
+    def list_objects(self, bucket, prefix=None, recursive=False):
         """
         List objects in the given bucket.
 
@@ -432,27 +432,28 @@ class Minio(object):
             for current_object in objects:
                 print current_object
             # hello
-            # hello/world/1
-            # hello/world/2
-            # world/wide/web
+            # hello/
+            # hello/
+            # world/
 
             objects = minio.list_objects('foo', prefix='hello/')
             for current_object in objects:
                 print current_object
-            # hello/world/1
-            # hello/world/2
+            # hello/world/
 
-            objects = minio.list_objects('foo', recursive=False)
+            objects = minio.list_objects('foo', recursive=True)
             for current_object in objects:
                 print current_object
-            # hello/
-            # world/
+            # hello/world/1
+            # world/world/2
+            # ...
 
             objects = minio.list_objects('foo', prefix='hello/',
-                                         recursive=False)
+                                         recursive=True)
             for current_object in objects:
                 print current_object
-            # hello/world/
+            # hello/world/1
+            # hello/world/2
 
         :param bucket: Bucket to list objects from
         :param prefix: String specifying objects returned must begin with
@@ -460,7 +461,7 @@ class Minio(object):
         :return: An iterator of objects in alphabetical order.
         """
         is_valid_bucket_name(bucket)
-        return ListObjectsIterator(self._http, self._url, bucket, prefix,
+        return ListObjectsIterator(self._http, self._endpoint_url, bucket, prefix,
                                    recursive, self._access_key,
                                    self._secret_key)
 
@@ -476,7 +477,7 @@ class Minio(object):
         is_non_empty_string(key)
 
         method = 'HEAD'
-        url = get_target_url(self._url, bucket=bucket, key=key)
+        url = get_target_url(self._endpoint_url, bucket=bucket, key=key)
         headers = {}
 
         headers = sign_v4(method=method, url=url, headers=headers,
@@ -508,7 +509,7 @@ class Minio(object):
         is_non_empty_string(key)
 
         method = 'DELETE'
-        url = get_target_url(self._url, bucket=bucket, key=key)
+        url = get_target_url(self._endpoint_url, bucket=bucket, key=key)
         headers = {}
 
         headers = sign_v4(method=method, url=url, headers=headers,
@@ -532,7 +533,7 @@ class Minio(object):
         is_non_empty_string(key)
 
         # check key
-        uploads = ListIncompleteUploads(self._http, self._url,
+        uploads = ListIncompleteUploads(self._http, self._endpoint_url,
                                         bucket, key,
                                         access_key=self._access_key,
                                         secret_key=self._secret_key)
@@ -550,11 +551,11 @@ class Minio(object):
             raise DataSizeMismatchError()
 
         if upload_id.strip() and part_number is not 0:
-            url = get_target_url(self._url, bucket=bucket, key=key,
+            url = get_target_url(self._endpoint_url, bucket=bucket, key=key,
                                  query={'uploadId': upload_id,
                                         'partNumber': part_number})
         else:
-            url = get_target_url(self._url, bucket=bucket, key=key)
+            url = get_target_url(self._endpoint_url, bucket=bucket, key=key)
 
         content_sha256 = get_sha256(data)
         content_md5 = encode_to_base64(get_md5(data))
@@ -591,7 +592,7 @@ class Minio(object):
         part_size = calculate_part_size(length)
 
         current_uploads = ListIncompleteUploads(self._http,
-                                                self._url,
+                                                self._endpoint_url,
                                                 bucket,
                                                 key,
                                                 access_key=self._access_key,
@@ -602,7 +603,7 @@ class Minio(object):
             upload_id = upload.upload_id
         uploaded_parts = {}
         if upload_id is not None:
-            part_iter = ListUploadParts(self._http, self._url,
+            part_iter = ListUploadParts(self._http, self._endpoint_url,
                                         bucket, key, upload_id,
                                         access_key=self._access_key,
                                         secret_key=self._secret_key)
@@ -643,7 +644,7 @@ class Minio(object):
         query = {
             'uploadId': upload_id
         }
-        url = get_target_url(self._url, bucket=bucket, key=key, query=query)
+        url = get_target_url(self._endpoint_url, bucket=bucket, key=key, query=query)
         headers = {}
 
         headers = sign_v4(method=method, url=url, headers=headers,
@@ -661,7 +662,8 @@ class Minio(object):
             'uploads': None
         }
 
-        url = get_target_url(self._url, bucket=bucket, key=key, query=query)
+        url = get_target_url(self._endpoint_url, bucket=bucket,
+                             key=key, query=query)
 
         headers = {
             'Content-Type': content_type
@@ -683,7 +685,8 @@ class Minio(object):
         query = {
             'uploadId': upload_id
         }
-        url = get_target_url(self._url, bucket=bucket, key=key, query=query)
+        url = get_target_url(self._endpoint_url, bucket=bucket,
+                             key=key, query=query)
         headers = {}
 
         data = generate_complete_multipart_upload(etags)

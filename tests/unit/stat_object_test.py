@@ -18,23 +18,15 @@ import mock
 from nose.tools import raises
 from unittest import TestCase
 
-from minio import minio, ResponseError
+from minio import minio
+from minio.error import ResponseError
+
 from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
 __author__ = 'minio'
 
 class StatObject(TestCase):
-    @raises(TypeError)
-    def test_bucket_is_string(self):
-        client = minio.Minio('http://localhost:9000')
-        client.stat_object(1234, 'hello')
-
-    @raises(ValueError)
-    def test_bucket_is_not_empty_string(self):
-        client = minio.Minio('http://localhost:9000')
-        client.stat_object('  \t \n  ', 'hello')
-
     @raises(TypeError)
     def test_object_is_string(self):
         client = minio.Minio('http://localhost:9000')
