@@ -18,7 +18,7 @@ import hmac
 import binascii
 
 from datetime import datetime
-from ._compat import compat_urllib_parse, compat_str_type
+from ._compat import compat_urllib_parse, strtype
 from .helpers import get_region
 
 empty_sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
@@ -121,7 +121,7 @@ def generate_canonical_request(method, parsed_url, headers, content_hash_hex):
     header_lines = []
     for header in headers:
         value = headers[header]
-        if isinstance(value, compat_str_type):
+        if isinstance(value, strtype):
             value = value.strip()
         header = header.lower().strip()
         signed_headers.append(header)

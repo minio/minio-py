@@ -29,8 +29,7 @@ def get_version():
 
     sub = ''
     if version_info[3] == 'alpha' and version_info[4] == 0:
-        # TODO: maybe append some sort of git info here??
-        sub = '.dev'
+        sub = '.dev0'
     elif version_info[3] != 'final':
         mapping = {'alpha': 'a', 'beta': 'b', 'rc': 'c'}
         sub = mapping[version_info[3]] + str(version_info[4])

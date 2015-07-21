@@ -26,7 +26,7 @@ from io import RawIOBase
 
 from .__version__ import get_version
 from .acl import is_valid_acl
-from ._compat import compat_urllib_parse, compat_str_type
+from ._compat import compat_urllib_parse, strtype
 from .generators import (ListObjectsIterator, ListIncompleteUploads,
                          ListUploadParts, DataStreamer)
 from .helpers import (get_target_url, is_non_empty_string, is_valid_url,
@@ -90,8 +90,8 @@ class Minio(object):
         """
         if name is None or version is None:
             raise TypeError()
-        if not isinstance(name, compat_str_type) or \
-           not isinstance(version, compat_str_type):
+        if not isinstance(name, strtype) or \
+           not isinstance(version, strtype):
             raise TypeError()
         if not name.strip() or not version.strip():
             raise ValueError()
@@ -183,7 +183,7 @@ class Minio(object):
 
         if response.status != 200:
             try:
-                parse_error(response, bucket)
+                parse_error(response)
             except ResponseError as err:
                 if err.code == 'Redirect':
                     err.code = 'AccessDeniedException'
@@ -418,7 +418,7 @@ class Minio(object):
                 data = data.read(length)
             if isinstance(data, io.TextIOWrapper):
                 data = data.read(length).encode('utf-8')
-            if sys.version_info >= (3, 0) and isinstance(data, compat_str_type):
+            if sys.version_info >= (3, 0) and isinstance(data, strtype):
                 data = data.encode('utf-8')
             return self._do_put_object(bucket, key, length, data, content_type)
         self._stream_put_object(bucket, key, length, data, content_type)
@@ -583,7 +583,7 @@ class Minio(object):
             if not isinstance(data, io.BufferedReader):
                 if not isinstance(data, RawIOBase):
                     if sys.version_info >= (3, 0):
-                        if isinstance(data, compat_str_type):
+                        if isinstance(data, strtype):
                             data = data.encode('utf-8')
                     data = io.BytesIO(data)
                 data = io.BufferedReader(data)
