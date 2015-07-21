@@ -17,7 +17,8 @@ import mock
 from nose.tools import raises
 
 from minio import minio
-from minio.parsers import ResponseError
+from minio.error import ResponseError
+
 from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
@@ -25,16 +26,6 @@ __author__ = 'minio'
 
 
 class StatObject(TestCase):
-    @raises(TypeError)
-    def test_bucket_is_string(self):
-        client = minio.Minio('http://localhost:9000')
-        client.remove_object(1234, 'hello')
-
-    @raises(ValueError)
-    def test_bucket_is_not_empty_string(self):
-        client = minio.Minio('http://localhost:9000')
-        client.remove_object('  \t \n  ', 'hello')
-
     @raises(TypeError)
     def test_object_is_string(self):
         client = minio.Minio('http://localhost:9000')

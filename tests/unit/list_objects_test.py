@@ -39,7 +39,7 @@ class ListObjectsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket?max-keys=1000', {}, 200, content=mock_data))
         client = minio.Minio('http://localhost:9000')
-        bucket_iter = client.list_objects('bucket')
+        bucket_iter = client.list_objects('bucket', recursive=True)
         buckets = []
         for bucket in bucket_iter:
             buckets.append(bucket)
@@ -165,7 +165,7 @@ class ListObjectsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket?max-keys=1000', {}, 200, content=mock_data1))
         client = minio.Minio('http://localhost:9000')
-        bucket_iter = client.list_objects('bucket')
+        bucket_iter = client.list_objects('bucket', recursive=True)
         buckets = []
         for bucket in bucket_iter:
             mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket?marker=marker&max-keys=1000', {}, 200,

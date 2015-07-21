@@ -24,16 +24,6 @@ __author__ = 'minio'
 
 class GetObjectTest(TestCase):
     @raises(TypeError)
-    def test_bucket_is_string(self):
-        client = minio.Minio('http://localhost:9000')
-        client.get_object(1234, 'world')
-
-    @raises(ValueError)
-    def test_bucket_is_not_empty_string(self):
-        client = minio.Minio('http://localhost:9000')
-        client.get_object('  \t \n  ', 'world')
-
-    @raises(TypeError)
     def test_object_is_string(self):
         client = minio.Minio('http://localhost:9000')
         client.get_object('hello', 1234)

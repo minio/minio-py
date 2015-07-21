@@ -17,13 +17,13 @@
 Helper functions
 """
 
-import cgi
 import collections
 import binascii
 import hashlib
 import re
 
-from ._compat import strtype, compat_pathname2url
+from .compat import urlsplit, strtype, urlencode
+from .error import InvalidBucketError, InvalidURLError
 
 def get_region(hostname):
     """
@@ -70,7 +70,7 @@ def get_target_url(url, bucket=None, key=None, query=None):
             if ordered_query[component_key] is not None:
                 single_component.append('=')
                 single_component.append(
-                    compat_pathname2url(cgi.escape(str(ordered_query[component_key]))).replace('/', '%2F'))
+                    urlencode(str(ordered_query[component_key])).replace('/', '%2F'))
             query_components.append(''.join(single_component))
 
         query_string = '&'.join(query_components)
@@ -80,38 +80,55 @@ def get_target_url(url, bucket=None, key=None, query=None):
 
     return ''.join(url_components)
 
-def is_valid_url(url):
+def is_valid_url(endpoint_url):
     """
-    validate a given url
+    Verify the endpoint_url is valid.
+    :type endpoint_url: string
+    :param endpoint_url: An endpoint_url.  Must have at least a scheme
+        and a hostname.
+    :return: True if the endpoint url is valid. False otherwise.
     """
-    if not isinstance(url, strtype):
+    if not isinstance(endpoint_url, strtype):
         raise TypeError('url')
 
-    regex = re.compile(
-        r'^(?:http)s?://' # http:// or https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' # domain...
-        r'localhost|' # localhost...
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|' # ...or ipv4
-        r'\[?[A-F0-9]*:[A-F0-9:]+\]?)' # ...or ipv6
-        r'(?::\d+)?' # optional port
-        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    parts = urlsplit(endpoint_url)
+    hostname = parts.hostname
+    if hostname is None:
+        raise InvalidURLError('url')
+    if len(hostname) > 255:
+        raise InvalidURLError('url')
+    if hostname[-1] == ".":
+        hostname = hostname[:-1]
+    allowed = re.compile(
+        "^((?!-)[A-Z\d-]{1,63}(?<!-)\.)*((?!-)[A-Z\d-]{1,63}(?<!-))$",
+        re.IGNORECASE)
+    if not allowed.match(hostname):
+        raise InvalidURLError('url')
 
-    if not regex.match(url):
-        raise ValueError('url')
+def is_valid_bucket_name(bucket_name):
+    """
+    Check to see if the ``bucket_name`` complies with the
+    restricted DNS naming conventions necessary to allow
+    access via virtual-hosting style.
 
-def is_valid_bucket_name(bucketname):
+    Even though "." characters are perfectly valid in this DNS
+    naming scheme, we are going to punt on any name containing a
+    "." character because these will cause SSL cert validation
+    problems if we try to use virtual-hosting style addressing.
     """
-    validate a given bucketname
-    """
-    is_non_empty_string(bucketname)
-    if len(bucketname) < 3 or len(bucketname) > 63:
-        raise ValueError('bucket')
-    if '/' in bucketname:
-        raise ValueError('bucket')
-    if not re.match("^[a-z0-9]+[a-z0-9\\-]*[a-z0-9]+$", bucketname):
-        raise ValueError('bucket')
-    if re.match("/[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/", bucketname):
-        raise ValueError('bucket')
+    validbucket = re.compile('[a-z0-9][a-z0-9\-]*[a-z0-9]')
+    if '.' in bucket_name:
+        raise InvalidBucketError('bucket')
+    n = len(bucket_name)
+    if n < 3 or n > 63:
+        # Wrong length
+        raise InvalidBucketError('bucket')
+    if n == 1:
+        if not bucket_name.isalnum():
+            raise InvalidBucketError('bucket')
+    match = validbucket.match(bucket_name)
+    if match is None or match.end() != len(bucket_name):
+        raise InvalidBucketError('bucket')
 
 def is_non_empty_string(input_string):
     """
@@ -127,7 +144,7 @@ def encode_object_key(key):
     url encode object key
     """
     is_non_empty_string(key)
-    return compat_pathname2url(key)
+    return urlencode(key)
 
 def get_sha256(content):
     """
@@ -139,7 +156,7 @@ def get_sha256(content):
     hasher.update(content)
     return hasher.digest()
 
-def get_md5(content):
+def get_md5(cntoent):
     """
     calculate md5 for given content
     """

@@ -22,7 +22,7 @@ class ListObjectsIterator(object):
     def __init__(self, client, url, bucket, prefix,
                  recursive, access_key, secret_key):
         self._http = client
-        self._url = url
+        self._endpoint_url = url
         self._bucket = bucket
         self._prefix = prefix
         self._recursive = recursive
@@ -67,7 +67,7 @@ class ListObjectsIterator(object):
         if self._marker is not None:
             query['marker'] = self._marker
 
-        url = get_target_url(self._url, bucket=self._bucket, query=query)
+        url = get_target_url(self._endpoint_url, bucket=self._bucket, query=query)
 
         method = 'GET'
         headers = {}
@@ -89,7 +89,7 @@ class ListIncompleteUploads(object):
                  access_key=None, secret_key=None):
         # from user
         self._http = client
-        self._url = url
+        self._endpoint_url = url
         self._bucket = bucket
         self._key = key
         self._access_key = access_key
@@ -145,7 +145,7 @@ class ListIncompleteUploads(object):
         if self._upload_id_marker is not None:
             query['upload-id-marker'] = self._upload_id_marker
 
-        url = get_target_url(self._url, bucket=self._bucket, query=query)
+        url = get_target_url(self._endpoint_url, bucket=self._bucket, query=query)
 
         method = 'GET'
         headers = {}
@@ -167,7 +167,7 @@ class ListUploadParts(object):
                  access_key=None, secret_key=None):
         # from user
         self._http = client
-        self._url = url
+        self._endpoint_url = url
         self._bucket = bucket
         self._key = key
         self._upload_id = upload_id
@@ -218,8 +218,8 @@ class ListUploadParts(object):
         if self._part_marker is not None:
             query['part-number-marker'] = self._part_marker
 
-        url = get_target_url(self._url, bucket=self._bucket, key=self._key,
-                             query=query)
+        url = get_target_url(self._endpoint_url, bucket=self._bucket,
+                             key=self._key, query=query)
 
         method = 'GET'
         headers = {}

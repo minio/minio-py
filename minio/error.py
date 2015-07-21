@@ -13,11 +13,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+class InvalidURLError(Exception):
+    def __init__(self, message, **kwargs):
+        self.message = message
+        super(InvalidURLError, self).__init__(**kwargs)
+
+    def __str__(self):
+        string_format = 'InvalidURLError: message: {0}'
+        return string_format.format(self.message)
+
 class InvalidBucketError(Exception):
-    pass
+    def __init__(self, message, **kwargs):
+        self.message = message
+        super(InvalidBucketError, self).__init__(**kwargs)
+
+    def __str__(self):
+        string_format = 'InvalidBucketError: message: {0}'
+        return string_format.format(self.message)
 
 class InvalidArgumentError(Exception):
-    pass
+    def __init__(self, message, **kwargs):
+        self.message = message
+        super(InvalidArgumentError, self).__init__(**kwargs)
+
+    def __str__(self):
+        string_format = 'InvalidArgumentError: message: {0}'
+        return string_format.format(self.message)
+
 
 class ResponseError(Exception):
     def __init__(self, code, message, request_id, host_id, resource, xml=None,
