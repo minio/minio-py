@@ -38,4 +38,4 @@ def generate_complete_multipart_upload(etags):
         etag.text = etags[i]
         data = BytesIO()
         ElementTree.ElementTree(root).write(data, encoding=None, xml_declaration=False)
-        return data.getvalue()
+    return data.getvalue()

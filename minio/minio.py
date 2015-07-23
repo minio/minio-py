@@ -317,7 +317,8 @@ class Minio(object):
         # check bucket
         is_valid_bucket_name(bucket)
 
-        uploads = ListIncompleteUploads(self._http, self._endpoint_url, bucket, None,
+        uploads = ListIncompleteUploads(self._http, self._endpoint_url,
+                                        bucket, None,
                                         access_key=self._access_key,
                                         secret_key=self._secret_key)
 
@@ -383,7 +384,7 @@ class Minio(object):
 
         return DataStreamer(response)
 
-    def put_object(self, bucket, key, data, length=0,
+    def put_object(self, bucket, key, length, data,
                    content_type="application/octet-stream"):
         """
         Add a new object to the object storage server.
@@ -391,12 +392,12 @@ class Minio(object):
         Data can either be a string, byte array, or reader (e.g. open('foo'))
 
         Examples:
-            minio.put('foo', 'bar', 'hello world', 11)
+            minio.put('foo', 'bar', 11, 'hello world')
 
-            minio.put('foo', 'bar', b'hello world', 11, 'text/plain')
+            minio.put('foo', 'bar', 11, b'hello world', 'text/plain')
 
             with open('hello.txt', 'rb') as data:
-                minio.put('foo', 'bar', b'hello world', 11, 'text/plain')
+                minio.put('foo', 'bar', 11, b'hello world', 'text/plain')
 
         :param bucket: Bucket of new object.
         :param key: Key of new object.
@@ -461,8 +462,8 @@ class Minio(object):
         :return: An iterator of objects in alphabetical order.
         """
         is_valid_bucket_name(bucket)
-        return ListObjectsIterator(self._http, self._endpoint_url, bucket, prefix,
-                                   recursive, self._access_key,
+        return ListObjectsIterator(self._http, self._endpoint_url, bucket,
+                                   prefix, recursive, self._access_key,
                                    self._secret_key)
 
     def stat_object(self, bucket, key):

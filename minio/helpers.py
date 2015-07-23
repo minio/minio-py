@@ -156,7 +156,7 @@ def get_sha256(content):
     hasher.update(content)
     return hasher.digest()
 
-def get_md5(cntoent):
+def get_md5(content):
     """
     calculate md5 for given content
     """
