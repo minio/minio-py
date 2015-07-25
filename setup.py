@@ -1,4 +1,4 @@
-# Minimal Object Storage Library, (C) 2015 Minio, Inc.
+# Minio Python Library for Amazon S3 compatible cloud storage, (C) 2015 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 Minio Python
 -------------------
 
-Minio Python is a library for accessing S3 compatible object storage servers.
+Minio Python is a library for accessing S3 compatible cloud storage servers.
 
 It is designed to be easy to use and minimal, exposing only the most used functionality.
 """
@@ -30,7 +30,7 @@ from minio.__version__ import get_version
 
 setup(
     name='minio',
-    description='Minimal Object Storage Library for Python',
+    description='Minio Python Library for Amazon S3 compatible cloud storage for Python',
     author='Minio, Inc.',
     url='https://github.com/minio/minio-py',
     download_url='https://github.com/minio/minio-py',

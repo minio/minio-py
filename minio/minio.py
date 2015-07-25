@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Minimal Object Storage Library, (C) 2015 Minio, Inc.
+# Minio Python Library for Amazon S3 compatible cloud storage, (C) 2015 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,14 +43,14 @@ from .xml_requests import bucket_constraint, generate_complete_multipart_upload
 class Minio(object):
     def __init__(self, url, access_key=None, secret_key=None, certs=None):
         """
-        Creates a new object storage client.
+        Creates a new cloud storage client.
 
         Examples:
 
           client = Minio('https://play.minio.io:9000')
           client = Minio('https://s3.amazonaws.com', 'ACCESS_KEY', 'SECRET_KEY')
 
-        :param url: A string of the URL of the object storage server.
+        :param url: A string of the URL of the cloud storage server.
         :param access_key: Access key to sign self._http.request with.
         :param secret_key: Secret key to sign self._http.request with.
         :param certs: Path to SSL certificates
@@ -387,7 +387,7 @@ class Minio(object):
     def put_object(self, bucket, key, length, data,
                    content_type="application/octet-stream"):
         """
-        Add a new object to the object storage server.
+        Add a new object to the cloud storage server.
 
         Data can either be a string, byte array, or reader (e.g. open('foo'))
 

@@ -1,4 +1,4 @@
-# Minimal object storage library for Python
+# Minio Python Library for Amazon S3 compatible cloud storage
 
 ## Install
 
