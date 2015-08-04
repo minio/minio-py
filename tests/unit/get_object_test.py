@@ -40,7 +40,7 @@ class GetObjectTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('GET', 'http://localhost:9000/hello/world', {}, 200, content='hello world',
-                         response_headers={'Content-Length': 11}))
+                         response_headers={'content-length': 11}))
         client = minio.Minio('http://localhost:9000')
         object_iter = client.get_object('hello', 'world')
         actual_object = []
