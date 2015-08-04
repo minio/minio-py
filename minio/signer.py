@@ -23,7 +23,7 @@ from .helpers import get_region
 
 def sign_v4(method, url, headers=None, access_key=None, secret_key=None,
             content_hash=None):
-    if access_key is None or secret_key is None:
+    if not access_key or not secret_key:
         return headers
 
     if headers is None:
