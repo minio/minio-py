@@ -100,7 +100,7 @@ def is_valid_url(endpoint_url):
     if hostname[-1] == ".":
         hostname = hostname[:-1]
     allowed = re.compile(
-        "^((?!-)[A-Z\d-]{1,63}(?<!-)\.)*((?!-)[A-Z\d-]{1,63}(?<!-))$",
+        "^((?!-)[A-Z\\d-]{1,63}(?<!-)\\.)*((?!-)[A-Z\\d-]{1,63}(?<!-))$",
         re.IGNORECASE)
     if not allowed.match(hostname):
         raise InvalidURLError('url')
@@ -116,14 +116,13 @@ def is_valid_bucket_name(bucket_name):
     "." character because these will cause SSL cert validation
     problems if we try to use virtual-hosting style addressing.
     """
-    validbucket = re.compile('[a-z0-9][a-z0-9\-]*[a-z0-9]')
+    validbucket = re.compile('[a-z0-9][a-z0-9\\-]*[a-z0-9]')
     if '.' in bucket_name:
         raise InvalidBucketError('bucket')
-    n = len(bucket_name)
-    if n < 3 or n > 63:
+    if len(bucket_name) < 3 or len(bucket_name) > 63:
         # Wrong length
         raise InvalidBucketError('bucket')
-    if n == 1:
+    if len(bucket_name) == 1:
         if not bucket_name.isalnum():
             raise InvalidBucketError('bucket')
     match = validbucket.match(bucket_name)

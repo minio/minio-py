@@ -27,7 +27,7 @@ def bucket_constraint(region):
     return data.getvalue()
 
 
-def generate_complete_multipart_upload(etags):
+def get_complete_multipart_upload(etags):
     root = ElementTree.Element('CompleteMultipartUpload', {'xmlns': 'http://s3.amazonaws.com/doc/2006-03-01/'})
 
     for i in range(0, len(etags)):

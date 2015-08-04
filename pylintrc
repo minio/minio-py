@@ -59,9 +59,6 @@ disable-msg=C0301,C0111,C0103,R0201,W0702,C0324
 # html
 output-format=colorized
 
-# Include message's id in output
-include-ids=yes
-
 # Put messages in a separate file for each module / package specified on the
 # command line instead of printing them on stdout. Reports (if any) will be
 # written in a file name "pylint_global.[txt|html]".

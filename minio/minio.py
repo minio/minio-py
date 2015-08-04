@@ -38,7 +38,7 @@ from .parsers import (parse_list_buckets, parse_acl, parse_error,
 from .error import ResponseError
 from .definitions import Object
 from .signer import sign_v4
-from .xml_requests import bucket_constraint, generate_complete_multipart_upload
+from .xml_requests import bucket_constraint, get_complete_multipart_upload
 
 class Minio(object):
     def __init__(self, url, access_key=None, secret_key=None, certs=None):
@@ -690,7 +690,7 @@ class Minio(object):
                              key=key, query=query)
         headers = {}
 
-        data = generate_complete_multipart_upload(etags)
+        data = get_complete_multipart_upload(etags)
         data_sha256 = get_sha256(data)
         data_md5 = encode_to_base64(get_md5(data))
 
