@@ -490,10 +490,10 @@ class Minio(object):
         if response.status != 200:
             parse_error(response, bucket+"/"+key)
 
-        content_type = response.headers['Content-Type']
-        etag = response.headers['ETag'].replace('"', '')
-        size = response.headers['Content-Length']
-        last_modified = response.headers['Last-Modified']
+        content_type = response.headers['content-type']
+        etag = response.headers['etag'].replace('"', '')
+        size = response.headers['content-length']
+        last_modified = response.headers['last-modified']
 
         return Object(bucket, key, content_type=content_type,
                       last_modified=last_modified, etag=etag, size=size)
@@ -578,7 +578,7 @@ class Minio(object):
         if response.status != 200:
             parse_error(response, bucket+"/"+key)
 
-        return response.headers['ETag'].replace('"', '')
+        return response.headers['etag'].replace('"', '')
 
     def _stream_put_object(self, bucket, key, length, data, content_type):
         if type(data).__name__ != 'file':

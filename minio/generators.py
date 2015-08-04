@@ -242,7 +242,7 @@ class DataStreamer(object):
         self._response = response
         self._stream = iter(response.stream())
 
-        self._length = int(response.headers['Content-Length'])
+        self._length = int(response.headers['content-length'])
         self._total_read = 0
         self._is_complete = False
 
