@@ -72,10 +72,9 @@ class ListObjectsIterator(object):
         method = 'GET'
         headers = {}
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key)
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
 
@@ -151,10 +150,9 @@ class ListIncompleteUploads(object):
         method = 'GET'
         headers = {}
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key)
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
 
@@ -226,10 +224,9 @@ class ListUploadParts(object):
         method = 'GET'
         headers = {}
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key)
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
 

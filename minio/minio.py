@@ -147,11 +147,11 @@ class Minio(object):
             content_md5 = encode_to_base64(get_md5(content))
             headers['Content-MD5'] = content_md5
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key,
-                              content_hash=content_sha256)
+
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key,
+                          content_hash=content_sha256)
 
         response = self._http.urlopen(method, url, body=content,
                                       headers=headers)
@@ -175,10 +175,10 @@ class Minio(object):
         method = 'GET'
         headers = {}
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key)
+
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers,
                                       redirect=False)
@@ -205,10 +205,10 @@ class Minio(object):
         url = get_target_url(self._endpoint_url, bucket=bucket)
         headers = {}
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key)
+
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
 
@@ -232,10 +232,10 @@ class Minio(object):
         url = get_target_url(self._endpoint_url, bucket=bucket)
         headers = {}
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key)
+
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
 
@@ -261,10 +261,9 @@ class Minio(object):
                              query={"acl": None})
         headers = {}
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key)
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
 
@@ -303,10 +302,9 @@ class Minio(object):
             'x-amz-acl': acl,
         }
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key)
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key)
 
         response = self._http.urlopen(method, url, headers=headers)
 
@@ -378,10 +376,9 @@ class Minio(object):
         if request_range:
             headers['Range'] = 'bytes=' + request_range
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key)
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key)
 
         response = self._http.urlopen(method, url, headers=headers,
                                       preload_content=False)
@@ -488,10 +485,10 @@ class Minio(object):
         url = get_target_url(self._endpoint_url, bucket=bucket, key=key)
         headers = {}
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key)
+
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
 
@@ -521,10 +518,9 @@ class Minio(object):
         url = get_target_url(self._endpoint_url, bucket=bucket, key=key)
         headers = {}
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key)
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key)
 
         response = self._http.urlopen(method, url, headers=headers)
 
@@ -576,11 +572,10 @@ class Minio(object):
             'Content-MD5': content_md5
         }
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key,
-                              content_hash=content_sha256)
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key,
+                          content_hash=content_sha256)
 
         data = io.BytesIO(data)
         response = self._http.urlopen(method, url, headers=headers, body=data)
@@ -658,10 +653,9 @@ class Minio(object):
         url = get_target_url(self._endpoint_url, bucket=bucket, key=key, query=query)
         headers = {}
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key)
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
 
@@ -681,10 +675,10 @@ class Minio(object):
             'Content-Type': content_type
         }
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key)
+
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key)
 
         response = self._http.urlopen(method, url, headers=headers, body=None)
 
@@ -710,10 +704,10 @@ class Minio(object):
         headers['Content-Type'] = 'application/xml'
         headers['Content-MD5'] = data_md5
 
-        if self._access_key:
-            headers = sign_v4(method=method, url=url, headers=headers,
-                              access_key=self._access_key,
-                              secret_key=self._secret_key, content_hash=data_sha256)
+
+        headers = sign_v4(method=method, url=url, headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key, content_hash=data_sha256)
 
         response = self._http.urlopen(method, url, headers=headers, body=data)
 
