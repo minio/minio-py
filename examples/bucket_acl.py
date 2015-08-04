@@ -17,7 +17,10 @@ from minio import Minio
 
 __author__ = 'minio'
 
-client = Minio('https://s3.amazonaws.com',
+# find out your s3 end point here:
+# http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
+
+client = Minio('https://<your-s3-endpoint>',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
