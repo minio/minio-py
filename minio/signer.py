@@ -21,8 +21,6 @@ from datetime import datetime
 from .compat import urlsplit, strtype
 from .helpers import get_region
 
-empty_sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-
 def sign_v4(method, url, headers=None, access_key=None, secret_key=None,
             content_hash=None):
     if access_key is None or secret_key is None:
@@ -32,7 +30,7 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None,
         headers = {}
 
     parsed_url = urlsplit(url)
-    content_hash_hex = empty_sha256
+    content_hash_hex = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
     if content_hash is not None:
         content_hash_hex = binascii.hexlify(content_hash).decode('utf-8')
 
@@ -84,19 +82,19 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None,
 
     region = get_region(parsed_url.hostname)
 
-    dt = datetime.utcnow()
+    date = datetime.utcnow()
 
     canonical_request_hasher = hashlib.sha256()
     canonical_request_hasher.update(canonical_request.encode('utf-8'))
     canonical_request_sha256 = canonical_request_hasher.hexdigest()
 
-    string_to_sign = generate_string_to_sign(dt, region,
+    string_to_sign = generate_string_to_sign(date, region,
                                              canonical_request_sha256)
-    signing_key = generate_signing_key(dt, region, secret_key)
+    signing_key = generate_signing_key(date, region, secret_key)
     signed_request = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                               hashlib.sha256).hexdigest()
 
-    authorization_header = generate_authorization_header(access_key, dt, region,
+    authorization_header = generate_authorization_header(access_key, date, region,
                                                          signed_headers,
                                                          signed_request)
 
@@ -139,9 +137,9 @@ def generate_canonical_request(method, parsed_url, headers, content_hash_hex):
     return '\n'.join(lines), signed_headers
 
 
-def generate_string_to_sign(dt, region, request_hash):
-    formatted_date_time = dt.strftime("%Y%m%dT%H%M%SZ")
-    formatted_date = dt.strftime("%Y%m%d")
+def generate_string_to_sign(date, region, request_hash):
+    formatted_date_time = date.strftime("%Y%m%dT%H%M%SZ")
+    formatted_date = date.strftime("%Y%m%d")
 
     scope = '/'.join([formatted_date,
                       region,
@@ -154,8 +152,8 @@ def generate_string_to_sign(dt, region, request_hash):
                       request_hash])
 
 
-def generate_signing_key(dt, region, secret):
-    formatted_date = dt.strftime("%Y%m%d")
+def generate_signing_key(date, region, secret):
+    formatted_date = date.strftime("%Y%m%d")
 
     key1_string = 'AWS4' + secret
     key1 = key1_string.encode('utf-8')
@@ -168,9 +166,9 @@ def generate_signing_key(dt, region, secret):
                     hashlib.sha256).digest()
 
 
-def generate_authorization_header(access_key, dt, region, signed_headers,
+def generate_authorization_header(access_key, date, region, signed_headers,
                                   signed_request):
-    formatted_date = dt.strftime("%Y%m%d")
+    formatted_date = date.strftime("%Y%m%d")
     signed_headers_string = ';'.join(signed_headers)
     auth_header = "AWS4-HMAC-SHA256 Credential=" + access_key + "/" + \
                   formatted_date + "/" + region + \
