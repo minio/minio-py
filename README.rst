@@ -1,4 +1,4 @@
-# Minio Python Library for Amazon S3 compatible cloud storage
+# Minio Python Library for Amazon S3 Compatible Cloud Storage
 
 ## Install
 
