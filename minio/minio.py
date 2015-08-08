@@ -37,7 +37,7 @@ from .parsers import (parse_list_buckets, parse_acl, parse_error,
                       parse_new_multipart_upload)
 from .error import ResponseError
 from .definitions import Object
-from .signer import sign_v4
+from .signer import sign_v4, presign_v4
 from .xml_requests import bucket_constraint, get_complete_multipart_upload
 
 class Minio(object):
@@ -328,6 +328,40 @@ class Minio(object):
 
         for upload in uploads:
             self._drop_incomplete_upload(bucket, upload.key, upload.upload_id)
+
+    def presigned_get_object(self, bucket, key, expires=None):
+        """
+        Presigns a get object request and provides a url
+        """
+        return self.presigned_get_partial_object(bucket, key, expires)
+
+    def presigned_get_partial_object(self, bucket, key, expires=None, offset=0, length=0):
+        """
+        """
+        is_valid_bucket_name(bucket)
+        is_non_empty_string(key)
+
+        request_range = ''
+        if offset is not 0 and length is not 0:
+            request_range = str(offset) + "-" + str(offset + length - 1)
+        if offset is not 0 and length is 0:
+            request_range = str(offset) + "-"
+        if offset is 0 and length is not 0:
+            request_range = "0-" + str(length - 1)
+
+        method = 'GET'
+        url = get_target_url(self._endpoint_url, bucket=bucket, key=key)
+        headers = {}
+
+        if request_range:
+            headers['Range'] = 'bytes=' + request_range
+
+        method = 'GET'
+        presign_url = presign_v4(method=method, url=url, headers=headers,
+                                 access_key=self._access_key,
+                                 secret_key=self._secret_key)
+
+        return presign_url
 
     def get_object(self, bucket, key):
         """
