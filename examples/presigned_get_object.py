@@ -12,16 +12,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import hashlib
 
-import sys
+from minio import Minio
 
-try:
-    from urllib.parse import urlparse as urlsplit
-except ImportError:  # python 2
-    from urlparse import urlparse as urlsplit
+__author__ = 'minio'
 
-strtype = None
-if sys.version_info < (3, 0):
-    strtype = basestring
-else:
-    strtype = str
+# find out your s3 end point here:
+# http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
+
+client = Minio('https://<your-s3-endpoint>',
+               access_key='YOUR-ACCESSKEYID',
+               secret_key='YOUR-SECRETACCESSKEY')
+
+print client.presigned_get_object('mybucket', 'myobject')
