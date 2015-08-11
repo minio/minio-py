@@ -578,7 +578,9 @@ class Minio(object):
                                         access_key=self._access_key,
                                         secret_key=self._secret_key)
         for upload in uploads:
-            self._drop_incomplete_upload(bucket, upload.key, upload.upload_id)
+            if key == upload.key:
+                self._drop_incomplete_upload(bucket, upload.key, upload.upload_id)
+                return
 
     # helper functions
 
