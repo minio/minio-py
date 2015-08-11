@@ -578,7 +578,10 @@ class Minio(object):
                                         access_key=self._access_key,
                                         secret_key=self._secret_key)
         for upload in uploads:
-            self._drop_incomplete_upload(bucket, upload.key, upload.upload_id)
+            if key == upload.key:
+                self._drop_incomplete_upload(bucket, upload.key,
+                                             upload.upload_id)
+                return
 
     # helper functions
 
@@ -684,7 +687,8 @@ class Minio(object):
         query = {
             'uploadId': upload_id
         }
-        url = get_target_url(self._endpoint_url, bucket=bucket, key=key, query=query)
+        url = get_target_url(self._endpoint_url, bucket=bucket, key=key,
+                             query=query)
         headers = {}
 
         headers = sign_v4(method=method, url=url, headers=headers,
