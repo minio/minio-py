@@ -642,7 +642,9 @@ class Minio(object):
 
         upload_id = None
         for upload in current_uploads:
-            upload_id = upload.upload_id
+            if key == upload.key:
+                upload_id = upload.upload_id
+
         uploaded_parts = {}
         if upload_id is not None:
             part_iter = ListUploadParts(self._http, self._endpoint_url,
