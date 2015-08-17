@@ -590,7 +590,7 @@ class Minio(object):
         method = 'PUT'
 
         if len(data) != length:
-            raise DataSizeMismatchError()
+            raise UnexpectedShortReadError()
 
         if upload_id.strip() and part_number is not 0:
             url = get_target_url(self._endpoint_url, bucket=bucket, key=key,
@@ -622,6 +622,7 @@ class Minio(object):
         return response.headers['etag'].replace('"', '')
 
     def _stream_put_object(self, bucket, key, length, data, content_type):
+        ## TODO handle non blocking streams
         if type(data).__name__ != 'file':
             if not isinstance(data, io.BufferedReader):
                 if not isinstance(data, RawIOBase):
@@ -632,7 +633,6 @@ class Minio(object):
                 data = io.BufferedReader(data)
 
         part_size = calculate_part_size(length)
-
         current_uploads = ListIncompleteUploads(self._http,
                                                 self._endpoint_url,
                                                 bucket,
@@ -646,15 +646,16 @@ class Minio(object):
                 upload_id = upload.upload_id
 
         uploaded_parts = {}
-        if upload_id is not None:
+        if upload_id is None:
+            upload_id = self._new_multipart_upload(bucket, key, content_type)
+        else:
             part_iter = ListUploadParts(self._http, self._endpoint_url,
                                         bucket, key, upload_id,
                                         access_key=self._access_key,
                                         secret_key=self._secret_key)
             for part in part_iter:
                 uploaded_parts[part.part_number] = part
-        else:
-            upload_id = self._new_multipart_upload(bucket, key, content_type)
+
         total_uploaded = 0
         current_part_number = 1
         etags = []
@@ -662,6 +663,11 @@ class Minio(object):
             current_data = data.read(part_size)
             if len(current_data) == 0:
                 break
+            ## Throw unexpected short read error
+            if len(current_data) < part_size:
+                if (length - total_uploaded) != len(current_data):
+                    raise UnexpectedShortReadError()
+
             current_data_md5 = encode_to_hex(get_md5(current_data))
             previously_uploaded_part = None
             if current_part_number in uploaded_parts:
@@ -679,8 +685,7 @@ class Minio(object):
             etags.append(etag)
             total_uploaded += len(current_data)
             current_part_number += 1
-        if total_uploaded != length:
-            raise DataSizeMismatchError()
+
         self._complete_multipart_upload(bucket, key, upload_id, etags)
 
     def _drop_incomplete_upload(self, bucket, key, upload_id):
@@ -688,7 +693,10 @@ class Minio(object):
         query = {
             'uploadId': upload_id
         }
-        url = get_target_url(self._endpoint_url, bucket=bucket, key=key, query=query)
+        url = get_target_url(self._endpoint_url,
+                             bucket=bucket,
+                             key=key,
+                             query=query)
         headers = {}
 
         headers = sign_v4(method=method, url=url, headers=headers,
@@ -751,6 +759,3 @@ class Minio(object):
 
         if response.status != 200:
             parse_error(response, bucket+"/"+key)
-
-class DataSizeMismatchError(BaseException):
-    pass

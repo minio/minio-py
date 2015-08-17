@@ -40,6 +40,14 @@ class InvalidArgumentError(Exception):
         string_format = 'InvalidArgumentError: message: {0}'
         return string_format.format(self.message)
 
+class UnexpectedShortReadError(Exception):
+    def __init__(self, message, **kwargs):
+        self.message = message
+        super(UnexpectedShortReadError, self).__init__(**kwargs)
+
+    def __str__(self):
+        string_format = 'UnexpectedShortReadError: message: {0}'
+        return string_format.format(self.message)
 
 class ResponseError(Exception):
     def __init__(self, code, message, request_id, host_id, resource, xml=None,

@@ -183,7 +183,7 @@ def calculate_part_size(length):
     """
     minimum_part_size = 1024 * 1024 * 5
     maximum_part_size = 1024 * 1024 * 1024 * 5
-    proposed_part_size = length / 9999
+    proposed_part_size = length / 9999 ## make sure last part has enough buffer
     if proposed_part_size > maximum_part_size:
         return maximum_part_size
     return max(minimum_part_size, proposed_part_size)
