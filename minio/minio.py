@@ -333,9 +333,9 @@ class Minio(object):
         """
         Presigns a get object request and provides a url
         """
-        return self.presigned_get_partial_object(bucket, key, expires)
+        return self.__presigned_get_partial_object(bucket, key, expires)
 
-    def presigned_get_partial_object(self, bucket, key, expires=None, offset=0, length=0):
+    def __presigned_get_partial_object(self, bucket, key, expires=None, offset=0, length=0):
         """
         """
         is_valid_bucket_name(bucket)
