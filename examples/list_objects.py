@@ -23,7 +23,7 @@ client = Minio('https://<your-s3-endpoint>',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-# List all objects in bucket
+# List objects in bucket at top-level
 objects = client.list_objects('my-bucket')
 for obj in objects:
     print obj.bucket, obj.key, obj.last_modified, obj.etag, obj.size, obj.content_type
@@ -33,11 +33,7 @@ objects = client.list_objects('my-bucket', prefix='hello')
 for obj in objects:
     print obj.bucket, obj.key, obj.last_modified, obj.etag, obj.size, obj.content_type
 
-# List all object paths in bucket that begin with hello up to the first / after hello
-# e.g.
-# hello/object
-# hello/dir/
-
-objects = client.list_objects('my-bucket', prefix='hello/', recursive=False)
+# List all object paths in bucket that begin with hello.
+objects = client.list_objects('my-bucket', prefix='hello/', recursive=True)
 for obj in objects:
     print obj.bucket, obj.key, obj.last_modified, obj.etag, obj.size, obj.content_type

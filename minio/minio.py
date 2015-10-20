@@ -27,8 +27,8 @@ from io import RawIOBase
 from .__version__ import get_version
 from .acl import is_valid_acl
 from .compat import urlsplit, strtype
-from .generators import (ListObjectsIterator, ListIncompleteUploads,
-                         ListUploadParts, DataStreamer)
+from .generators import (ListObjectsIterator, ListIncompleteUploadsIterator,
+                         ListUploadPartsIterator, DataStreamer)
 from .helpers import (get_target_url, is_non_empty_string, is_valid_url,
                       get_sha256, encode_to_base64, get_md5,
                       calculate_part_size, encode_to_hex,
@@ -311,24 +311,6 @@ class Minio(object):
         if response.status != 200:
             parse_error(response, bucket)
 
-    def drop_all_incomplete_uploads(self, bucket):
-        """
-        Drop all incomplete uploads in a bucket.
-
-        :param bucket: Bucket to drop all incomplete uploads.
-        :return: None
-        """
-        # check bucket
-        is_valid_bucket_name(bucket)
-
-        uploads = ListIncompleteUploads(self._http, self._endpoint_url,
-                                        bucket, None,
-                                        access_key=self._access_key,
-                                        secret_key=self._secret_key)
-
-        for upload in uploads:
-            self._drop_incomplete_upload(bucket, upload.key, upload.upload_id)
-
     def presigned_get_object(self, bucket, key, expires=None):
         """
         Presigns a get object request and provides a url
@@ -561,9 +543,51 @@ class Minio(object):
         if response.status != 204:
             parse_error(response, bucket+"/"+key)
 
+    def list_incomplete_uploads(self, bucket, prefix=None, recursive=False):
+        """
+        List all in-complete uploads for a given bucket.
+
+        Examples:
+            incomplete_uploads = minio.list_incomplete_uploads('foo')
+            for current_upload in incomplete_uploads:
+                print current_upload
+            # hello
+            # hello/
+            # hello/
+            # world/
+
+            incomplete_uploads = minio.list_incomplete_uploads('foo', prefix='hello/')
+            for current_upload in incomplete_uploads:
+                print current_upload
+            # hello/world/
+
+            incomplete_uploads = minio.list_incomplete_uploads('foo', recursive=True)
+            for current_upload in incomplete_uploads:
+                print current_upload
+            # hello/world/1
+            # world/world/2
+            # ...
+
+            incomplete_uploads = minio.list_incomplete_uploads('foo', prefix='hello/', recursive=True)
+            for current_upload in incomplete_uploads:
+                print current_upload
+            # hello/world/1
+            # hello/world/2
+
+        :param bucket: Bucket to list incomplete uploads
+        :param prefix: String specifying objects returned must begin with
+        :param recursive: If yes, returns all incomplete uploads for a specified prefix
+        :return: None
+        """
+        is_valid_bucket_name(bucket)
+        return ListIncompleteUploadsIterator(self._http, self._endpoint_url,
+                                             bucket, key,
+                                             access_key=self._access_key,
+                                             secret_key=self._secret_key)
+
     def drop_incomplete_upload(self, bucket, key):
         """
-        Drops all in complete uploads for a given bucket and key.
+        Drops all in-complete uploads for a given bucket and key.
 
         :param bucket: Bucket to drop incomplete uploads
         :param key: Key of object to drop incomplete uploads of
@@ -573,10 +597,10 @@ class Minio(object):
         is_non_empty_string(key)
 
         # check key
-        uploads = ListIncompleteUploads(self._http, self._endpoint_url,
-                                        bucket, key,
-                                        access_key=self._access_key,
-                                        secret_key=self._secret_key)
+        uploads = ListIncompleteUploadsIterator(self._http, self._endpoint_url,
+                                                bucket, key,
+                                                access_key=self._access_key,
+                                                secret_key=self._secret_key)
         for upload in uploads:
             if key == upload.key:
                 self._drop_incomplete_upload(bucket, upload.key, upload.upload_id)
@@ -649,10 +673,10 @@ class Minio(object):
         if upload_id is None:
             upload_id = self._new_multipart_upload(bucket, key, content_type)
         else:
-            part_iter = ListUploadParts(self._http, self._endpoint_url,
-                                        bucket, key, upload_id,
-                                        access_key=self._access_key,
-                                        secret_key=self._secret_key)
+            part_iter = ListUploadPartsIterator(self._http, self._endpoint_url,
+                                                bucket, key, upload_id,
+                                                access_key=self._access_key,
+                                                secret_key=self._secret_key)
             for part in part_iter:
                 uploaded_parts[part.part_number] = part
 
