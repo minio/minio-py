@@ -84,7 +84,7 @@ class ListObjectsIterator(object):
         return parse_list_objects(response.data, bucket=self._bucket)
 
 
-class ListIncompleteUploads(object):
+class ListIncompleteUploadsIterator(object):
     def __init__(self, client, url, bucket, key=None,
                  access_key=None, secret_key=None):
         # from user
@@ -162,7 +162,7 @@ class ListIncompleteUploads(object):
         return parse_incomplete_uploads(response.data, bucket=self._bucket)
 
 
-class ListUploadParts(object):
+class ListUploadPartsIterator(object):
     def __init__(self, client, url, bucket, key, upload_id,
                  access_key=None, secret_key=None):
         # from user

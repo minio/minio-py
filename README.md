@@ -43,7 +43,7 @@ for bucket in buckets:
 
 [set_bucket_acl(bucket, acl)](examples/bucket_acl.py)
 
-[drop_all_incomplete_uploads(bucket)](examples/drop_incomplete_uploads.py)
+[list_incomplete_uploads(bucket, prefix=None, recursive=False)](examples/list_incomplete_uploads.py)
 
 ### Object
 
@@ -53,7 +53,7 @@ for bucket in buckets:
 
 [put_object(bucket, key, length, data, content_type='application/octet_stream')](examples/put_object.py)
 
-[list_objects(bucket, prefix=None, recursive=True)](examples/list_objects.py)
+[list_objects(bucket, prefix=None, recursive=False)](examples/list_objects.py)
 
 [stat_object(bucket, key)](examples/stat_object.py)
 
