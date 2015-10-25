@@ -34,6 +34,6 @@ for obj in uploads:
     print obj.bucket, obj.key, obj.upload_id
 
 # List all object paths in bucket that begin with hello.
-uploads = client.list_incomplete_objects('my-bucket', prefix='hello/', recursive=True)
+uploads = client.list_incomplete_uploads('my-bucket', prefix='hello/', recursive=True)
 for obj in uploads:
     print obj.bucket, obj.key, obj.upload_id

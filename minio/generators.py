@@ -85,13 +85,14 @@ class ListObjectsIterator(object):
 
 
 class ListIncompleteUploadsIterator(object):
-    def __init__(self, client, url, bucket, key=None,
+    def __init__(self, client, url, bucket, key=None, delimiter=None,
                  access_key=None, secret_key=None):
         # from user
         self._http = client
         self._endpoint_url = url
         self._bucket = bucket
         self._key = key
+        self._delimiter = delimiter
         self._access_key = access_key
         self._secret_key = secret_key
 
@@ -144,6 +145,8 @@ class ListIncompleteUploadsIterator(object):
             query['key-marker'] = self._key_marker
         if self._upload_id_marker is not None:
             query['upload-id-marker'] = self._upload_id_marker
+        if self._delimiter is not None:
+            query['delimiter'] = self._delimiter
 
         url = get_target_url(self._endpoint_url, bucket=self._bucket, query=query)
 

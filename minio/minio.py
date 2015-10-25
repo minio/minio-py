@@ -580,8 +580,12 @@ class Minio(object):
         :return: None
         """
         is_valid_bucket_name(bucket)
+        delimiter = None
+        if recursive == False:
+            delimiter = "/"
         return ListIncompleteUploadsIterator(self._http, self._endpoint_url,
-                                             bucket, key,
+                                             bucket, prefix,
+                                             delimiter,
                                              access_key=self._access_key,
                                              secret_key=self._secret_key)
 
