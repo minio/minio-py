@@ -61,6 +61,12 @@ for bucket in buckets:
 
 [drop_incomplete_upload(bucket, key)](examples/drop_incomplete_uploads.py)
 
+### Presigned
+
+[presigned_get_object(bucket, key, expires=None)](examples/presigned_get_object.py)
+
+[presigned_put_object(bucket, key, expires=None)](examples/presigned_put_object.py)
+
 ## Contribute
 
 [Contributors Guide](./CONTRIBUTING.md)

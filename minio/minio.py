@@ -341,9 +341,29 @@ class Minio(object):
         method = 'GET'
         presign_url = presign_v4(method=method, url=url, headers=headers,
                                  access_key=self._access_key,
-                                 secret_key=self._secret_key)
-
+                                 secret_key=self._secret_key,
+                                 expires=expires,
+        )
         return presign_url
+
+    def presigned_put_object(self, bucket, key, expires=None):
+        """
+        Presigns a put object request and provides a url
+        """
+        is_valid_bucket_name(bucket)
+        is_non_empty_string(key)
+
+        method = 'PUT'
+        url = get_target_url(self._endpoint_url, bucket=bucket, key=key)
+        headers = {}
+        
+        method = 'PUT'
+        presign_url = presign_v4(method=method, url=url, headers=headers,
+                                 access_key=self._access_key,
+                                 secret_key=self._secret_key,
+                                 expires=expires,
+        )
+        return presign_url        
 
     def get_object(self, bucket, key):
         """
