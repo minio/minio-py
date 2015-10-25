@@ -585,9 +585,9 @@ class Minio(object):
                                              access_key=self._access_key,
                                              secret_key=self._secret_key)
 
-    def drop_incomplete_upload(self, bucket, key):
+    def remove_incomplete_upload(self, bucket, key):
         """
-        Drops all in-complete uploads for a given bucket and key.
+        Remove all in-complete uploads for a given bucket and key.
 
         :param bucket: Bucket to drop incomplete uploads
         :param key: Key of object to drop incomplete uploads of
@@ -603,7 +603,7 @@ class Minio(object):
                                                 secret_key=self._secret_key)
         for upload in uploads:
             if key == upload.key:
-                self._drop_incomplete_upload(bucket, upload.key, upload.upload_id)
+                self._remove_incomplete_upload(bucket, upload.key, upload.upload_id)
                 return
 
     # helper functions
@@ -712,7 +712,7 @@ class Minio(object):
 
         self._complete_multipart_upload(bucket, key, upload_id, etags)
 
-    def _drop_incomplete_upload(self, bucket, key, upload_id):
+    def _remove_incomplete_upload(self, bucket, key, upload_id):
         method = 'DELETE'
         query = {
             'uploadId': upload_id
