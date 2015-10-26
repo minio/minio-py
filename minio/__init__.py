@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from .minio import Minio
+from .post_policy import PostPolicy
 from .__version__ import get_version
 from .acl import Acl
 from .error import ResponseError

@@ -19,6 +19,7 @@ import platform
 
 import urllib3
 import certifi
+from datetime import datetime
 
 __author__ = "Minio, Inc."
 
@@ -37,8 +38,9 @@ from .parsers import (parse_list_buckets, parse_acl, parse_error,
                       parse_new_multipart_upload)
 from .error import ResponseError
 from .definitions import Object
-from .signer import sign_v4, presign_v4
+from .signer import sign_v4, presign_v4, generate_credential_string, presign_post_v4
 from .xml_requests import bucket_constraint, get_complete_multipart_upload
+from .post_policy import PostPolicy
 
 class Minio(object):
     def __init__(self, url, access_key=None, secret_key=None, certs=None):
@@ -331,7 +333,6 @@ class Minio(object):
         if offset is 0 and length is not 0:
             request_range = "0-" + str(length - 1)
 
-        method = 'GET'
         url = get_target_url(self._endpoint_url, bucket=bucket, key=key)
         headers = {}
 
@@ -353,17 +354,50 @@ class Minio(object):
         is_valid_bucket_name(bucket)
         is_non_empty_string(key)
 
-        method = 'PUT'
         url = get_target_url(self._endpoint_url, bucket=bucket, key=key)
         headers = {}
-        
+
         method = 'PUT'
         presign_url = presign_v4(method=method, url=url, headers=headers,
                                  access_key=self._access_key,
                                  secret_key=self._secret_key,
                                  expires=expires,
         )
-        return presign_url        
+        return presign_url
+
+    def presigned_post_policy(self, form):
+        """
+        Provides a POST form data that can be used for object upload
+        """
+        if not isinstance(form, PostPolicy):
+            raise InvalidArgumentError('invalid post policy object')
+
+        if not form.is_expiration_set():
+            raise InvalidArgumentError('Expiration time must be specified')
+
+        if not form.is_key_set():
+            raise InvalidArgumentError('object key must be specified')
+
+        if not form.is_bucket_set():
+            raise InvalidArgumentError('bucket name must be specified')
+
+        date = datetime.utcnow()
+        iso8601Date = date.strftime("%Y%m%dT%H%M%SZ")
+        url = get_target_url(self._endpoint_url, bucket=form.bucket, key=form.key)
+        parsed_url = urlsplit(url)
+        region = get_region(parsed_url.hostname)
+
+        form.policies.append(('eq', '$x-amz-date', iso8601Date))
+        form.policies.append(('eq', '$x-amz-algorithm', 'AWS4-HMAC-SHA256'))
+        form.policies.append(('eq', '$x-amz-credential', generate_credential_string(self._access_key, date, region)))
+
+        policy_base64 = form.base64()
+        form.form_data['policy'] = policy_base64
+        form.form_data['x-amz-algorithm'] = 'AWS4-HMAC-SHA256'
+        form.form_data['x-amz-credential'] = generate_credential_string(self._access_key, date, region)
+        form.form_data['x-amz-date'] = iso8601Date
+        form.form_data['x-amz-signature'] = presign_post_v4(date, region, self._secret_key, policy_base64)
+        return form.form_data
 
     def get_object(self, bucket, key):
         """
@@ -399,11 +433,11 @@ class Minio(object):
 
         request_range = ''
         if offset is not 0 and length is not 0:
-            request_range = str(offset) + "-" + str(offset + length - 1)
+            request_range = str(offset) + '-' + str(offset + length - 1)
         if offset is not 0 and length is 0:
-            request_range = str(offset) + "-"
+            request_range = str(offset) + '-'
         if offset is 0 and length is not 0:
-            request_range = "0-" + str(length - 1)
+            request_range = '0-' + str(length - 1)
 
         method = 'GET'
         url = get_target_url(self._endpoint_url, bucket=bucket, key=key)
@@ -420,12 +454,12 @@ class Minio(object):
                                       preload_content=False)
 
         if response.status != 206 and response.status != 200:
-            parse_error(response, bucket+"/"+key)
+            parse_error(response, bucket+'/'+key)
 
         return DataStreamer(response)
 
     def put_object(self, bucket, key, length, data,
-                   content_type="application/octet-stream"):
+                   content_type='application/octet-stream'):
         """
         Add a new object to the cloud storage server.
 
@@ -529,7 +563,7 @@ class Minio(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, bucket+"/"+key)
+            parse_error(response, bucket+'/'+key)
 
         content_type = response.headers['content-type']
         etag = response.headers['etag'].replace('"', '')
@@ -561,7 +595,7 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers)
 
         if response.status != 204:
-            parse_error(response, bucket+"/"+key)
+            parse_error(response, bucket+'/'+key)
 
     def list_incomplete_uploads(self, bucket, prefix=None, recursive=False):
         """
@@ -602,7 +636,7 @@ class Minio(object):
         is_valid_bucket_name(bucket)
         delimiter = None
         if recursive == False:
-            delimiter = "/"
+            delimiter = '/'
         return ListIncompleteUploadsIterator(self._http, self._endpoint_url,
                                              bucket, prefix,
                                              delimiter,
@@ -665,7 +699,7 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers, body=data)
 
         if response.status != 200:
-            parse_error(response, bucket+"/"+key)
+            parse_error(response, bucket+'/'+key)
 
         return response.headers['etag'].replace('"', '')
 
@@ -754,7 +788,7 @@ class Minio(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 204:
-            parse_error(response, bucket+"/"+key)
+            parse_error(response, bucket+'/'+key)
 
     def _new_multipart_upload(self, bucket, key, content_type):
         method = 'POST'
@@ -777,7 +811,7 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers, body=None)
 
         if response.status != 200:
-            parse_error(response, bucket+"/"+key)
+            parse_error(response, bucket+'/'+key)
 
         return parse_new_multipart_upload(response.data)
 
@@ -806,4 +840,4 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers, body=data)
 
         if response.status != 200:
-            parse_error(response, bucket+"/"+key)
+            parse_error(response, bucket+'/'+key)
