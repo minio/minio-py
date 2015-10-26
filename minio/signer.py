@@ -23,6 +23,13 @@ from .error import InvalidArgumentError
 from .compat import urlsplit, strtype, urlencode
 from .helpers import get_region
 
+def presign_post_v4(date, region, secret_key, policy_str):
+    signing_key = generate_signing_key(date, region, secret_key)
+    signature = hmac.new(signing_key, policy_str.encode('utf-8'),
+                         hashlib.sha256).hexdigest()
+
+    return signature
+
 def presign_v4(method, url, headers=None, access_key=None, secret_key=None, expires=None):
     if not access_key or not secret_key:
         raise InvalidArgumentError('invalid access/secret id')
