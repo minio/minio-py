@@ -67,6 +67,8 @@ for bucket in buckets:
 
 [presigned_put_object(bucket, key, expires=None)](examples/presigned_put_object.py)
 
+[presigned_post_policy(PostPolicy())](examples/presigned_post_policy.py)
+
 ## Contribute
 
 [Contributors Guide](./CONTRIBUTING.md)
