@@ -59,7 +59,7 @@ for bucket in buckets:
 
 [remove_object(bucket, key)](examples/remove_object.py)
 
-[drop_incomplete_upload(bucket, key)](examples/drop_incomplete_uploads.py)
+[remove_incomplete_upload(bucket, key)](examples/remove_incomplete_upload.py)
 
 ### Presigned
 
