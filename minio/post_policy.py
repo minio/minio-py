@@ -77,10 +77,10 @@ class PostPolicy(object):
             return_str = return_str + policies_str
 
         return_str = return_str + '}'
-        return return_str
+        return bytearray(return_str)
 
     def base64(self):
-        return encode_to_base64(bytearray(self._marshal_json()))
+        return encode_to_base64(self._marshal_json())
 
     def is_expiration_set(self):
         if self._expiration is None:
