@@ -23,7 +23,7 @@ from .error import InvalidArgumentError
 from .compat import urlsplit, strtype, urlencode
 from .helpers import get_region
 
-def presign_post_v4(date, region, secret_key, policy_str):
+def post_presign_signature(date, region, secret_key, policy_str):
     signing_key = generate_signing_key(date, region, secret_key)
     signature = hmac.new(signing_key, policy_str.encode('utf-8'),
                          hashlib.sha256).hexdigest()
