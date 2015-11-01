@@ -38,7 +38,7 @@ from .parsers import (parse_list_buckets, parse_acl, parse_error,
                       parse_new_multipart_upload)
 from .error import ResponseError
 from .definitions import Object
-from .signer import sign_v4, presign_v4, generate_credential_string, presign_post_v4
+from .signer import sign_v4, presign_v4, generate_credential_string, post_presign_signature
 from .xml_requests import bucket_constraint, get_complete_multipart_upload
 from .post_policy import PostPolicy
 
@@ -234,7 +234,6 @@ class Minio(object):
         url = get_target_url(self._endpoint_url, bucket=bucket)
         headers = {}
 
-
         headers = sign_v4(method=method, url=url, headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
@@ -396,7 +395,7 @@ class Minio(object):
         form.form_data['x-amz-algorithm'] = 'AWS4-HMAC-SHA256'
         form.form_data['x-amz-credential'] = generate_credential_string(self._access_key, date, region)
         form.form_data['x-amz-date'] = iso8601Date
-        form.form_data['x-amz-signature'] = presign_post_v4(date, region, self._secret_key, policy_base64)
+        form.form_data['x-amz-signature'] = post_presign_signature(date, region, self._secret_key, policy_base64)
         return form.form_data
 
     def get_object(self, bucket, key):
