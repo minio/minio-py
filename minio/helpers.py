@@ -27,7 +27,7 @@ from .error import InvalidBucketError, InvalidURLError
 
 def get_region(hostname):
     """
-    Get region based on hostname, defaults to "milkyway" if KeyError
+    Get region based on hostname, defaults to "us-east-1" if KeyError
     """
     region = {
         's3.amazonaws.com': 'us-east-1',
@@ -46,7 +46,7 @@ def get_region(hostname):
     try:
         return region[hostname]
     except KeyError:
-        return 'milkyway'
+        return 'us-east-1'
 
 def get_target_url(url, bucket=None, key=None, query=None):
     """
