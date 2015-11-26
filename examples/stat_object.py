@@ -23,5 +23,6 @@ client = Minio('https://<your-s3-endpoint>',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-# Remove a bucket
+# Getting detailed stats on your object.
 client.stat_object('my-bucket', 'my_key')
+print client.stat_object('my-bucket', 'my_key')
