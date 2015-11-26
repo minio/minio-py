@@ -25,4 +25,5 @@ client = Minio('https://<your-s3-endpoint>',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Remove a bucket
+# This operation will only work if your bucket is empty.
 client.remove_bucket('my-bucket')
