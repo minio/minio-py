@@ -23,7 +23,7 @@ import hashlib
 import re
 
 from .compat import urlsplit, strtype, urlencode
-from .error import InvalidBucketError, InvalidURLError
+from .error import InvalidBucketError, InvalidEndpointError
 
 def get_region(hostname):
     """
@@ -48,19 +48,19 @@ def get_region(hostname):
     except KeyError:
         return 'us-east-1'
 
-def get_target_url(url, bucket=None, key=None, query=None):
+def get_target_url(url, bucketName=None, objectName=None, query=None):
     """
     Construct target url
     """
     url_components = [url, '/']
-    if key is not None:
-        key = encode_object_key(key)
+    if objectName is not None:
+        objectName = encode_object_name(objectName)
 
-    if bucket is not None:
-        url_components.append(bucket)
-        if key is not None:
+    if bucketName is not None:
+        url_components.append(bucketName)
+        if objectName is not None:
             url_components.append('/')
-            url_components.append(key)
+            url_components.append(objectName)
 
     if query is not None:
         ordered_query = collections.OrderedDict(sorted(query.items()))
@@ -80,30 +80,32 @@ def get_target_url(url, bucket=None, key=None, query=None):
 
     return ''.join(url_components)
 
-def is_valid_url(endpoint_url):
+def is_valid_endpoint(endpoint):
     """
-    Verify the endpoint_url is valid.
-    :type endpoint_url: string
-    :param endpoint_url: An endpoint_url.  Must have at least a scheme
+    Verify the endpoint is valid.
+    :type endpoint: string
+    :param endpoint: An endpoint.  Must have at least a scheme
         and a hostname.
-    :return: True if the endpoint url is valid. False otherwise.
+    :return: True if the endpoint is valid. False otherwise.
     """
-    if not isinstance(endpoint_url, strtype):
-        raise TypeError('url')
+    if not isinstance(endpoint, strtype):
+        raise TypeError('endpoint')
 
-    parts = urlsplit(endpoint_url)
+    parts = urlsplit(endpoint)
     hostname = parts.hostname
     if hostname is None:
-        raise InvalidURLError('url')
+        raise InvalidEndpointError('endpoint')
     if len(hostname) > 255:
-        raise InvalidURLError('url')
-    if hostname[-1] == ".":
+        raise InvalidEndpointError('endpoint')
+    if hostname[-1] == '.':
         hostname = hostname[:-1]
     allowed = re.compile(
         "^((?!-)[A-Z\\d-]{1,63}(?<!-)\\.)*((?!-)[A-Z\\d-]{1,63}(?<!-))$",
         re.IGNORECASE)
     if not allowed.match(hostname):
-        raise InvalidURLError('url')
+        raise InvalidEndpointError('endpoint')
+    if hostname.endswith('amazonaws.com') and (hostname != 's3.amazonaws.com'):
+        raise InvalidEndpointError('endpoint')
 
 def is_valid_bucket_name(bucket_name):
     """
@@ -138,12 +140,12 @@ def is_non_empty_string(input_string):
     if not input_string.strip():
         raise ValueError()
 
-def encode_object_key(key):
+def encode_object_name(objectName):
     """
-    url encode object key
+    url encode object name
     """
-    is_non_empty_string(key)
-    return urlencode(key)
+    is_non_empty_string(objectName)
+    return urlencode(objectName)
 
 def get_sha256(content):
     """

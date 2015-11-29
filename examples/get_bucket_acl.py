@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from minio import Acl
 from minio import Minio
 
 __author__ = 'minio'
@@ -21,5 +21,5 @@ client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-# Remove an object.
-client.remove_object('bucketName', 'objectName')
+# Print current ACL
+print client.get_bucket_acl('bucketName')

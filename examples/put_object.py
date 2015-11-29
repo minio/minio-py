@@ -12,24 +12,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import os
 
 from minio import Minio
 
 __author__ = 'minio'
 
-# find out your s3 end point here:
-# http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
-
-client = Minio('https://<your-s3-endpoint>',
+client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-# Put a new object
-client.put_object('my-bucket', 'my_key', 11, 'hello world',
-                  content_type='text/plain')
-
 # Put a file
-file_stat = os.stat('file.dat')
-with open('file.dat', 'rb') as file_data:
-    client.put_object('my-bucket', 'my_key', file_stat.st_size, file_data)
+file_stat = os.stat('testfile')
+with open('testfile', 'rb') as file_data:
+    client.put_object('bucketName', 'objectName', file_data, file_stat.st_size)

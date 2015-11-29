@@ -12,24 +12,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import hashlib
 
 from minio import Minio
 
 __author__ = 'minio'
 
-# find out your s3 end point here:
-# http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
-
-client = Minio('https://<your-s3-endpoint>',
+client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Get a full object
-data = client.get_object('bucket', 'key')
+data = client.get_object('bucketName', 'objectName')
 
-# Example generating sha256 of data
-sha256 = hashlib.sha256()
-for datum in data:
-    sha256.update(datum)
-print sha256.hexdigest()
+with open('testfile', 'wb') as file_data:
+    for d in data:
+        file_data.write(d)

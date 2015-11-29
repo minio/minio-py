@@ -19,11 +19,11 @@ from .parsers import (parse_list_objects, parse_error,
 from .signer import sign_v4
 
 class ListObjectsIterator(object):
-    def __init__(self, client, url, bucket, prefix,
+    def __init__(self, client, url, bucketName, prefix,
                  recursive, access_key, secret_key):
         self._http = client
         self._endpoint_url = url
-        self._bucket = bucket
+        self._bucketName = bucketName
         self._prefix = prefix
         self._recursive = recursive
         self._results = []
@@ -67,7 +67,7 @@ class ListObjectsIterator(object):
         if self._marker is not None:
             query['marker'] = self._marker
 
-        url = get_target_url(self._endpoint_url, bucket=self._bucket, query=query)
+        url = get_target_url(self._endpoint_url, bucketName=self._bucketName, query=query)
 
         method = 'GET'
         headers = {}
@@ -79,19 +79,19 @@ class ListObjectsIterator(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, self._bucket)
+            parse_error(response, self._bucketName)
 
-        return parse_list_objects(response.data, bucket=self._bucket)
+        return parse_list_objects(response.data, bucketName=self._bucketName)
 
 
 class ListIncompleteUploadsIterator(object):
-    def __init__(self, client, url, bucket, key=None, delimiter=None,
+    def __init__(self, client, url, bucketName, objectName=None, delimiter=None,
                  access_key=None, secret_key=None):
         # from user
         self._http = client
         self._endpoint_url = url
-        self._bucket = bucket
-        self._key = key
+        self._bucketName = bucketName
+        self._objectName = objectName
         self._delimiter = delimiter
         self._access_key = access_key
         self._secret_key = secret_key
@@ -127,9 +127,9 @@ class ListIncompleteUploadsIterator(object):
             raise StopIteration
         # return result
         potential_result = self._results.pop(0)
-        if self._key is None:
+        if self._objectName is None:
             return potential_result
-        if potential_result.key == self._key:
+        if potential_result.key == self._objectName:
             return potential_result
         self._complete = True
         raise StopIteration
@@ -139,8 +139,8 @@ class ListIncompleteUploadsIterator(object):
             'uploads': None
         }
         query['max-uploads'] = 1000
-        if self._key is not None:
-            query['prefix'] = self._key
+        if self._objectName is not None:
+            query['prefix'] = self._objectName
         if self._key_marker is not None:
             query['key-marker'] = self._key_marker
         if self._upload_id_marker is not None:
@@ -148,7 +148,7 @@ class ListIncompleteUploadsIterator(object):
         if self._delimiter is not None:
             query['delimiter'] = self._delimiter
 
-        url = get_target_url(self._endpoint_url, bucket=self._bucket, query=query)
+        url = get_target_url(self._endpoint_url, bucketName=self._bucketName, query=query)
 
         method = 'GET'
         headers = {}
@@ -160,19 +160,19 @@ class ListIncompleteUploadsIterator(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, self._bucket)
+            parse_error(response, self._bucketName)
 
-        return parse_incomplete_uploads(response.data, bucket=self._bucket)
+        return parse_incomplete_uploads(response.data, bucketName=self._bucketName)
 
 
 class ListUploadPartsIterator(object):
-    def __init__(self, client, url, bucket, key, upload_id,
+    def __init__(self, client, url, bucketName, objectName, upload_id,
                  access_key=None, secret_key=None):
         # from user
         self._http = client
         self._endpoint_url = url
-        self._bucket = bucket
-        self._key = key
+        self._bucketName = bucketName
+        self._objectName = objectName
         self._upload_id = upload_id
         self._access_key = access_key
         self._secret_key = secret_key
@@ -206,9 +206,9 @@ class ListUploadPartsIterator(object):
             raise StopIteration
         # return result
         potential_result = self._results.pop(0)
-        if self._key is None:
+        if self._objectName is None:
             return potential_result
-        if potential_result.key == self._key:
+        if potential_result.objectName == self._objectName:
             return potential_result
         self._complete = True
         raise StopIteration
@@ -221,8 +221,8 @@ class ListUploadPartsIterator(object):
         if self._part_marker is not None:
             query['part-number-marker'] = self._part_marker
 
-        url = get_target_url(self._endpoint_url, bucket=self._bucket,
-                             key=self._key, query=query)
+        url = get_target_url(self._endpoint_url, bucketName=self._bucketName,
+                             objectName=self._objectName, query=query)
 
         method = 'GET'
         headers = {}
@@ -234,38 +234,7 @@ class ListUploadPartsIterator(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, self._bucket+"/"+self._key)
+            parse_error(response, self._bucketName+"/"+self._objectName)
 
-        return parse_uploaded_parts(response.data, bucket=self._bucket,
-                                    key=self._key, upload_id=self._upload_id)
-
-
-class DataStreamer(object):
-    def __init__(self, response):
-        self._response = response
-        self._stream = iter(response.stream())
-
-        self._length = int(response.headers['content-length'])
-        self._total_read = 0
-        self._is_complete = False
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        return self.__next__()
-
-    def __next__(self):
-        if self._is_complete:
-            raise StopIteration
-        data = self._response.read(1024)
-        self._total_read += len(data)
-        if self._total_read == self._length:
-            self._is_complete = True
-        return data
-
-    def _release(self):
-        if not self._is_complete:
-            self._response.release_conn()
-            self._is_complete = True
-        raise StopIteration
+        return parse_uploaded_parts(response.data, bucketName=self._bucketName,
+                                    objectName=self._objectName, upload_id=self._upload_id)

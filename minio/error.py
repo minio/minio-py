@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-class InvalidURLError(Exception):
+class InvalidEndpointError(Exception):
     def __init__(self, message, **kwargs):
         self.message = message
-        super(InvalidURLError, self).__init__(**kwargs)
+        super(InvalidEndpointError, self).__init__(**kwargs)
 
     def __str__(self):
-        string_format = 'InvalidURLError: message: {0}'
+        string_format = 'InvalidEndpointError: message: {0}'
         return string_format.format(self.message)
 
 class InvalidBucketError(Exception):
