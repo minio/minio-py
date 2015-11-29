@@ -39,9 +39,6 @@ def presign_v4(method, url, headers=None, access_key=None, secret_key=None, expi
     if expires is None:
         expires = 604800
 
-    if expires < 1 or expires > 604800:
-        raise InvalidArgumentError('expires param valid values are between 1 secs to 604800 secs')
-
     if headers is None:
         headers = {}
 

@@ -20,18 +20,15 @@ from minio import PostPolicy
 
 __author__ = 'minio'
 
-# find out your s3 end point here:
-# http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
+policy = PostPolicy()
+policy.set_key('objectName')
+policy.set_bucket('bucketName')
 
-form = PostPolicy()
-form.set_key('myobject')
-form.set_bucket('mybucket')
 expires_date = datetime.utcnow()+timedelta(days=10)
-form.set_expires(expires_date)
+policy.set_expires(expires_date)
 
-
-client = Minio('https://<your-s3-endpoint>',
+client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-print client.presigned_post_policy(form)
+print client.presigned_post_policy(policy)

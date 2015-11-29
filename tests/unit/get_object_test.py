@@ -35,19 +35,6 @@ class GetObjectTest(TestCase):
         client.get_object('hello', ' \t \n ')
 
     @mock.patch('urllib3.PoolManager')
-    def test_get_object_works(self, mock_connection):
-        mock_server = MockConnection()
-        mock_connection.return_value = mock_server
-        mock_server.mock_add_request(
-            MockResponse('GET', 'http://localhost:9000/hello/world', {}, 200, content='hello world',
-                         response_headers={'content-length': 11}))
-        client = minio.Minio('http://localhost:9000')
-        object_iter = client.get_object('hello', 'world')
-        actual_object = []
-        for object_chunk in object_iter:
-            actual_object.append(object_chunk)
-
-    @mock.patch('urllib3.PoolManager')
     def test_get_object_invalid_name(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server

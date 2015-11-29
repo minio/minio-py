@@ -13,17 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from minio.minio import Minio
+from minio import Minio
 
 __author__ = 'minio'
 
-# find out your s3 end point here:
-# http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
-
-client = Minio('https://<your-s3-endpoint>',
+client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Remove a bucket
 # This operation will only work if your bucket is empty.
-client.remove_bucket('my-bucket')
+client.remove_bucket('bucketName')

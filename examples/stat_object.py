@@ -12,17 +12,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from minio import Minio
 
 __author__ = 'minio'
 
-# find out your s3 end point here:
-# http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
-
-client = Minio('https://<your-s3-endpoint>',
+client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-# Getting detailed stats on your object.
-client.stat_object('my-bucket', 'my_key')
-print client.stat_object('my-bucket', 'my_key')
+# Fetch stats on your object.
+print client.stat_object('bucketName', 'objectName')

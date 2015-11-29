@@ -79,13 +79,13 @@ def parse_acl(data):
     return Acl.private()
 
 
-def parse_list_objects(data, bucket):
+def parse_list_objects(data, bucketName):
     root = cElementTree.fromstring(data)
 
     is_truncated = False
     objects = []
     marker = None
-    last_key = None
+    last_objectName = None
     for contents in root:
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
             is_truncated = contents.text.lower() == 'true'
@@ -93,14 +93,14 @@ def parse_list_objects(data, bucket):
             if contents.text is not None:
                 marker = urldecode(contents.text)
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Contents':
-            key = None
+            objectName = None
             last_modified = None
             etag = None
             size = None
             for content in contents:
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
-                    key = urldecode(content.text)
-                    last_key = key
+                    objectName = urldecode(content.text)
+                    last_objectName = objectName
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
                     last_modified = _parse_date(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
@@ -108,21 +108,21 @@ def parse_list_objects(data, bucket):
                     etag = etag.replace('"', '')
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
                     size = content.text
-            objects.append(Object(bucket, key, last_modified, etag, size, content_type=None))
+            objects.append(Object(bucketName, objectName, last_modified, etag, size, content_type=None))
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}CommonPrefixes':
             for content in contents:
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Prefix':
-                    key = urldecode(content.text)
+                    objectName = urldecode(content.text)
                 # noinspection PyUnboundLocalVariable
-                objects.append(Object(bucket, key, None, '', 0, content_type=None, is_dir=True))
+                objects.append(Object(bucketName, objectName, None, '', 0, content_type=None, is_dir=True))
 
     if is_truncated and marker is None:
-        marker = last_key
+        marker = last_objectName
 
     return objects, is_truncated, marker
 
 
-def parse_incomplete_uploads(data, bucket):
+def parse_incomplete_uploads(data, bucketName):
     root = cElementTree.fromstring(data)
 
     is_truncated = False
@@ -138,19 +138,19 @@ def parse_incomplete_uploads(data, bucket):
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextUploadIdMarker':
             upload_id_marker = contents.text
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Upload':
-            key = None
+            objectName = None
             upload_id = None
             for content in contents:
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
-                    key = urldecode(content.text)
+                    objectName = urldecode(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}UploadId':
                     upload_id = content.text
-            uploads.append(IncompleteUpload(bucket, key, upload_id))
+            uploads.append(IncompleteUpload(bucketName, objectName, upload_id))
 
     return uploads, is_truncated, key_marker, upload_id_marker
 
 
-def parse_uploaded_parts(data, bucket, key, upload_id):
+def parse_uploaded_parts(data, bucketName, objectName, upload_id):
     root = cElementTree.fromstring(data)
 
     is_truncated = False
@@ -176,7 +176,7 @@ def parse_uploaded_parts(data, bucket, key, upload_id):
                     last_modified = _parse_date(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
                     size = content.text
-            parts.append(UploadPart(bucket, key, upload_id, part_number, etag,
+            parts.append(UploadPart(bucketName, objectName, upload_id, part_number, etag,
                                     last_modified, size))
     return parts, is_truncated, part_marker
 

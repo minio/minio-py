@@ -17,11 +17,8 @@ from minio import Minio
 
 __author__ = 'minio'
 
-# find out your s3 end point here:
-# http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
-
-client = Minio('https://<your-s3-endpoint>',
+client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-print client.presigned_put_object('mybucket', 'myobject')
+print client.presigned_put_object('bucketName', 'objectName')

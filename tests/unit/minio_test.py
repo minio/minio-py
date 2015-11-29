@@ -18,26 +18,25 @@ from unittest import TestCase
 from nose.tools import *
 
 from minio import minio, get_version
-from minio.error import InvalidURLError
+from minio.error import InvalidEndpointError
 from minio.helpers import get_target_url
 
-
-class GetUrlTests(TestCase):
+class GetURLTests(TestCase):
     def test_get_target_url_works(self):
         url = 'http://localhost:9000'
-        eq_(get_target_url(url, 'bucket'),
-            'http://localhost:9000/bucket')
-        eq_(get_target_url(url, 'bucket', 'key'),
-            'http://localhost:9000/bucket/key')
-        eq_(get_target_url(url, 'bucket', 'key', None),
-            'http://localhost:9000/bucket/key')
-        eq_(get_target_url(url, 'bucket', 'key', {'foo': 'bar'}),
-            'http://localhost:9000/bucket/key?foo=bar')
-        eq_(get_target_url(url, 'bucket', 'key',
+        eq_(get_target_url(url, 'bucketName'),
+            'http://localhost:9000/bucketName')
+        eq_(get_target_url(url, 'bucketName', 'objectName'),
+            'http://localhost:9000/bucketName/objectName')
+        eq_(get_target_url(url, 'bucketName', 'objectName', None),
+            'http://localhost:9000/bucketName/objectName')
+        eq_(get_target_url(url, 'bucketName', 'objectName', {'foo': 'bar'}),
+            'http://localhost:9000/bucketName/objectName?foo=bar')
+        eq_(get_target_url(url, 'bucketName', 'objectName',
                            {'foo': 'bar',
                             'b': 'c',
                             'a': 'b'}),
-            'http://localhost:9000/bucket/key?a=b&b=c&foo=bar')
+            'http://localhost:9000/bucketName/objectName?a=b&b=c&foo=bar')
         s3_url = 'https://s3.amazonaws.com'
         eq_(get_target_url(s3_url), 'https://s3.amazonaws.com/')
 
@@ -45,11 +44,11 @@ class GetUrlTests(TestCase):
     def test_minio_requires_string(self):
         minio.Minio(10)
 
-    @raises(InvalidURLError)
+    @raises(InvalidEndpointError)
     def test_minio_requires_scheme(self):
         minio.Minio('play.minio.io')
 
-    @raises(InvalidURLError)
+    @raises(InvalidEndpointError)
     def test_minio_requires_netloc(self):
         minio.Minio('http://')
 
@@ -61,7 +60,7 @@ class UserAgentTests(TestCase):
             platform.system() + \
             '; ' + platform.machine() + ')')
 
-    def test_set_user_agent(self):
+    def test_set_app_info(self):
         client = minio.Minio('http://localhost')
 
         expected_user_agent = 'minio-py/' + get_version() + ' (' + \
@@ -69,25 +68,25 @@ class UserAgentTests(TestCase):
             platform.machine() + ')'
         expected_user_agent += ' hello/1.0.0 (World; Edition)'
 
-        client.set_user_agent('hello', '1.0.0', ['World', 'Edition'])
+        client.set_app_info('hello', '1.0.0', ['World', 'Edition'])
         eq_(client._user_agent, expected_user_agent)
 
     @raises(TypeError)
-    def test_set_user_agent_requires_string_name(self):
+    def test_set_app_info_requires_string_name(self):
         client = minio.Minio('http://localhost:9000')
-        client.set_user_agent(10, '1.0.0', ['World', 'Edition'])
+        client.set_app_info(10, '1.0.0', ['World', 'Edition'])
 
     @raises(ValueError)
-    def test_set_user_agent_requires_non_empty_name(self):
+    def test_set_app_info_requires_non_empty_name(self):
         client = minio.Minio('http://localhost:9000')
-        client.set_user_agent('', '1.0.0', ['World', 'Edition'])
+        client.set_app_info('', '1.0.0', ['World', 'Edition'])
 
     @raises(TypeError)
-    def test_set_user_agent_requires_version(self):
+    def test_set_app_info_requires_version(self):
         client = minio.Minio('http://localhost:9000')
-        client.set_user_agent('hello', 10, ['World', 'Edition'])
+        client.set_app_info('hello', 10, ['World', 'Edition'])
 
     @raises(ValueError)
-    def test_set_user_agent_requires_non_empty_version(self):
+    def test_set_app_info_requires_non_empty_version(self):
         client = minio.Minio('http://localhost:9000')
-        client.set_user_agent('hello', '', ['World', 'Edition'])
+        client.set_app_info('hello', '', ['World', 'Edition'])

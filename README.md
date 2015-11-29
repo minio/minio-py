@@ -13,7 +13,7 @@ $ pip install minio
 ```python
 #!/usr/bin/env python
 
-from minio.minio import Minio
+from minio import Minio
 
 # Instantiate a client
 client = Minio('https://s3.amazonaws.com',
