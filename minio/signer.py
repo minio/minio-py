@@ -32,7 +32,7 @@ def post_presign_signature(date, region, secret_key, policy_str):
 def presign_v4(method, url, region=None, headers=None, access_key=None, secret_key=None, expires=None):
     """
     Presignature version 4.
-    """    
+    """
     if not access_key or not secret_key:
         raise InvalidArgumentError('invalid access/secret id')
 
@@ -92,12 +92,8 @@ def presign_v4(method, url, region=None, headers=None, access_key=None, secret_k
                                                    headers_to_sign,
                                                    content_hash_hex)
 
-    canonical_request_hasher = hashlib.sha256()
-    canonical_request_hasher.update(canonical_request.encode('utf-8'))
-    canonical_request_sha256 = canonical_request_hasher.hexdigest()
-
     string_to_sign = generate_string_to_sign(date, region,
-                                             canonical_request_sha256)
+                                             canonical_request)
     signing_key = generate_signing_key(date, region, secret_key)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
@@ -122,7 +118,7 @@ def get_signed_headers(headers):
     return signed_headers
 
 def sign_v4(method, url, region=None, headers=None, access_key=None, secret_key=None,
-            content_hash=None):
+            content_sha256=None):
     """
     Signature version 4.
     """
@@ -136,16 +132,15 @@ def sign_v4(method, url, region=None, headers=None, access_key=None, secret_key=
         region = 'us-east-1'
 
     parsed_url = urlsplit(url)
-    content_hash_hex = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-    if content_hash is not None:
-        content_hash_hex = binascii.hexlify(content_hash).decode('utf-8')
+    if content_sha256 is None:
+        content_sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
     host = parsed_url.netloc
     headers['host'] = host
 
     date = datetime.utcnow()
     headers['x-amz-date'] = date.strftime("%Y%m%dT%H%M%SZ")
-    headers['x-amz-content-sha256'] = content_hash_hex
+    headers['x-amz-content-sha256'] = content_sha256
 
     headers_to_sign = dict(headers)
 
@@ -187,14 +182,10 @@ def sign_v4(method, url, region=None, headers=None, access_key=None, secret_key=
     canonical_request = generate_canonical_request(method,
                                                     parsed_url,
                                                     headers_to_sign,
-                                                    content_hash_hex)
-
-    canonical_request_hasher = hashlib.sha256()
-    canonical_request_hasher.update(canonical_request.encode('utf-8'))
-    canonical_request_sha256 = canonical_request_hasher.hexdigest()
+                                                    content_sha256)
 
     string_to_sign = generate_string_to_sign(date, region,
-                                             canonical_request_sha256)
+                                             canonical_request)
     signing_key = generate_signing_key(date, region, secret_key)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
@@ -206,9 +197,8 @@ def sign_v4(method, url, region=None, headers=None, access_key=None, secret_key=
     headers['authorization'] = authorization_header
     return headers
 
-
-def generate_canonical_request(method, parsed_url, headers, content_hash_hex):
-    content_hash_hex = str(content_hash_hex)
+def generate_canonical_request(method, parsed_url, headers, content_sha256):
+    content_sha256 = str(content_sha256)
     lines = [method, parsed_url.path]
 
     split_query = parsed_url.query.split('&')
@@ -236,19 +226,22 @@ def generate_canonical_request(method, parsed_url, headers, content_hash_hex):
     lines.append('')
 
     lines.append(';'.join(signed_headers))
-    lines.append(str(content_hash_hex))
+    lines.append(str(content_sha256))
 
     return '\n'.join(lines)
 
-
-def generate_string_to_sign(date, region, request_hash):
+def generate_string_to_sign(date, region, canonical_request):
     formatted_date_time = date.strftime("%Y%m%dT%H%M%SZ")
+
+    canonical_request_hasher = hashlib.sha256()
+    canonical_request_hasher.update(canonical_request.encode('utf-8'))
+    canonical_request_sha256 = canonical_request_hasher.hexdigest()
+    scope = generate_scope_string(date, region)
 
     return '\n'.join(['AWS4-HMAC-SHA256',
                       formatted_date_time,
-                      generate_scope_string(date, region),
-                      request_hash])
-
+                      scope,
+                      canonical_request_sha256])
 
 def generate_signing_key(date, region, secret):
     formatted_date = date.strftime("%Y%m%d")

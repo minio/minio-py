@@ -51,6 +51,12 @@ class IncompleteUpload(object):
                         ' upload_id: {2}>'
         return string_format.format(self.bucketName, self.objectName, self.upload_id)
 
+class PartMetadata(object):
+    def __init__(self, md5digest, sha256digest, size):
+        self.md5digest = md5digest
+        self.sha256digest = sha256digest
+        self.size = size
+
 class UploadPart(object):
     def __init__(self, bucketName, objectName, upload_id, part_number, etag,
                  last_modified, size):

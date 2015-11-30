@@ -78,7 +78,7 @@ class StringToSignTest(TestCase):
     def test_signing_key(self):
         expected_signing_key_list = ['AWS4-HMAC-SHA256', '20150620T010203Z',
                                      '20150620/us-east-1/s3/aws4_request',
-                                     'request_hash']
+                                     'b93e86965c269a0dfef37a8bec231ef8acf8cdb101a64eb700a46c452c1ad233']
 
         actual_signing_key = generate_string_to_sign(dt, 'us-east-1', 'request_hash')
         eq_('\n'.join(expected_signing_key_list), actual_signing_key)

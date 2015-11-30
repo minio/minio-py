@@ -73,7 +73,7 @@ class GetBucketAclTest(TestCase):
                   '''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello?acl', {}, 200, content=content))
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello/?acl', {}, 200, content=content))
         client = minio.Minio('http://localhost:9000')
         acl = client.get_bucket_acl('hello')
         eq_(Acl.public_read_write(), acl)
@@ -107,7 +107,7 @@ class GetBucketAclTest(TestCase):
                   '''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello?acl', {}, 200, content=content))
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello/?acl', {}, 200, content=content))
         client = minio.Minio('http://localhost:9000')
         acl = client.get_bucket_acl('hello')
         eq_(Acl.public_read(), acl)
@@ -141,7 +141,7 @@ class GetBucketAclTest(TestCase):
                   '''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello?acl', {}, 200, content=content))
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello/?acl', {}, 200, content=content))
         client = minio.Minio('http://localhost:9000')
         acl = client.get_bucket_acl('hello')
         eq_(Acl.authenticated_read(), acl)
@@ -168,7 +168,7 @@ class GetBucketAclTest(TestCase):
 
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello?acl', {}, 200, content=content))
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello/?acl', {}, 200, content=content))
         client = minio.Minio('http://localhost:9000')
         acl = client.get_bucket_acl('hello')
         eq_(Acl.private(), acl)

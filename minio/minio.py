@@ -17,6 +17,8 @@ import sys
 import io
 import platform
 import threading
+import tempfile
+import hashlib
 
 import urllib3
 import certifi
@@ -32,7 +34,7 @@ from .compat import urlsplit, strtype
 from .generators import (ListObjectsIterator, ListIncompleteUploadsIterator, ListUploadPartsIterator)
 from .helpers import (get_target_url, is_non_empty_string, is_valid_endpoint, get_sha256,
                       encode_to_base64, get_md5, calculate_part_size, encode_to_hex,
-                      is_valid_bucket_name)
+                      is_valid_bucket_name, parts_manager)
 from .parsers import (parse_list_buckets, parse_acl, parse_error,
                       parse_new_multipart_upload, parse_location_constraint)
 from .error import ResponseError
@@ -59,7 +61,6 @@ class Minio(object):
         is_valid_endpoint(endpoint)
 
         url_components = urlsplit(endpoint)
-        self._lock = threading.Lock()
         self._region_map = dict()
         self._endpoint_url = url_components.geturl()
         self._access_key = access_key
@@ -141,17 +142,17 @@ class Minio(object):
             content = bucket_constraint(location)
             headers['Content-Length'] = str(len(content))
 
-        content_sha256 = get_sha256(content)
+        content_sha256_hex = encode_to_hex(get_sha256(content))
         if content.strip():
-            content_md5 = encode_to_base64(get_md5(content))
-            headers['Content-MD5'] = content_md5
+            content_md5_base64 = encode_to_base64(get_md5(content))
+            headers['Content-MD5'] = content_md5_base64
 
         headers = sign_v4(method=method, url=url,
                           region=region,
                           headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key,
-                          content_hash=content_sha256)
+                          content_sha256=content_sha256_hex)
 
         response = self._http.urlopen(method, url, body=content,
                                       headers=headers)
@@ -496,14 +497,16 @@ class Minio(object):
         """
         Add a new object to the cloud storage server.
 
-        Data can either be a string, byte array, or reader (e.g. open('foo'))
-
         Examples:
-            minio.put_object('foo', 'bar', 'hello world', 11)
-            minio.put_object('foo', 'bar', b'hello world', 11, 'text/plain')
+         with open('hello.txt', 'rb') as data:
+             minio.put_object('foo', 'bar', data, -1, 'text/plain')
 
-            with open('hello.txt', 'rb') as data:
-                minio.put_object('foo', 'bar', data, -1, 'text/plain')
+        - For length lesser than 5MB put_object automatically does single Put operation.
+        - For length equal to 0Bytes put_object automatically does single Put operation.
+        - For length larger than 5MB put_object automatically does resumable multipart operation.
+        - For length input as -1 put_object treats it as a stream and does multipart operation until
+          input stream reaches EOF. Maximum object size that can be uploaded through this operation
+          will be 5TB.
 
         :param bucketName: Bucket of new object.
         :param objectName: Name of new object.
@@ -515,11 +518,18 @@ class Minio(object):
         is_valid_bucket_name(bucketName)
         is_non_empty_string(objectName)
 
-        if length <= 5 * 1024 * 1024:
-            # reference 'file' for python 2.7 compatibility, RawIOBase for 3.X
-            data = data.read(length)
-            return self._do_put_object(bucketName, objectName, data, length, content_type)
-        self._stream_put_object(bucketName, objectName, data, length, content_type)
+        if length > 5 * 1024 * 1024:
+            return self._stream_put_object(bucketName, objectName, data, length, content_type)
+
+        # reference 'file' for python 2.7 compatibility, RawIOBase for 3.X
+        current_data = data.read(length)
+        current_data_md5_base64 = encode_to_base64(get_md5(current_data))
+        current_data_sha256_hex = encode_to_hex(get_sha256(current_data))
+        return self._do_put_object(bucketName, objectName,
+                                   io.BytesIO(current_data),
+                                   current_data_md5_base64,
+                                   current_data_sha256_hex,
+                                   length, content_type)
 
     def list_objects(self, bucketName, prefix=None, recursive=False):
         """
@@ -693,19 +703,17 @@ class Minio(object):
                                                 access_key=self._access_key,
                                                 secret_key=self._secret_key)
         for upload in uploads:
-            if objectName == upload.key:
+            if objectName == upload.objectName:
                 self._remove_incomplete_upload(bucketName, objectName, upload.upload_id)
                 return
 
     # helper functions
-    def _do_put_object(self, bucketName, objectName, data, length,
-                       content_type='application/octet-stream',
+    def _do_put_object(self, bucketName, objectName, data,
+                       data_content_size, data_md5_base64,
+                       data_sha256_hex, data_content_type='application/octet-stream',
                        upload_id='', part_number=0):
+
         method = 'PUT'
-
-        if len(data) != length:
-            raise UnexpectedShortReadError()
-
         region = self._get_region(bucketName)
 
         if upload_id.strip() and part_number is not 0:
@@ -714,47 +722,44 @@ class Minio(object):
         else:
             url = get_target_url(self._endpoint_url, bucketName=bucketName, objectName=objectName)
 
-        content_sha256 = get_sha256(data)
-        content_md5 = encode_to_base64(get_md5(data))
-
         headers = {
-            'Content-Length': length,
-            'Content-Type': content_type,
-            'Content-MD5': content_md5
+            'Content-Length': data_content_size,
+            'Content-Type': data_content_type,
+            'Content-MD5': data_md5_base64
         }
 
-        headers = sign_v4(method=method, url=url,
+        headers = sign_v4(method=method,
+                          url=url,
                           region=region,
                           headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key,
-                          content_hash=content_sha256)
+                          content_sha256=data_sha256_hex)
 
-        data = io.BytesIO(data)
         response = self._http.urlopen(method, url, headers=headers, body=data)
-
         if response.status != 200:
             parse_error(response, bucketName+'/'+objectName)
 
         return response.headers['etag'].replace('"', '')
 
-    def _stream_put_object(self, bucketName, objectName, data, length, content_type='application/octet-stream'):
-        part_size = calculate_part_size(length)
-        current_uploads = ListIncompleteUploads(self._http,
-                                                self._endpoint_url,
-                                                bucketName,
-                                                objectName,
-                                                access_key=self._access_key,
-                                                secret_key=self._secret_key)
-
+    def _stream_put_object(self, bucketName, objectName, data,
+                           data_content_size, data_content_type='application/octet-stream'):
+        part_size = calculate_part_size(data_content_size)
+        current_uploads = ListIncompleteUploadsIterator(self._http,
+                                                        self._endpoint_url,
+                                                        bucketName,
+                                                        objectName,
+                                                        access_key=self._access_key,
+                                                        secret_key=self._secret_key)
         upload_id = None
         for upload in current_uploads:
-            if objectName == upload.key:
+            if objectName == upload.objectName:
                 upload_id = upload.upload_id
 
         uploaded_parts = {}
         if upload_id is None:
-            upload_id = self._new_multipart_upload(bucketName, objectName, content_type)
+            upload_id = self._new_multipart_upload(bucketName, objectName,
+                                                   data_content_type)
         else:
             part_iter = ListUploadPartsIterator(self._http, self._endpoint_url,
                                                 bucketName, objectName, upload_id,
@@ -767,31 +772,30 @@ class Minio(object):
         total_uploaded = 0
         current_part_number = 1
         etags = []
-        while total_uploaded < length:
-            current_data = data.read(part_size)
-            if len(current_data) == 0:
-                break
-            ## Throw unexpected short read error
-            if len(current_data) < part_size:
-                if (length - total_uploaded) != len(current_data):
-                    raise UnexpectedShortReadError()
-
-            current_data_md5 = encode_to_hex(get_md5(current_data))
+        while total_uploaded < data_content_size:
+            part = tempfile.NamedTemporaryFile(delete=True)
+            part_metadata = parts_manager(data, part, hashlib.md5(), hashlib.sha256(), part_size)
+            current_data_md5_hex = encode_to_hex(part_metadata.md5digest)
+            current_data_md5_base64 = encode_to_base64(part_metadata.md5digest)
+            current_data_sha256_hex = encode_to_hex(part_metadata.sha256digest)
             previously_uploaded_part = None
             if current_part_number in uploaded_parts:
                 previously_uploaded_part = uploaded_parts[current_part_number]
             if previously_uploaded_part is None or \
-               previously_uploaded_part.etag != current_data_md5:
-                etag = self._do_put_object(bucketName=bucketName, objectName=objectName,
-                                           length=len(current_data),
-                                           data=current_data,
-                                           content_type=content_type,
+               previously_uploaded_part.etag != current_data_md5_hex:
+                ## Seek back to starting position.
+                part.seek(0)
+                etag = self._do_put_object(bucketName, objectName, part,
+                                           part_metadata.size,
+                                           current_data_md5_base64,
+                                           current_data_sha256_hex,
+                                           data_content_type=data_content_type,
                                            upload_id=upload_id,
                                            part_number=current_part_number)
             else:
                 etag = previously_uploaded_part.etag
             etags.append(etag)
-            total_uploaded += len(current_data)
+            total_uploaded += part_metadata.size
             current_part_number += 1
 
         self._complete_multipart_upload(bucketName, objectName, upload_id, etags)
@@ -857,18 +861,19 @@ class Minio(object):
         headers = {}
 
         data = get_complete_multipart_upload(etags)
-        data_sha256 = get_sha256(data)
-        data_md5 = encode_to_base64(get_md5(data))
+        data_md5_base64 = encode_to_base64(get_md5(data))
+        data_sha256_hex = encode_to_hex(get_sha256(data))
 
         headers['Content-Length'] = len(data)
         headers['Content-Type'] = 'application/xml'
-        headers['Content-MD5'] = data_md5
+        headers['Content-MD5'] = data_md5_base64
 
         headers = sign_v4(method=method, url=url,
                           region=region,
                           headers=headers,
                           access_key=self._access_key,
-                          secret_key=self._secret_key, content_hash=data_sha256)
+                          secret_key=self._secret_key,
+                          content_sha256=data_sha256_hex)
 
         response = self._http.urlopen(method, url, headers=headers, body=data)
 
