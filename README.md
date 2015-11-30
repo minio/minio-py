@@ -31,7 +31,7 @@ for bucket in buckets:
 
 ### Bucket Operations.
 
-[make_bucket(bucket)](examples/make_bucket.py)
+[make_bucket(bucket, location, acl)](examples/make_bucket.py)
 
 [list_buckets()](examples/list_buckets.py)
 

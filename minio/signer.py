@@ -21,7 +21,6 @@ import binascii
 from datetime import datetime
 from .error import InvalidArgumentError
 from .compat import urlsplit, strtype, urlencode
-from .helpers import get_region
 
 def post_presign_signature(date, region, secret_key, policy_str):
     signing_key = generate_signing_key(date, region, secret_key)
@@ -30,7 +29,10 @@ def post_presign_signature(date, region, secret_key, policy_str):
 
     return signature
 
-def presign_v4(method, url, headers=None, access_key=None, secret_key=None, expires=None):
+def presign_v4(method, url, region=None, headers=None, access_key=None, secret_key=None, expires=None):
+    """
+    Presignature version 4.
+    """    
     if not access_key or not secret_key:
         raise InvalidArgumentError('invalid access/secret id')
 
@@ -42,13 +44,15 @@ def presign_v4(method, url, headers=None, access_key=None, secret_key=None, expi
     if headers is None:
         headers = {}
 
+    if region is None:
+        region = 'us-east-1'
+
     parsed_url = urlsplit(url)
     content_hash_hex = 'UNSIGNED-PAYLOAD'
     host = parsed_url.netloc
     headers['host'] = host
     date = datetime.utcnow()
     iso8601Date = date.strftime("%Y%m%dT%H%M%SZ")
-    region = get_region(parsed_url.hostname)
 
     headers_to_sign = dict(headers)
     ignored_headers = ['Authorization', 'Content-Length', 'Content-Type',
@@ -117,13 +121,19 @@ def get_signed_headers(headers):
 
     return signed_headers
 
-def sign_v4(method, url, headers=None, access_key=None, secret_key=None,
+def sign_v4(method, url, region=None, headers=None, access_key=None, secret_key=None,
             content_hash=None):
+    """
+    Signature version 4.
+    """
     if not access_key or not secret_key:
         return headers
 
     if headers is None:
         headers = {}
+
+    if region is None:
+        region = 'us-east-1'
 
     parsed_url = urlsplit(url)
     content_hash_hex = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
@@ -132,7 +142,6 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None,
 
     host = parsed_url.netloc
     headers['host'] = host
-    region = get_region(parsed_url.hostname)
 
     date = datetime.utcnow()
     headers['x-amz-date'] = date.strftime("%Y%m%dT%H%M%SZ")
@@ -195,7 +204,6 @@ def sign_v4(method, url, headers=None, access_key=None, secret_key=None,
                                                          signature)
 
     headers['authorization'] = authorization_header
-
     return headers
 
 

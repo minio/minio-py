@@ -20,7 +20,7 @@ from .signer import sign_v4
 
 class ListObjectsIterator(object):
     def __init__(self, client, url, bucketName, prefix,
-                 recursive, access_key, secret_key):
+                 recursive, access_key=None, secret_key=None, region='us-east-1'):
         self._http = client
         self._endpoint_url = url
         self._bucketName = bucketName
@@ -30,6 +30,7 @@ class ListObjectsIterator(object):
         self._complete = False
         self._access_key = access_key
         self._secret_key = secret_key
+        self._region = region
         self._is_truncated = True
         self._marker = None
 
@@ -72,7 +73,9 @@ class ListObjectsIterator(object):
         method = 'GET'
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=self._region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
@@ -86,7 +89,7 @@ class ListObjectsIterator(object):
 
 class ListIncompleteUploadsIterator(object):
     def __init__(self, client, url, bucketName, objectName=None, delimiter=None,
-                 access_key=None, secret_key=None):
+                 access_key=None, secret_key=None, region='us-east-1'):
         # from user
         self._http = client
         self._endpoint_url = url
@@ -95,6 +98,7 @@ class ListIncompleteUploadsIterator(object):
         self._delimiter = delimiter
         self._access_key = access_key
         self._secret_key = secret_key
+        self._region = region
 
         # internal variables
         self._results = []
@@ -126,13 +130,7 @@ class ListIncompleteUploadsIterator(object):
             self._complete = True
             raise StopIteration
         # return result
-        potential_result = self._results.pop(0)
-        if self._objectName is None:
-            return potential_result
-        if potential_result.key == self._objectName:
-            return potential_result
-        self._complete = True
-        raise StopIteration
+        return self._results.pop(0)
 
     def _fetch(self):
         query = {
@@ -153,7 +151,9 @@ class ListIncompleteUploadsIterator(object):
         method = 'GET'
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=self._region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
@@ -167,7 +167,7 @@ class ListIncompleteUploadsIterator(object):
 
 class ListUploadPartsIterator(object):
     def __init__(self, client, url, bucketName, objectName, upload_id,
-                 access_key=None, secret_key=None):
+                 access_key=None, secret_key=None, region='us-east-1'):
         # from user
         self._http = client
         self._endpoint_url = url
@@ -176,6 +176,7 @@ class ListUploadPartsIterator(object):
         self._upload_id = upload_id
         self._access_key = access_key
         self._secret_key = secret_key
+        self._region = region
 
         # internal variables
         self._results = []
@@ -227,7 +228,9 @@ class ListUploadPartsIterator(object):
         method = 'GET'
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=self._region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 

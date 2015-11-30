@@ -114,4 +114,4 @@ class PresignURLTest(TestCase):
 
     @raises(InvalidArgumentError)
     def test_presigned_invalid_expires(self):
-        presign_v4('GET', 'http://localhost:9000/hello', headers={}, access_key=None, secret_key=None, expires=0)
+        presign_v4('GET', 'http://localhost:9000/hello', region=None, headers={}, access_key=None, secret_key=None, expires=0)
