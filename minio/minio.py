@@ -16,6 +16,7 @@
 import sys
 import io
 import platform
+import threading
 
 import urllib3
 import certifi
@@ -31,13 +32,15 @@ from .compat import urlsplit, strtype
 from .generators import (ListObjectsIterator, ListIncompleteUploadsIterator, ListUploadPartsIterator)
 from .helpers import (get_target_url, is_non_empty_string, is_valid_endpoint, get_sha256,
                       encode_to_base64, get_md5, calculate_part_size, encode_to_hex,
-                      is_valid_bucket_name, get_region)
-from .parsers import (parse_list_buckets, parse_acl, parse_error, parse_new_multipart_upload)
+                      is_valid_bucket_name)
+from .parsers import (parse_list_buckets, parse_acl, parse_error,
+                      parse_new_multipart_upload, parse_location_constraint)
 from .error import ResponseError
 from .definitions import Object
 from .signer import sign_v4, presign_v4, generate_credential_string, post_presign_signature
 from .xml_requests import bucket_constraint, get_complete_multipart_upload
 from .post_policy import PostPolicy
+from .acl import Acl
 
 class Minio(object):
     def __init__(self, endpoint, access_key=None, secret_key=None):
@@ -56,6 +59,8 @@ class Minio(object):
         is_valid_endpoint(endpoint)
 
         url_components = urlsplit(endpoint)
+        self._lock = threading.Lock()
+        self._region_map = dict()
         self._endpoint_url = url_components.geturl()
         self._access_key = access_key
         self._secret_key = secret_key
@@ -94,11 +99,20 @@ class Minio(object):
             self._user_agent += ''.join(components)
 
     # Bucket level
-    def make_bucket(self, bucketName, location='us-east-1'):
+    def make_bucket(self, bucketName, location='us-east-1', acl=None):
         """
         Make a new bucket on the server.
 
         Optionally include Location.
+           ['us-east-1', 'us-west-1', 'us-west-2', 'eu-west-1', 'eu-central-1',
+            'ap-southeast-1', 'ap-southeast-2', 'ap-northeast-1', 'sa-east-1',
+            'cn-north-1']
+
+        Optionally include an ACL. Valid ACLs are as follows:
+            Acl.public_read_write()
+            Acl.public_read()
+            Acl.authenticated_read()
+            Acl.private()
 
         Examples:
             minio.make_bucket('foo')
@@ -108,11 +122,19 @@ class Minio(object):
         :param location: Location to create bucket on
         :return:
         """
+
+        if acl is not None:
+            is_valid_acl(acl)
+
         is_valid_bucket_name(bucketName)
 
         method = 'PUT'
+        region = self._get_region(bucketName)
         url = get_target_url(self._endpoint_url, bucketName=bucketName)
         headers = {}
+
+        if acl is not None:
+            headers['x-amz-acl'] = acl
 
         content = ''
         if not (location == 'us-east-1'):
@@ -124,7 +146,9 @@ class Minio(object):
             content_md5 = encode_to_base64(get_md5(content))
             headers['Content-MD5'] = content_md5
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key,
                           content_hash=content_sha256)
@@ -135,10 +159,11 @@ class Minio(object):
         if response.status != 200:
             parse_error(response, bucketName)
 
+        self._set_region(bucket, region=location)
+
     def list_buckets(self):
         """
         List all buckets owned by the user.
-
 
         Example:
             bucket_list = minio.list_buckets()
@@ -147,15 +172,19 @@ class Minio(object):
 
         :return: A list of buckets owned by the current user.
         """
-        url = get_target_url(self._endpoint_url)
+
         method = 'GET'
         headers = {}
+        url = get_target_url(self._endpoint_url)
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region='us-east-1',
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
-        response = self._http.request(method, url, headers=headers,
+        response = self._http.request(method, url,
+                                      headers=headers,
                                       redirect=False)
 
         if response.status != 200:
@@ -177,10 +206,13 @@ class Minio(object):
         is_valid_bucket_name(bucketName)
 
         method = 'HEAD'
+        region = self._get_region(bucketName)
         url = get_target_url(self._endpoint_url, bucketName=bucketName)
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
@@ -203,10 +235,13 @@ class Minio(object):
         is_valid_bucket_name(bucketName)
 
         method = 'DELETE'
+        region = self._get_region(bucketName)
         url = get_target_url(self._endpoint_url, bucketName=bucketName)
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
@@ -230,11 +265,15 @@ class Minio(object):
         is_valid_bucket_name(bucketName)
 
         method = 'GET'
-        url = get_target_url(self._endpoint_url, bucketName=bucketName,
+        region = self._get_region(bucketName)
+        url = get_target_url(self._endpoint_url,
+                             bucketName=bucketName,
                              query={"acl": None})
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
@@ -268,14 +307,18 @@ class Minio(object):
         is_valid_acl(acl)
 
         method = 'PUT'
-        url = get_target_url(self._endpoint_url, bucketName=bucketName,
+        region = self._get_region(bucketName)
+        url = get_target_url(self._endpoint_url,
+                             bucketName=bucketName,
                              query={"acl": None})
 
         headers = {
             'x-amz-acl': acl,
         }
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
@@ -307,14 +350,19 @@ class Minio(object):
         if offset is 0 and length is not 0:
             request_range = "0-" + str(length - 1)
 
-        url = get_target_url(self._endpoint_url, bucketName=bucketName, objectName=objectName)
+        region = self._get_region(bucketName)
+        url = get_target_url(self._endpoint_url,
+                             bucketName=bucketName,
+                             objectName=objectName)
         headers = {}
 
         if request_range:
             headers['Range'] = 'bytes=' + request_range
 
         method = 'GET'
-        presign_url = presign_v4(method=method, url=url, headers=headers,
+        presign_url = presign_v4(method=method, url=url,
+                                 region=region,
+                                 headers=headers,
                                  access_key=self._access_key,
                                  secret_key=self._secret_key,
                                  expires=expires,
@@ -331,44 +379,50 @@ class Minio(object):
         is_valid_bucket_name(bucketName)
         is_non_empty_string(objectName)
 
-        url = get_target_url(self._endpoint_url, bucketName=bucketName, objectName=objectName)
+        region = self._get_region(bucketName)
+        url = get_target_url(self._endpoint_url,
+                             bucketName=bucketName,
+                             objectName=objectName)
         headers = {}
 
         method = 'PUT'
-        presign_url = presign_v4(method=method, url=url, headers=headers,
+        presign_url = presign_v4(method=method, url=url,
+                                 region=region,
+                                 headers=headers,
                                  access_key=self._access_key,
                                  secret_key=self._secret_key,
                                  expires=expires,
         )
         return presign_url
 
-    def presigned_post_policy(self, policy=PostPolicy):
+    def presigned_post_policy(self, policy=None):
         """
         Provides a POST form data that can be used for object upload
         """
-        if not policy.is_expiration_set():
-            raise InvalidArgumentError('Expiration time must be specified')
+        if policy is None:
+            raise InvalidArgumentError('Policy cannot be NoneType.')
 
-        if not policy.is_key_set():
-            raise InvalidArgumentError('object key must be specified')
+        if not policy.is_expiration_set():
+            raise InvalidArgumentError('Expiration time must be specified.')
 
         if not policy.is_bucket_set():
-            raise InvalidArgumentError('bucket name must be specified')
+            raise InvalidArgumentError('bucket name must be specified.')
+
+        if not policy.is_key_set():
+            raise InvalidArgumentError('object key must be specified.')
 
         date = datetime.utcnow()
         iso8601Date = date.strftime("%Y%m%dT%H%M%SZ")
-        url = get_target_url(self._endpoint_url, bucketName=policy.bucket, objectName=policy.key)
-        parsed_url = urlsplit(endpoint)
-        region = get_region(parsed_url.hostname)
-
-        form.policies.append(('eq', '$x-amz-date', iso8601Date))
-        form.policies.append(('eq', '$x-amz-algorithm', 'AWS4-HMAC-SHA256'))
-        form.policies.append(('eq', '$x-amz-credential', generate_credential_string(self._access_key, date, region)))
+        region = self._get_region(policy.form_data['bucket'])
+        credential_string = generate_credential_string(self._access_key, date, region)
+        policy.policies.append(('eq', '$x-amz-date', iso8601Date))
+        policy.policies.append(('eq', '$x-amz-algorithm', 'AWS4-HMAC-SHA256'))
+        policy.policies.append(('eq', '$x-amz-credential', credential_string))
 
         policy_base64 = policy.base64()
         policy.form_data['policy'] = policy_base64
         policy.form_data['x-amz-algorithm'] = 'AWS4-HMAC-SHA256'
-        policy.form_data['x-amz-credential'] = generate_credential_string(self._access_key, date, region)
+        policy.form_data['x-amz-credential'] = credential_string
         policy.form_data['x-amz-date'] = iso8601Date
         policy.form_data['x-amz-signature'] = post_presign_signature(date, region, self._secret_key, policy_base64)
         return policy.form_data
@@ -414,13 +468,18 @@ class Minio(object):
             request_range = '0-' + str(length - 1)
 
         method = 'GET'
-        url = get_target_url(self._endpoint_url, bucketName=bucketName, objectName=objectName)
+        region = self._get_region(bucketName)
+        url = get_target_url(self._endpoint_url,
+                             bucketName=bucketName,
+                             objectName=objectName)
         headers = {}
 
         if request_range:
             headers['Range'] = 'bytes=' + request_range
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
@@ -502,7 +561,7 @@ class Minio(object):
         is_valid_bucket_name(bucketName)
         return ListObjectsIterator(self._http, self._endpoint_url, bucketName,
                                    prefix, recursive, self._access_key,
-                                   self._secret_key)
+                                   self._secret_key, self._get_region(bucketName))
 
     def stat_object(self, bucketName, objectName):
         """
@@ -516,10 +575,15 @@ class Minio(object):
         is_non_empty_string(objectName)
 
         method = 'HEAD'
-        url = get_target_url(self._endpoint_url, bucketName=bucketName, objectName=objectName)
+        region = self._get_region(bucketName)
+        url = get_target_url(self._endpoint_url,
+                             bucketName=bucketName,
+                             objectName=objectName)
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
@@ -548,10 +612,15 @@ class Minio(object):
         is_non_empty_string(objectName)
 
         method = 'DELETE'
-        url = get_target_url(self._endpoint_url, bucketName=bucketName, objectName=objectName)
+        region = self._get_region(bucketName)
+        url = get_target_url(self._endpoint_url,
+                             bucketName=bucketName,
+                             objectName=objectName)
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
@@ -604,7 +673,8 @@ class Minio(object):
                                              bucketName, prefix,
                                              delimiter,
                                              access_key=self._access_key,
-                                             secret_key=self._secret_key)
+                                             secret_key=self._secret_key,
+                                             region=self._get_region(bucketName))
 
     def remove_incomplete_upload(self, bucketName, objectName):
         """
@@ -624,11 +694,10 @@ class Minio(object):
                                                 secret_key=self._secret_key)
         for upload in uploads:
             if objectName == upload.key:
-                self._remove_incomplete_upload(bucket, upload.key, upload.upload_id)
+                self._remove_incomplete_upload(bucketName, objectName, upload.upload_id)
                 return
 
     # helper functions
-
     def _do_put_object(self, bucketName, objectName, data, length,
                        content_type='application/octet-stream',
                        upload_id='', part_number=0):
@@ -636,6 +705,8 @@ class Minio(object):
 
         if len(data) != length:
             raise UnexpectedShortReadError()
+
+        region = self._get_region(bucketName)
 
         if upload_id.strip() and part_number is not 0:
             url = get_target_url(self._endpoint_url, bucketName=bucketName, objectName=objectName,
@@ -652,7 +723,9 @@ class Minio(object):
             'Content-MD5': content_md5
         }
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key,
                           content_hash=content_sha256)
@@ -661,32 +734,33 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers, body=data)
 
         if response.status != 200:
-            parse_error(response, bucket+'/'+key)
+            parse_error(response, bucketName+'/'+objectName)
 
         return response.headers['etag'].replace('"', '')
 
-    def _stream_put_object(self, bucket, key, data, length, content_type='application/octet-stream'):
+    def _stream_put_object(self, bucketName, objectName, data, length, content_type='application/octet-stream'):
         part_size = calculate_part_size(length)
         current_uploads = ListIncompleteUploads(self._http,
                                                 self._endpoint_url,
-                                                bucket,
-                                                key,
+                                                bucketName,
+                                                objectName,
                                                 access_key=self._access_key,
                                                 secret_key=self._secret_key)
 
         upload_id = None
         for upload in current_uploads:
-            if key == upload.key:
+            if objectName == upload.key:
                 upload_id = upload.upload_id
 
         uploaded_parts = {}
         if upload_id is None:
-            upload_id = self._new_multipart_upload(bucket, key, content_type)
+            upload_id = self._new_multipart_upload(bucketName, objectName, content_type)
         else:
             part_iter = ListUploadPartsIterator(self._http, self._endpoint_url,
-                                                bucket, key, upload_id,
+                                                bucketName, objectName, upload_id,
                                                 access_key=self._access_key,
-                                                secret_key=self._secret_key)
+                                                secret_key=self._secret_key,
+                                                region=self._get_region(bucketName))
             for part in part_iter:
                 uploaded_parts[part.part_number] = part
 
@@ -708,7 +782,7 @@ class Minio(object):
                 previously_uploaded_part = uploaded_parts[current_part_number]
             if previously_uploaded_part is None or \
                previously_uploaded_part.etag != current_data_md5:
-                etag = self._do_put_object(bucket=bucket, key=key,
+                etag = self._do_put_object(bucketName=bucketName, objectName=objectName,
                                            length=len(current_data),
                                            data=current_data,
                                            content_type=content_type,
@@ -720,57 +794,65 @@ class Minio(object):
             total_uploaded += len(current_data)
             current_part_number += 1
 
-        self._complete_multipart_upload(bucket, key, upload_id, etags)
+        self._complete_multipart_upload(bucketName, objectName, upload_id, etags)
 
-    def _remove_incomplete_upload(self, bucket, key, upload_id):
+    def _remove_incomplete_upload(self, bucketName, objectName, upload_id):
         method = 'DELETE'
         query = {
             'uploadId': upload_id
         }
-        url = get_target_url(self._endpoint_url, bucketName=bucketName,
+        region = self._get_region(bucketName)
+        url = get_target_url(self._endpoint_url,
+                             bucketName=bucketName,
                              objectName=objectName,
                              query=query)
         headers = {}
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 204:
-            parse_error(response, bucket+'/'+key)
+            parse_error(response, bucketName+'/'+objectName)
 
-    def _new_multipart_upload(self, bucket, key, content_type):
+    def _new_multipart_upload(self, bucketName, objectName, content_type):
         method = 'POST'
         query = {
             'uploads': None
         }
 
-        url = get_target_url(self._endpoint_url, bucketName=bucketName,
+        region = self._get_region(bucketName)
+        url = get_target_url(self._endpoint_url,
+                             bucketName=bucketName,
                              objectName=objectName, query=query)
 
-        headers = {
-            'Content-Type': content_type
-        }
+        headers = { 'Content-Type': content_type }
 
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.urlopen(method, url, headers=headers, body=None)
 
         if response.status != 200:
-            parse_error(response, bucket+'/'+key)
+            parse_error(response, bucketName+'/'+objectName)
 
         return parse_new_multipart_upload(response.data)
 
-    def _complete_multipart_upload(self, bucket, key, upload_id, etags):
+    def _complete_multipart_upload(self, bucketName, objectName, upload_id, etags):
         method = 'POST'
         query = {
             'uploadId': upload_id
         }
-        url = get_target_url(self._endpoint_url, bucketName=bucketName,
+        region = self._get_region(bucketName)
+        url = get_target_url(self._endpoint_url,
+                             bucketName=bucketName,
                              objectName=objectName, query=query)
         headers = {}
 
@@ -782,12 +864,54 @@ class Minio(object):
         headers['Content-Type'] = 'application/xml'
         headers['Content-MD5'] = data_md5
 
-
-        headers = sign_v4(method=method, url=url, headers=headers,
+        headers = sign_v4(method=method, url=url,
+                          region=region,
+                          headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key, content_hash=data_sha256)
 
         response = self._http.urlopen(method, url, headers=headers, body=data)
 
         if response.status != 200:
-            parse_error(response, bucket+'/'+key)
+            parse_error(response, bucketName+'/'+objectName)
+
+    def _set_region(self, bucketName, region=None):
+        ## fetch bucket location only for Amazon S3.
+        if 'amazonaws.com' in self._endpoint_url:
+            if not region:
+                region = self._get_bucket_location(bucketName)
+            self._region_map[bucketName] = region
+            return region
+        return region
+
+    def _get_region(self, bucketName):
+        ## get proper location only for Amazon S3.
+        if 'amazonaws.com' in self._endpoint_url:
+            if self._region_map.has_key(bucketName):
+                return self._region_map[bucketName]
+            return self._set_region(bucketName)
+        return 'us-east-1'
+
+    def _get_bucket_location(self, bucketName):
+        method = 'GET'
+        url = self._endpoint_url + '/' + bucketName + '?location'
+        headers = {}
+        headers = sign_v4(method=method, url=url,
+                          region='us-east-1',
+                          headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key)
+
+        response = self._http.urlopen(method, url, headers=headers)
+
+        if response.status != 200:
+            parse_error(response, bucketName)
+
+        location = parse_location_constraint(response.data)
+        ## location is empty for 'US standard region'
+        if not location:
+            return 'us-east-1'
+        ## location can be 'EU' convert it to meaningful 'eu-west-1'
+        if location is 'EU':
+            return 'eu-west-1'
+        return location

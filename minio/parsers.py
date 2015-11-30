@@ -40,7 +40,6 @@ def parse_list_buckets(data):
                 bucket_list.append(Bucket(name, creation_date))
     return bucket_list
 
-
 def parse_acl(data):
     root = cElementTree.fromstring(data)
 
@@ -77,7 +76,6 @@ def parse_acl(data):
     if authenticated_read is True and authenticated_write is False:
         return Acl.authenticated_read()
     return Acl.private()
-
 
 def parse_list_objects(data, bucketName):
     root = cElementTree.fromstring(data)
@@ -121,7 +119,6 @@ def parse_list_objects(data, bucketName):
 
     return objects, is_truncated, marker
 
-
 def parse_incomplete_uploads(data, bucketName):
     root = cElementTree.fromstring(data)
 
@@ -146,9 +143,7 @@ def parse_incomplete_uploads(data, bucketName):
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}UploadId':
                     upload_id = content.text
             uploads.append(IncompleteUpload(bucketName, objectName, upload_id))
-
     return uploads, is_truncated, key_marker, upload_id_marker
-
 
 def parse_uploaded_parts(data, bucketName, objectName, upload_id):
     root = cElementTree.fromstring(data)
@@ -180,7 +175,6 @@ def parse_uploaded_parts(data, bucketName, objectName, upload_id):
                                     last_modified, size))
     return parts, is_truncated, part_marker
 
-
 def parse_new_multipart_upload(data):
     root = cElementTree.fromstring(data)
 
@@ -189,6 +183,13 @@ def parse_new_multipart_upload(data):
             return contents.text
 
     raise ParseError('uploadId')
+
+def parse_location_constraint(data):
+    content = cElementTree.fromstring(data)
+    if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LocationConstraint':
+        return content.text
+        
+    raise ParseError('location constraint')
 
 def parse_error(response, resource=None):
     if len(response.data) == 0:

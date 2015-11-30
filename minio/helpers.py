@@ -25,42 +25,27 @@ import re
 from .compat import urlsplit, strtype, urlencode
 from .error import InvalidBucketError, InvalidEndpointError
 
-def get_region(hostname):
-    """
-    Get region based on hostname, defaults to "us-east-1" if KeyError
-    """
-    region = {
-        's3.amazonaws.com': 'us-east-1',
-        's3-ap-northeast-1.amazonaws.com': 'ap-northeast-1',
-        's3-ap-southeast-1.amazonaws.com': 'ap-southeast-1',
-        's3-ap-southeast-2.amazonaws.com': 'ap-southeast-2',
-        's3-eu-central-1.amazonaws.com': 'eu-central-1',
-        's3-sa-east-1.amazonaws.com': 'sa-east-1',
-        's3-external-1.amazonaws.com': 'us-east-1',
-        's3-us-west-1.amazonaws.com': 'us-west-1',
-        's3-us-west-2.amazonaws.com': 'us-west-2',
-        's3.cn-north-1.amazonaws.com.cn': 'cn-north-1',
-        's3-fips-us-gov-west-1.amazonaws.com': 'us-gov-west-1',
-    }
-
-    try:
-        return region[hostname]
-    except KeyError:
-        return 'us-east-1'
 
 def get_target_url(url, bucketName=None, objectName=None, query=None):
     """
     Construct target url
     """
-    url_components = [url, '/']
+    parsed_url = urlsplit(url)
+
+    if bucketName is None:
+        url = parsed_url.scheme + '://' + parsed_url.netloc + '/'
+    else:
+        if 'amazonaws.com' in parsed_url.netloc:
+            url = parsed_url.scheme + '://' + bucketName + '.' + parsed_url.netloc
+        else:
+            url = parsed_url.scheme + '://' + parsed_url.netloc + '/' + bucketName
+
+    url_components = [url]
     if objectName is not None:
         objectName = encode_object_name(objectName)
-
-    if bucketName is not None:
-        url_components.append(bucketName)
-        if objectName is not None:
-            url_components.append('/')
-            url_components.append(objectName)
+    if objectName is not None:
+        url_components.append('/')
+        url_components.append(objectName)
 
     if query is not None:
         ordered_query = collections.OrderedDict(sorted(query.items()))
