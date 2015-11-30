@@ -24,7 +24,25 @@ import re
 
 from .compat import urlsplit, strtype, urlencode
 from .error import InvalidBucketError, InvalidEndpointError
+from .definitions import PartMetadata
 
+def parts_manager(data, tmpdata, md5hasher, sha256hasher, part_size=5*1024*1024):
+    """
+    Convenience function for memory efficient temporary files for individual stream parts.
+    """
+    total_read = 0
+    while total_read < part_size:
+        current_data = data.read(1024)
+        if not current_data or len(current_data) == 0:
+            break
+        tmpdata.write(current_data)
+        md5hasher.update(current_data)
+        sha256hasher.update(current_data)
+        total_read = total_read + len(current_data)
+
+    return PartMetadata(md5hasher.digest(),
+                        sha256hasher.digest(),
+                        total_read)
 
 def get_target_url(url, bucketName=None, objectName=None, query=None):
     """
@@ -33,7 +51,7 @@ def get_target_url(url, bucketName=None, objectName=None, query=None):
     parsed_url = urlsplit(url)
 
     if bucketName is None:
-        url = parsed_url.scheme + '://' + parsed_url.netloc + '/'
+        url = parsed_url.scheme + '://' + parsed_url.netloc
     else:
         if 'amazonaws.com' in parsed_url.netloc:
             url = parsed_url.scheme + '://' + bucketName + '.' + parsed_url.netloc
@@ -41,10 +59,11 @@ def get_target_url(url, bucketName=None, objectName=None, query=None):
             url = parsed_url.scheme + '://' + parsed_url.netloc + '/' + bucketName
 
     url_components = [url]
+    url_components.append('/')
+
     if objectName is not None:
         objectName = encode_object_name(objectName)
     if objectName is not None:
-        url_components.append('/')
         url_components.append(objectName)
 
     if query is not None:
@@ -170,6 +189,8 @@ def calculate_part_size(length):
     """
     minimum_part_size = 1024 * 1024 * 5
     maximum_part_size = 1024 * 1024 * 1024 * 5
+    if length == -1:
+        return maximum_part_size
     proposed_part_size = length / 9999 ## make sure last part has enough buffer
     if proposed_part_size > maximum_part_size:
         return maximum_part_size

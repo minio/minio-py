@@ -41,7 +41,7 @@ class RemoveBucket(TestCase):
     def test_remove_bucket_works(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('DELETE', 'http://localhost:9000/hello', {}, 204))
+        mock_server.mock_add_request(MockResponse('DELETE', 'http://localhost:9000/hello/', {}, 204))
         client = minio.Minio('http://localhost:9000')
         client.remove_bucket('hello')
 
@@ -51,6 +51,6 @@ class RemoveBucket(TestCase):
         error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('DELETE', 'http://localhost:9000/1234', {}, 400, content=error_xml))
+        mock_server.mock_add_request(MockResponse('DELETE', 'http://localhost:9000/1234/', {}, 400, content=error_xml))
         client = minio.Minio('http://localhost:9000')
         client.remove_bucket('1234')

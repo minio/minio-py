@@ -25,7 +25,7 @@ class GetURLTests(TestCase):
     def test_get_target_url_works(self):
         url = 'http://localhost:9000'
         eq_(get_target_url(url, 'bucketName'),
-            'http://localhost:9000/bucketName')
+            'http://localhost:9000/bucketName/')
         eq_(get_target_url(url, 'bucketName', 'objectName'),
             'http://localhost:9000/bucketName/objectName')
         eq_(get_target_url(url, 'bucketName', 'objectName', None),

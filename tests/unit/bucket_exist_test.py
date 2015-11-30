@@ -41,7 +41,7 @@ class BucketExists(TestCase):
     def test_bucket_exists_works(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('HEAD', 'http://localhost:9000/hello', {}, 200))
+        mock_server.mock_add_request(MockResponse('HEAD', 'http://localhost:9000/hello/', {}, 200))
         client = minio.Minio('http://localhost:9000')
         result = client.bucket_exists('hello')
         eq_(True, result)
@@ -52,6 +52,6 @@ class BucketExists(TestCase):
         error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('HEAD', 'http://localhost:9000/1234', {}, 400, content=error_xml))
+        mock_server.mock_add_request(MockResponse('HEAD', 'http://localhost:9000/1234/', {}, 400, content=error_xml))
         client = minio.Minio('http://localhost:9000')
         client.bucket_exists('1234')

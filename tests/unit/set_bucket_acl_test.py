@@ -42,7 +42,7 @@ class SetBucketAclTest(TestCase):
     def test_set_bucket_acl_works(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('PUT', 'http://localhost:9000/hello?acl',
+        mock_server.mock_add_request(MockResponse('PUT', 'http://localhost:9000/hello/?acl',
                                                   {'x-amz-acl': 'private'}, 200))
         client = minio.Minio('http://localhost:9000')
         client.set_bucket_acl('hello', Acl.private())
@@ -53,7 +53,7 @@ class SetBucketAclTest(TestCase):
         error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('PUT', 'http://localhost:9000/1234?acl',
+        mock_server.mock_add_request(MockResponse('PUT', 'http://localhost:9000/1234/?acl',
                                                   {'x-amz-acl': 'private'},
                                                   400, content=error_xml))
         client = minio.Minio('http://localhost:9000')

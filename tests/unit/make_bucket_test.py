@@ -42,7 +42,7 @@ class MakeBucket(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('PUT',
-                                                  'http://localhost:9000/hello',
+                                                  'http://localhost:9000/hello/',
                                                   {},
                                                   200))
         minio.Minio('http://localhost:9000')
@@ -55,7 +55,7 @@ class MakeBucket(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('PUT',
-                                                  'http://localhost:9000/hello',
+                                                  'http://localhost:9000/hello/',
                                                   {},
                                                   409, content=error_xml))
         client = minio.Minio('http://localhost:9000')
