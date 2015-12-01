@@ -23,10 +23,10 @@ class Bucket(object):
 
 
 class Object(object):
-    def __init__(self, bucketName, objectName, last_modified, etag, size,
+    def __init__(self, bucket_name, object_name, last_modified, etag, size,
                  content_type=None, is_dir=False):
-        self.bucketName = bucketName
-        self.objectName = objectName
+        self.bucket_name = bucket_name
+        self.object_name = object_name
         self.last_modified = last_modified
         self.etag = etag
         self.size = size
@@ -34,22 +34,22 @@ class Object(object):
         self.is_dir = is_dir
 
     def __str__(self):
-        string_format = '<Object: bucketName: {0} objectName: {1} last_modified: {2}' \
+        string_format = '<Object: bucket_name: {0} object_name: {1} last_modified: {2}' \
                         ' etag: {3} size: {4} content_type: {5}, is_dir: {6}>'
-        return string_format.format(self.bucketName, self.objectName, self.last_modified,
+        return string_format.format(self.bucket_name, self.object_name, self.last_modified,
                                     self.etag, self.size, self.content_type,
                                     self.is_dir)
 
 class IncompleteUpload(object):
-    def __init__(self, bucketName, objectName, upload_id):
-        self.bucketName = bucketName
-        self.objectName = objectName
+    def __init__(self, bucket_name, object_name, upload_id):
+        self.bucket_name = bucket_name
+        self.object_name = object_name
         self.upload_id = upload_id
 
     def __str__(self):
-        string_format = '<IncompleteUpload: bucketName: {0} objectName: {1}' \
+        string_format = '<IncompleteUpload: bucket_name: {0} object_name: {1}' \
                         ' upload_id: {2}>'
-        return string_format.format(self.bucketName, self.objectName, self.upload_id)
+        return string_format.format(self.bucket_name, self.object_name, self.upload_id)
 
 class PartMetadata(object):
     def __init__(self, md5digest, sha256digest, size):
@@ -58,10 +58,10 @@ class PartMetadata(object):
         self.size = size
 
 class UploadPart(object):
-    def __init__(self, bucketName, objectName, upload_id, part_number, etag,
+    def __init__(self, bucket_name, object_name, upload_id, part_number, etag,
                  last_modified, size):
-        self.bucketName = bucketName
-        self.objectName = objectName
+        self.bucket_name = bucket_name
+        self.object_name = object_name
         self.upload_id = upload_id
         self.part_number = part_number
         self.etag = etag
@@ -69,11 +69,11 @@ class UploadPart(object):
         self.size = size
 
     def __str__(self):
-        string_format = '<UploadPart: bucketName: {0} objectName: {1} upload_id: {2}' \
+        string_format = '<UploadPart: bucket_name: {0} object_name: {1} upload_id: {2}' \
                         ' part_number: {3} etag: {4} last_modified: {5}' \
                         ' size: {6}>'
-        return string_format.format(self.bucketName,
-                                    self.objectName,
+        return string_format.format(self.bucket_name,
+                                    self.object_name,
                                     self.upload_id,
                                     self.part_number,
                                     self.etag,
