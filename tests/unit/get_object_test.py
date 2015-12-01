@@ -18,7 +18,7 @@ from nose.tools import raises
 from unittest import TestCase
 
 from minio import Minio
-from minio.error import ResponseError
+from minio.error import ResponseError, InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
@@ -33,22 +33,3 @@ class GetObjectTest(TestCase):
     def test_object_is_not_empty_string(self):
         client = Minio('http://localhost:9000')
         client.get_object('hello', ' \t \n ')
-
-    @mock.patch('urllib3.PoolManager')
-    def test_get_object_invalid_name(self, mock_connection):
-        mock_server = MockConnection()
-        mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello', {}, 400))
-        client = Minio('http://localhost:9000')
-        client.get_object('1234', 'world')
-
-    @mock.patch('urllib3.PoolManager')
-    @raises(ResponseError)
-    def test_get_object_invalid_name(self, mock_connection):
-        error_xml = generate_error('code', 'message', 'request_id', 'host_id', 'resource')
-        mock_server = MockConnection()
-        mock_connection.return_value = mock_server
-        mock_server.mock_add_request(
-            MockResponse('GET', 'http://localhost:9000/hello/world', {}, 400, content=error_xml))
-        client = Minio('http://localhost:9000')
-        client.get_object('hello', 'world')

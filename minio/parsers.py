@@ -103,7 +103,7 @@ def parse_list_objects(data, bucket_name):
             object_name = None
             last_modified = None
             etag = None
-            size = None
+            size = 0
             for content in contents:
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
                     object_name = urldecode(content.text)
@@ -114,7 +114,7 @@ def parse_list_objects(data, bucket_name):
                     etag = content.text
                     etag = etag.replace('"', '')
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
-                    size = content.text
+                    size = int(content.text)
             objects.append(Object(bucket_name, object_name, last_modified, etag, size, content_type=None))
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}CommonPrefixes':
             for content in contents:
@@ -184,7 +184,7 @@ def parse_list_parts(data, bucket_name, object_name, upload_id):
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
                     last_modified = _parse_date(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
-                    size = content.text
+                    size = int(content.text)
             parts.append(UploadPart(bucket_name, object_name, upload_id, part_number, etag,
                                     last_modified, size))
     return parts, is_truncated, part_marker
