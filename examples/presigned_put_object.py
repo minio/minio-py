@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
+
 from minio import Minio
 
 __author__ = 'minio'
@@ -21,4 +23,5 @@ client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-print client.presigned_put_object('bucketName', 'objectName')
+### Expires in 3 days.
+print client.presigned_put_object('bucketName', 'objectName', datetime.timedelta(days=3))

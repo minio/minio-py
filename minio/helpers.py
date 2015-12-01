@@ -44,27 +44,27 @@ def parts_manager(data, tmpdata, md5hasher, sha256hasher, part_size=5*1024*1024)
                         sha256hasher.digest(),
                         total_read)
 
-def get_target_url(url, bucketName=None, objectName=None, query=None):
+def get_target_url(url, bucket_name=None, object_name=None, query=None):
     """
     Construct target url
     """
     parsed_url = urlsplit(url)
 
-    if bucketName is None:
+    if bucket_name is None:
         url = parsed_url.scheme + '://' + parsed_url.netloc
     else:
         if 'amazonaws.com' in parsed_url.netloc:
-            url = parsed_url.scheme + '://' + bucketName + '.' + parsed_url.netloc
+            url = parsed_url.scheme + '://' + bucket_name + '.' + parsed_url.netloc
         else:
-            url = parsed_url.scheme + '://' + parsed_url.netloc + '/' + bucketName
+            url = parsed_url.scheme + '://' + parsed_url.netloc + '/' + bucket_name
 
     url_components = [url]
     url_components.append('/')
 
-    if objectName is not None:
-        objectName = encode_object_name(objectName)
-    if objectName is not None:
-        url_components.append(objectName)
+    if object_name is not None:
+        object_name = encode_object_name(object_name)
+    if object_name is not None:
+        url_components.append(object_name)
 
     if query is not None:
         ordered_query = collections.OrderedDict(sorted(query.items()))
@@ -122,15 +122,12 @@ def is_valid_bucket_name(bucket_name):
     "." character because these will cause SSL cert validation
     problems if we try to use virtual-hosting style addressing.
     """
-    validbucket = re.compile('[a-z0-9][a-z0-9\\-]*[a-z0-9]')
+    validbucket = re.compile('^[a-zA-Z][a-zA-Z0-9\\-]+[a-zA-Z0-9]$')
     if '.' in bucket_name:
         raise InvalidBucketError('bucket')
     if len(bucket_name) < 3 or len(bucket_name) > 63:
         # Wrong length
         raise InvalidBucketError('bucket')
-    if len(bucket_name) == 1:
-        if not bucket_name.isalnum():
-            raise InvalidBucketError('bucket')
     match = validbucket.match(bucket_name)
     if match is None or match.end() != len(bucket_name):
         raise InvalidBucketError('bucket')
@@ -144,12 +141,12 @@ def is_non_empty_string(input_string):
     if not input_string.strip():
         raise ValueError()
 
-def encode_object_name(objectName):
+def encode_object_name(object_name):
     """
     url encode object name
     """
-    is_non_empty_string(objectName)
-    return urlencode(objectName)
+    is_non_empty_string(object_name)
+    return urlencode(object_name)
 
 def get_sha256(content):
     """
