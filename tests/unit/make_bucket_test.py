@@ -18,23 +18,21 @@ import mock
 from nose.tools import raises
 from unittest import TestCase
 
-from minio import minio
+from minio import Minio
 from minio.error import ResponseError, InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
-__author__ = 'minio'
-
 class MakeBucket(TestCase):
     @raises(TypeError)
     def test_bucket_is_string(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.make_bucket(1234)
 
     @raises(InvalidBucketError)
     def test_bucket_is_not_empty_string(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.make_bucket('  \t \n  ')
 
     @mock.patch('urllib3.PoolManager')
@@ -45,7 +43,7 @@ class MakeBucket(TestCase):
                                                   'http://localhost:9000/hello/',
                                                   {},
                                                   200))
-        minio.Minio('http://localhost:9000')
+        Minio('http://localhost:9000')
 
     @mock.patch('urllib3.PoolManager')
     @raises(ResponseError)
@@ -58,5 +56,5 @@ class MakeBucket(TestCase):
                                                   'http://localhost:9000/hello/',
                                                   {},
                                                   409, content=error_xml))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.make_bucket('hello')

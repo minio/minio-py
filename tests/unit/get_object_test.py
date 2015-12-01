@@ -17,21 +17,21 @@ import mock
 from nose.tools import raises
 from unittest import TestCase
 
-from minio import minio, ResponseError
+from minio import Minio
+from minio.error import ResponseError
+
 from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
-
-__author__ = 'minio'
 
 class GetObjectTest(TestCase):
     @raises(TypeError)
     def test_object_is_string(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.get_object('hello', 1234)
 
     @raises(ValueError)
     def test_object_is_not_empty_string(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.get_object('hello', ' \t \n ')
 
     @mock.patch('urllib3.PoolManager')
@@ -39,7 +39,7 @@ class GetObjectTest(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello', {}, 400))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.get_object('1234', 'world')
 
     @mock.patch('urllib3.PoolManager')
@@ -50,5 +50,5 @@ class GetObjectTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('GET', 'http://localhost:9000/hello/world', {}, 400, content=error_xml))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.get_object('hello', 'world')

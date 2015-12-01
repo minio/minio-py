@@ -19,9 +19,8 @@ from nose.tools import eq_
 from unittest import TestCase
 
 from minio.generators import ListUploadPartsIterator
-from .minio_mocks import MockResponse, MockConnection
 
-__author__ = 'minio'
+from .minio_mocks import MockResponse, MockConnection
 
 class ListPartsTest(TestCase):
     @mock.patch('urllib3.PoolManager')

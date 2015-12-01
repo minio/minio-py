@@ -15,9 +15,8 @@
 
 from unittest import TestCase
 from nose.tools import eq_
-from minio.xml_requests import bucket_constraint
 
-__author__ = 'minio'
+from minio.xml_requests import bucket_constraint
 
 class GenerateRequestTest(TestCase):
     def test_generate_bucket_constraint(self):

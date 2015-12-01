@@ -12,21 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Minio Python
--------------------
-
-Minio Python is a library for accessing S3 Compatible Cloud Storage servers.
-
-It is designed to be easy to use and minimal, exposing only the most used functionality.
-"""
-
-import re
 import os
+import re
+import sys
 
-from setuptools import setup, find_packages
+from codecs import open
 
-from minio.__version__ import get_version
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+
+if sys.argv[-1] == 'publish':
+    os.system('python setup.py sdist upload')
+    sys.exit()
+
+version = ''
+with open('minio/__init__.py', 'r') as fd:
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+                        fd.read(), re.MULTILINE).group(1)
+
+with open('README.rst', 'r', 'utf-8') as f:
+    readme = f.read()
+
+packages = [
+    'minio',
+]
+
+requires = [
+    'urllib3',
+    'pytz',
+    'certifi<=2015.4.28',
+]
 
 setup(
     name='minio',
@@ -35,11 +52,11 @@ setup(
     url='https://github.com/minio/minio-py',
     download_url='https://github.com/minio/minio-py',
     author_email='dev@minio.io',
-    version=get_version(),
-    install_requires=['urllib3', 'pytz', 'certifi<=2015.4.28'],
+    version=version,
+    package_dir={'minio': 'minio'},
+    packages=packages,
+    install_requires=requires,
     tests_require=['nose', 'mock'],
-    packages=find_packages(exclude=['tests*', 'integration']),
-    scripts=[],
     setup_requires=['nose>=1.0'],
     license='Apache License 2.0',
     classifiers=[
@@ -49,14 +66,13 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    long_description=open('README.rst').read(),
+    long_description=readme,
     package_data={'': ['LICENSE', 'README.rst']},
     include_package_data=True,
 )

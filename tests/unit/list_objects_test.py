@@ -18,10 +18,8 @@ import mock
 from nose.tools import eq_, timed
 from unittest import TestCase
 
-from minio import minio
+from minio import Minio
 from .minio_mocks import MockResponse, MockConnection
-
-__author__ = 'minio'
 
 class ListObjectsTest(TestCase):
     @mock.patch('urllib3.PoolManager')
@@ -39,7 +37,7 @@ class ListObjectsTest(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket/?max-keys=1000', {}, 200, content=mock_data))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         bucket_iter = client.list_objects('bucket', recursive=True)
         buckets = []
         for bucket in bucket_iter:
@@ -84,7 +82,7 @@ class ListObjectsTest(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket/?max-keys=1000', {}, 200, content=mock_data))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         bucket_iter = client.list_objects('bucket')
         buckets = []
         for bucket in bucket_iter:
@@ -165,7 +163,7 @@ class ListObjectsTest(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket/?max-keys=1000', {}, 200, content=mock_data1))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         bucket_iter = client.list_objects('bucket', recursive=True)
         buckets = []
         for bucket in bucket_iter:

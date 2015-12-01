@@ -19,9 +19,9 @@ from xml.etree import cElementTree
 from xml.etree.cElementTree import ParseError
 from datetime import datetime
 
-from .acl import Acl
-from .compat import urldecode
 from .error import ResponseError
+from .bucket_acl import Acl
+from .compat import urldecode
 from .definitions import (Object, Bucket, IncompleteUpload, UploadPart)
 
 def parse_list_buckets(data):

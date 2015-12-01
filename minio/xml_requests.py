@@ -12,11 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from io import BytesIO
 from xml.etree import ElementTree
-
-__author__ = 'minio'
-
 
 def bucket_constraint(region):
     root = ElementTree.Element('CreateBucketConfiguration', {'xmlns': 'http://s3.amazonaws.com/doc/2006-03-01/'})

@@ -22,7 +22,7 @@ import binascii
 import hashlib
 import re
 
-from .compat import urlsplit, strtype, urlencode
+from .compat import urlsplit, basestring, urlencode
 from .error import InvalidBucketError, InvalidEndpointError
 from .definitions import PartMetadata
 
@@ -92,7 +92,7 @@ def is_valid_endpoint(endpoint):
         and a hostname.
     :return: True if the endpoint is valid. False otherwise.
     """
-    if not isinstance(endpoint, strtype):
+    if not isinstance(endpoint, basestring):
         raise TypeError('endpoint')
 
     parts = urlsplit(endpoint)
@@ -136,7 +136,7 @@ def is_non_empty_string(input_string):
     """
     validate if non empty string
     """
-    if not isinstance(input_string, strtype):
+    if not isinstance(input_string, basestring):
         raise TypeError()
     if not input_string.strip():
         raise ValueError()

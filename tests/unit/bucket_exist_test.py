@@ -18,23 +18,21 @@ import mock
 from nose.tools import raises, eq_
 from unittest import TestCase
 
-from minio import minio
+from minio import Minio
 from minio.error import ResponseError, InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
-__author__ = 'minio'
-
 class BucketExists(TestCase):
     @raises(TypeError)
     def test_bucket_is_string(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.bucket_exists(1234)
 
     @raises(InvalidBucketError)
     def test_bucket_is_not_empty_string(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.bucket_exists('  \t \n  ')
 
     @mock.patch('urllib3.PoolManager')
@@ -42,11 +40,11 @@ class BucketExists(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('HEAD', 'http://localhost:9000/hello/', {}, 200))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         result = client.bucket_exists('hello')
         eq_(True, result)
 
     @raises(InvalidBucketError)
     def test_bucket_exists_invalid_name(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.bucket_exists('1234')
