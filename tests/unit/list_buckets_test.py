@@ -20,10 +20,9 @@ from nose.tools import eq_
 from unittest import TestCase
 from datetime import datetime
 
-from minio import minio
-from .minio_mocks import MockResponse, MockConnection
+from minio import Minio
 
-__author__ = 'minio'
+from .minio_mocks import MockResponse, MockConnection
 
 class ListBucketsTest(TestCase):
     @mock.patch('urllib3.PoolManager')
@@ -33,7 +32,7 @@ class ListBucketsTest(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/', {}, 200, content=mock_data))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         buckets = client.list_buckets()
         eq_([], buckets)
 
@@ -46,7 +45,7 @@ class ListBucketsTest(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/', {}, 200, content=mock_data))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         buckets = client.list_buckets()
 
         eq_(2, len(buckets))

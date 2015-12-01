@@ -17,23 +17,21 @@ import mock
 from nose.tools import raises, eq_
 from unittest import TestCase
 
-from minio import minio
+from minio import Minio
 from minio.error import InvalidBucketError
-from minio.acl import Acl
+from minio.bucket_acl import Acl
 
 from .minio_mocks import MockResponse, MockConnection
-
-__author__ = 'minio'
 
 class GetBucketAclTest(TestCase):
     @raises(TypeError)
     def test_bucket_is_string(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.get_bucket_acl(1234)
 
     @raises(InvalidBucketError)
     def test_bucket_is_not_empty_string(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.get_bucket_acl('  \t \n  ')
 
     @mock.patch('urllib3.PoolManager')
@@ -74,7 +72,7 @@ class GetBucketAclTest(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello/?acl', {}, 200, content=content))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         acl = client.get_bucket_acl('hello')
         eq_(Acl.public_read_write(), acl)
 
@@ -108,7 +106,7 @@ class GetBucketAclTest(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello/?acl', {}, 200, content=content))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         acl = client.get_bucket_acl('hello')
         eq_(Acl.public_read(), acl)
 
@@ -142,7 +140,7 @@ class GetBucketAclTest(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello/?acl', {}, 200, content=content))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         acl = client.get_bucket_acl('hello')
         eq_(Acl.authenticated_read(), acl)
 
@@ -169,6 +167,6 @@ class GetBucketAclTest(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/hello/?acl', {}, 200, content=content))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         acl = client.get_bucket_acl('hello')
         eq_(Acl.private(), acl)

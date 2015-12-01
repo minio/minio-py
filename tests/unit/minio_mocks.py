@@ -15,8 +15,6 @@
 
 from nose.tools import eq_
 
-__author__ = 'minio'
-
 class MockResponse(object):
     def __init__(self, method, url, headers, status_code, response_headers=None,
                  content=None):

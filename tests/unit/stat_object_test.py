@@ -19,28 +19,26 @@ import mock
 from nose.tools import raises
 from unittest import TestCase
 
-from minio import minio
+from minio import Minio
 from minio.error import ResponseError, InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
-__author__ = 'minio'
-
 class StatObject(TestCase):
     @raises(TypeError)
     def test_object_is_string(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.stat_object('hello', 1234)
 
     @raises(ValueError)
     def test_object_is_not_empty_string(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.stat_object('hello', '  \t \n  ')
 
     @raises(InvalidBucketError)
     def test_stat_object_invalid_name(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.stat_object('1234', 'world')
 
     @mock.patch('urllib3.PoolManager')
@@ -55,5 +53,5 @@ class StatObject(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('HEAD', 'http://localhost:9000/hello/world', {}, 200,
                                                   response_headers=mock_headers))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.stat_object('hello', 'world')

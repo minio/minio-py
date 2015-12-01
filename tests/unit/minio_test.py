@@ -17,7 +17,7 @@ from unittest import TestCase
 
 from nose.tools import *
 
-from minio import minio, get_version
+from minio import Minio, __version__
 from minio.error import InvalidEndpointError
 from minio.helpers import get_target_url
 
@@ -42,30 +42,30 @@ class GetURLTests(TestCase):
 
     @raises(TypeError)
     def test_minio_requires_string(self):
-        minio.Minio(10)
+        Minio(10)
 
     @raises(InvalidEndpointError)
     def test_minio_requires_scheme(self):
-        minio.Minio('play.minio.io')
+        Minio('play.minio.io')
 
     @raises(InvalidEndpointError)
     def test_minio_requires_netloc(self):
-        minio.Minio('http://')
+        Minio('http://')
 
 
 class UserAgentTests(TestCase):
     def test_default_user_agent(self):
-        client = minio.Minio('http://localhost')
-        eq_(client._user_agent, 'minio-py/' + get_version()+ ' (' + \
+        client = Minio('http://localhost')
+        eq_(client._user_agent, 'minio-py/' + __version__ + ' (' + \
             platform.system() + \
             '; ' + platform.machine() + ')')
 
     def test_set_app_info(self):
-        client = minio.Minio('http://localhost')
-
-        expected_user_agent = 'minio-py/' + get_version() + ' (' + \
+        client = Minio('http://localhost')        
+        expected_user_agent = 'minio-py/' + __version__  + ' (' + \
             platform.system() + '; ' + \
             platform.machine() + ')'
+        
         expected_user_agent += ' hello/1.0.0 (World; Edition)'
 
         client.set_app_info('hello', '1.0.0', ['World', 'Edition'])
@@ -73,20 +73,20 @@ class UserAgentTests(TestCase):
 
     @raises(TypeError)
     def test_set_app_info_requires_string_name(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.set_app_info(10, '1.0.0', ['World', 'Edition'])
 
     @raises(ValueError)
     def test_set_app_info_requires_non_empty_name(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.set_app_info('', '1.0.0', ['World', 'Edition'])
 
     @raises(TypeError)
     def test_set_app_info_requires_version(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.set_app_info('hello', 10, ['World', 'Edition'])
 
     @raises(ValueError)
     def test_set_app_info_requires_non_empty_version(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.set_app_info('hello', '', ['World', 'Edition'])

@@ -15,7 +15,7 @@
 
 from minio import Minio
 
-__author__ = 'minio'
+__author__ = 'Minio, Inc.'
 
 client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',

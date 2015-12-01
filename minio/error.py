@@ -13,6 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+minio.error
+~~~~~~~~~~~~~~~~~~~
+
+Custom Exception classes for Minio specific errors.
+"""
+
 class InvalidEndpointError(Exception):
     def __init__(self, message, **kwargs):
         self.message = message

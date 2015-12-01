@@ -12,33 +12,32 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest import TestCase
 
 import mock
+
+from unittest import TestCase
 from nose.tools import raises
 
-from minio import minio
+from minio import Minio
 from minio.error import ResponseError, InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
-__author__ = 'minio'
-
 class StatObject(TestCase):
     @raises(TypeError)
     def test_object_is_string(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.remove_object('hello', 1234)
 
     @raises(ValueError)
     def test_object_is_not_empty_string(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.remove_object('hello', '  \t \n  ')
 
     @raises(InvalidBucketError)
     def test_remove_bucket_invalid_name(self):
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.remove_object('1234', 'world')
 
     @mock.patch('urllib3.PoolManager')
@@ -46,5 +45,5 @@ class StatObject(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('DELETE', 'http://localhost:9000/hello/world', {}, 204))
-        client = minio.Minio('http://localhost:9000')
+        client = Minio('http://localhost:9000')
         client.remove_object('hello', 'world')

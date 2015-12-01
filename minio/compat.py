@@ -13,26 +13,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+pythoncompat
+"""
+
 import sys
 
-try:
-    from urllib.parse import urlsplit
-except ImportError:  # python 2
+# -------
+# Pythons
+# -------
+
+# Syntax sugar.
+_ver = sys.version_info
+
+#: Python 2.x?
+is_py2 = (_ver[0] == 2)
+
+#: Python 3.x?
+is_py3 = (_ver[0] == 3)
+
+if is_py2:
+    from urllib import pathname2url as urlencode
+    from urllib import url2pathname as urldecode
     from urlparse import urlsplit
 
-try:
+    builtin_str = str
+    bytes = str
+    str = unicode
+    basestring = basestring
+    numeric_types = (int, long, float)
+
+elif is_py3:
     from urllib.request import pathname2url as urlencode
-except ImportError:  # python 2
-    from urllib import pathname2url as urlencode
-
-try:
     from urllib.request import url2pathname as urldecode
-except ImportError:  # python 2
-    from urllib import url2pathname as urldecode
+    from urllib.parse import urlsplit
 
-
-strtype = None
-if sys.version_info < (3, 0):
-    strtype = basestring
-else:
-    strtype = str
+    builtin_str = str
+    str = str
+    bytes = bytes
+    basestring = (str, bytes)
+    numeric_types = (int, float)

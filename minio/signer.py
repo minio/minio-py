@@ -20,7 +20,7 @@ import binascii
 
 from datetime import datetime
 from .error import InvalidArgumentError
-from .compat import urlsplit, strtype, urlencode
+from .compat import urlsplit, basestring, urlencode
 
 def post_presign_signature(date, region, secret_key, policy_str):
     signing_key = generate_signing_key(date, region, secret_key)
@@ -214,7 +214,7 @@ def generate_canonical_request(method, parsed_url, headers, content_sha256):
     header_lines = []
     for header in headers:
         value = headers[header]
-        if isinstance(value, strtype):
+        if isinstance(value, basestring):
             value = value.strip()
         header = header.lower().strip()
         signed_headers.append(header)

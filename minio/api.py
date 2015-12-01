@@ -13,41 +13,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+"""
+minio.api
+~~~~~~~~~~~~
+
+This module implements the API.
+
+:copyright: (c) 2015 by Minio, Inc.
+:license: Apache 2.0, see LICENSE for more details.
+
+"""
+
+### Standard python packages
 import sys
 import io
 import platform
-import threading
 import tempfile
 import hashlib
-
-import urllib3
-import certifi
 from datetime import datetime, timedelta
 
-__author__ = "Minio, Inc."
+### Dependencies
+import urllib3
+import certifi
 
-from io import RawIOBase
+### Internal imports
+from . import __version__
+from .compat import urlsplit
 
-from .__version__ import get_version
-from .acl import is_valid_acl
-from .compat import urlsplit, strtype
+from .error import ResponseError
+from .bucket_acl import Acl
+from .bucket_acl import is_valid_acl
+
+from .definitions import Object
+from .post_policy import PostPolicy
 from .generators import (ListObjectsIterator, ListIncompleteUploadsIterator, ListUploadPartsIterator)
+
+from .parsers import (parse_list_buckets, parse_acl, parse_error,
+                      parse_new_multipart_upload, parse_location_constraint)
 from .helpers import (get_target_url, is_non_empty_string, is_valid_endpoint, get_sha256,
                       encode_to_base64, get_md5, calculate_part_size, encode_to_hex,
                       is_valid_bucket_name, parts_manager)
-from .parsers import (parse_list_buckets, parse_acl, parse_error,
-                      parse_new_multipart_upload, parse_location_constraint)
-from .error import ResponseError
-from .definitions import Object
+
 from .signer import sign_v4, presign_v4, generate_credential_string, post_presign_signature
 from .xml_requests import bucket_constraint, get_complete_multipart_upload
-from .post_policy import PostPolicy
-from .acl import Acl
 
 class Minio(object):
     def __init__(self, endpoint, access_key=None, secret_key=None):
-        """
-        Creates a new minio client.
+        """Constructs a :class:`Minio <Minio>`.
 
         Examples:
           client = Minio('https://play.minio.io:9000')
@@ -56,7 +69,7 @@ class Minio(object):
         :param endpoint: A string of the URL of the cloud storage server.
         :param access_key: Access key to sign self._http.request with.
         :param secret_key: Secret key to sign self._http.request with.
-        :return: Minio object
+        :return: :class:`Minio <Minio>` object
         """
         is_valid_endpoint(endpoint)
 
@@ -65,7 +78,7 @@ class Minio(object):
         self._endpoint_url = url_components.geturl()
         self._access_key = access_key
         self._secret_key = secret_key
-        self._user_agent = 'minio-py/' + get_version() + \
+        self._user_agent = 'minio-py/' + __version__ + \
                            ' (' + platform.system() + '; ' + \
                            platform.machine() + ')'
 
@@ -564,7 +577,6 @@ class Minio(object):
         if length > 5 * 1024 * 1024:
             return self._stream_put_object(bucket_name, object_name, data, length, content_type)
 
-        # reference 'file' for python 2.7 compatibility, RawIOBase for 3.X
         current_data = data.read(length)
         current_data_md5_base64 = encode_to_base64(get_md5(current_data))
         current_data_sha256_hex = encode_to_hex(get_sha256(current_data))

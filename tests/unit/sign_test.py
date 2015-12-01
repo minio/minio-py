@@ -20,13 +20,11 @@ from datetime import datetime
 from nose.tools import eq_, raises
 import pytz as pytz
 
-from minio.signer import generate_canonical_request, generate_string_to_sign, \
-    generate_signing_key, generate_authorization_header, presign_v4
+from minio.signer import (generate_canonical_request, generate_string_to_sign,
+                          generate_signing_key, generate_authorization_header,
+                          presign_v4)
 from minio.error import InvalidArgumentError
-
-from .compat import urlsplit
-
-__author__ = 'minio'
+from minio.compat import urlsplit
 
 empty_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 dt = datetime(2015, 6, 20, 1, 2, 3, 0, pytz.utc)
