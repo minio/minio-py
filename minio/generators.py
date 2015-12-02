@@ -21,8 +21,7 @@ This module contains core iterators.
 """
 
 from .helpers import get_target_url
-from .parsers import (parse_list_objects, parse_error,
-                      parse_list_multipart_uploads, parse_list_parts)
+from .parsers import (parse_list_objects, parse_list_multipart_uploads, parse_list_parts)
 
 from .signer import sign_v4
 
@@ -102,7 +101,8 @@ class ListObjectsIterator(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, self._bucket_name)
+            response_error = ResponseError(response)
+            response_error.get(self._bucket_name)
 
         return parse_list_objects(response.data, bucket_name=self._bucket_name)
 
@@ -192,7 +192,8 @@ class ListIncompleteUploadsIterator(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, self._bucket_name)
+            response_error = ResponseError(response)
+            response_error.get(self._bucket_name)
 
         return parse_list_multipart_uploads(response.data, bucket_name=self._bucket_name)
 
@@ -281,7 +282,8 @@ class ListUploadPartsIterator(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, self._bucket_name+"/"+self._object_name)
+            response_error = ResponseError(response)
+            response_error.get(self._bucket_name, self._object_name)
 
         return parse_list_parts(response.data, bucket_name=self._bucket_name,
                                 object_name=self._object_name, upload_id=self._upload_id)

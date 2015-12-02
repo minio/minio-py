@@ -23,7 +23,7 @@ This module contains HTTPReadSeeker implementation which powers resumable downlo
 from __future__ import absolute_import
 import io
 
-from .parsers import parse_error
+from .error import ResponseError
 
 class HTTPReadSeeker(io.IOBase):
     """
@@ -34,8 +34,8 @@ class HTTPReadSeeker(io.IOBase):
     framework.
 
     :param api :class:`Minio <Minio>`
-    :param bucket_name
-    :param object_name
+    :param bucket_name: Bucket name of which the object is part of.
+    :param object_name: Object name for which :class:`HTTPReadSeeker` is created.
     """
     def __init__(self, api, bucket_name, object_name):
         self._api = api
@@ -112,6 +112,7 @@ class HTTPReadSeeker(io.IOBase):
         A generator wrapper for the read() method. A call will block until
         ``amt`` bytes have been read from the connection or until the
         connection is closed.
+            Raise :exc:`ResponseError` on failure.
         :param amt:
             How much of the content to read. The generator will return up to
             much data per iteration, but may return less.
@@ -121,7 +122,8 @@ class HTTPReadSeeker(io.IOBase):
                                                      self._object_name,
                                                      self._offset, 0)
             if response.status != 206 and response.status != 200:
-                parse_error(response, self._bucket_name+'/'+self._object_name)
+                response_error = ResponseError(response)
+                response_error.get(self._bucket_name, self._object_name)
 
             self._reader = response
             self._is_read = True
@@ -132,6 +134,7 @@ class HTTPReadSeeker(io.IOBase):
     def read(self, amt=None):
         """
         Similar to :meth:`urllib3.HTTPResponse.read`, but with options amt option.
+            Raise :exc:`ResponseError` on failure.
         :param amt:
             How much of the content to read.
         """
@@ -144,7 +147,8 @@ class HTTPReadSeeker(io.IOBase):
                                                          self._offset, 0)
 
             if response.status != 206 and response.status != 200:
-                parse_error(response, self._bucket_name+'/'+self._object_name)
+                response_error = ResponseError(response)
+                response_error.get(self._bucket_name, self._object_name)
 
             self._reader = response
             self._is_read = True
