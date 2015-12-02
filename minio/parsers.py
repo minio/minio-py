@@ -253,62 +253,6 @@ def parse_location_constraint(data):
 
     raise ParseError('location constraint')
 
-def parse_error(response, resource=None):
-    """
-    Parser for error xml response.
-
-    Raises an exception of :class:`ResponseError <ResponseError>`
-
-    :param data: Response data for error xml.
-    """
-    if len(response.data) == 0:
-        amz_request_id = ''
-        amz_host_id = ''
-        if 'x-amz-request-id' in response.headers:
-            amz_request_id = response.headers['x-amz-request-id']
-        if 'x-amz-id-2' in response.headers:
-            amz_host_id = response.headers['x-amz-id-2']
-        if response.status == 405 or response.status == 501:
-            raise ResponseError('MethodNotAllowedException', response.reason,
-                                amz_request_id, amz_host_id, resource, None)
-        if response.status == 404:
-            raise ResponseError('ObjectNotFoundException', response.reason,
-                                amz_request_id, amz_host_id, resource, None)
-        if response.status == 403:
-            raise ResponseError('AccessDeniedException', response.reason,
-                                amz_request_id, amz_host_id, resource, None)
-        if response.status == 400:
-            raise ResponseError('BadRequestException', response.reason,
-                                amz_request_id, amz_host_id, resource, None)
-        if response.status == 301 or response.status == 307:
-            raise ResponseError('Redirect', response.reason,
-                                amz_request_id, amz_host_id, resource, None)
-        raise ResponseError('UnknownException', response.reason,
-                            amz_request_id, amz_host_id, resource, None)
-
-    code = None
-    message = None
-    request_id = None
-    host_id = None
-    resource = None
-
-    root = cElementTree.fromstring(response.data)
-    for attribute in root:
-        if attribute.tag == 'Code':
-            code = attribute.text
-        if attribute.tag == 'Message':
-            message = attribute.text
-        if attribute.tag == 'RequestId':
-            request_id = attribute.text
-        if attribute.tag == 'HostId':
-            host_id = attribute.text
-        if attribute.tag == 'Resource':
-            resource = attribute.text
-
-    raise ResponseError(code, message,
-                        request_id, host_id, resource,
-                        response.data)
-
 def _iso8601_to_localized_time(date_string):
     """
     Convert iso8601 date string into UTC time.

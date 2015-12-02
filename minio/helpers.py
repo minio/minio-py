@@ -115,7 +115,7 @@ def is_valid_endpoint(endpoint):
 
     :type endpoint: string
     :param endpoint: An endpoint. Must have at least a scheme and a hostname.
-    :return: True if the endpoint is valid. Raises *InvalidEndpointError* otherwise.
+    :return: True if the endpoint is valid. Raise :exc:`InvalidEndpointError` otherwise.
     """
     if not isinstance(endpoint, basestring):
         raise TypeError('endpoint')
@@ -153,7 +153,7 @@ def is_valid_bucket_name(bucket_name):
     problems if we try to use virtual-hosting style addressing.
 
     :param bucket_name: Bucket name in *str*.
-    :return: True if the bucket is valid. Raises *InvalidBucketError* otherwise.
+    :return: True if the bucket is valid. Raise :exc:`InvalidBucketError` otherwise.
     """
     validbucket = re.compile('^[a-zA-Z][a-zA-Z0-9\\-]+[a-zA-Z0-9]$')
     if '.' in bucket_name:
@@ -174,7 +174,7 @@ def is_non_empty_string(input_string):
     Validate if non empty string
 
     :param input_string: Input is a *str*.
-    :return: True if input is string. Raises *err* otherwise.
+    :return: True if input is string. Raise :exc:`Exception` otherwise.
     """
     if not isinstance(input_string, basestring):
         raise TypeError()

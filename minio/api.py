@@ -51,8 +51,8 @@ from .definitions import Object
 from .post_policy import PostPolicy
 from .generators import (ListObjectsIterator, ListIncompleteUploadsIterator, ListUploadPartsIterator)
 
-from .parsers import (parse_list_buckets, parse_acl, parse_error,
-                      parse_new_multipart_upload, parse_location_constraint)
+from .parsers import (parse_list_buckets, parse_acl, parse_new_multipart_upload,
+                      parse_location_constraint)
 from .helpers import (get_target_url, is_non_empty_string, is_valid_endpoint, get_sha256,
                       encode_to_base64, get_md5, calculate_part_size, encode_to_hex,
                       is_valid_bucket_name, parts_manager)
@@ -172,7 +172,8 @@ class Minio(object):
                                       headers=headers)
 
         if response.status != 200:
-            parse_error(response, bucket_name)
+            response_error = ResponseError(response)
+            response_error.put(bucket_name)
 
         self._set_region(bucket_name, region=location)
 
@@ -204,7 +205,8 @@ class Minio(object):
 
         if response.status != 200:
             try:
-                parse_error(response)
+                response_error = ResponseError(response)
+                response_error.get()
             except ResponseError as err:
                 if err.code == 'Redirect':
                     err.code = 'AccessDeniedException'
@@ -233,9 +235,8 @@ class Minio(object):
 
         response = self._http.request(method, url, headers=headers)
         if response.status != 200:
-            if response.status == "404":
-                return False
-            parse_error(response, bucket_name)
+            response_error = ResponseError(response)
+            response_error.head(bucket_name)
 
         return True
 
@@ -262,7 +263,8 @@ class Minio(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 204:
-            parse_error(response, bucket_name)
+            response_error = ResponseError(response)
+            response_error.delete(bucket_name)
 
     def get_bucket_acl(self, bucket_name):
         """
@@ -294,7 +296,8 @@ class Minio(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, bucket_name)
+            response_error = ResponseError(response)
+            response_error.get(bucket_name)
 
         return parse_acl(response.data)
 
@@ -339,7 +342,8 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, bucket_name)
+            response_error = ResponseError(response)
+            response_error.put(bucket_name)
 
     def presigned_get_object(self, bucket_name, object_name, expires=timedelta(days=7)):
         """
@@ -568,7 +572,8 @@ class Minio(object):
                                       preload_content=False)
 
         if response.status != 206 and response.status != 200:
-            parse_error(response, bucket_name+'/'+object_name)
+            response_error = ResponseError(response)
+            response_error.get(bucket_name, object_name)
 
         return response
 
@@ -679,7 +684,8 @@ class Minio(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, bucket_name+'/'+object_name)
+            response_error = ResponseError(response)
+            response_error.head(bucket_name, object_name)
 
         http_time_format = "%a, %d %b %Y %H:%M:%S GMT"
         etag = response.headers['etag'].replace('"', '')
@@ -718,7 +724,8 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers)
 
         if response.status != 204:
-            parse_error(response, bucket_name+'/'+object_name)
+            response_error = ResponseError(response)
+            response_error.delete(bucket_name, object_name)
 
     def list_incomplete_uploads(self, bucket_name, prefix=None, recursive=False):
         """
@@ -821,7 +828,8 @@ class Minio(object):
 
         response = self._http.urlopen(method, url, headers=headers, body=data)
         if response.status != 200:
-            parse_error(response, bucket_name+'/'+object_name)
+            response_error = ResponseError(response)
+            response_error.put(bucket_name, object_name)
 
         return response.headers['etag'].replace('"', '')
 
@@ -927,7 +935,8 @@ class Minio(object):
         response = self._http.request(method, url, headers=headers)
 
         if response.status != 204:
-            parse_error(response, bucket_name+'/'+object_name)
+            response_error = ResponseError(response)
+            response_error.delete(bucket_name, object_name)
 
     def _new_multipart_upload(self, bucket_name, object_name, content_type):
         method = 'POST'
@@ -951,7 +960,8 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers, body=None)
 
         if response.status != 200:
-            parse_error(response, bucket_name+'/'+object_name)
+            response_error = ResponseError(response)
+            response_error.post(bucket_name, object_name)
 
         return parse_new_multipart_upload(response.data)
 
@@ -984,7 +994,8 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers, body=data)
 
         if response.status != 200:
-            parse_error(response, bucket_name+'/'+object_name)
+            response_error = ResponseError(response)
+            response_error.post(bucket_name, object_name)
 
     def _set_region(self, bucket_name, region=None):
         ## fetch bucket location only for Amazon S3.
@@ -1016,7 +1027,8 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers)
 
         if response.status != 200:
-            parse_error(response, bucket_name)
+            response_error = ResponseError(response)
+            response_error.get(bucket_name)
 
         location = parse_location_constraint(response.data)
         ## location is empty for 'US standard region'
