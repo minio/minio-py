@@ -13,6 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+"""
+minio.signer
+~~~~~~~~~~~~~~~
+
+This module implements all helpers for AWS Signature version '4' support.
+"""
+
 import collections
 import hashlib
 import hmac
@@ -23,29 +31,47 @@ from .error import InvalidArgumentError
 from .compat import urlsplit, basestring, urlencode
 
 def post_presign_signature(date, region, secret_key, policy_str):
+    """
+    Calculates signature version '4' for POST policy string.
+
+    :param date: datetime formatted date.
+    :param region: region of the bucket for the policy.
+    :param secret_key: Amazon S3 secret access key.
+    :param policy_str: policy string.
+    :return: hexlified sha256 signature digest.
+    """
     signing_key = generate_signing_key(date, region, secret_key)
     signature = hmac.new(signing_key, policy_str.encode('utf-8'),
                          hashlib.sha256).hexdigest()
 
     return signature
 
-def presign_v4(method, url, region=None, headers=None, access_key=None, secret_key=None, expires=None):
+def presign_v4(method, url, access_key, secret_key, region=None, headers=None, expires=None):
     """
-    Presignature version 4.
-    """
-    if not access_key or not secret_key:
-        raise InvalidArgumentError('invalid access/secret id')
+    Calculates signature version '4' for regular presigned URLs.
 
-    # verify only if 'None' not on expires with 0 value which should
-    # be an InvalidArgument is handled later below
-    if expires is None:
-        expires = 604800
+    :param method: Method to be presigned examples 'PUT', 'GET'.
+    :param url: URL to be presigned.
+    :param access_key: Access key id for your AWS s3 account.
+    :param secret_key: Secrect access key for your AWS s3 account.
+    :param region: region of the bucket, it is optional.
+    :param headers: any additional HTTP request headers to
+    be presigned, it is optional.
+    :param expires: final expiration of the generated URL. Maximum is 7days.
+    """
+
+    ### Validate input arguments.
+    if not access_key or not secret_key:
+        raise InvalidArgumentError('Invalid access_key/secret_key.')
+
+    if region is None:
+        region = 'us-east-1'
 
     if headers is None:
         headers = {}
 
-    if region is None:
-        region = 'us-east-1'
+    if expires is None:
+        expires = 604800
 
     parsed_url = urlsplit(url)
     content_hash_hex = 'UNSIGNED-PAYLOAD'
@@ -55,12 +81,15 @@ def presign_v4(method, url, region=None, headers=None, access_key=None, secret_k
     iso8601Date = date.strftime("%Y%m%dT%H%M%SZ")
 
     headers_to_sign = dict(headers)
+
+    ### S3 wants us to ignore these headers.
     ignored_headers = ['Authorization', 'Content-Length', 'Content-Type',
                        'User-Agent']
 
     for ignored_header in ignored_headers:
         if ignored_header in headers_to_sign:
             del headers_to_sign[ignored_header]
+    ## Ignore header block ends.
 
     query = {}
     query['X-Amz-Algorithm'] = 'AWS4-HMAC-SHA256'

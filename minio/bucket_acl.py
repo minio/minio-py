@@ -13,6 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+minio.bucket_acl
+~~~~~~~~~~~~~~~~~~~
+
+This module provides bucket :class:`Acl <Acl>` object.
+"""
+
 class Acl(object):
     @staticmethod
     def public_read_write():
@@ -36,7 +43,13 @@ class Acl(object):
 
 
 def is_valid_acl(acl):
+    """
+    Validates input string to be a valid ACL.
+
+    :param acl: ACL string.
+    :return: True if valid, raises :class:`ValueError` otherwise.
+    """
     if acl == Acl.public_read_write() or acl == Acl.public_read() \
             or acl == Acl.authenticated_read() or acl == Acl.private():
-        return
+        return True
     raise ValueError()

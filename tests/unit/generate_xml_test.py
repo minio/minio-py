@@ -16,11 +16,11 @@
 from unittest import TestCase
 from nose.tools import eq_
 
-from minio.xml_requests import bucket_constraint
+from minio.xml_marshal import xml_marshal_bucket_constraint
 
 class GenerateRequestTest(TestCase):
     def test_generate_bucket_constraint(self):
         expected_string = b'<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' \
                           b'<LocationConstraint>region</LocationConstraint></CreateBucketConfiguration>'
-        actual_string = bucket_constraint('region')
+        actual_string = xml_marshal_bucket_constraint('region')
         eq_(expected_string, actual_string)
