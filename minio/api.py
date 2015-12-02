@@ -31,6 +31,7 @@ import io
 import platform
 import tempfile
 import hashlib
+from time import mktime, strptime
 from datetime import datetime, timedelta
 
 ### Dependencies
@@ -41,6 +42,7 @@ import certifi
 from . import __version__
 from .compat import urlsplit
 
+from .io import HTTPReadSeeker
 from .error import ResponseError
 from .bucket_acl import Acl
 from .bucket_acl import is_valid_acl
@@ -493,11 +495,14 @@ class Minio(object):
 
         :param bucket_name: Bucket to read object from
         :param object_name: Name of object to read
-        :return: An iterable containing stream of the data.
+        :return: Returns :class:`HTTPReadSeeker` object.
         """
-        return self.get_partial_object(bucket_name, object_name)
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
 
-    # Object Level
+        api = self
+        return HTTPReadSeeker(api, bucket_name, object_name)
+
     def get_partial_object(self, bucket_name, object_name, offset=0, length=0):
         """
         Retrieves an object from a bucket.
@@ -505,22 +510,43 @@ class Minio(object):
         Optionally takes an offset and length of data to retrieve.
 
         Examples:
-            my_partial_object = minio.get_partial_object('foo', 'bar', 2, 4)
+            partial_object = minio.get_partial_object('foo', 'bar', 2, 4)
 
         :param bucket_name: Bucket to retrieve object from
         :param object_name: Name of object to retrieve
-        :param offset: Optional offset to retrieve bytes from. Must be >= 0
-        :param length: Optional number of bytes to retrieve. Must be > 0
-        :return: An iterable containing a stream of the data.
+        :param offset: Optional offset to retrieve bytes from. Must be >= 0.
+        :param length: Optional number of bytes to retrieve. Must be an integer.
+        :return: Returns :class:`urllib3.response.HTTPResponse` object.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
+        response = _get_partial_object(self, bucket_name, object_name, offset, length)
+        return response
+
+    # Object Level
+    def _get_partial_object(self, bucket_name, object_name, offset=0, length=0):
+        """
+        Retrieves an object from a bucket.
+
+        Optionally takes an offset and length of data to retrieve.
+
+        Examples:
+            partial_object = minio.get_partial_object('foo', 'bar', 2, 4)
+
+        :param bucket_name: Bucket to retrieve object from
+        :param object_name: Name of object to retrieve
+        :param offset: Optional offset to retrieve bytes from. Must be >= 0.
+        :param length: Optional number of bytes to retrieve. Must be an integer.
+        :return: Returns :class:`urllib3.response.HTTPResponse` object.
+        """
         request_range = ''
         if offset is not 0 and length is not 0:
             request_range = str(offset) + '-' + str(offset + length - 1)
         if offset is not 0 and length is 0:
             request_range = str(offset) + '-'
+        if length < 0 and offset == 0:
+            request_range = '%d' % length
         if offset is 0 and length is not 0:
             request_range = '0-' + str(length - 1)
 
@@ -546,7 +572,7 @@ class Minio(object):
         if response.status != 206 and response.status != 200:
             parse_error(response, bucket_name+'/'+object_name)
 
-        return response.stream()
+        return response
 
     def put_object(self, bucket_name, object_name, data, length,
                    content_type='application/octet-stream'):
@@ -657,10 +683,12 @@ class Minio(object):
         if response.status != 200:
             parse_error(response, bucket_name+'/'+object_name)
 
-        content_type = response.headers['content-type']
+        http_time_format = "%a, %d %b %Y %H:%M:%S GMT"
         etag = response.headers['etag'].replace('"', '')
-        size = response.headers['content-length']
-        last_modified = response.headers['last-modified']
+        size = int(response.headers['content-length'])
+        content_type = response.headers['content-type']
+        last_modified = mktime(strptime(response.headers['last-modified'],
+                                        http_time_format))
 
         return Object(bucket_name, object_name, content_type=content_type,
                       last_modified=last_modified, etag=etag, size=size)
@@ -811,7 +839,13 @@ class Minio(object):
             if object_name == upload.object_name:
                 upload_id = upload.upload_id
 
+        ## Initialize variables
         uploaded_parts = {}
+        uploaded_etags = []
+        total_uploaded = 0
+        current_part_number = 1
+
+        ## If upload_id is None its a new multipart upload.
         if upload_id is None:
             upload_id = self._new_multipart_upload(bucket_name, object_name,
                                                    data_content_type)
@@ -821,39 +855,55 @@ class Minio(object):
                                                 access_key=self._access_key,
                                                 secret_key=self._secret_key,
                                                 region=self._get_region(bucket_name))
+            uploaded_parts_size = 0
+            latest_part_number = 0
             for part in part_iter:
+                uploaded_parts_size += part.size
                 uploaded_parts[part.part_number] = part
+                latest_part_number = part.part_number
+                uploaded_etags.append(part.etag)
 
-        total_uploaded = 0
-        current_part_number = 1
-        etags = []
+            if uploaded_parts_size > 0:
+                if data.seekable():
+                    data.seek(uploaded_parts_size, 0)
+                    ## start uploading from next part.
+                    current_part_number = latest_part_number + 1
+                    total_uploaded = uploaded_parts_size
+                else:
+                    ## if input reader not seekable start from beginning.
+                    ## making this code backward compatible with non seekable
+                    ## input streams. Revert current part number to first,
+                    ## to verify and upload.
+                    current_part_number = 1
+                    total_uploaded = 0
+                    uploaded_etags = []
+
         while total_uploaded < data_content_size:
             part = tempfile.NamedTemporaryFile(delete=True)
             part_metadata = parts_manager(data, part, hashlib.md5(), hashlib.sha256(), part_size)
             current_data_md5_hex = encode_to_hex(part_metadata.md5digest)
-            current_data_md5_base64 = encode_to_base64(part_metadata.md5digest)
-            current_data_sha256_hex = encode_to_hex(part_metadata.sha256digest)
-            previously_uploaded_part = None
             if current_part_number in uploaded_parts:
                 previously_uploaded_part = uploaded_parts[current_part_number]
-            if previously_uploaded_part is None or \
-               previously_uploaded_part.etag != current_data_md5_hex:
-                ## Seek back to starting position.
-                part.seek(0)
-                etag = self._do_put_object(bucket_name, object_name, part,
-                                           part_metadata.size,
-                                           current_data_md5_base64,
-                                           current_data_sha256_hex,
-                                           data_content_type=data_content_type,
-                                           upload_id=upload_id,
-                                           part_number=current_part_number)
-            else:
-                etag = previously_uploaded_part.etag
-            etags.append(etag)
-            total_uploaded += part_metadata.size
+                if previously_uploaded_part.etag == current_data_md5_hex:
+                    uploaded_etags.append(previously_uploaded_part.etag)
+                    total_uploaded += previously_uploaded_part.size
+                    continue
+            current_data_md5_base64 = encode_to_base64(part_metadata.md5digest)
+            current_data_sha256_hex = encode_to_hex(part_metadata.sha256digest)
+            ## Seek back to starting position.
+            part.seek(0)
+            etag = self._do_put_object(bucket_name, object_name, part,
+                                       part_metadata.size,
+                                       current_data_md5_base64,
+                                       current_data_sha256_hex,
+                                       data_content_type=data_content_type,
+                                       upload_id=upload_id,
+                                       part_number=current_part_number)
+            uploaded_etags.append(etag)
             current_part_number += 1
+            total_uploaded += part_metadata.size
 
-        self._complete_multipart_upload(bucket_name, object_name, upload_id, etags)
+        self._complete_multipart_upload(bucket_name, object_name, upload_id, uploaded_etags)
 
     def _remove_incomplete_upload(self, bucket_name, object_name, upload_id):
         method = 'DELETE'

@@ -13,14 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from io import BytesIO
+from __future__ import absolute_import
+import io
+
 from xml.etree import ElementTree
 
 def bucket_constraint(region):
     root = ElementTree.Element('CreateBucketConfiguration', {'xmlns': 'http://s3.amazonaws.com/doc/2006-03-01/'})
     location_constraint = ElementTree.SubElement(root, 'LocationConstraint')
     location_constraint.text = region
-    data = BytesIO()
+    data = io.BytesIO()
     ElementTree.ElementTree(root).write(data, encoding=None, xml_declaration=False)
     return data.getvalue()
 
@@ -34,6 +36,6 @@ def get_complete_multipart_upload(etags):
         part_number.text = str(i + 1)
         etag = ElementTree.SubElement(part, 'ETag')
         etag.text = etags[i]
-        data = BytesIO()
+        data = io.BytesIO()
         ElementTree.ElementTree(root).write(data, encoding=None, xml_declaration=False)
     return data.getvalue()
