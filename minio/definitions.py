@@ -13,7 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+minio.definitions
+~~~~~~~~~~~~~~~
+
+This module contains the primary objects that power Minio.
+"""
+
 class Bucket(object):
+    """
+    A bucket metadata :class:`Bucket <Bucket>`.
+
+    :param name: Bucket name.
+    :param created: Bucket creation date.
+    """
     def __init__(self, name, created):
         self.name = name
         self.creation_date = created
@@ -23,6 +36,17 @@ class Bucket(object):
 
 
 class Object(object):
+    """
+    A object metadata :class:`Object <Object>`.
+
+    :param bucket_name: Bucket name.
+    :param object_name: Object name.
+    :param last_modified: Object when it was last modified on server.
+    :param etag: ETag saved on server for the object_name.
+    :param size: Size of the object on server.
+    :param content_type: Optional parameter indicating content type.
+    :param is_dir: Optional parameter differentiating object prefixes.
+    """
     def __init__(self, bucket_name, object_name, last_modified, etag, size,
                  content_type=None, is_dir=False):
         self.bucket_name = bucket_name
@@ -41,6 +65,13 @@ class Object(object):
                                     self.is_dir)
 
 class IncompleteUpload(object):
+    """
+    A partially uploaded object's metadata :class:`IncompleteUpload <IncompleteUpload>`.
+
+    :param bucket_name: Bucket name.
+    :param object_name: Object name.
+    :param upload_id: Partially uploaded object's upload id.
+    """
     def __init__(self, bucket_name, object_name, upload_id):
         self.bucket_name = bucket_name
         self.object_name = object_name
@@ -51,13 +82,18 @@ class IncompleteUpload(object):
                         ' upload_id: {2}>'
         return string_format.format(self.bucket_name, self.object_name, self.upload_id)
 
-class PartMetadata(object):
-    def __init__(self, md5digest, sha256digest, size):
-        self.md5digest = md5digest
-        self.sha256digest = sha256digest
-        self.size = size
-
 class UploadPart(object):
+    """
+    A multipart upload part metadata :class:`UploadPart <UploadPart>`
+
+    :param bucket_name: Bucket name.
+    :param object_name: Object name.
+    :param upload_id: Partially uploaded object's upload id.
+    :param part_number: Part number of the part.
+    :param etag: ETag of the part.
+    :last_modified: Last modified time of the part.
+    :size: Size of the part.
+    """
     def __init__(self, bucket_name, object_name, upload_id, part_number, etag,
                  last_modified, size):
         self.bucket_name = bucket_name

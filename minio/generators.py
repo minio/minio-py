@@ -13,6 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+minio.generators
+~~~~~~~~~~~~~~~~~~~
+
+This module contains core iterators.
+"""
+
 from .helpers import get_target_url
 from .parsers import (parse_list_objects, parse_error,
                       parse_list_multipart_uploads, parse_list_parts)
@@ -21,10 +28,19 @@ from .signer import sign_v4
 
 class ListObjectsIterator(object):
     """
-    Implements list objects iterator generator.
+    Implements list objects iterator for list objects parser.
+
+    :param client: Takes instance of :meth:`urllib3.PoolManager`
+    :param url: Target endpoint url where request is served to.
+    :param bucket_name: Bucket name resource where request will be served from.
+    :param prefix: Prefix name resource for filtering objects.
+    :param recursive: Default is non recursive, set True lists all objects iteratively.
+    :param access_key: Optional if provided requests will be authenticated.
+    :param secret_key: Optional if provided requests will be authenticated.
+    :param region: Optional if provided requests will be served to this region.
     """
-    def __init__(self, client, url, bucket_name, prefix,
-                 recursive, access_key=None, secret_key=None, region='us-east-1'):
+    def __init__(self, client, url, bucket_name, prefix, recursive,
+                 access_key=None, secret_key=None, region='us-east-1'):
         self._http = client
         self._endpoint_url = url
         self._bucket_name = bucket_name
@@ -93,15 +109,24 @@ class ListObjectsIterator(object):
 
 class ListIncompleteUploadsIterator(object):
     """
-    Implements list incomplete uploads iterator generator.
+    Implements list incomplete uploads iterator for list multipart uploads parser.
+
+    :param client: Takes instance of :meth:`urllib3.PoolManager`
+    :param url: Target endpoint url where request is served to.
+    :param bucket_name: Bucket name resource where request will be served from.
+    :param prefix: Prefix name resource for filtering objects.
+    :param delimiter: Default is non recursive, set to *None* to be recursive.
+    :param access_key: Optional if provided requests will be authenticated.
+    :param secret_key: Optional if provided requests will be authenticated.
+    :param region: Optional if provided requests will be served to this region.
     """
-    def __init__(self, client, url, bucket_name, object_name=None, delimiter=None,
+    def __init__(self, client, url, bucket_name, prefix=None, delimiter='/',
                  access_key=None, secret_key=None, region='us-east-1'):
         # from user
         self._http = client
         self._endpoint_url = url
         self._bucket_name = bucket_name
-        self._object_name = object_name
+        self._prefix = prefix
         self._delimiter = delimiter
         self._access_key = access_key
         self._secret_key = secret_key
@@ -144,8 +169,8 @@ class ListIncompleteUploadsIterator(object):
             'uploads': None
         }
         query['max-uploads'] = 1000
-        if self._object_name is not None:
-            query['prefix'] = self._object_name
+        if self._prefix is not None:
+            query['prefix'] = self._prefix
         if self._key_marker is not None:
             query['key-marker'] = self._key_marker
         if self._upload_id_marker is not None:
@@ -174,7 +199,16 @@ class ListIncompleteUploadsIterator(object):
 
 class ListUploadPartsIterator(object):
     """
-    Implements list upload parts iterator generator.
+    Implements list upload parts iterator for list parts parser.
+
+    :param client: Takes instance of :meth:`urllib3.PoolManager`
+    :param url: Target endpoint url where request is served to.
+    :param bucket_name: Bucket name resource where request will be served from.
+    :param object_name: Object name resource where request will be served from.
+    :param upload_id: Upload ID of active multipart to be served.
+    :param access_key: Optional if provided requests will be authenticated.
+    :param secret_key: Optional if provided requests will be authenticated.
+    :param region: Optional if provided requests will be served to this region.
     """
     def __init__(self, client, url, bucket_name, object_name, upload_id,
                  access_key=None, secret_key=None, region='us-east-1'):

@@ -24,12 +24,33 @@ import re
 
 from .compat import urlsplit, basestring, urlencode
 from .error import InvalidBucketError, InvalidEndpointError
-from .definitions import PartMetadata
 
-def parts_manager(data, tmpdata, md5hasher, sha256hasher, part_size=5*1024*1024):
+class PartMetadata(object):
     """
-    Convenience function for memory efficient temporary files for individual stream parts.
+    Parts manager split parts metadata :class:`PartMetadata <PartMetadata>`.
+
+    :param data: Part writer object backed by temporary file.
+    :param md5digest: Md5sum digest of the part.
+    :param sha256digest: Sha256sum digest of the part.
+    :param size: Size of the part.
     """
+    def __init__(self, data, md5digest, sha256digest, size):
+        self.data = data
+        self.md5digest = md5digest
+        self.sha256digest = sha256digest
+        self.size = size
+
+def parts_manager(data, part_size=5*1024*1024):
+    """
+    Reads data and provides temporary files of a given size.
+
+    :param data: Input reader object which needs to be saved.
+    :param part_size: Individual part number defaults to 5MB.
+    :return: Returns :class:`PartMetadata <PartMetadata>`
+    """
+    tmpdata = tempfile.NamedTemporaryFile(delete=True)
+    md5hasher = hashlib.md5()
+    sha256hasher = hashlib.sha256()
     total_read = 0
     while total_read < part_size:
         current_data = data.read(1024)
@@ -40,16 +61,20 @@ def parts_manager(data, tmpdata, md5hasher, sha256hasher, part_size=5*1024*1024)
         sha256hasher.update(current_data)
         total_read = total_read + len(current_data)
 
-    return PartMetadata(md5hasher.digest(),
-                        sha256hasher.digest(),
-                        total_read)
+    return PartMetadata(tmpdata, md5hasher.digest(), sha256hasher.digest(), total_read)
 
-def get_target_url(url, bucket_name=None, object_name=None, query=None):
+def get_target_url(endpoint, bucket_name=None, object_name=None, query=None):
     """
-    Construct target url
-    """
-    parsed_url = urlsplit(url)
+    Construct final target url.
 
+    :param endpoint: Target endpoint url where request is served to.
+    :param bucket_name: Bucket component for the target url.
+    :param object_name: Object component for the target url.
+    :param query: Query parameters as a *dict* for the target url.
+    :return: Returns final target url as *str*.
+    """
+    parsed_url = urlsplit(endpoint)
+    url = None
     if bucket_name is None:
         url = parsed_url.scheme + '://' + parsed_url.netloc
     else:
@@ -86,11 +111,11 @@ def get_target_url(url, bucket_name=None, object_name=None, query=None):
 
 def is_valid_endpoint(endpoint):
     """
-    Verify the endpoint is valid.
+    Verify if endpoint is valid.
+
     :type endpoint: string
-    :param endpoint: An endpoint.  Must have at least a scheme
-        and a hostname.
-    :return: True if the endpoint is valid. False otherwise.
+    :param endpoint: An endpoint. Must have at least a scheme and a hostname.
+    :return: True if the endpoint is valid. Raises *InvalidEndpointError* otherwise.
     """
     if not isinstance(endpoint, basestring):
         raise TypeError('endpoint')
@@ -99,8 +124,10 @@ def is_valid_endpoint(endpoint):
     hostname = parts.hostname
     if hostname is None:
         raise InvalidEndpointError('endpoint')
+
     if len(hostname) > 255:
         raise InvalidEndpointError('endpoint')
+
     if hostname[-1] == '.':
         hostname = hostname[:-1]
     allowed = re.compile(
@@ -108,8 +135,11 @@ def is_valid_endpoint(endpoint):
         re.IGNORECASE)
     if not allowed.match(hostname):
         raise InvalidEndpointError('endpoint')
+
     if hostname.endswith('amazonaws.com') and (hostname != 's3.amazonaws.com'):
         raise InvalidEndpointError('endpoint')
+
+    return True
 
 def is_valid_bucket_name(bucket_name):
     """
@@ -117,40 +147,58 @@ def is_valid_bucket_name(bucket_name):
     restricted DNS naming conventions necessary to allow
     access via virtual-hosting style.
 
-    Even though "." characters are perfectly valid in this DNS
+    Even though '.' characters are perfectly valid in this DNS
     naming scheme, we are going to punt on any name containing a
-    "." character because these will cause SSL cert validation
+    '.' character because these will cause SSL cert validation
     problems if we try to use virtual-hosting style addressing.
+
+    :param bucket_name: Bucket name in *str*.
+    :return: True if the bucket is valid. Raises *InvalidBucketError* otherwise.
     """
     validbucket = re.compile('^[a-zA-Z][a-zA-Z0-9\\-]+[a-zA-Z0-9]$')
     if '.' in bucket_name:
         raise InvalidBucketError('bucket')
+
     if len(bucket_name) < 3 or len(bucket_name) > 63:
         # Wrong length
         raise InvalidBucketError('bucket')
+
     match = validbucket.match(bucket_name)
     if match is None or match.end() != len(bucket_name):
         raise InvalidBucketError('bucket')
 
+    return True
+
 def is_non_empty_string(input_string):
     """
-    validate if non empty string
+    Validate if non empty string
+
+    :param input_string: Input is a *str*.
+    :return: True if input is string. Raises *err* otherwise.
     """
     if not isinstance(input_string, basestring):
         raise TypeError()
     if not input_string.strip():
         raise ValueError()
 
+    return True
+
 def encode_object_name(object_name):
     """
-    url encode object name
+    URL encode input object name.
+
+    :param object_name: Un-encoded object name.
+    :return: URL encoded input object name.
     """
     is_non_empty_string(object_name)
     return urlencode(object_name)
 
 def get_sha256(content):
     """
-    calculate sha256 for given content
+    Calculate sha256 digest of input byte array.
+
+    :param content: Input byte array.
+    :return: sha256 digest of input byte array.
     """
     if len(content) == 0:
         content = b''
@@ -160,7 +208,10 @@ def get_sha256(content):
 
 def get_md5(content):
     """
-    calculate md5 for given content
+    Calculate md5 digest of input byte array.
+
+    :param content: Input byte array.
+    :return: md5 digest of input byte array.
     """
     if len(content) == 0:
         content = b''
@@ -170,19 +221,28 @@ def get_md5(content):
 
 def encode_to_base64(content):
     """
-    calculate base64 for given content
+    Calculate base64 of input byte array.
+
+    :param content: Input byte array.
+    :return: base64 encoding of input byte array.
     """
     return binascii.b2a_base64(content).strip().decode('utf-8')
 
 def encode_to_hex(content):
     """
-    calculate hex for given content
+    Calculate hex for input byte array.
+
+    :param content: Input byte array.
+    :return: hexlified input byte array.
     """
     return binascii.hexlify(content)
 
 def calculate_part_size(length):
     """
-    calculate optimal part size for multipart uploads
+    Calculate optimal part size for multipart uploads.
+
+    :param length: Input length to calculate part size of.
+    :return: Optimal part size.
     """
     minimum_part_size = 1024 * 1024 * 5
     maximum_part_size = 1024 * 1024 * 1024 * 5

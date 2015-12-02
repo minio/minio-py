@@ -17,10 +17,13 @@
 minio.error
 ~~~~~~~~~~~~~~~~~~~
 
-Custom Exception classes for Minio specific errors.
+This module provides custom exception classes for Minio library and API specific errors.
 """
 
 class InvalidEndpointError(Exception):
+    """
+    InvalidEndpointError is raised when input endpoint URL is invalid.
+    """
     def __init__(self, message, **kwargs):
         self.message = message
         super(InvalidEndpointError, self).__init__(**kwargs)
@@ -30,6 +33,11 @@ class InvalidEndpointError(Exception):
         return string_format.format(self.message)
 
 class InvalidBucketError(Exception):
+    """
+    InvalidBucketError is raised when input bucket name is invalid.
+
+    NOTE: Bucket names are validated based on Amazon S3 requirements.
+    """
     def __init__(self, message, **kwargs):
         self.message = message
         super(InvalidBucketError, self).__init__(**kwargs)
@@ -39,6 +47,10 @@ class InvalidBucketError(Exception):
         return string_format.format(self.message)
 
 class InvalidArgumentError(Exception):
+    """
+    InvalidArgumentError is raised when an unexpected
+    argument is received by the callee.
+    """
     def __init__(self, message, **kwargs):
         self.message = message
         super(InvalidArgumentError, self).__init__(**kwargs)
@@ -47,16 +59,18 @@ class InvalidArgumentError(Exception):
         string_format = 'InvalidArgumentError: message: {0}'
         return string_format.format(self.message)
 
-class UnexpectedShortReadError(Exception):
-    def __init__(self, message, **kwargs):
-        self.message = message
-        super(UnexpectedShortReadError, self).__init__(**kwargs)
-
-    def __str__(self):
-        string_format = 'UnexpectedShortReadError: message: {0}'
-        return string_format.format(self.message)
-
 class ResponseError(Exception):
+    """
+    ResponseError is raised when an API call doesn't succeed.
+    To indicate a successful status each API verifies 2xx, 3xx
+    and raises :class:`ResponseError <ResponseError>` accordingly.
+
+    :param code: Response code usually a string and Amazon S3 API specific.
+    :param message: Human readable message explanation of the Response code.
+    :param request_id: X-Amz-Request-Id value sent by the S3 server.
+    :param host_id: X-Amz-Host-Id value sent by the S3 server.
+    :param resource: Server resource on which the error was generated for.
+    """
     def __init__(self, code, message, request_id, host_id, resource, xml=None,
                  **kwargs):
         super(ResponseError, self).__init__(**kwargs)

@@ -13,6 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+minio.parsers
+~~~~~~~~~~~~~~~~~~~
+
+This module contains core API parsers.
+"""
+
 import pytz
 
 from xml.etree import cElementTree
@@ -26,7 +33,10 @@ from .definitions import (Object, Bucket, IncompleteUpload, UploadPart)
 
 def parse_list_buckets(data):
     """
-    Parse list buckets xml.
+    Parser for list buckets response.
+
+    :param data: Respone data for list buckets.
+    :return: List of :class:`Bucket <Bucket>`.
     """
     root = cElementTree.fromstring(data)
     bucket_list = []
@@ -39,16 +49,18 @@ def parse_list_buckets(data):
                     if attribute.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Name':
                         name = attribute.text
                     if attribute.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}CreationDate':
-                        creation_date = _parse_date(attribute.text)
+                        creation_date = _iso8601_to_localized_time(attribute.text)
                 bucket_list.append(Bucket(name, creation_date))
     return bucket_list
 
 def parse_acl(data):
     """
-    Parse acl lists xml.
+    Parser for access control list response.
+
+    :param data: Response data of access control list for a bucket.
+    :return: :class:`Acl <Acl>`
     """
     root = cElementTree.fromstring(data)
-
     public_read = False
     public_write = False
     authenticated_read = False
@@ -85,10 +97,16 @@ def parse_acl(data):
 
 def parse_list_objects(data, bucket_name):
     """
-    Parse list objects xml.
+    Parser for list objects response.
+
+    :param data: Response data for list objects.
+    :param bucket_name: Response for the bucket.
+    :return: Replies back three distinctive components.
+       - List of :class:`Object <Object>`
+       - True if list is truncated, False otherwise.
+       - Object name marker for the next request.
     """
     root = cElementTree.fromstring(data)
-
     is_truncated = False
     objects = []
     marker = None
@@ -109,7 +127,7 @@ def parse_list_objects(data, bucket_name):
                     object_name = urldecode(content.text)
                     last_object_name = object_name
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
-                    last_modified = _parse_date(content.text)
+                    last_modified = _iso8601_to_localized_time(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
                     etag = content.text
                     etag = etag.replace('"', '')
@@ -129,7 +147,15 @@ def parse_list_objects(data, bucket_name):
 
 def parse_list_multipart_uploads(data, bucket_name):
     """
-    Parse list multipart uploads xml.
+    Parser for list multipart uploads response.
+
+    :param data: Response data for list multipart uploads.
+    :param bucket_name: Response for the bucket.
+    :return: Replies back four distinctive components.
+       - List of :class:`IncompleteUpload <IncompleteUpload>`
+       - True if list is truncated, False otherwise.
+       - Object name marker for the next request.
+       - Upload id marker for the next request.
     """
     root = cElementTree.fromstring(data)
 
@@ -158,7 +184,17 @@ def parse_list_multipart_uploads(data, bucket_name):
 
 def parse_list_parts(data, bucket_name, object_name, upload_id):
     """
-    Parse list parts xml.
+    Parser for list parts response.
+
+    :param data: Response data for list parts.
+    :param bucket_name: Response for the bucket.
+    :param object_name: Response for the object.
+    :param upload_id: Upload id of object name for
+       the active multipart session.
+    :return: Replies back three distinctive components.
+       - List of :class:`UploadPart <UploadPart>`.
+       - True if list is truncated, False otherwise.
+       - Next part marker for the next request if the list was truncated.
     """
     root = cElementTree.fromstring(data)
 
@@ -182,7 +218,7 @@ def parse_list_parts(data, bucket_name, object_name, upload_id):
                     etag = content.text
                     etag = etag.replace('"', '')
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
-                    last_modified = _parse_date(content.text)
+                    last_modified = _iso8601_to_localized_time(content.text)
                 if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
                     size = int(content.text)
             parts.append(UploadPart(bucket_name, object_name, upload_id, part_number, etag,
@@ -190,6 +226,12 @@ def parse_list_parts(data, bucket_name, object_name, upload_id):
     return parts, is_truncated, part_marker
 
 def parse_new_multipart_upload(data):
+    """
+    Parser for new multipart upload response.
+
+    :param data: Response data for new multipart upload.
+    :return: Returns a upload id.
+    """
     root = cElementTree.fromstring(data)
 
     for contents in root:
@@ -199,13 +241,26 @@ def parse_new_multipart_upload(data):
     raise ParseError('uploadId')
 
 def parse_location_constraint(data):
+    """
+    Parser for location constraint response.
+
+    :param data: Response data for get bucket location.
+    :return: Returns location of your bucket.
+    """
     content = cElementTree.fromstring(data)
     if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LocationConstraint':
         return content.text
-        
+
     raise ParseError('location constraint')
 
 def parse_error(response, resource=None):
+    """
+    Parser for error xml response.
+
+    Raises an exception of :class:`ResponseError <ResponseError>`
+
+    :param data: Response data for error xml.
+    """
     if len(response.data) == 0:
         amz_request_id = ''
         amz_host_id = ''
@@ -254,7 +309,13 @@ def parse_error(response, resource=None):
                         request_id, host_id, resource,
                         response.data)
 
-def _parse_date(date_string):
+def _iso8601_to_localized_time(date_string):
+    """
+    Convert iso8601 date string into UTC time.
+
+    :param date_string: iso8601 formatted date string.
+    :return: :class:`datetime.datetime`
+    """
     parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
     localized_time = pytz.utc.localize(parsed_date)
     return localized_time

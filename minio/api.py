@@ -58,7 +58,7 @@ from .helpers import (get_target_url, is_non_empty_string, is_valid_endpoint, ge
                       is_valid_bucket_name, parts_manager)
 
 from .signer import sign_v4, presign_v4, generate_credential_string, post_presign_signature
-from .xml_requests import bucket_constraint, get_complete_multipart_upload
+from .xml_marshal import xml_marshal_bucket_constraint, xml_marshal_complete_multipart_upload
 
 class Minio(object):
     def __init__(self, endpoint, access_key=None, secret_key=None):
@@ -153,7 +153,7 @@ class Minio(object):
 
         content = ''
         if not (location == 'us-east-1'):
-            content = bucket_constraint(location)
+            content = xml_marshal_bucket_constraint(location)
             headers['Content-Length'] = str(len(content))
 
         content_sha256_hex = encode_to_hex(get_sha256(content))
@@ -395,13 +395,12 @@ class Minio(object):
             headers['Range'] = 'bytes=' + request_range
 
         method = 'GET'
-        presign_url = presign_v4(method=method, url=url,
+        presign_url = presign_v4(method, url,
+                                 self._access_key,
+                                 self._secret_key,
                                  region=region,
                                  headers=headers,
-                                 access_key=self._access_key,
-                                 secret_key=self._secret_key,
-                                 expires=int(expires.total_seconds()),
-        )
+                                 expires=int(expires.total_seconds()))
         return presign_url
 
     def presigned_put_object(self, bucket_name, object_name, expires=timedelta(days=7)):
@@ -431,13 +430,12 @@ class Minio(object):
         headers = {}
 
         method = 'PUT'
-        presign_url = presign_v4(method=method, url=url,
+        presign_url = presign_v4(method, url,
+                                 self._access_key,
+                                 self._secret_key,
                                  region=region,
                                  headers=headers,
-                                 access_key=self._access_key,
-                                 secret_key=self._secret_key,
-                                 expires=int(expires.total_seconds()),
-        )
+                                 expires=int(expires.total_seconds()))
         return presign_url
 
     def presigned_post_policy(self, policy):
@@ -762,8 +760,10 @@ class Minio(object):
         delimiter = None
         if recursive == False:
             delimiter = '/'
-        return ListIncompleteUploadsIterator(self._http, self._endpoint_url,
-                                             bucket_name, prefix,
+        return ListIncompleteUploadsIterator(self._http,
+                                             self._endpoint_url,
+                                             bucket_name,
+                                             prefix,
                                              delimiter,
                                              access_key=self._access_key,
                                              secret_key=self._secret_key,
@@ -865,7 +865,8 @@ class Minio(object):
 
             if uploaded_parts_size > 0:
                 if data.seekable():
-                    data.seek(uploaded_parts_size, 0)
+                    ## Default is start of the stream.
+                    data.seek(uploaded_parts_size)
                     ## start uploading from next part.
                     current_part_number = latest_part_number + 1
                     total_uploaded = uploaded_parts_size
@@ -879,8 +880,7 @@ class Minio(object):
                     uploaded_etags = []
 
         while total_uploaded < data_content_size:
-            part = tempfile.NamedTemporaryFile(delete=True)
-            part_metadata = parts_manager(data, part, hashlib.md5(), hashlib.sha256(), part_size)
+            part_metadata = parts_manager(data, part_size)
             current_data_md5_hex = encode_to_hex(part_metadata.md5digest)
             if current_part_number in uploaded_parts:
                 previously_uploaded_part = uploaded_parts[current_part_number]
@@ -892,7 +892,8 @@ class Minio(object):
             current_data_sha256_hex = encode_to_hex(part_metadata.sha256digest)
             ## Seek back to starting position.
             part.seek(0)
-            etag = self._do_put_object(bucket_name, object_name, part,
+            etag = self._do_put_object(bucket_name, object_name,
+                                       part_metadata.data,
                                        part_metadata.size,
                                        current_data_md5_base64,
                                        current_data_sha256_hex,
@@ -965,7 +966,7 @@ class Minio(object):
                              object_name=object_name, query=query)
         headers = {}
 
-        data = get_complete_multipart_upload(etags)
+        data = xml_marshal_complete_multipart_upload(etags)
         data_md5_base64 = encode_to_base64(get_md5(data))
         data_sha256_hex = encode_to_hex(get_sha256(data))
 
