@@ -31,11 +31,11 @@ class PostPolicy(object):
     """
     def __init__(self):
         self._expiration = None
-        self._content_length_range = tuple() ## TODO implement this
+        self._content_length_range = tuple()
         ## publicly accessible
         self.policies = []
         self.form_data = dict()
-        self.bucket = ''
+        self.bucket_name = ''
         self.key = ''
 
     def set_expires(self, time):
@@ -50,7 +50,7 @@ class PostPolicy(object):
 
     def set_key(self, key):
         """
-        Set key field.
+        Set key policy condition.
 
         :param key: set key name.
         """
@@ -63,7 +63,7 @@ class PostPolicy(object):
 
     def set_key_startswith(self, key_startswith):
         """
-        Set key startswith field.
+        Set key startswith policy condition.
 
         :param key_startswith: set key prefix name.
         """
@@ -73,28 +73,45 @@ class PostPolicy(object):
         self.policies.append(policy)
         self.form_data['key'] = key_startswith
 
-    def set_bucket(self, bucket):
+    def set_bucket_name(self, bucket_name):
         """
-        Set bucket field.
+        Set bucket name policy condition.
 
-        :param bucket: set bucket name.
+        :param bucket_name: set bucket name.
         """
-        is_valid_bucket_name(bucket)
+        is_valid_bucket_name(bucket_name)
 
-        policy = ('eq', '$bucket', bucket)
+        policy = ('eq', '$bucket', bucket_name)
         self.policies.append(policy)
-        self.form_data['bucket'] = bucket
-        self.bucket = bucket
+        self.form_data['bucket'] = bucket_name
+        self.bucket_name = bucket_name
 
     def set_content_type(self, content_type):
         """
-        Set content-type field.
+        Set content-type policy condition.
 
         :param content_type: set content type name.
         """
         policy = ('eq', '$Content-Type', bucket)
         self.policies.append(policy)
         self.form_data['Content-Type'] = content_type
+
+    def set_content_length_range(self, min_length, max_length):
+        """
+        Set content length range policy condition.
+           Raise :exc:`ValueError` for invalid inputs.
+
+        :param min_length: Minimum length limit for content size.
+        :param max_length: Maximum length limit for content size.
+        """
+        if min_length > max_length:
+            raise ValueError('minimum limit cannot be larger than maximum limit.')
+        if min_length < 0:
+            raise ValueError('minimum limit cannot be negative.')
+        if max_length < 0:
+            raise ValueError('maximum limit cannot be negative.')
+        
+        self._content_length_range = (min_length, max_length)
 
     def _marshal_json(self):
         """
@@ -103,7 +120,12 @@ class PostPolicy(object):
         expiration_str = '"expiration":"' + self._expiration.strftime("%Y-%m-%dT%H:%M:%S.000Z") + '"'
         policies = []
         for p in self.policies:
-            policies.append('["'+p[0]+'","'+p[1]+'","'+p[2]+'"]')
+            policies.append('["' + p[0] + '","' + p[1] + '","' + p[2] + '"]')
+
+        if len(self._content_length_range) == 2:
+            policies.append('["content-length-range", ' + \
+                            str(self._content_length_range[0]) + \
+                            ', ' + str(self._content_length_range[1]) + ']')
 
         if len(policies) > 0:
             policies_str = '"conditions":[' + ','.join(policies) + ']'

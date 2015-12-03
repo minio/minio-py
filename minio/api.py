@@ -448,7 +448,7 @@ class Minio(object):
 
         Example:
             policy = PostPolicy()
-            policy.set_bucket('bucket_name')
+            policy.set_bucket_name('bucket_name')
             policy.set_key_startswith('objectPrefix/')
 
             expires_date = datetime.utcnow()+timedelta(days=10)

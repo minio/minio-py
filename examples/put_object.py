@@ -17,8 +17,6 @@ import os
 
 from minio import Minio
 
-__author__ = 'minio'
-
 client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
