@@ -28,7 +28,7 @@ import binascii
 
 from .helpers import is_non_empty_string, is_valid_bucket_name, encode_to_base64
 
-## Policy explanation: http://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-HTTPPOSTConstructPolicy.html
+# Policy explanation: http://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-HTTPPOSTConstructPolicy.html
 class PostPolicy(object):
     """
     A :class:`PostPolicy <PostPolicy>` object for constructing Amazon S3 POST policy JSON string.
@@ -36,7 +36,7 @@ class PostPolicy(object):
     def __init__(self):
         self._expiration = None
         self._content_length_range = tuple()
-        ## publicly accessible
+        # publicly accessible
         self.policies = []
         self.form_data = dict()
         self.bucket_name = ''

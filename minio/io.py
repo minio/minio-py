@@ -69,7 +69,7 @@ class HTTPReadSeeker(io.IOBase):
 
         :return: Return the new absolute position.
         """
-        ## TODO: whence value of '1' and '2' are not implemented yet.
+        # TODO: whence value of '1' and '2' are not implemented yet.
         if offset < 0 and whence == 0:
             raise ValueError('Invalid offset size cannot be negative for SEEK_SET')
         self._offset = offset
@@ -144,8 +144,8 @@ class HTTPReadSeeker(io.IOBase):
         """
         data = None
         if self._is_read is False:
-            ## If reading is not started yet, get a new response reader
-            ## for a specified offset.
+            # If reading is not started yet, get a new response reader
+            # for a specified offset.
             response = self._api._get_partial_object(self._bucket_name,
                                                          self._object_name,
                                                          self._offset, 0)

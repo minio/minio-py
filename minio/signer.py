@@ -65,7 +65,7 @@ def presign_v4(method, url, access_key, secret_key, region=None, headers=None, e
     :param expires: final expiration of the generated URL. Maximum is 7days.
     """
 
-    ### Validate input arguments.
+    # Validate input arguments.
     if not access_key or not secret_key:
         raise InvalidArgumentError('Invalid access_key and secret_key.')
 
@@ -87,10 +87,10 @@ def presign_v4(method, url, access_key, secret_key, region=None, headers=None, e
 
     headers_to_sign = dict(headers)
 
-    ### Remove headers.
+    # Remove headers.
     headers_to_sign = ignore_headers(headers)
 
-    ## Construct queries.
+    # Construct queries.
     query = {}
     query['X-Amz-Algorithm'] = 'AWS4-HMAC-SHA256'
     query['X-Amz-Credential'] = generate_credential_string(access_key, date, region)
@@ -98,7 +98,7 @@ def presign_v4(method, url, access_key, secret_key, region=None, headers=None, e
     query['X-Amz-Expires'] = expires
     query['X-Amz-SignedHeaders']  = ';'.join(get_signed_headers(headers_to_sign))
 
-    ## URL components.
+    # URL components.
     url_components = [parsed_url.geturl()]
     if query is not None:
         ordered_query = collections.OrderedDict(sorted(query.items()))
@@ -116,7 +116,7 @@ def presign_v4(method, url, access_key, secret_key, region=None, headers=None, e
             url_components.append('?')
             url_components.append(query_string)
     new_url = ''.join(url_components)
-    ## new url constructor block ends.
+    # new url constructor block ends.
     new_parsed_url = urlsplit(new_url)
 
     canonical_request = generate_canonical_request(method,
@@ -160,7 +160,7 @@ def sign_v4(method, url, region, headers=None, access_key=None,
     :param content_sha256: Optional body sha256.
     """
 
-    ### If no access key or secret key is provided return headers.
+    # If no access key or secret key is provided return headers.
     if not access_key or not secret_key:
         return headers
 
@@ -183,7 +183,7 @@ def sign_v4(method, url, region, headers=None, access_key=None,
 
     headers_to_sign = dict(headers)
 
-    ### Remove headers.
+    # Remove headers.
     headers_to_sign = ignore_headers(headers_to_sign)
 
     signed_headers = get_signed_headers(headers_to_sign)
@@ -217,7 +217,7 @@ def generate_canonical_request(method, parsed_url, headers, content_sha256):
     content_sha256 = str(content_sha256)
     lines = [method, parsed_url.path]
 
-    ## Parsed query.
+    # Parsed query.
     split_query = parsed_url.query.split('&')
     split_query.sort()
     for i in range(0, len(split_query)):
@@ -227,7 +227,7 @@ def generate_canonical_request(method, parsed_url, headers, content_sha256):
     query = '&'.join(split_query)
     lines.append(query)
 
-    ## Headers added to canonical request.
+    # Headers added to canonical request.
     signed_headers = []
     header_lines = []
     for header in headers:

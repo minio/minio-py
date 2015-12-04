@@ -18,17 +18,17 @@ from datetime import datetime, timedelta
 from minio import Minio
 from minio import PostPolicy
 
-policy = PostPolicy()
-## set bucket name location for uploads.
-policy.set_bucket_name('bucketName')
+post_policy = PostPolicy()
+# set bucket name location for uploads.
+post_policy.set_bucket_name('bucketName')
 ## set key prefix for all incoming uploads.
-policy.set_key_startswith('objectName')
+post_policy.set_key_startswith('objectName')
 ## set content length for incoming uploads.
-policy.set_content_length_range(10, 1024)
+post_policy.set_content_length_range(10, 1024)
 
 ## set expiry 10 days into future.
 expires_date = datetime.utcnow()+timedelta(days=10)
-policy.set_expires(expires_date)
+post_policy.set_expires(expires_date)
 
 client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
@@ -36,7 +36,7 @@ client = Minio('https://s3.amazonaws.com',
 
 curl_str = 'curl -X POST https://bucketName.s3.amazonaws.com/'
 curl_cmd = [curl_str]
-signed_form_data = client.presigned_post_policy(policy)
+signed_form_data = client.presigned_post_policy(post_policy)
 for field in signed_form_data:
     curl_cmd.append('-F {0}={1}'.format(field, signed_form_data[field]))
 

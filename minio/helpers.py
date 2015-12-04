@@ -26,6 +26,7 @@ This module implements all helper functions.
 import collections
 import binascii
 import hashlib
+import tempfile
 import re
 
 from .compat import urlsplit, basestring, urlencode
@@ -200,7 +201,7 @@ def is_valid_bucket_name(bucket_name):
     :param bucket_name: Bucket name in *str*.
     :return: True if the bucket is valid. Raise :exc:`InvalidBucketError` otherwise.
     """
-    ## verify bucket name length.
+    # verify bucket name length.
     if len(bucket_name) < 3:
         raise InvalidBucketError('Bucket name cannot be less than 3 characters.')
     if len(bucket_name) > 63:
@@ -292,7 +293,7 @@ def calculate_part_size(length):
     maximum_part_size = 1024 * 1024 * 1024 * 5
     if length == -1:
         return maximum_part_size
-    proposed_part_size = length / 9999 ## make sure last part has enough buffer
+    proposed_part_size = length / 9999 # make sure last part has enough buffer
     if proposed_part_size > maximum_part_size:
         return maximum_part_size
     return max(minimum_part_size, proposed_part_size)

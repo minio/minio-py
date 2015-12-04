@@ -57,8 +57,8 @@ def xml_marshal_complete_multipart_upload(etags):
     root = s3_xml.Element('CompleteMultipartUpload', {'xmlns': s3_namespace})
     for part_number in range(1, len(etags)):
         part = s3_xml.SubElement(root, 'Part')
-        part_number = s3_xml.SubElement(part, 'PartNumber')
-        part_number.text = str(part_number)
+        part_num = s3_xml.SubElement(part, 'PartNumber')
+        part_num.text = str(part_number)
         etag = s3_xml.SubElement(part, 'ETag')
         etag.text = etags[part_number-1]
         data = io.BytesIO()
