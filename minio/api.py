@@ -173,7 +173,7 @@ class Minio(object):
 
         if response.status != 200:
             response_error = ResponseError(response)
-            response_error.put(bucket_name)
+            raise response_error.put(bucket_name)
 
         self._set_region(bucket_name, region=location)
 
@@ -193,24 +193,21 @@ class Minio(object):
         headers = {}
         url = get_target_url(self._endpoint_url)
 
+        ## default for all requests.
+        region  = 'us-east-1'
         headers = sign_v4(method=method, url=url,
-                          region='us-east-1',
+                          region=region,
                           headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
         response = self._http.request(method, url,
-                                      headers=headers,
-                                      redirect=False)
+                                      headers=headers)
 
         if response.status != 200:
-            try:
-                response_error = ResponseError(response)
-                response_error.get()
-            except ResponseError as err:
-                if err.code == 'Redirect':
-                    err.code = 'AccessDeniedException'
-                raise err
+            response_error = ResponseError(response)
+            raise response_error.get()
+
         return parse_list_buckets(response.data)
 
     def bucket_exists(self, bucket_name):
@@ -236,7 +233,7 @@ class Minio(object):
         response = self._http.request(method, url, headers=headers)
         if response.status != 200:
             response_error = ResponseError(response)
-            response_error.head(bucket_name)
+            raise response_error.head(bucket_name)
 
         return True
 
@@ -264,7 +261,7 @@ class Minio(object):
 
         if response.status != 204:
             response_error = ResponseError(response)
-            response_error.delete(bucket_name)
+            raise response_error.delete(bucket_name)
 
     def get_bucket_acl(self, bucket_name):
         """
@@ -297,7 +294,7 @@ class Minio(object):
 
         if response.status != 200:
             response_error = ResponseError(response)
-            response_error.get(bucket_name)
+            raise response_error.get(bucket_name)
 
         return parse_acl(response.data)
 
@@ -343,7 +340,7 @@ class Minio(object):
 
         if response.status != 200:
             response_error = ResponseError(response)
-            response_error.put(bucket_name)
+            raise response_error.put(bucket_name)
 
     def presigned_get_object(self, bucket_name, object_name, expires=timedelta(days=7)):
         """
@@ -573,7 +570,7 @@ class Minio(object):
 
         if response.status != 206 and response.status != 200:
             response_error = ResponseError(response)
-            response_error.get(bucket_name, object_name)
+            raise response_error.get(bucket_name, object_name)
 
         return response
 
@@ -685,15 +682,22 @@ class Minio(object):
 
         if response.status != 200:
             response_error = ResponseError(response)
-            response_error.head(bucket_name, object_name)
+            raise response_error.head(bucket_name, object_name)
 
         http_time_format = "%a, %d %b %Y %H:%M:%S GMT"
-        etag = response.headers['etag'].replace('"', '')
-        size = int(response.headers['content-length'])
-        content_type = response.headers['content-type']
-        last_modified = mktime(strptime(response.headers['last-modified'],
-                                        http_time_format))
-
+        etag = ''
+        size = 0
+        content_type = ''
+        last_modified = None
+        if 'etag' in response.headers:
+            etag = response.headers['etag'].replace('"', '')
+        if 'content-length' in response.headers:
+            size = int(response.headers['content-length'])
+        if 'content-type' in response.headers:
+            content_type = response.headers['content-type']
+        if 'last-modified' in response.headers:
+            last_modified = mktime(strptime(response.headers['last-modified'],
+                                            http_time_format))
         return Object(bucket_name, object_name, content_type=content_type,
                       last_modified=last_modified, etag=etag, size=size)
 
@@ -725,7 +729,7 @@ class Minio(object):
 
         if response.status != 204:
             response_error = ResponseError(response)
-            response_error.delete(bucket_name, object_name)
+            raise response_error.delete(bucket_name, object_name)
 
     def list_incomplete_uploads(self, bucket_name, prefix=None, recursive=False):
         """
@@ -829,7 +833,7 @@ class Minio(object):
         response = self._http.urlopen(method, url, headers=headers, body=data)
         if response.status != 200:
             response_error = ResponseError(response)
-            response_error.put(bucket_name, object_name)
+            raise response_error.put(bucket_name, object_name)
 
         return response.headers['etag'].replace('"', '')
 
@@ -936,7 +940,7 @@ class Minio(object):
 
         if response.status != 204:
             response_error = ResponseError(response)
-            response_error.delete(bucket_name, object_name)
+            raise response_error.delete(bucket_name, object_name)
 
     def _new_multipart_upload(self, bucket_name, object_name, content_type):
         method = 'POST'
@@ -961,7 +965,7 @@ class Minio(object):
 
         if response.status != 200:
             response_error = ResponseError(response)
-            response_error.post(bucket_name, object_name)
+            raise response_error.post(bucket_name, object_name)
 
         return parse_new_multipart_upload(response.data)
 
@@ -995,7 +999,7 @@ class Minio(object):
 
         if response.status != 200:
             response_error = ResponseError(response)
-            response_error.post(bucket_name, object_name)
+            raise response_error.post(bucket_name, object_name)
 
     def _set_region(self, bucket_name, region=None):
         ## fetch bucket location only for Amazon S3.
@@ -1018,8 +1022,10 @@ class Minio(object):
         method = 'GET'
         url = self._endpoint_url + '/' + bucket_name + '?location'
         headers = {}
+        ## default for all requests.
+        region = 'us-east-1'
         headers = sign_v4(method=method, url=url,
-                          region='us-east-1',
+                          region=region,
                           headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
@@ -1028,7 +1034,7 @@ class Minio(object):
 
         if response.status != 200:
             response_error = ResponseError(response)
-            response_error.get(bucket_name)
+            raise response_error.get(bucket_name)
 
         location = parse_location_constraint(response.data)
         ## location is empty for 'US standard region'

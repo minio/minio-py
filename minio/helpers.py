@@ -155,17 +155,17 @@ def is_valid_bucket_name(bucket_name):
     :param bucket_name: Bucket name in *str*.
     :return: True if the bucket is valid. Raise :exc:`InvalidBucketError` otherwise.
     """
+    ## verify bucket name length.
+    if len(bucket_name) < 3: 
+        raise InvalidBucketError('Bucket name cannot be less than 3 characters.')
+    if len(bucket_name) > 63:
+        raise InvalidBucketError('Bucket name cannot be more than 63 characters.')
+    
     validbucket = re.compile('^[a-zA-Z][a-zA-Z0-9\\-]+[a-zA-Z0-9]$')
-    if '.' in bucket_name:
-        raise InvalidBucketError('bucket')
-
-    if len(bucket_name) < 3 or len(bucket_name) > 63:
-        # Wrong length
-        raise InvalidBucketError('bucket')
-
     match = validbucket.match(bucket_name)
     if match is None or match.end() != len(bucket_name):
-        raise InvalidBucketError('bucket')
+        raise InvalidBucketError('Bucket name does not follow S3 standards.' \
+                                 'Bucket: {0}'.format(bucket_name))
 
     return True
 

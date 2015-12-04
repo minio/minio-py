@@ -34,7 +34,10 @@ class ListBucketsTest(TestCase):
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/', {}, 200, content=mock_data))
         client = Minio('http://localhost:9000')
         buckets = client.list_buckets()
-        eq_([], buckets)
+        count = 0
+        for bucket in buckets:
+            count += 1
+        eq_(0, count)
 
     @mock.patch('urllib3.PoolManager')
     def test_list_buckets_works(self, mock_connection):
@@ -47,9 +50,13 @@ class ListBucketsTest(TestCase):
         mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/', {}, 200, content=mock_data))
         client = Minio('http://localhost:9000')
         buckets = client.list_buckets()
-
-        eq_(2, len(buckets))
-        eq_('hello', buckets[0].name)
-        eq_(datetime(2015, 6, 22, 23, 7, 43, 240000, pytz.utc), buckets[0].creation_date)
-        eq_('world', buckets[1].name)
-        eq_(datetime(2015, 6, 22, 23, 7, 56, 766000, pytz.utc), buckets[1].creation_date)
+        buckets_list = []
+        count = 0
+        for bucket in buckets:
+            count += 1
+            buckets_list.append(bucket)
+        eq_(2, count)
+        eq_('hello', buckets_list[0].name)
+        eq_(datetime(2015, 6, 22, 23, 7, 43, 240000, pytz.utc), buckets_list[0].creation_date)
+        eq_('world', buckets_list[1].name)
+        eq_(datetime(2015, 6, 22, 23, 7, 56, 766000, pytz.utc), buckets_list[1].creation_date)
