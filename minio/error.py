@@ -18,6 +18,10 @@ minio.error
 ~~~~~~~~~~~~~~~~~~~
 
 This module provides custom exception classes for Minio library and API specific errors.
+
+:copyright: (c) 2015 by Minio, Inc.
+:license: Apache 2.0, see LICENSE for more details.
+
 """
 
 from xml.etree import cElementTree

@@ -18,6 +18,10 @@ minio.generators
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains core iterators.
+
+:copyright: (c) 2015 by Minio, Inc.
+:license: Apache 2.0, see LICENSE for more details.
+
 """
 
 from .helpers import get_target_url

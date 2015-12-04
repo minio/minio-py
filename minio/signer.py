@@ -19,6 +19,10 @@ minio.signer
 ~~~~~~~~~~~~~~~
 
 This module implements all helpers for AWS Signature version '4' support.
+
+:copyright: (c) 2015 by Minio, Inc.
+:license: Apache 2.0, see LICENSE for more details.
+
 """
 
 import collections
@@ -29,6 +33,7 @@ import binascii
 from datetime import datetime
 from .error import InvalidArgumentError
 from .compat import urlsplit, basestring, urlencode
+from .helpers import ignore_headers
 
 def post_presign_signature(date, region, secret_key, policy_str):
     """
@@ -56,13 +61,13 @@ def presign_v4(method, url, access_key, secret_key, region=None, headers=None, e
     :param secret_key: Secrect access key for your AWS s3 account.
     :param region: region of the bucket, it is optional.
     :param headers: any additional HTTP request headers to
-    be presigned, it is optional.
+       be presigned, it is optional.
     :param expires: final expiration of the generated URL. Maximum is 7days.
     """
 
     ### Validate input arguments.
     if not access_key or not secret_key:
-        raise InvalidArgumentError('Invalid access_key/secret_key.')
+        raise InvalidArgumentError('Invalid access_key and secret_key.')
 
     if region is None:
         region = 'us-east-1'
@@ -82,15 +87,10 @@ def presign_v4(method, url, access_key, secret_key, region=None, headers=None, e
 
     headers_to_sign = dict(headers)
 
-    ### S3 wants us to ignore these headers.
-    ignored_headers = ['Authorization', 'Content-Length', 'Content-Type',
-                       'User-Agent']
+    ### Remove headers.
+    headers_to_sign = ignore_headers(headers)
 
-    for ignored_header in ignored_headers:
-        if ignored_header in headers_to_sign:
-            del headers_to_sign[ignored_header]
-    ## Ignore header block ends.
-
+    ## Construct queries.
     query = {}
     query['X-Amz-Algorithm'] = 'AWS4-HMAC-SHA256'
     query['X-Amz-Credential'] = generate_credential_string(access_key, date, region)
@@ -98,6 +98,7 @@ def presign_v4(method, url, access_key, secret_key, region=None, headers=None, e
     query['X-Amz-Expires'] = expires
     query['X-Amz-SignedHeaders']  = ';'.join(get_signed_headers(headers_to_sign))
 
+    ## URL components.
     url_components = [parsed_url.geturl()]
     if query is not None:
         ordered_query = collections.OrderedDict(sorted(query.items()))
@@ -115,42 +116,51 @@ def presign_v4(method, url, access_key, secret_key, region=None, headers=None, e
             url_components.append('?')
             url_components.append(query_string)
     new_url = ''.join(url_components)
+    ## new url constructor block ends.
     new_parsed_url = urlsplit(new_url)
+
     canonical_request = generate_canonical_request(method,
                                                    new_parsed_url,
                                                    headers_to_sign,
                                                    content_hash_hex)
-
     string_to_sign = generate_string_to_sign(date, region,
                                              canonical_request)
     signing_key = generate_signing_key(date, region, secret_key)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
-
     new_parsed_url = urlsplit(new_url + "&X-Amz-Signature="+signature)
     return new_parsed_url.geturl()
 
 def get_signed_headers(headers):
+    """
+    Get signed headers.
+
+    :param headers: input dictionary to be sorted.
+    """
     headers_to_sign = dict(headers)
-    ignored_headers = ['Authorization', 'Content-Length', 'Content-Type',
-                       'User-Agent']
-
-    for ignored_header in ignored_headers:
-        if ignored_header in headers_to_sign:
-            del headers_to_sign[ignored_header]
-
     signed_headers = []
     for header in headers:
         signed_headers.append(header)
     signed_headers.sort()
-
     return signed_headers
 
-def sign_v4(method, url, region=None, headers=None, access_key=None, secret_key=None,
-            content_sha256=None):
+def sign_v4(method, url, region, headers=None, access_key=None,
+            secret_key=None, content_sha256=None):
     """
     Signature version 4.
+
+    :param method: HTTP method used for signature.
+    :param url: Final url which needs to be signed.
+    :param region: Region should be set to bucket region.
+    :param headers: Optional headers for the method.
+    :param access_key: Optional access key, if not
+       specified no signature is needed.
+    :param secret_key: Optional secret key, if not
+       specified no signature is needed.
+    :param content_sha256: Optional body sha256.
     """
+
+    ### If no access key or secret key is provided return headers.
     if not access_key or not secret_key:
         return headers
 
@@ -173,39 +183,8 @@ def sign_v4(method, url, region=None, headers=None, access_key=None, secret_key=
 
     headers_to_sign = dict(headers)
 
-    # Excerpts from @lsegal - https://github.com/aws/aws-sdk-js/issues/659#issuecomment-120477258
-    #
-    #  User-Agent:
-    #
-    #      This is ignored from signing because signing this causes problems with generating pre-signed URLs
-    #      (that are executed by other agents) or when customers pass requests through proxies, which may
-    #      modify the user-agent.
-    #
-    #  Content-Length:
-    #
-    #      This is ignored from signing because generating a pre-signed URL should not provide a content-length
-    #      constraint, specifically when vending a S3 pre-signed PUT URL. The corollary to this is that when
-    #      sending regular requests (non-pre-signed), the signature contains a checksum of the body, which
-    #      implicitly validates the payload length (since changing the number of bytes would change the checksum)
-    #      and therefore this header is not valuable in the signature.
-    #
-    #  Content-Type:
-    #
-    #      Signing this header causes quite a number of problems in browser environments, where browsers
-    #      like to modify and normalize the content-type header in different ways. There is more information
-    #      on this in https://github.com/aws/aws-sdk-js/issues/244. Avoiding this field simplifies logic
-    #      and reduces the possibility of future bugs
-    #
-    #  Authorization:
-    #
-    #      Is skipped for obvious reasons
-
-    ignored_headers = ['Authorization', 'Content-Length', 'Content-Type',
-                       'User-Agent']
-
-    for ignored_header in ignored_headers:
-        if ignored_header in headers_to_sign:
-            del headers_to_sign[ignored_header]
+    ### Remove headers.
+    headers_to_sign = ignore_headers(headers_to_sign)
 
     signed_headers = get_signed_headers(headers_to_sign)
     canonical_request = generate_canonical_request(method,
@@ -227,9 +206,18 @@ def sign_v4(method, url, region=None, headers=None, access_key=None, secret_key=
     return headers
 
 def generate_canonical_request(method, parsed_url, headers, content_sha256):
+    """
+    Generate canonical request.
+
+    :param method: HTTP method.
+    :param parsed_url: Parsed url is input from :func:`urlsplit`
+    :param headers: HTTP header dictionary.
+    :param content_sha256: Content sha256 used in canonical request.
+    """
     content_sha256 = str(content_sha256)
     lines = [method, parsed_url.path]
 
+    ## Parsed query.
     split_query = parsed_url.query.split('&')
     split_query.sort()
     for i in range(0, len(split_query)):
@@ -239,6 +227,7 @@ def generate_canonical_request(method, parsed_url, headers, content_sha256):
     query = '&'.join(split_query)
     lines.append(query)
 
+    ## Headers added to canonical request.
     signed_headers = []
     header_lines = []
     for header in headers:
@@ -251,15 +240,20 @@ def generate_canonical_request(method, parsed_url, headers, content_sha256):
     signed_headers.sort()
     header_lines.sort()
     lines = lines + header_lines
-
     lines.append('')
 
     lines.append(';'.join(signed_headers))
     lines.append(str(content_sha256))
-
     return '\n'.join(lines)
 
 def generate_string_to_sign(date, region, canonical_request):
+    """
+    Generate string to sign.
+
+    :param date: Date is input from :meth:`datetime.datetime`
+    :param region: Region should be set to bucket region.
+    :param canonical_request: Canonical request generated previously.
+    """
     formatted_date_time = date.strftime("%Y%m%dT%H%M%SZ")
 
     canonical_request_hasher = hashlib.sha256()
@@ -272,10 +266,17 @@ def generate_string_to_sign(date, region, canonical_request):
                       scope,
                       canonical_request_sha256])
 
-def generate_signing_key(date, region, secret):
+def generate_signing_key(date, region, secret_key):
+    """
+    Generate signing key.
+
+    :param date: Date is input from :meth:`datetime.datetime`
+    :param region: Region should be set to bucket region.
+    :param secret_key: Secret access key.
+    """
     formatted_date = date.strftime("%Y%m%d")
 
-    key1_string = 'AWS4' + secret
+    key1_string = 'AWS4' + secret_key
     key1 = key1_string.encode('utf-8')
     key2 = hmac.new(key1, formatted_date.encode('utf-8'),
                     hashlib.sha256).digest()
@@ -286,6 +287,12 @@ def generate_signing_key(date, region, secret):
                     hashlib.sha256).digest()
 
 def generate_scope_string(date, region):
+    """
+    Generate scope string.
+
+    :param date: Date is input from :meth:`datetime.datetime`
+    :param region: Region should be set to bucket region.
+    """
     formatted_date = date.strftime("%Y%m%d")
     scope = '/'.join([formatted_date,
                       region,
@@ -294,10 +301,26 @@ def generate_scope_string(date, region):
     return scope
 
 def generate_credential_string(access_key, date, region):
+    """
+    Generate credential string.
+
+    :param access_key: Server access key.
+    :param date: Date is input from :meth:`datetime.datetime`
+    :param region: Region should be set to bucket region.
+    """
     return access_key + '/' +  generate_scope_string(date, region)
 
-def generate_authorization_header(access_key, date, region, signed_headers,
-                                  signature):
+def generate_authorization_header(access_key, date, region,
+                                  signed_headers, signature):
+    """
+    Generate authorization header.
+
+    :param access_key: Server access key.
+    :param date: Date is input from :meth:`datetime.datetime`
+    :param region: Region should be set to bucket region.
+    :param signed_headers: Signed headers.
+    :param signature: Calculated signature.
+    """
     signed_headers_string = ';'.join(signed_headers)
     credential = generate_credential_string(access_key, date, region)
     auth_header = "AWS4-HMAC-SHA256 Credential=" + credential + ", SignedHeaders=" + \
