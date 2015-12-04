@@ -25,6 +25,8 @@ from xml.etree import cElementTree
 class InvalidEndpointError(Exception):
     """
     InvalidEndpointError is raised when input endpoint URL is invalid.
+
+    :param message: User defined message.
     """
     def __init__(self, message, **kwargs):
         super(InvalidEndpointError, self).__init__(**kwargs)
@@ -39,6 +41,7 @@ class InvalidBucketError(Exception):
     InvalidBucketError is raised when input bucket name is invalid.
 
     NOTE: Bucket names are validated based on Amazon S3 requirements.
+    :param message: User defined message.
     """
     def __init__(self, message, **kwargs):
         super(InvalidBucketError, self).__init__(**kwargs)
@@ -52,6 +55,8 @@ class InvalidArgumentError(Exception):
     """
     InvalidArgumentError is raised when an unexpected
     argument is received by the callee.
+
+    :param message: User defined message.
     """
     def __init__(self, message, **kwargs):
         super(InvalidArgumentError, self).__init__(**kwargs)
@@ -61,11 +66,25 @@ class InvalidArgumentError(Exception):
         string_format = 'InvalidArgumentError: message: {0}'
         return string_format.format(self.message)
 
+class InvalidXMLError(Exception):
+    """
+    InvalidXMLError is raised when an unexpected XML tag or
+    a missing tag is found during parsing.
+
+    :param message: User defined message.
+    """
+    def __init__(self, message, **kwargs):
+        super(InvalidXMLError, self).__init__(**kwargs)
+        self.message = message
+
+    def __str__(self):
+        string_format = 'InvalidXMLError: message: {0}'
+        return string_format.format(self.message)
+
 class ResponseError(Exception):
     """
     ResponseError is raised when an API call doesn't succeed.
-    To indicate a successful status each API verifies 2xx, 3xx
-    and raises :exc:`ResponseError` accordingly.
+    raises :exc:`ResponseError` accordingly.
 
     :param response: Response from http client :class:`urllib3.HTTPResponse`.
     """
@@ -73,9 +92,11 @@ class ResponseError(Exception):
         super(ResponseError, self).__init__(**kwargs)
         self._response = response
         ### Initialize all the ResponseError fields.
+        self.method = ''
         self.code = ''
         self.message = ''
-        self.resource = ''
+        self.bucket_name = ''
+        self.object_name = ''
         ## Amz headers
         self.request_id = ''
         self.host_id = ''
@@ -92,10 +113,10 @@ class ResponseError(Exception):
         :param bucket_name: Bucket name on which the error occurred.
         :param object_name: Object name on which the error occurred, optional.
         """
-        self._set_resource(bucket_name, object_name)
-        self._set_amz_headers()
-        self._set_error_response()
-        raise self
+        self.method = 'HEAD'
+        self._set_error_response(bucket_name, object_name)
+
+        return self
 
     def delete(self, bucket_name, object_name=None):
         """
@@ -104,10 +125,10 @@ class ResponseError(Exception):
         :param bucket_name: Bucket name on which the error occurred.
         :param object_name: Object name on which the error occurred, optional.
         """
-        self._set_resource(bucket_name, object_name)
-        self._set_amz_headers()
-        self._set_error_response()
-        raise self
+        self.method = 'DELETE'
+        self._set_error_response(bucket_name, object_name)
+
+        return self
 
     def get(self, bucket_name=None, object_name=None):
         """
@@ -116,10 +137,10 @@ class ResponseError(Exception):
         :param bucket_name: Bucket name on which the error occurred, optional.
         :param object_name: Object name on which the error occurred, optional.
         """
-        self._set_resource(bucket_name, object_name)
-        self._set_amz_headers()
-        self._set_error_response()
-        raise self
+        self.method = 'GET'
+        self._set_error_response(bucket_name, object_name)
+
+        return self
 
     def put(self, bucket_name, object_name=None):
         """
@@ -128,10 +149,10 @@ class ResponseError(Exception):
         :param bucket_name: Bucket name on which the error occurred.
         :param object_name: Object name on which the error occurred, optional.
         """
-        self._set_resource(bucket_name, object_name)
-        self._set_amz_headers()
-        self._set_error_response()
-        raise self
+        self.method = 'PUT'
+        self._set_error_response(bucket_name, object_name)
+
+        return self
 
     def post(self, bucket_name, object_name=None):
         """
@@ -140,77 +161,98 @@ class ResponseError(Exception):
         :param bucket_name: Bucket name on which the error occurred.
         :param object_name: Object name on which the error occurred, optional.
         """
-        self._set_resource(bucket_name, object_name)
-        self._set_amz_headers()
-        self._set_error_response()
-        raise self
+        self.method = 'POST'
+        self._set_error_response(bucket_name, object_name)
 
-    def _set_error_response(self):
+        return self
+
+    def _set_error_response(self, bucket_name=None, object_name=None):
         """
         Sets error response uses xml body if available, otherwise
         relies on HTTP headers.
         """
         if len(self._response.data) == 0:
-            self._set_error_response_without_body()
+            self._set_error_response_without_body(bucket_name, object_name)
         else:
-            self._set_error_response_with_body()
+            self._set_error_response_with_body(bucket_name, object_name)
 
-    def _set_resource(self, bucket_name=None, object_name=None):
+    def _set_error_response_with_body(self, bucket_name=None, object_name=None):
         """
-        Set resource response field.
+        Sets all the error response fields with a valid response body.
+           Raises :exc:`ValueError` if invoked on a zero length body.
 
         :param bucket_name: Optional bucket name resource at which error occurred.
         :param object_name: Option object name resource at which error occurred.
         """
-        if bucket_name is not None:
-            self.resource = bucket_name
-        if bucket_name is not None and object_name is not None:
-            self.resource = bucket_name + '/' + object_name
+        self.bucket_name = bucket_name
+        self.object_name = object_name
 
-    def _set_error_response_with_body(self):
-        """
-        Sets all the error response fields with a valid response body.
-           Raises :exc:`ValueError` if invoked on a zero length body.
-        """
         if len(self._response.data) == 0:
             raise ValueError('response data has no body.')
-        root = cElementTree.fromstring(self._response.data)
+        try:
+            root = cElementTree.fromstring(self._response.data)
+        except Exception as e:
+            raise InvalidXMLError('"Error" XML is not parsable.')
         for attribute in root:
             if attribute.tag == 'Code':
                 self.code = attribute.text
-            if attribute.tag == 'Message':
+            elif attribute.tag == 'BucketName':
+                self.bucket_name = attribute.text
+            elif attribute.tag == 'Key':
+                self.object_name = attribute.text
+            elif attribute.tag == 'Message':
                 self.message = attribute.text
-            if attribute.tag == 'RequestId':
+            elif attribute.tag == 'RequestId':
                 self.request_id = attribute.text
-            if attribute.tag == 'HostId':
+            elif attribute.tag == 'HostId':
                 self.host_id = attribute.text
+        ## Set amz headers.
+        self._set_amz_headers()
 
-    def _set_error_response_without_body(self):
+    def _set_error_response_without_body(self, bucket_name=None, object_name=None):
         """
         Sets all the error response fields from response headers.
+
+        :param bucket_name: Optional bucket name resource at which error occurred.
+        :param object_name: Option object name resource at which error occurred.
         """
+        self.bucket_name = bucket_name
+        self.object_name = object_name
+
         if self._response.status == 404:
-            if object_name is None:
-                self.code = 'BucketNotFoundException'
-                self.message = self._response.reason
-            else:
-                self.code = 'ObjectNotFoundException'
-                self.message = self._response.reason
+            if bucket_name is not None:
+                if object_name is not None:
+                    self.code = 'NoSuchKey'
+                    self.message = self._response.reason
+                else:
+                    self.code = 'NoSuchBucket'
+                    self.message = self._response.reason
+        elif self._response.status == 409:
+            self.code = 'Confict'
+            self.message = 'The bucket you tried to delete is not empty.'
         elif self._response.status == 403:
-            self.code = 'AccessDeniedException'
+            self.code = 'AccessDenied'
             self.message = self._response.reason
         elif self._response.status == 400:
-            self.code = 'BadRequestException'
+            self.code = 'BadRequest'
             self.message = self._response.reason
-        elif self._response.status == 301 or self._response.status == 307:
-            self.code = 'RedirectException'
+        elif self._response.status == 301:
+            self.code = 'PermanentRedirect'
+            self.message = self._response.reason
+        elif self._response.status == 307:
+            self.code = 'Redirect'
             self.message = self._response.reason
         elif self._response.status == 405 or response.status == 501:
-            self.code = 'MethodNotAllowedException'
+            self.code = 'MethodNotAllowed'
             self.message = self._response.reason
+        elif self._response.status == 500:
+            self.code = 'InternalError'
+            self.message = 'Internal Server Error.'
         else:
             self.code = 'UnknownException'
             self.message = self._response.reason
+        ## Set amz headers.
+        self._set_amz_headers()
 
     def _set_amz_headers(self):
         """
@@ -219,19 +261,20 @@ class ResponseError(Exception):
         if self._response.headers is not None:
             ## keeping x-amz-id-2 as part of amz_host_id.
             if 'x-amz-id-2' in self._response.headers:
-                self._host_id = self._response.headers['x-amz-id-2']
+                self.host_id = self._response.headers['x-amz-id-2']
             if 'x-amz-request-id' in self._response.headers:
-                self._request_id = self._response.headers['x-amz-request-id']
+                self.request_id = self._response.headers['x-amz-request-id']
             ## This is a new undocumented field, set only if available.
             if 'x-amz-bucket-region' in self._response.headers:
-                self._region = self._response.headers['x-amz-bucket-region']
+                self.region = self._response.headers['x-amz-bucket-region']
 
     def __str__(self):
         return 'ResponseError: code: {0}, message: {1},' \
-            ' resource: {2}, request_id: {3}, host_id: {4},' \
-            ' region: {5}'.format(self.code,
-                                  self.message,
-                                  self.resource,
-                                  self.request_id,
-                                  self.host_id,
-                                  self.region)
+            ' bucket_name: {2}, object_name: {3}, request_id: {4},' \
+            ' host_id: {5}, region: {5}'.format(self.code,
+                                                self.message,
+                                                self.bucket_name,
+                                                self.object_name,
+                                                self.request_id,
+                                                self.host_id,
+                                                self.region)

@@ -102,7 +102,7 @@ class ListObjectsIterator(object):
 
         if response.status != 200:
             response_error = ResponseError(response)
-            response_error.get(self._bucket_name)
+            raise response_error.get(self._bucket_name)
 
         return parse_list_objects(response.data, bucket_name=self._bucket_name)
 
@@ -193,7 +193,7 @@ class ListIncompleteUploadsIterator(object):
 
         if response.status != 200:
             response_error = ResponseError(response)
-            response_error.get(self._bucket_name)
+            raise response_error.get(self._bucket_name)
 
         return parse_list_multipart_uploads(response.data, bucket_name=self._bucket_name)
 
@@ -283,7 +283,7 @@ class ListUploadPartsIterator(object):
 
         if response.status != 200:
             response_error = ResponseError(response)
-            response_error.get(self._bucket_name, self._object_name)
+            raise response_error.get(self._bucket_name, self._object_name)
 
         return parse_list_parts(response.data, bucket_name=self._bucket_name,
                                 object_name=self._object_name, upload_id=self._upload_id)

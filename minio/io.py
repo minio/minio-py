@@ -123,7 +123,7 @@ class HTTPReadSeeker(io.IOBase):
                                                      self._offset, 0)
             if response.status != 206 and response.status != 200:
                 response_error = ResponseError(response)
-                response_error.get(self._bucket_name, self._object_name)
+                raise response_error.get(self._bucket_name, self._object_name)
 
             self._reader = response
             self._is_read = True
@@ -148,7 +148,7 @@ class HTTPReadSeeker(io.IOBase):
 
             if response.status != 206 and response.status != 200:
                 response_error = ResponseError(response)
-                response_error.get(self._bucket_name, self._object_name)
+                raise response_error.get(self._bucket_name, self._object_name)
 
             self._reader = response
             self._is_read = True
