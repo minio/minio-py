@@ -17,7 +17,8 @@
 minio.io
 ~~~~~~~~~~~~~~~
 
-This module contains HTTPReadSeeker implementation which powers resumable downloads.
+This module contains HTTPReadSeeker implementation which powers
+resumable downloads.
 
 :copyright: (c) 2015 by Minio, Inc.
 :license: Apache 2.0, see LICENSE for more details.
@@ -29,17 +30,19 @@ import io
 
 from .error import ResponseError
 
+
 class HTTPReadSeeker(io.IOBase):
     """
     HTTP Read Seeker implements seekable stream.
 
     This class is also compatible with the Python standard library's :mod:`io`
-    module, and can hence be treated as a readable object in the context of that
-    framework.
+    module, and can hence be treated as a readable object in the context of
+    that framework.
 
     :param api :class:`Minio <Minio>`
     :param bucket_name: Bucket name of which the object is part of.
-    :param object_name: Object name for which :class:`HTTPReadSeeker` is created.
+    :param object_name: Object name for which :class:`HTTPReadSeeker`
+       is created.
     """
     def __init__(self, api, bucket_name, object_name):
         self._api = api
@@ -54,7 +57,7 @@ class HTTPReadSeeker(io.IOBase):
     def seek(self, offset, whence=0):
         """
         Change the stream position to the given byte *offset*.  *offset* is
-        interpreted relative to the position indicated by *whence*.  The default
+        interpreted relative to the position indicated by *whence*. The default
         value for *whence* is :data:`SEEK_SET`.  Values for *whence* are:
 
         * :data:`SEEK_SET` or ``0`` -- start of the stream (the default);
@@ -71,7 +74,8 @@ class HTTPReadSeeker(io.IOBase):
         """
         # TODO: whence value of '1' and '2' are not implemented yet.
         if offset < 0 and whence == 0:
-            raise ValueError('Invalid offset size cannot be negative for SEEK_SET')
+            raise ValueError('Invalid offset size cannot be negative '
+                             'for SEEK_SET')
         self._offset = offset
         return self._offset
 
@@ -93,11 +97,11 @@ class HTTPReadSeeker(io.IOBase):
 
     def readinto(self, b):
         """
-        Read up to len(b) bytes into bytearray *b* and return the number of bytes
-        read.
+        Read up to len(b) bytes into bytearray *b* and return the number
+        of bytes read.
 
-        Like :meth:`read`, multiple reads may be issued to the underlying raw
-        stream, unless the latter is 'interactive'.
+        Like :meth:`read`, multiple reads may be issued to the underlying
+        raw stream, unless the latter is 'interactive'.
 
         :param b: Bytearray to read into.
         :return: Length of the read bytes.
@@ -137,7 +141,7 @@ class HTTPReadSeeker(io.IOBase):
 
     def read(self, amt=None):
         """
-        Similar to :meth:`urllib3.HTTPResponse.read`, but with options amt option.
+        Similar to :meth:`urllib3.HTTPResponse.read`, but with amt option.
             Raise :exc:`ResponseError` on failure.
         :param amt:
             How much of the content to read.
@@ -147,8 +151,8 @@ class HTTPReadSeeker(io.IOBase):
             # If reading is not started yet, get a new response reader
             # for a specified offset.
             response = self._api._get_partial_object(self._bucket_name,
-                                                         self._object_name,
-                                                         self._offset, 0)
+                                                     self._object_name,
+                                                     self._offset, 0)
 
             if response.status != 206 and response.status != 200:
                 response_error = ResponseError(response)
@@ -167,8 +171,9 @@ class HTTPReadSeeker(io.IOBase):
 
     def getsize(self):
         """
-        Return the size of the Seekable stream.  Raise :exc:`ResponseError` if the file does
-        not exist or is inaccessible.
+        Return the size of the Seekable stream.  Raise :exc:`ResponseError`
+        if the file does not exist or is inaccessible.
         """
-        self._stat = self._api.stat_object(self._bucket_name, self._object_name)
+        self._stat = self._api.stat_object(self._bucket_name,
+                                           self._object_name)
         return self._stat.size

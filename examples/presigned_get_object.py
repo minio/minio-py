@@ -19,5 +19,5 @@ client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-### presigned get object URL for object name, expires in 7 days.
+# presigned get object URL for object name, expires in 7 days.
 print client.presigned_get_object('bucketName', 'objectName')

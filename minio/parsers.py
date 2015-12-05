@@ -35,6 +35,7 @@ from .bucket_acl import Acl
 from .compat import urldecode
 from .definitions import (Object, Bucket, IncompleteUpload, UploadPart)
 
+
 def parse_list_buckets(data):
     """
     Parser for list buckets response.
@@ -45,7 +46,7 @@ def parse_list_buckets(data):
     try:
         root = cElementTree.fromstring(data)
     except Exception as e:
-        raise InvalidXMLError('"ListBucketsResult" XML is not parsable. ' \
+        raise InvalidXMLError('"ListBucketsResult" XML is not parsable. '
                               'Message: {0}'.format(e.message))
 
     for buckets in root:
@@ -57,12 +58,15 @@ def parse_list_buckets(data):
             name = None
             creation_date = None
             for attribute in bucket:
-                if attribute.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Name':
+                if attribute.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}Name':
                     name = attribute.text
                     continue
-                if attribute.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}CreationDate':
+                if attribute.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}CreationDate':
                     creation_date = _iso8601_to_localized_time(attribute.text)
             yield Bucket(name, creation_date)
+
 
 def parse_acl(data):
     """
@@ -74,7 +78,7 @@ def parse_acl(data):
     try:
         root = cElementTree.fromstring(data)
     except Exception as e:
-        raise InvalidXMLError('"AccessControlList" XML is not parsable. ' \
+        raise InvalidXMLError('"AccessControlList" XML is not parsable. '
                               'Message: {0}'.format(e.message))
 
     public_read = False
@@ -83,33 +87,41 @@ def parse_acl(data):
     for acls in root:
         if acls.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Owner':
             continue
-        if acls.tag != '{http://s3.amazonaws.com/doc/2006-03-01/}AccessControlList':
+        if acls.tag != \
+           '{http://s3.amazonaws.com/doc/2006-03-01/}AccessControlList':
             raise InvalidXMLError('Missing "AccessControlList" XML attribute.')
         for grant in acls:
             user_uri = None
             permission = None
             for grant_property in grant:
-                if grant_property.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Grantee':
+                if grant_property.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}Grantee':
                     for grantee in grant_property:
-                        if grantee.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}URI':
+                        if grantee.tag == \
+                           '{http://s3.amazonaws.com/doc/2006-03-01/}URI':
                             user_uri = grantee.text
                             break
                     continue
-                if grant_property.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Permission':
+                if grant_property.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}Permission':
                     permission = grant_property.text
                     break
-            if user_uri == 'http://acs.amazonaws.com/groups/global/AuthenticatedUsers':
+            if user_uri == \
+               'http://acs.amazonaws.com/groups/global/AuthenticatedUsers':
                 if permission == 'READ':
                     return Acl.authenticated_read()
-            if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' and permission == 'WRITE':
+            if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' \
+               and permission == 'WRITE':
                 public_write = True
-            if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' and permission == 'READ':
+            if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' \
+               and permission == 'READ':
                 public_read = True
     if public_read is True and public_write is True:
         return Acl.public_read_write()
     if public_read is True and public_write is False:
         return Acl.public_read()
     return Acl.private()
+
 
 def parse_list_objects(data, bucket_name):
     """
@@ -125,16 +137,18 @@ def parse_list_objects(data, bucket_name):
     try:
         root = cElementTree.fromstring(data)
     except Exception as e:
-        raise InvalidXMLError('"ListObjects" XML is not parsable. ' \
+        raise InvalidXMLError('"ListObjects" XML is not parsable. '
                               'Message: {0}'.format(e.message))
     is_truncated = False
     objects = []
     marker = None
     last_object_name = None
     for contents in root:
-        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
+        if contents.tag == \
+           '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
             is_truncated = contents.text.lower() == 'true'
-        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextMarker':
+        if contents.tag == \
+           '{http://s3.amazonaws.com/doc/2006-03-01/}NextMarker':
             if contents.text is not None:
                 marker = urldecode(contents.text)
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Contents':
@@ -143,27 +157,37 @@ def parse_list_objects(data, bucket_name):
             etag = None
             size = 0
             for content in contents:
-                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
+                if content.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
                     object_name = urldecode(content.text)
                     last_object_name = object_name
-                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
+                if content.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
                     last_modified = _iso8601_to_localized_time(content.text)
-                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
+                if content.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
                     etag = content.text
                     etag = etag.replace('"', '')
-                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
+                if content.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
                     size = int(content.text)
-            objects.append(Object(bucket_name, object_name, last_modified, etag, size, content_type=None))
-        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}CommonPrefixes':
+            objects.append(Object(bucket_name, object_name, last_modified,
+                                  etag, size, content_type=None))
+        if contents.tag == \
+           '{http://s3.amazonaws.com/doc/2006-03-01/}CommonPrefixes':
             for content in contents:
-                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Prefix':
+                if content.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}Prefix':
                     object_name = urldecode(content.text)
-                objects.append(Object(bucket_name, object_name, None, '', 0, content_type=None, is_dir=True))
+                objects.append(Object(bucket_name,
+                                      object_name, None, '', 0,
+                                      content_type=None, is_dir=True))
 
     if is_truncated and marker is None:
         marker = last_object_name
 
     return objects, is_truncated, marker
+
 
 def parse_list_multipart_uploads(data, bucket_name):
     """
@@ -180,30 +204,38 @@ def parse_list_multipart_uploads(data, bucket_name):
     try:
         root = cElementTree.fromstring(data)
     except Exception as e:
-        raise InvalidXMLError('"ListMultipartUploads" XML is not parsable. ' \
+        raise InvalidXMLError('"ListMultipartUploads" XML is not parsable. '
                               'Message: {0}'.format(e.message))
     is_truncated = False
     uploads = []
     key_marker = None
     upload_id_marker = None
     for contents in root:
-        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
+        if contents.tag == \
+           '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
             is_truncated = contents.text.lower() == 'true'
-        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextKeyMarker':
+        if contents.tag == \
+           '{http://s3.amazonaws.com/doc/2006-03-01/}NextKeyMarker':
             if contents.text is not None:
                 key_marker = urldecode(contents.text)
-        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextUploadIdMarker':
+        if contents.tag == \
+           '{http://s3.amazonaws.com/doc/2006-03-01/}NextUploadIdMarker':
             upload_id_marker = contents.text
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Upload':
             object_name = None
             upload_id = None
             for content in contents:
-                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
+                if content.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
                     object_name = urldecode(content.text)
-                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}UploadId':
+                if content.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}UploadId':
                     upload_id = content.text
-            uploads.append(IncompleteUpload(bucket_name, object_name, upload_id))
+            uploads.append(IncompleteUpload(bucket_name,
+                                            object_name,
+                                            upload_id))
     return uploads, is_truncated, key_marker, upload_id_marker
+
 
 def parse_list_parts(data, bucket_name, object_name, upload_id):
     """
@@ -217,39 +249,51 @@ def parse_list_parts(data, bucket_name, object_name, upload_id):
     :return: Replies back three distinctive components.
        - List of :class:`UploadPart <UploadPart>`.
        - True if list is truncated, False otherwise.
-       - Next part marker for the next request if the list was truncated.
+       - Next part marker for the next request if the
+         list was truncated.
     """
     try:
         root = cElementTree.fromstring(data)
     except Exception as e:
-        raise InvalidXMLError('"ListParts" XML is not parsable. ' \
+        raise InvalidXMLError('"ListParts" XML is not parsable. '
                               'Message: {0}'.format(e.message))
+
     is_truncated = False
     parts = []
     part_marker = None
     for contents in root:
-        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
+        if contents.tag == \
+           '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
             is_truncated = contents.text.lower() == 'true'
-        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}NextPartNumberMarker':
+        if contents.tag == \
+           '{http://s3.amazonaws.com/doc/2006-03-01/}NextPartNumberMarker':
             part_marker = contents.text
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Part':
-            part_number = None
             etag = None
-            last_modified = None
             size = None
+            part_number = None
+            last_modified = None
             for content in contents:
-                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}PartNumber':
+                if content.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}PartNumber':
                     part_number = int(content.text)
-                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
+                if content.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
                     etag = content.text
                     etag = etag.replace('"', '')
-                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
+                if content.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
                     last_modified = _iso8601_to_localized_time(content.text)
-                if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
+                if content.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
                     size = int(content.text)
-            parts.append(UploadPart(bucket_name, object_name, upload_id, part_number, etag,
-                                    last_modified, size))
+            part = UploadPart(bucket_name, object_name,
+                              upload_id, part_number,
+                              etag, last_modified, size)
+            parts.append(part)
+
     return parts, is_truncated, part_marker
+
 
 def parse_new_multipart_upload(data):
     """
@@ -261,7 +305,7 @@ def parse_new_multipart_upload(data):
     try:
         root = cElementTree.fromstring(data)
     except Exception as e:
-        raise InvalidXMLError('"NewMultipartUpload" XML is not parsable. ' \
+        raise InvalidXMLError('"NewMultipartUpload" XML is not parsable. '
                               'Message: {0}'.format(e.message))
 
     for contents in root:
@@ -269,6 +313,7 @@ def parse_new_multipart_upload(data):
             return contents.text
 
     raise InvalidXMLError('Missing "UploadId" XML attribute.')
+
 
 def parse_location_constraint(data):
     """
@@ -280,13 +325,15 @@ def parse_location_constraint(data):
     try:
         content = cElementTree.fromstring(data)
     except Exception as e:
-        raise InvalidXMLError('"BucketLocationConstraint" XML is not parsable. ' \
-                              'Message: {0}'.format(e.message))
+        raise InvalidXMLError('"BucketLocationConstraint" XML is not parsable.'
+                              ' Message: {0}'.format(e.message))
 
-    if content.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}LocationConstraint':
+    if content.tag == \
+       '{http://s3.amazonaws.com/doc/2006-03-01/}LocationConstraint':
         return content.text
 
     raise InvalidXMLError('Missing "LocationConstraint" XML attribute.')
+
 
 def _iso8601_to_localized_time(date_string):
     """

@@ -32,6 +32,7 @@ from xml.etree import ElementTree as s3_xml
 
 s3_namespace = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
+
 def xml_marshal_bucket_constraint(region):
     """
     Marshal's bucket constraint based on *region*
@@ -45,6 +46,7 @@ def xml_marshal_bucket_constraint(region):
     data = io.BytesIO()
     s3_xml.ElementTree(root).write(data, encoding=None, xml_declaration=False)
     return data.getvalue()
+
 
 def xml_marshal_complete_multipart_upload(etags):
     """
@@ -62,5 +64,6 @@ def xml_marshal_complete_multipart_upload(etags):
         etag = s3_xml.SubElement(part, 'ETag')
         etag.text = etags[part_number-1]
         data = io.BytesIO()
-        s3_xml.ElementTree(root).write(data, encoding=None, xml_declaration=False)
+        s3_xml.ElementTree(root).write(data, encoding=None,
+                                       xml_declaration=False)
     return data.getvalue()

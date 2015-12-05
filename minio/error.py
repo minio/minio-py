@@ -17,7 +17,8 @@
 minio.error
 ~~~~~~~~~~~~~~~~~~~
 
-This module provides custom exception classes for Minio library and API specific errors.
+This module provides custom exception classes for Minio library
+and API specific errors.
 
 :copyright: (c) 2015 by Minio, Inc.
 :license: Apache 2.0, see LICENSE for more details.
@@ -25,6 +26,7 @@ This module provides custom exception classes for Minio library and API specific
 """
 
 from xml.etree import cElementTree
+
 
 class InvalidEndpointError(Exception):
     """
@@ -39,6 +41,7 @@ class InvalidEndpointError(Exception):
     def __str__(self):
         string_format = 'InvalidEndpointError: message: {0}'
         return string_format.format(self.message)
+
 
 class InvalidBucketError(Exception):
     """
@@ -55,6 +58,7 @@ class InvalidBucketError(Exception):
         string_format = 'InvalidBucketError: message: {0}'
         return string_format.format(self.message)
 
+
 class InvalidArgumentError(Exception):
     """
     InvalidArgumentError is raised when an unexpected
@@ -70,6 +74,7 @@ class InvalidArgumentError(Exception):
         string_format = 'InvalidArgumentError: message: {0}'
         return string_format.format(self.message)
 
+
 class InvalidXMLError(Exception):
     """
     InvalidXMLError is raised when an unexpected XML tag or
@@ -84,6 +89,7 @@ class InvalidXMLError(Exception):
     def __str__(self):
         string_format = 'InvalidXMLError: message: {0}'
         return string_format.format(self.message)
+
 
 class ResponseError(Exception):
     """
@@ -180,13 +186,16 @@ class ResponseError(Exception):
         else:
             self._set_error_response_with_body(bucket_name, object_name)
 
-    def _set_error_response_with_body(self, bucket_name=None, object_name=None):
+    def _set_error_response_with_body(self, bucket_name=None,
+                                      object_name=None):
         """
         Sets all the error response fields with a valid response body.
            Raises :exc:`ValueError` if invoked on a zero length body.
 
-        :param bucket_name: Optional bucket name resource at which error occurred.
-        :param object_name: Option object name resource at which error occurred.
+        :param bucket_name: Optional bucket name resource at which error
+           occurred.
+        :param object_name: Option object name resource at which error
+           occurred.
         """
         self.bucket_name = bucket_name
         self.object_name = object_name
@@ -213,12 +222,15 @@ class ResponseError(Exception):
         # Set amz headers.
         self._set_amz_headers()
 
-    def _set_error_response_without_body(self, bucket_name=None, object_name=None):
+    def _set_error_response_without_body(self, bucket_name=None,
+                                         object_name=None):
         """
         Sets all the error response fields from response headers.
 
-        :param bucket_name: Optional bucket name resource at which error occurred.
-        :param object_name: Option object name resource at which error occurred.
+        :param bucket_name: Optional bucket name resource at which error
+           occurred.
+        :param object_name: Option object name resource at which error
+           occurred.
         """
         self.bucket_name = bucket_name
         self.object_name = object_name

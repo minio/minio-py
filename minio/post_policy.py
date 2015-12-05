@@ -26,12 +26,16 @@ This module contains :class:`PostPolicy <PostPolicy>` implementation.
 
 import binascii
 
-from .helpers import is_non_empty_string, is_valid_bucket_name, encode_to_base64
+from .helpers import (is_non_empty_string, is_valid_bucket_name,
+                      encode_to_base64)
 
-# Policy explanation: http://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-HTTPPOSTConstructPolicy.html
+
+# Policy explanation:
+# http://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-HTTPPOSTConstructPolicy.html
 class PostPolicy(object):
     """
-    A :class:`PostPolicy <PostPolicy>` object for constructing Amazon S3 POST policy JSON string.
+    A :class:`PostPolicy <PostPolicy>` object for constructing
+       Amazon S3 POST policy JSON string.
     """
     def __init__(self):
         self._expiration = None
@@ -109,26 +113,29 @@ class PostPolicy(object):
         :param max_length: Maximum length limit for content size.
         """
         if min_length > max_length:
-            raise ValueError('minimum limit cannot be larger than maximum limit.')
+            raise ValueError('minimum limit cannot be larger '
+                             'than maximum limit.')
         if min_length < 0:
             raise ValueError('minimum limit cannot be negative.')
         if max_length < 0:
             raise ValueError('maximum limit cannot be negative.')
-        
+
         self._content_length_range = (min_length, max_length)
 
     def _marshal_json(self):
         """
         Marshal various policies into jsonified byte array.
         """
-        expiration_str = '"expiration":"' + self._expiration.strftime("%Y-%m-%dT%H:%M:%S.000Z") + '"'
+        expiration_str = ('"expiration":"' +
+                          self._expiration.strftime("%Y-%m-%dT%H:%M:%S.000Z") +
+                          '"')
         policies = []
         for p in self.policies:
             policies.append('["' + p[0] + '","' + p[1] + '","' + p[2] + '"]')
 
         if len(self._content_length_range) == 2:
-            policies.append('["content-length-range", ' + \
-                            str(self._content_length_range[0]) + \
+            policies.append('["content-length-range", ' +
+                            str(self._content_length_range[0]) +
                             ', ' + str(self._content_length_range[1]) + ']')
 
         if len(policies) > 0:

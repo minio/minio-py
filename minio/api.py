@@ -49,16 +49,24 @@ from .bucket_acl import is_valid_acl
 
 from .definitions import Object
 from .post_policy import PostPolicy
-from .generators import (ListObjectsIterator, ListIncompleteUploadsIterator, ListUploadPartsIterator)
+from .generators import (ListObjectsIterator, ListIncompleteUploadsIterator,
+                         ListUploadPartsIterator)
 
-from .parsers import (parse_list_buckets, parse_acl, parse_new_multipart_upload,
+from .parsers import (parse_list_buckets, parse_acl,
+                      parse_new_multipart_upload,
                       parse_location_constraint)
-from .helpers import (get_target_url, is_non_empty_string, is_valid_endpoint, get_sha256,
-                      encode_to_base64, get_md5, calculate_part_size, encode_to_hex,
+from .helpers import (get_target_url, is_non_empty_string,
+                      is_valid_endpoint, get_sha256,
+                      encode_to_base64, get_md5,
+                      calculate_part_size, encode_to_hex,
                       is_valid_bucket_name, parts_manager)
 
-from .signer import sign_v4, presign_v4, generate_credential_string, post_presign_signature
-from .xml_marshal import xml_marshal_bucket_constraint, xml_marshal_complete_multipart_upload
+from .signer import (sign_v4, presign_v4,
+                     generate_credential_string,
+                     post_presign_signature)
+from .xml_marshal import (xml_marshal_bucket_constraint,
+                          xml_marshal_complete_multipart_upload)
+
 
 class Minio(object):
     def __init__(self, endpoint, access_key=None, secret_key=None):
@@ -66,7 +74,8 @@ class Minio(object):
 
         Examples:
           client = Minio('https://play.minio.io:9000')
-          client = Minio('https://s3.amazonaws.com', 'ACCESS_KEY', 'SECRET_KEY')
+          client = Minio('https://s3.amazonaws.com',
+                         'ACCESS_KEY', 'SECRET_KEY')
 
         :param endpoint: A string of the URL of the cloud storage server.
         :param access_key: Access key to sign self._http.request with.
@@ -80,9 +89,9 @@ class Minio(object):
         self._endpoint_url = url_components.geturl()
         self._access_key = access_key
         self._secret_key = secret_key
-        self._user_agent = 'minio-py/' + __version__ + \
-                           ' (' + platform.system() + '; ' + \
-                           platform.machine() + ')'
+        self._user_agent = 'minio-py/{0} ({1}; {2})'.format(__version__,
+                                                            platform.system(),
+                                                            platform.machine())
 
         self._http = urllib3.PoolManager(
             cert_reqs='CERT_REQUIRED',
@@ -192,7 +201,7 @@ class Minio(object):
         url = get_target_url(self._endpoint_url)
 
         # default for all requests.
-        region  = 'us-east-1'
+        region = 'us-east-1'
         headers = sign_v4(method=method, url=url,
                           region=region,
                           headers=headers,
@@ -338,7 +347,8 @@ class Minio(object):
             response_error = ResponseError(response)
             raise response_error.put(bucket_name)
 
-    def presigned_get_object(self, bucket_name, object_name, expires=timedelta(days=7)):
+    def presigned_get_object(self, bucket_name, object_name,
+                             expires=timedelta(days=7)):
         """
         Presigns a get object request and provides a url
 
@@ -346,29 +356,36 @@ class Minio(object):
 
             from datetime import timedelta
 
-            presignedURL = presigned_get_object('bucket_name', 'object_name', timedelta(days=7))
+            presignedURL = presigned_get_object('bucket_name',
+                                                'object_name',
+                                                timedelta(days=7))
             print presignedURL
 
         :param bucket_name: Bucket for the presigned url.
         :param object_name: Object for which presigned url is generated.
-        :param expires: Optional expires argument to specify timedelta. Defaults to 7days.
+        :param expires: Optional expires argument to specify timedelta.
+           Defaults to 7days.
         :return: Presigned url.
         """
         if expires.total_seconds() < 1 or expires.total_seconds() > 604800:
-            raise InvalidArgumentError('expires param valid values are between 1 secs to 604800 secs')
+            raise InvalidArgumentError('Expires param valid values are'
+                                       ' between 1 secs to 604800 secs')
 
-        return self.__presigned_get_partial_object(bucket_name, object_name, expires)
+        return self.__presigned_get_partial_object(bucket_name,
+                                                   object_name,
+                                                   expires)
 
     def __presigned_get_partial_object(self, bucket_name, object_name,
                                        expires=timedelta(days=7),
                                        offset=0, length=0):
         """
-        Presigns a get partial object request and provides a url, this is a internal function
-        not exposed.
+        Presigns a get partial object request and provides a url,
+        this is a internal function not exposed.
 
         :param bucket_name: Bucket for the presigned url.
         :param object_name: Object for which presigned url is generated.
-        :param expires: optional expires argument to specify timedelta. Defaults to 7days.
+        :param expires: optional expires argument to specify timedelta.
+           Defaults to 7days.
         :param offset, length: optional defaults to '0, 0'.
         :return: Presigned url.
         """
@@ -401,23 +418,28 @@ class Minio(object):
                                  expires=int(expires.total_seconds()))
         return presign_url
 
-    def presigned_put_object(self, bucket_name, object_name, expires=timedelta(days=7)):
+    def presigned_put_object(self, bucket_name, object_name,
+                             expires=timedelta(days=7)):
         """
         Presigns a put object request and provides a url
 
         Example:
             from datetime import timedelta
 
-            presignedURL = presigned_put_object('bucket_name', 'object_name', timedelta(days=7))
+            presignedURL = presigned_put_object('bucket_name',
+                                                'object_name',
+                                                timedelta(days=7))
             print presignedURL
 
         :param bucket_name: Bucket for the presigned url.
         :param object_name: Object for which presigned url is generated.
-        :param expires: optional expires argument to specify timedelta. Defaults to 7days.
+        :param expires: optional expires argument to specify timedelta.
+           Defaults to 7days.
         :return: Presigned put object url.
         """
         if expires.total_seconds() < 1 or expires.total_seconds() > 604800:
-            raise InvalidArgumentError('expires param valid values are between 1 secs to 604800 secs')
+            raise InvalidArgumentError('Expires param valid values are'
+                                       ' between 1 secs to 604800 secs')
 
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -469,19 +491,27 @@ class Minio(object):
         date = datetime.utcnow()
         iso8601Date = date.strftime("%Y%m%dT%H%M%SZ")
         region = self._get_region(policy.form_data['bucket'])
-        credential_string = generate_credential_string(self._access_key, date, region)
-        policy.policies.append(('eq', '$x-amz-date', iso8601Date))
-        policy.policies.append(('eq', '$x-amz-algorithm', 'AWS4-HMAC-SHA256'))
-        policy.policies.append(('eq', '$x-amz-credential', credential_string))
+        credential_string = generate_credential_string(self._access_key,
+                                                       date, region)
+        policy.policies.append(('eq',
+                                '$x-amz-date',
+                                iso8601Date))
+        policy.policies.append(('eq',
+                                '$x-amz-algorithm',
+                                'AWS4-HMAC-SHA256'))
+        policy.policies.append(('eq',
+                                '$x-amz-credential',
+                                credential_string))
 
         policy_base64 = policy.base64()
         policy.form_data['policy'] = policy_base64
         policy.form_data['x-amz-algorithm'] = 'AWS4-HMAC-SHA256'
         policy.form_data['x-amz-credential'] = credential_string
         policy.form_data['x-amz-date'] = iso8601Date
-        policy.form_data['x-amz-signature'] = post_presign_signature(date, region,
-                                                                     self._secret_key,
-                                                                     policy_base64)
+        signature = post_presign_signature(date, region,
+                                           self._secret_key,
+                                           policy_base64)
+        policy.form_data['x-amz-signature'] = signature
         return policy.form_data
 
     def get_object(self, bucket_name, object_name):
@@ -512,18 +542,22 @@ class Minio(object):
 
         :param bucket_name: Bucket to retrieve object from
         :param object_name: Name of object to retrieve
-        :param offset: Optional offset to retrieve bytes from. Must be >= 0.
-        :param length: Optional number of bytes to retrieve. Must be an integer.
+        :param offset: Optional offset to retrieve bytes from.
+           Must be >= 0.
+        :param length: Optional number of bytes to retrieve.
+           Must be an integer.
         :return: :class:`urllib3.response.HTTPResponse` object.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
-        response = _get_partial_object(self, bucket_name, object_name, offset, length)
+        response = _get_partial_object(self, bucket_name, object_name,
+                                       offset, length)
         return response
 
     # Object Level
-    def _get_partial_object(self, bucket_name, object_name, offset=0, length=0):
+    def _get_partial_object(self, bucket_name, object_name,
+                            offset=0, length=0):
         """
         Retrieves an object from a bucket.
 
@@ -534,8 +568,10 @@ class Minio(object):
 
         :param bucket_name: Bucket to retrieve object from
         :param object_name: Name of object to retrieve
-        :param offset: Optional offset to retrieve bytes from. Must be >= 0.
-        :param length: Optional number of bytes to retrieve. Must be an integer.
+        :param offset: Optional offset to retrieve bytes from.
+           Must be >= 0.
+        :param length: Optional number of bytes to retrieve.
+           Must be an integer.
         :return: :class:`urllib3.response.HTTPResponse` object.
         """
         request_range = ''
@@ -582,12 +618,16 @@ class Minio(object):
          with open('hello.txt', 'rb') as data:
              minio.put_object('foo', 'bar', data, -1, 'text/plain')
 
-        - For length lesser than 5MB put_object automatically does single Put operation.
-        - For length equal to 0Bytes put_object automatically does single Put operation.
-        - For length larger than 5MB put_object automatically does resumable multipart operation.
-        - For length input as -1 put_object treats it as a stream and does multipart operation until
-          input stream reaches EOF. Maximum object size that can be uploaded through this operation
-          will be 5TB.
+        - For length lesser than 5MB put_object automatically
+          does single Put operation.
+        - For length equal to 0Bytes put_object automatically
+          does single Put operation.
+        - For length larger than 5MB put_object automatically
+          does resumable multipart operation.
+        - For length input as -1 put_object treats it as a
+          stream and does multipart operation until  input stream
+          reaches EOF. Maximum object size that can be uploaded
+          through this operation will be 5TB.
 
         :param bucket_name: Bucket of new object.
         :param object_name: Name of new object.
@@ -600,7 +640,8 @@ class Minio(object):
         is_non_empty_string(object_name)
 
         if length > 5 * 1024 * 1024:
-            return self._stream_put_object(bucket_name, object_name, data, length, content_type)
+            return self._stream_put_object(bucket_name, object_name,
+                                           data, length, content_type)
 
         current_data = data.read(length)
         current_data_md5_base64 = encode_to_base64(get_md5(current_data))
@@ -649,9 +690,12 @@ class Minio(object):
         :return: An iterator of objects in alphabetical order.
         """
         is_valid_bucket_name(bucket_name)
-        return ListObjectsIterator(self._http, self._endpoint_url, bucket_name,
-                                   prefix, recursive, self._access_key,
-                                   self._secret_key, self._get_region(bucket_name))
+        return ListObjectsIterator(self._http, self._endpoint_url,
+                                   bucket_name,
+                                   prefix, recursive,
+                                   self._access_key,
+                                   self._secret_key,
+                                   self._get_region(bucket_name))
 
     def stat_object(self, bucket_name, object_name):
         """
@@ -730,7 +774,8 @@ class Minio(object):
             response_error = ResponseError(response)
             raise response_error.delete(bucket_name, object_name)
 
-    def list_incomplete_uploads(self, bucket_name, prefix=None, recursive=False):
+    def list_incomplete_uploads(self, bucket_name, prefix=None,
+                                recursive=False):
         """
         List all in-complete uploads for a given bucket.
 
@@ -743,19 +788,23 @@ class Minio(object):
             # hello/
             # world/
 
-            incomplete_uploads = minio.list_incomplete_uploads('foo', prefix='hello/')
+            incomplete_uploads = minio.list_incomplete_uploads('foo',
+                                                               prefix='hello/')
             for current_upload in incomplete_uploads:
                 print current_upload
             # hello/world/
 
-            incomplete_uploads = minio.list_incomplete_uploads('foo', recursive=True)
+            incomplete_uploads = minio.list_incomplete_uploads('foo',
+                                                               recursive=True)
             for current_upload in incomplete_uploads:
                 print current_upload
             # hello/world/1
             # world/world/2
             # ...
 
-            incomplete_uploads = minio.list_incomplete_uploads('foo', prefix='hello/', recursive=True)
+            incomplete_uploads = minio.list_incomplete_uploads('foo',
+                                                               prefix='hello/',
+                                                               recursive=True)
             for current_upload in incomplete_uploads:
                 print current_upload
             # hello/world/1
@@ -763,21 +812,23 @@ class Minio(object):
 
         :param bucket_name: Bucket to list incomplete uploads
         :param prefix: String specifying objects returned must begin with
-        :param recursive: If yes, returns all incomplete uploads for a specified prefix
+        :param recursive: If yes, returns all incomplete uploads for
+           a specified prefix
         :return: None
         """
         is_valid_bucket_name(bucket_name)
         delimiter = '/'
         if recursive is True:
             delimiter = None
+        region = self._get_region(bucket_name)
         return ListIncompleteUploadsIterator(self._http,
                                              self._endpoint_url,
                                              bucket_name,
                                              prefix,
                                              delimiter,
-                                             access_key=self._access_key,
-                                             secret_key=self._secret_key,
-                                             region=self._get_region(bucket_name))
+                                             self._access_key,
+                                             self._secret_key,
+                                             region)
 
     def remove_incomplete_upload(self, bucket_name, object_name):
         """
@@ -797,12 +848,14 @@ class Minio(object):
                                                 secret_key=self._secret_key)
         for upload in uploads:
             if object_name == upload.object_name:
-                self._remove_incomplete_upload(bucket_name, object_name, upload.upload_id)
+                self._remove_incomplete_upload(bucket_name, object_name,
+                                               upload.upload_id)
                 return
 
     def _do_put_multipart_object(self, bucket_name, object_name, data,
                                  data_content_size, data_md5_base64,
-                                 data_sha256_hex, data_content_type='application/octet-stream',
+                                 data_sha256_hex,
+                                 data_content_type='application/octet-stream',
                                  upload_id='', part_number=0):
         """
         Initiate a multipart PUT operation for a part number.
@@ -821,8 +874,10 @@ class Minio(object):
         method = 'PUT'
         region = self._get_region(bucket_name)
 
-        url = get_target_url(self._endpoint_url, bucket_name=bucket_name, object_name=object_name,
-                             query={'uploadId': upload_id, 'partNumber': part_number})
+        url = get_target_url(self._endpoint_url, bucket_name=bucket_name,
+                             object_name=object_name,
+                             query={'uploadId': upload_id,
+                                    'partNumber': part_number})
 
         headers = {
             'Content-Length': data_content_size,
@@ -847,9 +902,11 @@ class Minio(object):
 
     def _do_put_object(self, bucket_name, object_name, data,
                        data_content_size, data_md5_base64,
-                       data_sha256_hex, data_content_type='application/octet-stream'):
+                       data_sha256_hex,
+                       data_content_type='application/octet-stream'):
 
-        url = get_target_url(self._endpoint_url, bucket_name=bucket_name, object_name=object_name)
+        url = get_target_url(self._endpoint_url, bucket_name=bucket_name,
+                             object_name=object_name)
 
         headers = {
             'Content-Length': data_content_size,
@@ -872,8 +929,10 @@ class Minio(object):
 
         return response.headers['etag'].replace('"', '')
 
-    def _stream_put_object(self, bucket_name, object_name, data,
-                           data_content_size, data_content_type='application/octet-stream'):
+    def _stream_put_object(self, bucket_name,
+                           object_name, data,
+                           data_content_size,
+                           data_content_type='application/octet-stream'):
         """
         Streaming multipart upload operation.
 
@@ -884,13 +943,14 @@ class Minio(object):
            Defaults to 'application/octet-stream'.
         """
         part_size = calculate_part_size(data_content_size)
+        region = self._get_region(bucket_name)
         current_uploads = ListIncompleteUploadsIterator(self._http,
                                                         self._endpoint_url,
                                                         bucket_name,
                                                         object_name,
-                                                        access_key=self._access_key,
-                                                        secret_key=self._secret_key,
-                                                        region=self._get_region(bucket_name))
+                                                        self._access_key,
+                                                        self._secret_key,
+                                                        region)
         upload_id = None
         for upload in current_uploads:
             if object_name == upload.object_name:
@@ -905,20 +965,24 @@ class Minio(object):
         # Some streams wouldn't implement seek() method.
         # Handle it and set it to False.
         is_seekable_stream = False
-        if data.hasattr('seek'):
+        if hasattr(data, 'seek'):
             is_seekable_stream = True
 
         # If upload_id is None its a new multipart upload.
         if upload_id is None:
-            upload_id = self._new_multipart_upload(bucket_name, object_name,
+            upload_id = self._new_multipart_upload(bucket_name,
+                                                   object_name,
                                                    data_content_type)
         else:
             # Iter over the uploaded parts.
-            part_iter = ListUploadPartsIterator(self._http, self._endpoint_url,
-                                                bucket_name, object_name, upload_id,
-                                                access_key=self._access_key,
-                                                secret_key=self._secret_key,
-                                                region=self._get_region(bucket_name))
+            part_iter = ListUploadPartsIterator(self._http,
+                                                self._endpoint_url,
+                                                bucket_name,
+                                                object_name,
+                                                upload_id,
+                                                self._access_key,
+                                                self._secret_key,
+                                                region)
             uploaded_parts_size = 0
             latest_part_number = 0
             for part in part_iter:
@@ -926,7 +990,8 @@ class Minio(object):
                 uploaded_parts_size += part.size
                 # Save uploaded parts for future verification.
                 uploaded_parts[part.part_number] = part
-                # Save the latest_part_numer to indicate previously uploaded part.
+                # Save the latest_part_numer to indicate
+                # previously uploaded part.
                 latest_part_number = part.part_number
                 # Save uploaded tags for future use.
                 uploaded_etags.append(part.etag)
@@ -955,23 +1020,24 @@ class Minio(object):
                 # Verify if current part number has been already uploaded.
                 # Further verify if we have matching md5sum as well.
                 if current_part_number in uploaded_parts:
-                    previously_uploaded_part = uploaded_parts[current_part_number]
-                    if previously_uploaded_part.etag == current_data_md5_hex:
-                        uploaded_etags.append(previously_uploaded_part.etag)
-                        total_uploaded += previously_uploaded_part.size
+                    previous_part = uploaded_parts[current_part_number]
+                    if previous_part.etag == current_data_md5_hex:
+                        uploaded_etags.append(previous_part.etag)
+                        total_uploaded += previous_part.size
                         continue
             current_data_md5_base64 = encode_to_base64(part_metadata.md5digest)
             current_data_sha256_hex = encode_to_hex(part_metadata.sha256digest)
             # Seek back to starting position.
             part_metadata.data.seek(0)
-            etag = self._do_put_multipart_object(bucket_name, object_name,
+            etag = self._do_put_multipart_object(bucket_name,
+                                                 object_name,
                                                  part_metadata.data,
                                                  part_metadata.size,
                                                  current_data_md5_base64,
                                                  current_data_sha256_hex,
-                                                 data_content_type=data_content_type,
-                                                 upload_id=upload_id,
-                                                 part_number=current_part_number)
+                                                 data_content_type,
+                                                 upload_id,
+                                                 current_part_number)
             # Save etags.
             uploaded_etags.append(etag)
             # If total_uploaded equal to data_content_size break the loop.
@@ -980,9 +1046,9 @@ class Minio(object):
             current_part_number += 1
             total_uploaded += part_metadata.size
 
-
         # Complete all multipart transactions if possible.
-        self._complete_multipart_upload(bucket_name, object_name, upload_id, uploaded_etags)
+        self._complete_multipart_upload(bucket_name, object_name,
+                                        upload_id, uploaded_etags)
 
     def _remove_incomplete_upload(self, bucket_name, object_name, upload_id):
         """
@@ -1034,7 +1100,7 @@ class Minio(object):
                              bucket_name=bucket_name,
                              object_name=object_name, query=query)
 
-        headers = { 'Content-Type': content_type }
+        headers = {'Content-Type': content_type}
 
         headers = sign_v4(method=method, url=url,
                           region=region,
@@ -1050,7 +1116,8 @@ class Minio(object):
 
         return parse_new_multipart_upload(response.data)
 
-    def _complete_multipart_upload(self, bucket_name, object_name, upload_id, etags):
+    def _complete_multipart_upload(self, bucket_name, object_name,
+                                   upload_id, etags):
         """
         Complete an active multipart upload request.
 
@@ -1094,7 +1161,8 @@ class Minio(object):
         """
         Set region based on the bucket name.
 
-        :param bucket_name: Bucket name for which region will be set in region map.
+        :param bucket_name: Bucket name for which region will be set in
+           region map.
         :param region: Optional region, if set location is not fetched.
         """
         # fetch bucket location only for Amazon S3.
@@ -1114,7 +1182,7 @@ class Minio(object):
         """
         # get proper location only for Amazon S3.
         if 'amazonaws.com' in self._endpoint_url:
-            if self._region_map.has_key(bucket_name):
+            if bucket_name in self._region_map:
                 return self._region_map[bucket_name]
             return self._set_region(bucket_name)
         return 'us-east-1'
@@ -1131,7 +1199,13 @@ class Minio(object):
         headers = {}
         # default for all requests.
         region = 'us-east-1'
-        headers = sign_v4(method=method, url=url,
+
+        # For anonymous requests no need to get bucket location.
+        if self._access_key is None or self._secret_key is None:
+            return 'us-east-1'
+
+        headers = sign_v4(method=method,
+                          url=url,
                           region=region,
                           headers=headers,
                           access_key=self._access_key,
@@ -1150,4 +1224,5 @@ class Minio(object):
         # location can be 'EU' convert it to meaningful 'eu-west-1'
         if location is 'EU':
             return 'eu-west-1'
+
         return location

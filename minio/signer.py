@@ -35,6 +35,7 @@ from .error import InvalidArgumentError
 from .compat import urlsplit, basestring, urlencode
 from .helpers import ignore_headers
 
+
 def post_presign_signature(date, region, secret_key, policy_str):
     """
     Calculates signature version '4' for POST policy string.
@@ -51,7 +52,9 @@ def post_presign_signature(date, region, secret_key, policy_str):
 
     return signature
 
-def presign_v4(method, url, access_key, secret_key, region=None, headers=None, expires=None):
+
+def presign_v4(method, url, access_key, secret_key, region=None,
+               headers=None, expires=None):
     """
     Calculates signature version '4' for regular presigned URLs.
 
@@ -87,16 +90,18 @@ def presign_v4(method, url, access_key, secret_key, region=None, headers=None, e
 
     headers_to_sign = dict(headers)
 
-    # Remove headers.
+    # Remove amazon recommended headers.
     headers_to_sign = ignore_headers(headers)
 
     # Construct queries.
     query = {}
     query['X-Amz-Algorithm'] = 'AWS4-HMAC-SHA256'
-    query['X-Amz-Credential'] = generate_credential_string(access_key, date, region)
+    query['X-Amz-Credential'] = generate_credential_string(access_key,
+                                                           date, region)
     query['X-Amz-Date'] = iso8601Date
     query['X-Amz-Expires'] = expires
-    query['X-Amz-SignedHeaders']  = ';'.join(get_signed_headers(headers_to_sign))
+    signed_headers = get_signed_headers(headers_to_sign)
+    query['X-Amz-SignedHeaders'] = ';'.join(signed_headers)
 
     # URL components.
     url_components = [parsed_url.geturl()]
@@ -108,7 +113,10 @@ def presign_v4(method, url, access_key, secret_key, region=None, headers=None, e
             if ordered_query[component_key] is not None:
                 single_component.append('=')
                 single_component.append(
-                    urlencode(str(ordered_query[component_key])).replace('/', '%2F'))
+                    urlencode(
+                        str(ordered_query[component_key])
+                    ).replace('/',
+                              '%2F'))
             query_components.append(''.join(single_component))
 
         query_string = '&'.join(query_components)
@@ -131,6 +139,7 @@ def presign_v4(method, url, access_key, secret_key, region=None, headers=None, e
     new_parsed_url = urlsplit(new_url + "&X-Amz-Signature="+signature)
     return new_parsed_url.geturl()
 
+
 def get_signed_headers(headers):
     """
     Get signed headers.
@@ -143,6 +152,7 @@ def get_signed_headers(headers):
         signed_headers.append(header)
     signed_headers.sort()
     return signed_headers
+
 
 def sign_v4(method, url, region, headers=None, access_key=None,
             secret_key=None, content_sha256=None):
@@ -172,7 +182,8 @@ def sign_v4(method, url, region, headers=None, access_key=None,
 
     parsed_url = urlsplit(url)
     if content_sha256 is None:
-        content_sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+        # with no payload, calculate sha256 for 0 length data.
+        content_sha256 = encode_to_hex(get_sha256(b''))
 
     host = parsed_url.netloc
     headers['host'] = host
@@ -183,14 +194,14 @@ def sign_v4(method, url, region, headers=None, access_key=None,
 
     headers_to_sign = dict(headers)
 
-    # Remove headers.
+    # Remove amazon recommended headers.
     headers_to_sign = ignore_headers(headers_to_sign)
 
     signed_headers = get_signed_headers(headers_to_sign)
     canonical_request = generate_canonical_request(method,
-                                                    parsed_url,
-                                                    headers_to_sign,
-                                                    content_sha256)
+                                                   parsed_url,
+                                                   headers_to_sign,
+                                                   content_sha256)
 
     string_to_sign = generate_string_to_sign(date, region,
                                              canonical_request)
@@ -198,12 +209,14 @@ def sign_v4(method, url, region, headers=None, access_key=None,
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
 
-    authorization_header = generate_authorization_header(access_key, date, region,
+    authorization_header = generate_authorization_header(access_key, date,
+                                                         region,
                                                          signed_headers,
                                                          signature)
 
     headers['authorization'] = authorization_header
     return headers
+
 
 def generate_canonical_request(method, parsed_url, headers, content_sha256):
     """
@@ -246,6 +259,7 @@ def generate_canonical_request(method, parsed_url, headers, content_sha256):
     lines.append(str(content_sha256))
     return '\n'.join(lines)
 
+
 def generate_string_to_sign(date, region, canonical_request):
     """
     Generate string to sign.
@@ -265,6 +279,7 @@ def generate_string_to_sign(date, region, canonical_request):
                       formatted_date_time,
                       scope,
                       canonical_request_sha256])
+
 
 def generate_signing_key(date, region, secret_key):
     """
@@ -286,6 +301,7 @@ def generate_signing_key(date, region, secret_key):
     return hmac.new(key4, 'aws4_request'.encode('utf-8'),
                     hashlib.sha256).digest()
 
+
 def generate_scope_string(date, region):
     """
     Generate scope string.
@@ -300,6 +316,7 @@ def generate_scope_string(date, region):
                       'aws4_request'])
     return scope
 
+
 def generate_credential_string(access_key, date, region):
     """
     Generate credential string.
@@ -308,7 +325,8 @@ def generate_credential_string(access_key, date, region):
     :param date: Date is input from :meth:`datetime.datetime`
     :param region: Region should be set to bucket region.
     """
-    return access_key + '/' +  generate_scope_string(date, region)
+    return access_key + '/' + generate_scope_string(date, region)
+
 
 def generate_authorization_header(access_key, date, region,
                                   signed_headers, signature):
@@ -323,6 +341,7 @@ def generate_authorization_header(access_key, date, region,
     """
     signed_headers_string = ';'.join(signed_headers)
     credential = generate_credential_string(access_key, date, region)
-    auth_header = "AWS4-HMAC-SHA256 Credential=" + credential + ", SignedHeaders=" + \
-                  signed_headers_string + ", Signature=" + signature
-    return auth_header
+    auth_header = ['AWS4-HMAC-SHA256', 'Credential=' + credential + ',',
+                   'SignedHeaders=' + signed_headers_string + ',',
+                   'Signature=' + signature]
+    return ' '.join(auth_header)
