@@ -34,7 +34,7 @@ client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-curl_str = 'curl'
+curl_str = 'curl -X POST https://bucketName.s3.amazonaws.com/'
 curl_cmd = [curl_str]
 signed_form_data = client.presigned_post_policy(policy)
 for field in signed_form_data:

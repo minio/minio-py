@@ -768,9 +768,9 @@ class Minio(object):
         :return: None
         """
         is_valid_bucket_name(bucket_name)
-        delimiter = None
-        if recursive == False:
-            delimiter = '/'
+        delimiter = '/'
+        if recursive is True:
+            delimiter = None
         return ListIncompleteUploadsIterator(self._http,
                                              self._endpoint_url,
                                              bucket_name,

@@ -18,6 +18,10 @@ minio.definitions
 ~~~~~~~~~~~~~~~
 
 This module contains the primary objects that power Minio.
+
+:copyright: (c) 2015 by Minio, Inc.
+:license: Apache 2.0, see LICENSE for more details.
+
 """
 
 class Bucket(object):

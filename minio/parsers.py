@@ -18,6 +18,10 @@ minio.parsers
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains core API parsers.
+
+:copyright: (c) 2015 by Minio, Inc.
+:license: Apache 2.0, see LICENSE for more details.
+
 """
 
 import pytz
