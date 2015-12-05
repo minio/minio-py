@@ -33,8 +33,10 @@ from .compat import urlsplit, basestring, urlencode
 from .error import InvalidBucketError, InvalidEndpointError
 
 _VALID_BUCKETNAME_REGEX = re.compile('^[a-zA-Z][a-zA-Z0-9\\-]+[a-zA-Z0-9]$')
-_ALLOWED_HOSTNAME_REGEX = re.compile("^((?!-)[A-Z\\d-]{1,63}(?<!-)\\.)*((?!-)[A-Z\\d-]{1,63}(?<!-))$",
-                                     re.IGNORECASE)
+_ALLOWED_HOSTNAME_REGEX = re.compile(
+    '^((?!-)[A-Z\\d-]{1,63}(?<!-)\\.)*((?!-)[A-Z\\d-]{1,63}(?<!-))$',
+    re.IGNORECASE)
+
 
 class PartMetadata(object):
     """
@@ -50,6 +52,7 @@ class PartMetadata(object):
         self.md5digest = md5digest
         self.sha256digest = sha256digest
         self.size = size
+
 
 def parts_manager(data, part_size=5*1024*1024):
     """
@@ -72,44 +75,54 @@ def parts_manager(data, part_size=5*1024*1024):
         sha256hasher.update(current_data)
         total_read = total_read + len(current_data)
 
-    return PartMetadata(tmpdata, md5hasher.digest(), sha256hasher.digest(), total_read)
+    return PartMetadata(tmpdata, md5hasher.digest(),
+                        sha256hasher.digest(), total_read)
+
 
 def ignore_headers(headers_to_sign):
     """
     Ignore headers.
     """
-    # Excerpts from @lsegal - https://github.com/aws/aws-sdk-js/issues/659#issuecomment-120477258
+    # Excerpts from @lsegal -
+    # https://github.com/aws/aws-sdk-js/issues/659#issuecomment-120477258
     #
     #  User-Agent:
     #
-    #      This is ignored from signing because signing this causes problems with generating pre-signed URLs
-    #      (that are executed by other agents) or when customers pass requests through proxies, which may
-    #      modify the user-agent.
+    #      This is ignored from signing because signing this causes problems
+    #      with generating pre-signed URLs (that are executed by other agents)
+    #      or when customers pass requests through proxies, which may modify
+    #      the user-agent.
     #
     #  Content-Length:
     #
-    #      This is ignored from signing because generating a pre-signed URL should not provide a content-length
-    #      constraint, specifically when vending a S3 pre-signed PUT URL. The corollary to this is that when
-    #      sending regular requests (non-pre-signed), the signature contains a checksum of the body, which
-    #      implicitly validates the payload length (since changing the number of bytes would change the checksum)
-    #      and therefore this header is not valuable in the signature.
+    #      This is ignored from signing because generating a pre-signed URL
+    #      should not provide a content-length constraint, specifically when
+    #      vending a S3 pre-signed PUT URL. The corollary to this is that when
+    #      sending regular requests (non-pre-signed), the signature contains
+    #      a checksum of the body, which implicitly validates the payload
+    #      length (since changing the number of bytes would change the
+    #      checksum) and therefore this header is not valuable in the
+    #      signature.
     #
     #  Content-Type:
     #
-    #      Signing this header causes quite a number of problems in browser environments, where browsers
-    #      like to modify and normalize the content-type header in different ways. There is more information
-    #      on this in https://github.com/aws/aws-sdk-js/issues/244. Avoiding this field simplifies logic
-    #      and reduces the possibility of future bugs
+    #      Signing this header causes quite a number of problems in browser
+    #      environments, where browsers like to modify and normalize the
+    #      content-type header in different ways. There is more information
+    #      on this in https://github.com/aws/aws-sdk-js/issues/244. Avoiding
+    #      this field simplifies logic and reduces the possibility of bugs.
     #
     #  Authorization:
     #
     #      Is skipped for obvious reasons
-    ignored_headers = ['Authorization', 'Content-Length', 'Content-Type', 'User-Agent']
+    ignored_headers = ['Authorization', 'Content-Length',
+                       'Content-Type', 'User-Agent']
     for ignored_header in ignored_headers:
         if ignored_header in headers_to_sign:
             del headers_to_sign[ignored_header]
 
     return headers_to_sign
+
 
 def get_target_url(endpoint, bucket_name=None, object_name=None, query=None):
     """
@@ -127,9 +140,11 @@ def get_target_url(endpoint, bucket_name=None, object_name=None, query=None):
         url = parsed_url.scheme + '://' + parsed_url.netloc
     else:
         if 'amazonaws.com' in parsed_url.netloc:
-            url = parsed_url.scheme + '://' + bucket_name + '.' + parsed_url.netloc
+            url = (parsed_url.scheme + '://' +
+                   bucket_name + '.' + parsed_url.netloc)
         else:
-            url = parsed_url.scheme + '://' + parsed_url.netloc + '/' + bucket_name
+            url = (parsed_url.scheme + '://' +
+                   parsed_url.netloc + '/' + bucket_name)
 
     url_components = [url]
     url_components.append('/')
@@ -146,8 +161,11 @@ def get_target_url(endpoint, bucket_name=None, object_name=None, query=None):
             single_component = [component_key]
             if ordered_query[component_key] is not None:
                 single_component.append('=')
-                single_component.append(
-                    urlencode(str(ordered_query[component_key])).replace('/', '%2F'))
+                encoded_query = urlencode(
+                    str(ordered_query[component_key])).replace(
+                    '/',
+                    '%2F')
+                single_component.append(encoded_query)
             query_components.append(''.join(single_component))
 
         query_string = '&'.join(query_components)
@@ -157,13 +175,15 @@ def get_target_url(endpoint, bucket_name=None, object_name=None, query=None):
 
     return ''.join(url_components)
 
+
 def is_valid_endpoint(endpoint):
     """
     Verify if endpoint is valid.
 
     :type endpoint: string
     :param endpoint: An endpoint. Must have at least a scheme and a hostname.
-    :return: True if the endpoint is valid. Raise :exc:`InvalidEndpointError` otherwise.
+    :return: True if the endpoint is valid. Raise :exc:`InvalidEndpointError`
+       otherwise.
     """
     if not isinstance(endpoint, basestring):
         raise TypeError('endpoint')
@@ -182,10 +202,13 @@ def is_valid_endpoint(endpoint):
     if not _ALLOWED_HOSTNAME_REGEX.match(hostname):
         raise InvalidEndpointError('Hostname does not meet URL standards.')
 
-    if hostname.endswith('.amazonaws.com') and (hostname != 's3.amazonaws.com'):
-        raise InvalidEndpointError('Amazon S3 hostname should be s3.amazonaws.com.')
+    if hostname.endswith('.amazonaws.com') and \
+       (hostname != 's3.amazonaws.com'):
+        raise InvalidEndpointError('Amazon S3 hostname should be '
+                                   's3.amazonaws.com.')
 
     return True
+
 
 def is_valid_bucket_name(bucket_name):
     """
@@ -199,20 +222,24 @@ def is_valid_bucket_name(bucket_name):
     problems if we try to use virtual-hosting style addressing.
 
     :param bucket_name: Bucket name in *str*.
-    :return: True if the bucket is valid. Raise :exc:`InvalidBucketError` otherwise.
+    :return: True if the bucket is valid. Raise :exc:`InvalidBucketError`
+       otherwise.
     """
     # verify bucket name length.
     if len(bucket_name) < 3:
-        raise InvalidBucketError('Bucket name cannot be less than 3 characters.')
+        raise InvalidBucketError('Bucket name cannot be less than'
+                                 ' 3 characters.')
     if len(bucket_name) > 63:
-        raise InvalidBucketError('Bucket name cannot be more than 63 characters.')
+        raise InvalidBucketError('Bucket name cannot be more than'
+                                 ' 63 characters.')
 
     match = _VALID_BUCKETNAME_REGEX.match(bucket_name)
     if match is None or match.end() != len(bucket_name):
-        raise InvalidBucketError('Bucket name does not follow S3 standards.' \
+        raise InvalidBucketError('Bucket name does not follow S3 standards.'
                                  'Bucket: {0}'.format(bucket_name))
 
     return True
+
 
 def is_non_empty_string(input_string):
     """
@@ -228,6 +255,7 @@ def is_non_empty_string(input_string):
 
     return True
 
+
 def encode_object_name(object_name):
     """
     URL encode input object name.
@@ -237,6 +265,7 @@ def encode_object_name(object_name):
     """
     is_non_empty_string(object_name)
     return urlencode(object_name)
+
 
 def get_sha256(content):
     """
@@ -251,6 +280,7 @@ def get_sha256(content):
     hasher.update(content)
     return hasher.digest()
 
+
 def get_md5(content):
     """
     Calculate md5 digest of input byte array.
@@ -264,6 +294,7 @@ def get_md5(content):
     hasher.update(content)
     return hasher.digest()
 
+
 def encode_to_base64(content):
     """
     Calculate base64 of input byte array.
@@ -273,6 +304,7 @@ def encode_to_base64(content):
     """
     return binascii.b2a_base64(content).strip().decode('utf-8')
 
+
 def encode_to_hex(content):
     """
     Calculate hex for input byte array.
@@ -281,6 +313,7 @@ def encode_to_hex(content):
     :return: hexlified input byte array.
     """
     return binascii.hexlify(content)
+
 
 def calculate_part_size(length):
     """
@@ -293,7 +326,8 @@ def calculate_part_size(length):
     maximum_part_size = 1024 * 1024 * 1024 * 5
     if length == -1:
         return maximum_part_size
-    proposed_part_size = length / 9999 # make sure last part has enough buffer
+    # make sure last part has enough buffer
+    proposed_part_size = length / 9999
     if proposed_part_size > maximum_part_size:
         return maximum_part_size
     return max(minimum_part_size, proposed_part_size)

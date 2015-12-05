@@ -21,12 +21,12 @@ from minio import PostPolicy
 post_policy = PostPolicy()
 # set bucket name location for uploads.
 post_policy.set_bucket_name('bucketName')
-## set key prefix for all incoming uploads.
+# set key prefix for all incoming uploads.
 post_policy.set_key_startswith('objectName')
-## set content length for incoming uploads.
+# set content length for incoming uploads.
 post_policy.set_content_length_range(10, 1024)
 
-## set expiry 10 days into future.
+# set expiry 10 days into future.
 expires_date = datetime.utcnow()+timedelta(days=10)
 post_policy.set_expires(expires_date)
 
@@ -40,6 +40,6 @@ signed_form_data = client.presigned_post_policy(post_policy)
 for field in signed_form_data:
     curl_cmd.append('-F {0}={1}'.format(field, signed_form_data[field]))
 
-## print curl command to upload files.
+# print curl command to upload files.
 curl_cmd.append('-F file=@<FILE>')
 print ' '.join(curl_cmd)

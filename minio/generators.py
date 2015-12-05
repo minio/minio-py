@@ -26,9 +26,11 @@ This module contains core iterators.
 
 from .error import ResponseError
 from .helpers import get_target_url
-from .parsers import (parse_list_objects, parse_list_multipart_uploads, parse_list_parts)
+from .parsers import (parse_list_objects, parse_list_multipart_uploads,
+                      parse_list_parts)
 
 from .signer import sign_v4
+
 
 class ListObjectsIterator(object):
     """
@@ -38,7 +40,8 @@ class ListObjectsIterator(object):
     :param url: Target endpoint url where request is served to.
     :param bucket_name: Bucket name resource where request will be served from.
     :param prefix: Prefix name resource for filtering objects.
-    :param recursive: Default is non recursive, set True lists all objects iteratively.
+    :param recursive: Default is non recursive, set True lists all objects
+       iteratively.
     :param access_key: Optional if provided requests will be authenticated.
     :param secret_key: Optional if provided requests will be authenticated.
     :param region: Optional if provided requests will be served to this region.
@@ -92,7 +95,8 @@ class ListObjectsIterator(object):
         if self._marker is not None:
             query['marker'] = self._marker
 
-        url = get_target_url(self._endpoint_url, bucket_name=self._bucket_name, query=query)
+        url = get_target_url(self._endpoint_url,
+                             bucket_name=self._bucket_name, query=query)
 
         method = 'GET'
         headers = {}
@@ -114,7 +118,8 @@ class ListObjectsIterator(object):
 
 class ListIncompleteUploadsIterator(object):
     """
-    Implements list incomplete uploads iterator for list multipart uploads parser.
+    Implements list incomplete uploads iterator for list multipart uploads
+    parser.
 
     :param client: Takes instance of :meth:`urllib3.PoolManager`
     :param url: Target endpoint url where request is served to.
@@ -183,7 +188,8 @@ class ListIncompleteUploadsIterator(object):
         if self._delimiter is not None:
             query['delimiter'] = self._delimiter
 
-        url = get_target_url(self._endpoint_url, bucket_name=self._bucket_name, query=query)
+        url = get_target_url(self._endpoint_url,
+                             bucket_name=self._bucket_name, query=query)
 
         method = 'GET'
         headers = {}
@@ -200,7 +206,8 @@ class ListIncompleteUploadsIterator(object):
             response_error = ResponseError(response)
             raise response_error.get(self._bucket_name)
 
-        return parse_list_multipart_uploads(response.data, bucket_name=self._bucket_name)
+        return parse_list_multipart_uploads(response.data,
+                                            bucket_name=self._bucket_name)
 
 
 class ListUploadPartsIterator(object):
@@ -250,7 +257,9 @@ class ListUploadPartsIterator(object):
             raise StopIteration
         # perform another fetch
         if len(self._results) == 0:
-            self._results, self._is_truncated, self._part_marker = self._fetch()
+            (self._results,
+             self._is_truncated,
+             self._part_marker) = self._fetch()
         # if fetch results in no elements, end iteration
         if len(self._results) == 0:
             self._complete = True
@@ -272,8 +281,10 @@ class ListUploadPartsIterator(object):
         if self._part_marker is not None:
             query['part-number-marker'] = self._part_marker
 
-        url = get_target_url(self._endpoint_url, bucket_name=self._bucket_name,
-                             object_name=self._object_name, query=query)
+        url = get_target_url(self._endpoint_url,
+                             bucket_name=self._bucket_name,
+                             object_name=self._object_name,
+                             query=query)
 
         method = 'GET'
         headers = {}
@@ -290,5 +301,9 @@ class ListUploadPartsIterator(object):
             response_error = ResponseError(response)
             raise response_error.get(self._bucket_name, self._object_name)
 
-        return parse_list_parts(response.data, bucket_name=self._bucket_name,
-                                object_name=self._object_name, upload_id=self._upload_id)
+        parts = parse_list_parts(response.data,
+                                 bucket_name=self._bucket_name,
+                                 object_name=self._object_name,
+                                 upload_id=self._upload_id)
+
+        return parts

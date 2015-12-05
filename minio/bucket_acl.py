@@ -24,6 +24,7 @@ This module provides bucket :class:`Acl <Acl>` object.
 
 """
 
+
 class Acl(object):
     @staticmethod
     def public_read_write():
