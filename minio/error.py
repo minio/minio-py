@@ -95,19 +95,19 @@ class ResponseError(Exception):
     def __init__(self, response, **kwargs):
         super(ResponseError, self).__init__(**kwargs)
         self._response = response
-        ### Initialize all the ResponseError fields.
+        # Initialize all the ResponseError fields.
         self.method = ''
         self.code = ''
         self.message = ''
         self.bucket_name = ''
         self.object_name = ''
-        ## Amz headers
+        # Amz headers
         self.request_id = ''
         self.host_id = ''
         self.region = ''
-        ## Ends.
+        # Ends.
 
-        ### Additional copy of XML response for future use.
+        # Additional copy of XML response for future use.
         self._xml = response.data
 
     def head(self, bucket_name, object_name=None):
@@ -210,7 +210,7 @@ class ResponseError(Exception):
                 self.request_id = attribute.text
             elif attribute.tag == 'HostId':
                 self.host_id = attribute.text
-        ## Set amz headers.
+        # Set amz headers.
         self._set_amz_headers()
 
     def _set_error_response_without_body(self, bucket_name=None, object_name=None):
@@ -255,7 +255,7 @@ class ResponseError(Exception):
         else:
             self.code = 'UnknownException'
             self.message = self._response.reason
-        ## Set amz headers.
+        # Set amz headers.
         self._set_amz_headers()
 
     def _set_amz_headers(self):
@@ -263,12 +263,12 @@ class ResponseError(Exception):
         Sets x-amz-* error response fields from response headers.
         """
         if self._response.headers is not None:
-            ## keeping x-amz-id-2 as part of amz_host_id.
+            # keeping x-amz-id-2 as part of amz_host_id.
             if 'x-amz-id-2' in self._response.headers:
                 self.host_id = self._response.headers['x-amz-id-2']
             if 'x-amz-request-id' in self._response.headers:
                 self.request_id = self._response.headers['x-amz-request-id']
-            ## This is a new undocumented field, set only if available.
+            # This is a new undocumented field, set only if available.
             if 'x-amz-bucket-region' in self._response.headers:
                 self.region = self._response.headers['x-amz-bucket-region']
 

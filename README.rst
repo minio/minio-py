@@ -29,9 +29,9 @@ for bucket in buckets:
 
 ## Examples:
 
-### Bucket
+### Bucket Operations.
 
-[make_bucket(bucket, acl=Acl.private())](examples/make_bucket.py)
+[make_bucket(bucket, location, acl)](examples/make_bucket.py)
 
 [list_buckets()](examples/list_buckets.py)
 
@@ -41,33 +41,33 @@ for bucket in buckets:
 
 [get_bucket_acl(bucket)](examples/bucket_acl.py)
 
-[set_bucket_acl(bucket, acl)](examples/bucket_acl.py)
+[set_bucket_acl(bucket_name, acl=Acl.private())](examples/bucket_acl.py)
 
-[list_incomplete_uploads(bucket, prefix=None, recursive=False)](examples/list_incomplete_uploads.py)
+[list_incomplete_uploads(bucket_name, prefix=None, recursive=False)](examples/list_incomplete_uploads.py)
 
-### Object
+### Object Operations.
 
-[get_object(bucket, key)](examples/get_object.py)
+[get_object(bucket_name, object_name)](examples/get_object.py)
 
-[get_partial_object(bucket, key, offset, length)](examples/get_partial_object.py)
+[get_partial_object(bucket_name, object_name, offset, length)](examples/get_partial_object.py)
 
-[put_object(bucket, key, length, data, content_type='application/octet_stream')](examples/put_object.py)
+[put_object(bucket_name, object_name, length, data, content_type='application/octet_stream')](examples/put_object.py)
 
-[list_objects(bucket, prefix=None, recursive=False)](examples/list_objects.py)
+[list_objects(bucket_name, prefix=None, recursive=False)](examples/list_objects.py)
 
-[stat_object(bucket, key)](examples/stat_object.py)
+[stat_object(bucket_name, object_name)](examples/stat_object.py)
 
-[remove_object(bucket, key)](examples/remove_object.py)
+[remove_object(bucket_name, object_name)](examples/remove_object.py)
 
-[remove_incomplete_upload(bucket, key)](examples/remove_incomplete_upload.py)
+[remove_incomplete_upload(bucket_name, object_name)](examples/remove_incomplete_upload.py)
 
-### Presigned
+### Presigned Operations.
 
-[presigned_get_object(bucket, key, expires=None)](examples/presigned_get_object.py)
+[presigned_get_object(bucket_name, object_name, expires=604800)](examples/presigned_get_object.py)
 
-[presigned_put_object(bucket, key, expires=None)](examples/presigned_put_object.py)
+[presigned_put_object(bucket_name, object_name, expires=604800)](examples/presigned_put_object.py)
 
-[presigned_post_policy(PostPolicy())](examples/presigned_post_policy.py)
+[presigned_post_policy(policy=PostPolicy())](examples/presigned_post_policy.py)
 
 ## Contribute
 

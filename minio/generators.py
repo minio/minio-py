@@ -24,6 +24,7 @@ This module contains core iterators.
 
 """
 
+from .error import ResponseError
 from .helpers import get_target_url
 from .parsers import (parse_list_objects, parse_list_multipart_uploads, parse_list_parts)
 

@@ -25,7 +25,7 @@ This module implements the API.
 
 """
 
-### Standard python packages
+# Standard python packages
 import sys
 import io
 import platform
@@ -34,11 +34,11 @@ import hashlib
 from time import mktime, strptime
 from datetime import datetime, timedelta
 
-### Dependencies
+# Dependencies
 import urllib3
 import certifi
 
-### Internal imports
+# Internal imports
 from . import __version__
 from .compat import urlsplit
 
@@ -95,13 +95,12 @@ class Minio(object):
         Adds an entry to the list of user agents.
 
         Example:
-            minio.add_user_agent('my_app', '1.0.0', ['ex', 'parrot'])
+            client.set_app_info('my_app', '1.0.0', ['ex', 'parrot'])
             # Results in my_app/1.0.0 (ex; parrot) appended to user agent
 
-        :param name: user agent name
-        :param version: user agent version
-        :param comments: list of comments to include in comments section
-        :return: None
+        :param name: application name.
+        :param version: application version.
+        :param comments: list of comments to include in comments section.
         """
         if name == '' or version == '':
             raise ValueError
@@ -136,7 +135,6 @@ class Minio(object):
 
         :param bucket_name: Bucket to create on server
         :param location: Location to create bucket on
-        :return:
         """
         if acl is not None:
             is_valid_acl(acl)
@@ -186,14 +184,14 @@ class Minio(object):
             for bucket in bucket_list:
                 print bucket.name, bucket.created_date
 
-        :return: A list of buckets owned by the current user.
+        :return: An iterator of buckets owned by the current user.
         """
 
         method = 'GET'
         headers = {}
         url = get_target_url(self._endpoint_url)
 
-        ## default for all requests.
+        # default for all requests.
         region  = 'us-east-1'
         headers = sign_v4(method=method, url=url,
                           region=region,
@@ -215,7 +213,7 @@ class Minio(object):
         Check if the bucket exists and if the user has access to it.
 
         :param bucket_name: To test the existence and user access.
-        :return: True on success. Otherwise, returns False
+        :return: True on success.
         """
         is_valid_bucket_name(bucket_name)
 
@@ -242,7 +240,6 @@ class Minio(object):
         Remove a bucket.
 
         :param bucket_name: Bucket to remove
-        :return: None
         """
         is_valid_bucket_name(bucket_name)
 
@@ -313,9 +310,8 @@ class Minio(object):
             if canned_acl == Acl.private():
                 # do something
 
-        :param bucket_name: Bucket to set
-        :param acl: ACL to set
-        :return: None
+        :param bucket_name: Bucket to set ACL for.
+        :param acl: ACL to set.
         """
         is_valid_bucket_name(bucket_name)
         is_valid_acl(acl)
@@ -347,6 +343,7 @@ class Minio(object):
         Presigns a get object request and provides a url
 
         Example:
+
             from datetime import timedelta
 
             presignedURL = presigned_get_object('bucket_name', 'object_name', timedelta(days=7))
@@ -355,7 +352,7 @@ class Minio(object):
         :param bucket_name: Bucket for the presigned url.
         :param object_name: Object for which presigned url is generated.
         :param expires: Optional expires argument to specify timedelta. Defaults to 7days.
-        :return: None
+        :return: Presigned url.
         """
         if expires.total_seconds() < 1 or expires.total_seconds() > 604800:
             raise InvalidArgumentError('expires param valid values are between 1 secs to 604800 secs')
@@ -373,7 +370,7 @@ class Minio(object):
         :param object_name: Object for which presigned url is generated.
         :param expires: optional expires argument to specify timedelta. Defaults to 7days.
         :param offset, length: optional defaults to '0, 0'.
-        :return: None
+        :return: Presigned url.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -417,6 +414,7 @@ class Minio(object):
         :param bucket_name: Bucket for the presigned url.
         :param object_name: Object for which presigned url is generated.
         :param expires: optional expires argument to specify timedelta. Defaults to 7days.
+        :return: Presigned put object url.
         """
         if expires.total_seconds() < 1 or expires.total_seconds() > 604800:
             raise InvalidArgumentError('expires param valid values are between 1 secs to 604800 secs')
@@ -454,6 +452,7 @@ class Minio(object):
             print presigned_post_policy(policy)
 
         :param policy: Policy object.
+        :return: Policy form dictionary to be used in curl or HTML forms.
         """
         if not policy:
             raise InvalidArgumentError('Policy cannot be NoneType.')
@@ -494,7 +493,7 @@ class Minio(object):
 
         :param bucket_name: Bucket to read object from
         :param object_name: Name of object to read
-        :return: Returns :class:`HTTPReadSeeker` object.
+        :return: :class:`HTTPReadSeeker` object.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -515,7 +514,7 @@ class Minio(object):
         :param object_name: Name of object to retrieve
         :param offset: Optional offset to retrieve bytes from. Must be >= 0.
         :param length: Optional number of bytes to retrieve. Must be an integer.
-        :return: Returns :class:`urllib3.response.HTTPResponse` object.
+        :return: :class:`urllib3.response.HTTPResponse` object.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -537,7 +536,7 @@ class Minio(object):
         :param object_name: Name of object to retrieve
         :param offset: Optional offset to retrieve bytes from. Must be >= 0.
         :param length: Optional number of bytes to retrieve. Must be an integer.
-        :return: Returns :class:`urllib3.response.HTTPResponse` object.
+        :return: :class:`urllib3.response.HTTPResponse` object.
         """
         request_range = ''
         if offset is not 0 and length is not 0:
@@ -801,20 +800,56 @@ class Minio(object):
                 self._remove_incomplete_upload(bucket_name, object_name, upload.upload_id)
                 return
 
-    # helper functions
-    def _do_put_object(self, bucket_name, object_name, data,
-                       data_content_size, data_md5_base64,
-                       data_sha256_hex, data_content_type='application/octet-stream',
-                       upload_id='', part_number=0):
+    def _do_put_multipart_object(self, bucket_name, object_name, data,
+                                 data_content_size, data_md5_base64,
+                                 data_sha256_hex, data_content_type='application/octet-stream',
+                                 upload_id='', part_number=0):
+        """
+        Initiate a multipart PUT operation for a part number.
+
+        :param bucket_name: Bucket name for the multipart request.
+        :param object_name: Object name for the multipart request.
+        :param data:
+        :param data_content_size:
+        :param data_md5_base64:
+        :param data_sha256_hex:
+        :param data_content_type:
+        :param upload_id:
+        :param part_number:
+        """
 
         method = 'PUT'
         region = self._get_region(bucket_name)
 
-        if upload_id.strip() and part_number is not 0:
-            url = get_target_url(self._endpoint_url, bucket_name=bucket_name, object_name=object_name,
-                                 query={'uploadId': upload_id, 'partNumber': part_number})
-        else:
-            url = get_target_url(self._endpoint_url, bucket_name=bucket_name, object_name=object_name)
+        url = get_target_url(self._endpoint_url, bucket_name=bucket_name, object_name=object_name,
+                             query={'uploadId': upload_id, 'partNumber': part_number})
+
+        headers = {
+            'Content-Length': data_content_size,
+            'Content-Type': data_content_type,
+            'Content-MD5': data_md5_base64
+        }
+
+        headers = sign_v4(method=method,
+                          url=url,
+                          region=region,
+                          headers=headers,
+                          access_key=self._access_key,
+                          secret_key=self._secret_key,
+                          content_sha256=data_sha256_hex)
+
+        response = self._http.urlopen(method, url, headers=headers, body=data)
+        if response.status != 200:
+            response_error = ResponseError(response)
+            raise response_error.put(bucket_name, object_name)
+
+        return response.headers['etag'].replace('"', '')
+
+    def _do_put_object(self, bucket_name, object_name, data,
+                       data_content_size, data_md5_base64,
+                       data_sha256_hex, data_content_type='application/octet-stream'):
+
+        url = get_target_url(self._endpoint_url, bucket_name=bucket_name, object_name=object_name)
 
         headers = {
             'Content-Length': data_content_size,
@@ -839,29 +874,46 @@ class Minio(object):
 
     def _stream_put_object(self, bucket_name, object_name, data,
                            data_content_size, data_content_type='application/octet-stream'):
+        """
+        Streaming multipart upload operation.
+
+        :param bucket_name: Bucket name of the multipart upload.
+        :param object_name: Object name of the multipart upload.
+        :param data_content_size: Total size of the content to be uploaded.
+        :param data_content_type: Content type of of the multipart upload.
+           Defaults to 'application/octet-stream'.
+        """
         part_size = calculate_part_size(data_content_size)
         current_uploads = ListIncompleteUploadsIterator(self._http,
                                                         self._endpoint_url,
                                                         bucket_name,
                                                         object_name,
                                                         access_key=self._access_key,
-                                                        secret_key=self._secret_key)
+                                                        secret_key=self._secret_key,
+                                                        region=self._get_region(bucket_name))
         upload_id = None
         for upload in current_uploads:
             if object_name == upload.object_name:
                 upload_id = upload.upload_id
 
-        ## Initialize variables
+        # Initialize variables
         uploaded_parts = {}
         uploaded_etags = []
         total_uploaded = 0
         current_part_number = 1
 
-        ## If upload_id is None its a new multipart upload.
+        # Some streams wouldn't implement seek() method.
+        # Handle it and set it to False.
+        is_seekable_stream = False
+        if data.hasattr('seek'):
+            is_seekable_stream = True
+
+        # If upload_id is None its a new multipart upload.
         if upload_id is None:
             upload_id = self._new_multipart_upload(bucket_name, object_name,
                                                    data_content_type)
         else:
+            # Iter over the uploaded parts.
             part_iter = ListUploadPartsIterator(self._http, self._endpoint_url,
                                                 bucket_name, object_name, upload_id,
                                                 access_key=self._access_key,
@@ -870,55 +922,76 @@ class Minio(object):
             uploaded_parts_size = 0
             latest_part_number = 0
             for part in part_iter:
+                # Save total uploaded parts size for potential seek offset.
                 uploaded_parts_size += part.size
+                # Save uploaded parts for future verification.
                 uploaded_parts[part.part_number] = part
+                # Save the latest_part_numer to indicate previously uploaded part.
                 latest_part_number = part.part_number
+                # Save uploaded tags for future use.
                 uploaded_etags.append(part.etag)
 
-            if uploaded_parts_size > 0:
-                if data.seekable():
-                    ## Default is start of the stream.
-                    data.seek(uploaded_parts_size)
-                    ## start uploading from next part.
-                    current_part_number = latest_part_number + 1
-                    total_uploaded = uploaded_parts_size
-                else:
-                    ## if input reader not seekable start from beginning.
-                    ## making this code backward compatible with non seekable
-                    ## input streams. Revert current part number to first,
-                    ## to verify and upload.
-                    current_part_number = 1
-                    total_uploaded = 0
-                    uploaded_etags = []
+            # If uploaded parts size is greater than zero and seekable.
+            # seek to the uploaded parts size.
+            if uploaded_parts_size > 0 and is_seekable_stream:
+                # Seek to uploaded parts size offset.
+                data.seek(uploaded_parts_size)
+                # Starts uploading from next part.
+                current_part_number = latest_part_number + 1
+                # Save total_uploaded for future use.
+                total_uploaded = uploaded_parts_size
 
-        while total_uploaded < data_content_size:
+        # Generate new parts and upload <= part_size until total_uploaded
+        # reaches actual data_content_size. Additionally part_manager()
+        # also provides md5digest and sha256digest for the partitioned data.
+        while True:
             part_metadata = parts_manager(data, part_size)
             current_data_md5_hex = encode_to_hex(part_metadata.md5digest)
-            if current_part_number in uploaded_parts:
-                previously_uploaded_part = uploaded_parts[current_part_number]
-                if previously_uploaded_part.etag == current_data_md5_hex:
-                    uploaded_etags.append(previously_uploaded_part.etag)
-                    total_uploaded += previously_uploaded_part.size
-                    continue
+            # This code block is only needed when the stream is non
+            # seekable, but we still verify md5sum to not upload the
+            # same part. Make sure that code is traversed only when
+            # input stream is not seekable.
+            if is_seekable_stream is False:
+                # Verify if current part number has been already uploaded.
+                # Further verify if we have matching md5sum as well.
+                if current_part_number in uploaded_parts:
+                    previously_uploaded_part = uploaded_parts[current_part_number]
+                    if previously_uploaded_part.etag == current_data_md5_hex:
+                        uploaded_etags.append(previously_uploaded_part.etag)
+                        total_uploaded += previously_uploaded_part.size
+                        continue
             current_data_md5_base64 = encode_to_base64(part_metadata.md5digest)
             current_data_sha256_hex = encode_to_hex(part_metadata.sha256digest)
-            ## Seek back to starting position.
-            part.seek(0)
-            etag = self._do_put_object(bucket_name, object_name,
-                                       part_metadata.data,
-                                       part_metadata.size,
-                                       current_data_md5_base64,
-                                       current_data_sha256_hex,
-                                       data_content_type=data_content_type,
-                                       upload_id=upload_id,
-                                       part_number=current_part_number)
+            # Seek back to starting position.
+            part_metadata.data.seek(0)
+            etag = self._do_put_multipart_object(bucket_name, object_name,
+                                                 part_metadata.data,
+                                                 part_metadata.size,
+                                                 current_data_md5_base64,
+                                                 current_data_sha256_hex,
+                                                 data_content_type=data_content_type,
+                                                 upload_id=upload_id,
+                                                 part_number=current_part_number)
+            # Save etags.
             uploaded_etags.append(etag)
+            # If total_uploaded equal to data_content_size break the loop.
+            if total_uploaded == data_content_size:
+                break
             current_part_number += 1
             total_uploaded += part_metadata.size
 
+
+        # Complete all multipart transactions if possible.
         self._complete_multipart_upload(bucket_name, object_name, upload_id, uploaded_etags)
 
     def _remove_incomplete_upload(self, bucket_name, object_name, upload_id):
+        """
+        Remove incomplete multipart request.
+
+        :param bucket_name: Bucket name of the incomplete upload.
+        :param object_name: Object name of incomplete upload.
+        :param upload_id: Upload id of the incomplete upload.
+        """
         method = 'DELETE'
         query = {
             'uploadId': upload_id
@@ -943,6 +1016,14 @@ class Minio(object):
             raise response_error.delete(bucket_name, object_name)
 
     def _new_multipart_upload(self, bucket_name, object_name, content_type):
+        """
+        Initialize new multipart upload request.
+
+        :param bucket_name: Bucket name of the new multipart request.
+        :param object_name: Object name of the new multipart request.
+        :param content_type: Content type of the new object.
+        :return: Returns an upload id.
+        """
         method = 'POST'
         query = {
             'uploads': None
@@ -970,6 +1051,14 @@ class Minio(object):
         return parse_new_multipart_upload(response.data)
 
     def _complete_multipart_upload(self, bucket_name, object_name, upload_id, etags):
+        """
+        Complete an active multipart upload request.
+
+        :param bucket_name: Bucket name of the multipart request.
+        :param object_name: Object name of the multipart request.
+        :param upload_id: Upload id of the active multipart request.
+        """
+
         method = 'POST'
         query = {
             'uploadId': upload_id
@@ -1002,7 +1091,13 @@ class Minio(object):
             raise response_error.post(bucket_name, object_name)
 
     def _set_region(self, bucket_name, region=None):
-        ## fetch bucket location only for Amazon S3.
+        """
+        Set region based on the bucket name.
+
+        :param bucket_name: Bucket name for which region will be set in region map.
+        :param region: Optional region, if set location is not fetched.
+        """
+        # fetch bucket location only for Amazon S3.
         if 'amazonaws.com' in self._endpoint_url:
             if not region:
                 region = self._get_bucket_location(bucket_name)
@@ -1011,7 +1106,13 @@ class Minio(object):
         return region
 
     def _get_region(self, bucket_name):
-        ## get proper location only for Amazon S3.
+        """
+        Get region based on the bucket name.
+
+        :param bucket_name: Bucket name for which region will be fetched.
+        :return: region of bucket name is returned.
+        """
+        # get proper location only for Amazon S3.
         if 'amazonaws.com' in self._endpoint_url:
             if self._region_map.has_key(bucket_name):
                 return self._region_map[bucket_name]
@@ -1019,10 +1120,16 @@ class Minio(object):
         return 'us-east-1'
 
     def _get_bucket_location(self, bucket_name):
+        """
+        Get bucket location.
+
+        :param bucket_name: Fetches location of the Bucket name.
+        :return: location of bucket name is returned.
+        """
         method = 'GET'
         url = self._endpoint_url + '/' + bucket_name + '?location'
         headers = {}
-        ## default for all requests.
+        # default for all requests.
         region = 'us-east-1'
         headers = sign_v4(method=method, url=url,
                           region=region,
@@ -1037,10 +1144,10 @@ class Minio(object):
             raise response_error.get(bucket_name)
 
         location = parse_location_constraint(response.data)
-        ## location is empty for 'US standard region'
+        # location is empty for 'US standard region'
         if not location:
             return 'us-east-1'
-        ## location can be 'EU' convert it to meaningful 'eu-west-1'
+        # location can be 'EU' convert it to meaningful 'eu-west-1'
         if location is 'EU':
             return 'eu-west-1'
         return location
