@@ -26,32 +26,26 @@ This module implements the API.
 """
 
 # Standard python packages
-import sys
-import io
+from __future__ import absolute_import
 import platform
-import tempfile
-import hashlib
+
 from time import mktime, strptime
 from datetime import datetime, timedelta
 
+import io
 # Dependencies
 import urllib3
 import certifi
 
 # Internal imports
-from . import __version__
+from . import __title__, __version__
 from .compat import urlsplit
-
 from .io import HTTPReadSeeker
-from .error import ResponseError
-from .bucket_acl import Acl
+from .error import ResponseError, InvalidArgumentError
 from .bucket_acl import is_valid_acl
-
 from .definitions import Object
-from .post_policy import PostPolicy
 from .generators import (ListObjectsIterator, ListIncompleteUploadsIterator,
                          ListUploadPartsIterator)
-
 from .parsers import (parse_list_buckets, parse_acl,
                       parse_new_multipart_upload,
                       parse_location_constraint)
@@ -60,7 +54,6 @@ from .helpers import (get_target_url, is_non_empty_string,
                       encode_to_base64, get_md5,
                       calculate_part_size, encode_to_hex,
                       is_valid_bucket_name, parts_manager)
-
 from .signer import (sign_v4, presign_v4,
                      generate_credential_string,
                      post_presign_signature)
@@ -68,59 +61,66 @@ from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_complete_multipart_upload)
 
 
+
+# Comment format.
+_COMMENTS = '({0}; {1})'
+# App info format.
+_APP_INFO = '{0}/{1}'
+
+# Minio (OS; ARCH) LIB/VER APP/VER .
+_DEFAULT_USER_AGENT = 'Minio {0} {1}'.format(
+    _COMMENTS.format(platform.system(),
+                     platform.machine()),
+    _APP_INFO.format(__title__,
+                     __version__))
+
 class Minio(object):
+    """
+    Constructs a :class:`Minio <Minio>`.
+
+    Examples:
+        client = Minio('https://play.minio.io:9000')
+        client = Minio('https://s3.amazonaws.com',
+                       'ACCESS_KEY', 'SECRET_KEY')
+
+    :param endpoint: A string of the URL of the cloud storage server.
+    :param access_key: Access key to sign self._http.request with.
+    :param secret_key: Secret key to sign self._http.request with.
+    :return: :class:`Minio <Minio>` object
+    """
     def __init__(self, endpoint, access_key=None, secret_key=None):
-        """Constructs a :class:`Minio <Minio>`.
-
-        Examples:
-          client = Minio('https://play.minio.io:9000')
-          client = Minio('https://s3.amazonaws.com',
-                         'ACCESS_KEY', 'SECRET_KEY')
-
-        :param endpoint: A string of the URL of the cloud storage server.
-        :param access_key: Access key to sign self._http.request with.
-        :param secret_key: Secret key to sign self._http.request with.
-        :return: :class:`Minio <Minio>` object
-        """
         is_valid_endpoint(endpoint)
-
         url_components = urlsplit(endpoint)
         self._region_map = dict()
         self._endpoint_url = url_components.geturl()
         self._access_key = access_key
         self._secret_key = secret_key
-        self._user_agent = 'minio-py/{0} ({1}; {2})'.format(__version__,
-                                                            platform.system(),
-                                                            platform.machine())
-
+        self._user_agent = _DEFAULT_USER_AGENT
         self._http = urllib3.PoolManager(
             cert_reqs='CERT_REQUIRED',
             ca_certs=certifi.where()
         )
 
-    # Client level
-    def set_app_info(self, name, version, comments=None):
+    # Set application information.
+    def set_app_info(self, app_name, app_version):
         """
-        Adds an entry to the list of user agents.
+        Sets your application name and version to
+        default user agent in the following format.
+
+              Minio (OS; ARCH) LIB/VER APP/VER
 
         Example:
-            client.set_app_info('my_app', '1.0.0', ['ex', 'parrot'])
-            # Results in my_app/1.0.0 (ex; parrot) appended to user agent
+            client.set_app_info('my_app', '1.0.0')
 
-        :param name: application name.
-        :param version: application version.
-        :param comments: list of comments to include in comments section.
+        :param app_name: application name.
+        :param app_version: application version.
         """
-        if name == '' or version == '':
-            raise ValueError
+        if not (app_name and app_version):
+            raise ValueError('app_name and app_version cannot be empty.')
 
-        if comments is not None:
-            joined_comments = '; '.join(comments)
-            components = [' ', name, '/', version, ' (', joined_comments, ')']
-            self._user_agent += ''.join(components)
-        else:
-            components = [' ', name, '/', version, ' ']
-            self._user_agent += ''.join(components)
+        app_info = _APP_INFO.format(app_name,
+                                    app_version)
+        self._user_agent = ' '.join([_DEFAULT_USER_AGENT, app_info])
 
     # Bucket level
     def make_bucket(self, bucket_name, location='us-east-1', acl=None):
@@ -151,7 +151,6 @@ class Minio(object):
         is_valid_bucket_name(bucket_name)
 
         method = 'PUT'
-        region = self._get_region(bucket_name)
         url = get_target_url(self._endpoint_url, bucket_name=bucket_name)
         headers = {}
 
@@ -159,7 +158,7 @@ class Minio(object):
             headers['x-amz-acl'] = acl
 
         content = ''
-        if not (location == 'us-east-1'):
+        if location != 'us-east-1':
             content = xml_marshal_bucket_constraint(location)
             headers['Content-Length'] = str(len(content))
 
@@ -168,15 +167,9 @@ class Minio(object):
             content_md5_base64 = encode_to_base64(get_md5(content))
             headers['Content-MD5'] = content_md5_base64
 
-        headers = sign_v4(method=method, url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key,
-                          content_sha256=content_sha256_hex)
-
-        response = self._http.urlopen(method, url, body=content,
-                                      headers=headers)
+        response = self._url_open(method, url, location,
+                                  body=content, headers=headers,
+                                  content_sha256=content_sha256_hex)
 
         if response.status != 200:
             response_error = ResponseError(response)
@@ -191,7 +184,7 @@ class Minio(object):
         Example:
             bucket_list = minio.list_buckets()
             for bucket in bucket_list:
-                print bucket.name, bucket.created_date
+                print(bucket.name, bucket.created_date)
 
         :return: An iterator of buckets owned by the current user.
         """
@@ -202,14 +195,9 @@ class Minio(object):
 
         # default for all requests.
         region = 'us-east-1'
-        headers = sign_v4(method=method, url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key)
 
-        response = self._http.request(method, url,
-                                      headers=headers)
+        response = self._url_open(method, url, region,
+                                  headers=headers)
 
         if response.status != 200:
             response_error = ResponseError(response)
@@ -231,13 +219,9 @@ class Minio(object):
         url = get_target_url(self._endpoint_url, bucket_name=bucket_name)
         headers = {}
 
-        headers = sign_v4(method=method, url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key)
+        response = self._url_open(method, url, region,
+                                  headers=headers)
 
-        response = self._http.request(method, url, headers=headers)
         if response.status != 200:
             response_error = ResponseError(response)
             raise response_error.head(bucket_name)
@@ -257,14 +241,8 @@ class Minio(object):
         url = get_target_url(self._endpoint_url, bucket_name=bucket_name)
         headers = {}
 
-        headers = sign_v4(method=method, url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key)
-
-        response = self._http.request(method, url, headers=headers)
-
+        response = self._url_open(method, url, region,
+                                  headers=headers)
         if response.status != 204:
             response_error = ResponseError(response)
             raise response_error.delete(bucket_name)
@@ -290,13 +268,8 @@ class Minio(object):
                              query={"acl": None})
         headers = {}
 
-        headers = sign_v4(method=method, url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key)
-
-        response = self._http.request(method, url, headers=headers)
+        response = self._url_open(method, url, region,
+                                  headers=headers)
 
         if response.status != 200:
             response_error = ResponseError(response)
@@ -335,13 +308,8 @@ class Minio(object):
             'x-amz-acl': acl,
         }
 
-        headers = sign_v4(method=method, url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key)
-
-        response = self._http.urlopen(method, url, headers=headers)
+        response = self._url_open(method, url, region,
+                                  headers=headers)
 
         if response.status != 200:
             response_error = ResponseError(response)
@@ -359,7 +327,7 @@ class Minio(object):
             presignedURL = presigned_get_object('bucket_name',
                                                 'object_name',
                                                 timedelta(days=7))
-            print presignedURL
+            print(presignedURL)
 
         :param bucket_name: Bucket for the presigned url.
         :param object_name: Object for which presigned url is generated.
@@ -429,7 +397,7 @@ class Minio(object):
             presignedURL = presigned_put_object('bucket_name',
                                                 'object_name',
                                                 timedelta(days=7))
-            print presignedURL
+            print(presignedURL)
 
         :param bucket_name: Bucket for the presigned url.
         :param object_name: Object for which presigned url is generated.
@@ -471,7 +439,7 @@ class Minio(object):
             expires_date = datetime.utcnow()+timedelta(days=10)
             policy.set_expires(expires_date)
 
-            print presigned_post_policy(policy)
+            print(presigned_post_policy(policy))
 
         :param policy: Policy object.
         :return: Policy form dictionary to be used in curl or HTML forms.
@@ -489,13 +457,12 @@ class Minio(object):
             raise InvalidArgumentError('object key must be specified.')
 
         date = datetime.utcnow()
-        iso8601Date = date.strftime("%Y%m%dT%H%M%SZ")
+        iso8601_date = date.strftime("%Y%m%dT%H%M%SZ")
         region = self._get_region(policy.form_data['bucket'])
         credential_string = generate_credential_string(self._access_key,
                                                        date, region)
-        policy.policies.append(('eq',
-                                '$x-amz-date',
-                                iso8601Date))
+        policy.policies.append(('eq', '$x-amz-date',
+                                iso8601_date))
         policy.policies.append(('eq',
                                 '$x-amz-algorithm',
                                 'AWS4-HMAC-SHA256'))
@@ -507,7 +474,7 @@ class Minio(object):
         policy.form_data['policy'] = policy_base64
         policy.form_data['x-amz-algorithm'] = 'AWS4-HMAC-SHA256'
         policy.form_data['x-amz-credential'] = credential_string
-        policy.form_data['x-amz-date'] = iso8601Date
+        policy.form_data['x-amz-date'] = iso8601_date
         signature = post_presign_signature(date, region,
                                            self._secret_key,
                                            policy_base64)
@@ -551,8 +518,9 @@ class Minio(object):
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
-        response = _get_partial_object(self, bucket_name, object_name,
-                                       offset, length)
+        response = self._get_partial_object(bucket_name,
+                                            object_name,
+                                            offset, length)
         return response
 
     # Object Level
@@ -594,14 +562,8 @@ class Minio(object):
         if request_range:
             headers['Range'] = 'bytes=' + request_range
 
-        headers = sign_v4(method=method, url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key)
-
-        response = self._http.urlopen(method, url, headers=headers,
-                                      preload_content=False)
+        response = self._url_open(method, url, region,
+                                  headers=headers)
 
         if response.status != 206 and response.status != 200:
             response_error = ResponseError(response)
@@ -659,7 +621,7 @@ class Minio(object):
         Examples:
             objects = minio.list_objects('foo')
             for current_object in objects:
-                print current_object
+                print(current_object)
             # hello
             # hello/
             # hello/
@@ -667,12 +629,12 @@ class Minio(object):
 
             objects = minio.list_objects('foo', prefix='hello/')
             for current_object in objects:
-                print current_object
+                print(current_object)
             # hello/world/
 
             objects = minio.list_objects('foo', recursive=True)
             for current_object in objects:
-                print current_object
+                print(current_object)
             # hello/world/1
             # world/world/2
             # ...
@@ -680,7 +642,7 @@ class Minio(object):
             objects = minio.list_objects('foo', prefix='hello/',
                                          recursive=True)
             for current_object in objects:
-                print current_object
+                print(current_object)
             # hello/world/1
             # hello/world/2
 
@@ -715,13 +677,8 @@ class Minio(object):
                              object_name=object_name)
         headers = {}
 
-        headers = sign_v4(method=method, url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key)
-
-        response = self._http.request(method, url, headers=headers)
+        response = self._url_open(method, url, region,
+                                  headers=headers)
 
         if response.status != 200:
             response_error = ResponseError(response)
@@ -762,13 +719,8 @@ class Minio(object):
                              object_name=object_name)
         headers = {}
 
-        headers = sign_v4(method=method, url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key)
-
-        response = self._http.urlopen(method, url, headers=headers)
+        response = self._url_open(method, url, region,
+                                  headers=headers)
 
         if response.status != 204:
             response_error = ResponseError(response)
@@ -782,7 +734,7 @@ class Minio(object):
         Examples:
             incomplete_uploads = minio.list_incomplete_uploads('foo')
             for current_upload in incomplete_uploads:
-                print current_upload
+                print(current_upload)
             # hello
             # hello/
             # hello/
@@ -791,13 +743,13 @@ class Minio(object):
             incomplete_uploads = minio.list_incomplete_uploads('foo',
                                                                prefix='hello/')
             for current_upload in incomplete_uploads:
-                print current_upload
+                print(current_upload)
             # hello/world/
 
             incomplete_uploads = minio.list_incomplete_uploads('foo',
                                                                recursive=True)
             for current_upload in incomplete_uploads:
-                print current_upload
+                print(current_upload)
             # hello/world/1
             # world/world/2
             # ...
@@ -806,7 +758,7 @@ class Minio(object):
                                                                prefix='hello/',
                                                                recursive=True)
             for current_upload in incomplete_uploads:
-                print current_upload
+                print(current_upload)
             # hello/world/1
             # hello/world/2
 
@@ -853,8 +805,9 @@ class Minio(object):
                 return
 
     def _do_put_multipart_object(self, bucket_name, object_name, data,
-                                 data_content_size, data_md5_base64,
+                                 data_md5_base64,
                                  data_sha256_hex,
+                                 data_content_size,
                                  data_content_type='application/octet-stream',
                                  upload_id='', part_number=0):
         """
@@ -862,13 +815,13 @@ class Minio(object):
 
         :param bucket_name: Bucket name for the multipart request.
         :param object_name: Object name for the multipart request.
-        :param data:
-        :param data_content_size:
-        :param data_md5_base64:
-        :param data_sha256_hex:
-        :param data_content_type:
-        :param upload_id:
-        :param part_number:
+        :param data: Input data for the multipart request.
+        :param data_md5_base64: Base64 md5 of data.
+        :param data_sha256_hex: Hexadecimal sha256 of data.
+        :param data_content_size: Input data size.
+        :param data_content_type: Content type of multipart request.
+        :param upload_id: Upload id of the multipart request.
+        :param part_number: Part number of the data to be uploaded.
         """
 
         method = 'PUT'
@@ -885,15 +838,11 @@ class Minio(object):
             'Content-MD5': data_md5_base64
         }
 
-        headers = sign_v4(method=method,
-                          url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key,
-                          content_sha256=data_sha256_hex)
+        response = self._url_open(method, url, region,
+                                  headers=headers,
+                                  body=data,
+                                  content_sha256=data_sha256_hex)
 
-        response = self._http.urlopen(method, url, headers=headers, body=data)
         if response.status != 200:
             response_error = ResponseError(response)
             raise response_error.put(bucket_name, object_name)
@@ -901,9 +850,24 @@ class Minio(object):
         return response.headers['etag'].replace('"', '')
 
     def _do_put_object(self, bucket_name, object_name, data,
-                       data_content_size, data_md5_base64,
+                       data_md5_base64,
                        data_sha256_hex,
+                       data_content_size,
                        data_content_type='application/octet-stream'):
+        """
+        Initiate a single PUT operation.
+
+        :param bucket_name: Bucket name for the put request.
+        :param object_name: Object name for the put request.
+        :param data: Input data for the put request.
+        :param data_md5_base64: Base64 md5 of data.
+        :param data_sha256_hex: Hexadecimal sha256 of data.
+        :param data_content_size: Input data size.
+        :param data_content_type: Content type of put request.
+        """
+
+        method = 'PUT'
+        region = self._get_region(bucket_name)
 
         url = get_target_url(self._endpoint_url, bucket_name=bucket_name,
                              object_name=object_name)
@@ -914,15 +878,11 @@ class Minio(object):
             'Content-MD5': data_md5_base64
         }
 
-        headers = sign_v4(method=method,
-                          url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key,
-                          content_sha256=data_sha256_hex)
+        response = self._url_open(method, url, region,
+                                  headers=headers,
+                                  body=data,
+                                  content_sha256=data_sha256_hex)
 
-        response = self._http.urlopen(method, url, headers=headers, body=data)
         if response.status != 200:
             response_error = ResponseError(response)
             raise response_error.put(bucket_name, object_name)
@@ -1032,9 +992,9 @@ class Minio(object):
             etag = self._do_put_multipart_object(bucket_name,
                                                  object_name,
                                                  part_metadata.data,
-                                                 part_metadata.size,
                                                  current_data_md5_base64,
                                                  current_data_sha256_hex,
+                                                 part_metadata.size,
                                                  data_content_type,
                                                  upload_id,
                                                  current_part_number)
@@ -1062,20 +1022,17 @@ class Minio(object):
         query = {
             'uploadId': upload_id
         }
+
         region = self._get_region(bucket_name)
+
         url = get_target_url(self._endpoint_url,
                              bucket_name=bucket_name,
                              object_name=object_name,
                              query=query)
         headers = {}
 
-        headers = sign_v4(method=method, url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key)
-
-        response = self._http.request(method, url, headers=headers)
+        response = self._url_open(method, url,
+                                  region, headers=headers)
 
         if response.status != 204:
             response_error = ResponseError(response)
@@ -1102,13 +1059,8 @@ class Minio(object):
 
         headers = {'Content-Type': content_type}
 
-        headers = sign_v4(method=method, url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key)
-
-        response = self._http.urlopen(method, url, headers=headers, body=None)
+        response = self._url_open(method, url, region,
+                                  headers=headers)
 
         if response.status != 200:
             response_error = ResponseError(response)
@@ -1144,14 +1096,10 @@ class Minio(object):
         headers['Content-Type'] = 'application/xml'
         headers['Content-MD5'] = data_md5_base64
 
-        headers = sign_v4(method=method, url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key,
-                          content_sha256=data_sha256_hex)
-
-        response = self._http.urlopen(method, url, headers=headers, body=data)
+        response = self._url_open(method, url, region,
+                                  headers=headers,
+                                  body=data,
+                                  content_sha256=data_sha256_hex)
 
         if response.status != 200:
             response_error = ResponseError(response)
@@ -1204,15 +1152,7 @@ class Minio(object):
         if self._access_key is None or self._secret_key is None:
             return 'us-east-1'
 
-        headers = sign_v4(method=method,
-                          url=url,
-                          region=region,
-                          headers=headers,
-                          access_key=self._access_key,
-                          secret_key=self._secret_key)
-
-        response = self._http.urlopen(method, url, headers=headers)
-
+        response = self._url_open(method, url, region, headers=headers)
         if response.status != 200:
             response_error = ResponseError(response)
             raise response_error.get(bucket_name)
@@ -1224,5 +1164,21 @@ class Minio(object):
         # location can be 'EU' convert it to meaningful 'eu-west-1'
         if location is 'EU':
             return 'eu-west-1'
-
         return location
+
+    def _url_open(self, method, url, region, body=None,
+                  headers=None, content_sha256=None):
+        """
+        Open a url wrapper around signature version '4'
+           and :meth:`urllib3.PoolManager.urlopen`
+        """
+        # Set user agent once before the request.
+        headers['User-Agent'] = self._user_agent
+        # Get signature headers if any.
+        headers = sign_v4(method, url, region,
+                          headers, self._access_key,
+                          self._secret_key, content_sha256)
+        return self._http.urlopen(method, url,
+                                  body=body,
+                                  headers=headers,
+                                  preload_content=False)

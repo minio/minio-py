@@ -21,6 +21,7 @@ from unittest import TestCase
 from datetime import datetime
 
 from minio import Minio
+from minio.api import _DEFAULT_USER_AGENT
 
 from .minio_mocks import MockResponse, MockConnection
 
@@ -31,7 +32,9 @@ class ListBucketsTest(TestCase):
                     '</Buckets><Owner><ID>minio</ID><DisplayName>minio</DisplayName></Owner></ListAllMyBucketsResult>'
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/', {}, 200, content=mock_data))
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/',
+                                                  {'User-Agent': _DEFAULT_USER_AGENT},
+                                                  200, content=mock_data))
         client = Minio('http://localhost:9000')
         buckets = client.list_buckets()
         count = 0
@@ -47,7 +50,9 @@ class ListBucketsTest(TestCase):
                     '</Buckets><Owner><ID>minio</ID><DisplayName>minio</DisplayName></Owner></ListAllMyBucketsResult>'
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/', {}, 200, content=mock_data))
+        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/',
+                                                  {'User-Agent': _DEFAULT_USER_AGENT},
+                                                  200, content=mock_data))
         client = Minio('http://localhost:9000')
         buckets = client.list_buckets()
         buckets_list = []

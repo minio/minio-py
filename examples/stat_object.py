@@ -20,4 +20,4 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Fetch stats on your object.
-print client.stat_object('bucketName', 'objectName')
+print(client.stat_object('bucketName', 'objectName'))

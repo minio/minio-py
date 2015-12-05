@@ -18,6 +18,7 @@ from unittest import TestCase
 from nose.tools import *
 
 from minio import Minio, __version__
+from minio.api import _DEFAULT_USER_AGENT
 from minio.error import InvalidEndpointError
 from minio.helpers import get_target_url
 
@@ -56,37 +57,20 @@ class GetURLTests(TestCase):
 class UserAgentTests(TestCase):
     def test_default_user_agent(self):
         client = Minio('http://localhost')
-        eq_(client._user_agent, 'minio-py/' + __version__ + ' (' + \
-            platform.system() + \
-            '; ' + platform.machine() + ')')
+        eq_(client._user_agent, _DEFAULT_USER_AGENT)
 
     def test_set_app_info(self):
-        client = Minio('http://localhost')        
-        expected_user_agent = 'minio-py/' + __version__  + ' (' + \
-            platform.system() + '; ' + \
-            platform.machine() + ')'
-        
-        expected_user_agent += ' hello/1.0.0 (World; Edition)'
-
-        client.set_app_info('hello', '1.0.0', ['World', 'Edition'])
+        client = Minio('http://localhost')
+        expected_user_agent = _DEFAULT_USER_AGENT + ' hello/1.0.0'
+        client.set_app_info('hello', '1.0.0')
         eq_(client._user_agent, expected_user_agent)
-
-    @raises(TypeError)
-    def test_set_app_info_requires_string_name(self):
-        client = Minio('http://localhost:9000')
-        client.set_app_info(10, '1.0.0', ['World', 'Edition'])
 
     @raises(ValueError)
     def test_set_app_info_requires_non_empty_name(self):
         client = Minio('http://localhost:9000')
-        client.set_app_info('', '1.0.0', ['World', 'Edition'])
-
-    @raises(TypeError)
-    def test_set_app_info_requires_version(self):
-        client = Minio('http://localhost:9000')
-        client.set_app_info('hello', 10, ['World', 'Edition'])
+        client.set_app_info('', '1.0.0')
 
     @raises(ValueError)
     def test_set_app_info_requires_non_empty_version(self):
         client = Minio('http://localhost:9000')
-        client.set_app_info('hello', '', ['World', 'Edition'])
+        client.set_app_info('hello', '')

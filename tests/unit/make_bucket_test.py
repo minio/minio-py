@@ -19,6 +19,7 @@ from nose.tools import raises
 from unittest import TestCase
 
 from minio import Minio
+from minio.api import _DEFAULT_USER_AGENT
 from minio.error import ResponseError, InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
@@ -41,7 +42,7 @@ class MakeBucket(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('PUT',
                                                   'http://localhost:9000/hello/',
-                                                  {},
+                                                  {'User-Agent': _DEFAULT_USER_AGENT},
                                                   200))
         Minio('http://localhost:9000')
 
@@ -54,7 +55,7 @@ class MakeBucket(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('PUT',
                                                   'http://localhost:9000/hello/',
-                                                  {},
+                                                  {'User-Agent': _DEFAULT_USER_AGENT},
                                                   409, content=error_xml))
         client = Minio('http://localhost:9000')
         client.make_bucket('hello')

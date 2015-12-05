@@ -204,8 +204,9 @@ class ResponseError(Exception):
             raise ValueError('response data has no body.')
         try:
             root = cElementTree.fromstring(self._response.data)
-        except Exception as e:
-            raise InvalidXMLError('"Error" XML is not parsable.')
+        except _ETREE_EXCEPTIONS as error:
+            raise InvalidXMLError('"Error" XML is not parsable. '
+                                  'Message: {0}'.format(error.message))
         for attribute in root:
             if attribute.tag == 'Code':
                 self.code = attribute.text
@@ -258,7 +259,7 @@ class ResponseError(Exception):
         elif self._response.status == 307:
             self.code = 'Redirect'
             self.message = self._response.reason
-        elif self._response.status == 405 or response.status == 501:
+        elif self._response.status in [405, 501]:
             self.code = 'MethodNotAllowed'
             self.message = self._response.reason
         elif self._response.status == 500:
@@ -285,12 +286,12 @@ class ResponseError(Exception):
                 self.region = self._response.headers['x-amz-bucket-region']
 
     def __str__(self):
-        return 'ResponseError: code: {0}, message: {1},' \
-            ' bucket_name: {2}, object_name: {3}, request_id: {4},' \
-            ' host_id: {5}, region: {5}'.format(self.code,
-                                                self.message,
-                                                self.bucket_name,
-                                                self.object_name,
-                                                self.request_id,
-                                                self.host_id,
-                                                self.region)
+        return ('ResponseError: code: {0}, message: {1},'
+                ' bucket_name: {2}, object_name: {3}, request_id: {4},'
+                ' host_id: {5}, region: {6}'.format(self.code,
+                                                    self.message,
+                                                    self.bucket_name,
+                                                    self.object_name,
+                                                    self.request_id,
+                                                    self.host_id,
+                                                    self.region))

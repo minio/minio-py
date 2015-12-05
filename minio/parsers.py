@@ -24,16 +24,25 @@ This module contains core API parsers.
 
 """
 
-import pytz
-
+# standard.
 from xml.etree import cElementTree
 from xml.etree.cElementTree import ParseError
+
 from datetime import datetime
 
-from .error import ResponseError, InvalidXMLError
+# dependencies.
+import pytz
+
+# minio specific.
+from .error import InvalidXMLError
 from .bucket_acl import Acl
 from .compat import urldecode
 from .definitions import (Object, Bucket, IncompleteUpload, UploadPart)
+
+if hasattr(cElementTree, 'ParseError'):
+    _ETREE_EXCEPTIONS = (ParseError, AttributeError, ValueError)
+else:
+    _ETREE_EXCEPTIONS = (SyntaxError, AttributeError, ValueError)
 
 
 def parse_list_buckets(data):
@@ -45,9 +54,9 @@ def parse_list_buckets(data):
     """
     try:
         root = cElementTree.fromstring(data)
-    except Exception as e:
+    except _ETREE_EXCEPTIONS as error:
         raise InvalidXMLError('"ListBucketsResult" XML is not parsable. '
-                              'Message: {0}'.format(e.message))
+                              'Message: {0}'.format(error.message))
 
     for buckets in root:
         if buckets.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Owner':
@@ -77,9 +86,9 @@ def parse_acl(data):
     """
     try:
         root = cElementTree.fromstring(data)
-    except Exception as e:
+    except _ETREE_EXCEPTIONS as error:
         raise InvalidXMLError('"AccessControlList" XML is not parsable. '
-                              'Message: {0}'.format(e.message))
+                              'Message: {0}'.format(error.message))
 
     public_read = False
     public_write = False
@@ -90,6 +99,7 @@ def parse_acl(data):
         if acls.tag != \
            '{http://s3.amazonaws.com/doc/2006-03-01/}AccessControlList':
             raise InvalidXMLError('Missing "AccessControlList" XML attribute.')
+
         for grant in acls:
             user_uri = None
             permission = None
@@ -136,9 +146,9 @@ def parse_list_objects(data, bucket_name):
     """
     try:
         root = cElementTree.fromstring(data)
-    except Exception as e:
+    except _ETREE_EXCEPTIONS as error:
         raise InvalidXMLError('"ListObjects" XML is not parsable. '
-                              'Message: {0}'.format(e.message))
+                              'Message: {0}'.format(error.message))
     is_truncated = False
     objects = []
     marker = None
@@ -203,9 +213,9 @@ def parse_list_multipart_uploads(data, bucket_name):
     """
     try:
         root = cElementTree.fromstring(data)
-    except Exception as e:
+    except _ETREE_EXCEPTIONS as error:
         raise InvalidXMLError('"ListMultipartUploads" XML is not parsable. '
-                              'Message: {0}'.format(e.message))
+                              'Message: {0}'.format(error.message))
     is_truncated = False
     uploads = []
     key_marker = None
@@ -254,9 +264,9 @@ def parse_list_parts(data, bucket_name, object_name, upload_id):
     """
     try:
         root = cElementTree.fromstring(data)
-    except Exception as e:
+    except _ETREE_EXCEPTIONS as error:
         raise InvalidXMLError('"ListParts" XML is not parsable. '
-                              'Message: {0}'.format(e.message))
+                              'Message: {0}'.format(error.message))
 
     is_truncated = False
     parts = []
@@ -304,9 +314,9 @@ def parse_new_multipart_upload(data):
     """
     try:
         root = cElementTree.fromstring(data)
-    except Exception as e:
+    except _ETREE_EXCEPTIONS as error:
         raise InvalidXMLError('"NewMultipartUpload" XML is not parsable. '
-                              'Message: {0}'.format(e.message))
+                              'Message: {0}'.format(error.message))
 
     for contents in root:
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}UploadId':
@@ -324,9 +334,9 @@ def parse_location_constraint(data):
     """
     try:
         content = cElementTree.fromstring(data)
-    except Exception as e:
+    except _ETREE_EXCEPTIONS as error:
         raise InvalidXMLError('"BucketLocationConstraint" XML is not parsable.'
-                              ' Message: {0}'.format(e.message))
+                              ' Message: {0}'.format(error.message))
 
     if content.tag == \
        '{http://s3.amazonaws.com/doc/2006-03-01/}LocationConstraint':

@@ -45,6 +45,12 @@ requires = [
     'certifi<=2015.4.28',
 ]
 
+tests_requires = [
+    'nose',
+    'mock',
+    'fake-factory',
+]
+
 setup(
     name='minio',
     description='Minio Python Library for Amazon S3 Compatible Cloud Storage for Python',
@@ -56,7 +62,7 @@ setup(
     package_dir={'minio': 'minio'},
     packages=packages,
     install_requires=requires,
-    tests_require=['nose', 'mock'],
+    tests_require=tests_requires,
     setup_requires=['nose>=1.0'],
     license='Apache License 2.0',
     classifiers=[
