@@ -19,6 +19,7 @@ from unittest import TestCase
 from nose.tools import raises
 
 from minio import Minio
+from minio.api import _DEFAULT_USER_AGENT
 from minio.error import ResponseError, InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
@@ -38,12 +39,13 @@ class RemoveBucket(TestCase):
     @raises(InvalidBucketError)
     def test_remove_bucket_invalid_name(self):
         client = Minio('http://localhost:9000')
-        client.remove_bucket('1234')
+        client.remove_bucket('ABCD')
 
     @mock.patch('urllib3.PoolManager')
     def test_remove_bucket_works(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('DELETE', 'http://localhost:9000/hello/', {}, 204))
+        mock_server.mock_add_request(MockResponse('DELETE', 'http://localhost:9000/hello/',
+                                                  {'User-Agent': _DEFAULT_USER_AGENT}, 204))
         client = Minio('http://localhost:9000')
         client.remove_bucket('hello')

@@ -23,7 +23,7 @@ client = Minio('https://s3.amazonaws.com',
 # List buckets
 buckets = client.list_buckets()
 for bucket in buckets:
-    print 'bucket:', bucket.name, bucket.creation_date
+    print('bucket:', bucket.name, bucket.creation_date)
 
 ```
 

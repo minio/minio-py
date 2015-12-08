@@ -42,4 +42,4 @@ for field in signed_form_data:
 
 # print curl command to upload files.
 curl_cmd.append('-F file=@<FILE>')
-print ' '.join(curl_cmd)
+print(' '.join(curl_cmd))

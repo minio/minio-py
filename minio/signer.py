@@ -33,7 +33,8 @@ import binascii
 from datetime import datetime
 from .error import InvalidArgumentError
 from .compat import urlsplit, basestring, urlencode
-from .helpers import ignore_headers
+from .helpers import (ignore_headers, encode_to_hex,
+                      get_sha256)
 
 
 def post_presign_signature(date, region, secret_key, policy_str):
@@ -190,7 +191,7 @@ def sign_v4(method, url, region, headers=None, access_key=None,
 
     date = datetime.utcnow()
     headers['x-amz-date'] = date.strftime("%Y%m%dT%H%M%SZ")
-    headers['x-amz-content-sha256'] = content_sha256
+    headers['x-amz-content-sha256'] = content_sha256.decode('ascii')
 
     headers_to_sign = dict(headers)
 
@@ -201,7 +202,7 @@ def sign_v4(method, url, region, headers=None, access_key=None,
     canonical_request = generate_canonical_request(method,
                                                    parsed_url,
                                                    headers_to_sign,
-                                                   content_sha256)
+                                                   content_sha256.decode('ascii'))
 
     string_to_sign = generate_string_to_sign(date, region,
                                              canonical_request)

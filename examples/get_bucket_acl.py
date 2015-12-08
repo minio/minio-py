@@ -21,4 +21,4 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Print current bucket acl.
-print client.get_bucket_acl('bucketName')
+print(client.get_bucket_acl('bucketName'))

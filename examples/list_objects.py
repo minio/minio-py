@@ -23,5 +23,5 @@ client = Minio('https://s3.amazonaws.com',
 objects = client.list_objects('bucketName', prefix='prefixName',
                               recursive=True)
 for obj in objects:
-    print obj.bucket_name, obj.object_name, obj.last_modified, \
-        obj.etag, obj.size, obj.content_type
+    print(obj.bucket_name, obj.object_name, obj.last_modified,
+          obj.etag, obj.size, obj.content_type)

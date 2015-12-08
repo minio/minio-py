@@ -22,5 +22,5 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # presigned Put object URL for an object name, expires in 3 days.
-print client.presigned_put_object('bucketName', 'objectName',
-                                  datetime.timedelta(days=3))
+print(client.presigned_put_object('bucketName', 'objectName',
+                                  datetime.timedelta(days=3)))

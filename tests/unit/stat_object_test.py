@@ -19,6 +19,7 @@ from nose.tools import raises
 from unittest import TestCase
 
 from minio import Minio
+from minio.api import _DEFAULT_USER_AGENT
 from minio.error import ResponseError, InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
@@ -38,7 +39,7 @@ class StatObject(TestCase):
     @raises(InvalidBucketError)
     def test_stat_object_invalid_name(self):
         client = Minio('http://localhost:9000')
-        client.stat_object('1234', 'world')
+        client.stat_object('ABCD', 'world')
 
     @mock.patch('urllib3.PoolManager')
     def test_stat_object_works(self, mock_connection):
@@ -50,7 +51,8 @@ class StatObject(TestCase):
         }
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('HEAD', 'http://localhost:9000/hello/world', {}, 200,
+        mock_server.mock_add_request(MockResponse('HEAD', 'http://localhost:9000/hello/world',
+                                                  {'User-Agent': _DEFAULT_USER_AGENT}, 200,
                                                   response_headers=mock_headers))
         client = Minio('http://localhost:9000')
         client.stat_object('hello', 'world')

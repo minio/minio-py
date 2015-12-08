@@ -32,7 +32,7 @@ import re
 from .compat import urlsplit, basestring, urlencode
 from .error import InvalidBucketError, InvalidEndpointError
 
-_VALID_BUCKETNAME_REGEX = re.compile('^[a-zA-Z][a-zA-Z0-9\\-]+[a-zA-Z0-9]$')
+_VALID_BUCKETNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\\-]+[a-z0-9]$')
 _ALLOWED_HOSTNAME_REGEX = re.compile(
     '^((?!-)[A-Z\\d-]{1,63}(?<!-)\\.)*((?!-)[A-Z\\d-]{1,63}(?<!-))$',
     re.IGNORECASE)
@@ -163,8 +163,8 @@ def get_target_url(endpoint, bucket_name=None, object_name=None, query=None):
                 single_component.append('=')
                 encoded_query = urlencode(
                     str(ordered_query[component_key])).replace(
-                    '/',
-                    '%2F')
+                        '/',
+                        '%2F')
                 single_component.append(encoded_query)
             query_components.append(''.join(single_component))
 

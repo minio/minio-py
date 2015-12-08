@@ -24,8 +24,6 @@ This module contains :class:`PostPolicy <PostPolicy>` implementation.
 
 """
 
-import binascii
-
 from .helpers import (is_non_empty_string, is_valid_bucket_name,
                       encode_to_base64)
 
@@ -100,7 +98,7 @@ class PostPolicy(object):
 
         :param content_type: set content type name.
         """
-        policy = ('eq', '$Content-Type', bucket)
+        policy = ('eq', '$Content-Type', content_type)
         self.policies.append(policy)
         self.form_data['Content-Type'] = content_type
 
@@ -130,8 +128,9 @@ class PostPolicy(object):
                           self._expiration.strftime("%Y-%m-%dT%H:%M:%S.000Z") +
                           '"')
         policies = []
-        for p in self.policies:
-            policies.append('["' + p[0] + '","' + p[1] + '","' + p[2] + '"]')
+        for policy in self.policies:
+            policies.append('["' + policy[0] + '","' +
+                            policy[1] + '","' + policy[2] + '"]')
 
         if len(self._content_length_range) == 2:
             policies.append('["content-length-range", ' +

@@ -95,23 +95,23 @@ class HTTPReadSeeker(io.IOBase):
         # This method is required for `io` module compatibility.
         return True
 
-    def readinto(self, b):
+    def readinto(self, buf):
         """
-        Read up to len(b) bytes into bytearray *b* and return the number
+        Read up to len(buf) bytes into bytearray *buf* and return the number
         of bytes read.
 
         Like :meth:`read`, multiple reads may be issued to the underlying
         raw stream, unless the latter is 'interactive'.
 
-        :param b: Bytearray to read into.
+        :param buf: Bytearray to read into.
         :return: Length of the read bytes.
         """
         # This method is required for `io` module compatibility.
-        temp = self.read(len(b))
+        temp = self.read(len(buf))
         temp_length = len(temp)
         if temp_length == 0:
             return 0
-        b[:temp_length] = temp
+        buf[:temp_length] = temp
         self._total_read += temp_length
         return temp_length
 
@@ -126,9 +126,9 @@ class HTTPReadSeeker(io.IOBase):
             much data per iteration, but may return less.
         """
         if self._is_read is False:
-            response = self._api._get_partial_object(self._bucket_name,
-                                                     self._object_name,
-                                                     self._offset, 0)
+            response = self._api.get_partial_object(self._bucket_name,
+                                                    self._object_name,
+                                                    self._offset, 0)
             if response.status != 206 and response.status != 200:
                 response_error = ResponseError(response)
                 raise response_error.get(self._bucket_name, self._object_name)
@@ -150,9 +150,9 @@ class HTTPReadSeeker(io.IOBase):
         if self._is_read is False:
             # If reading is not started yet, get a new response reader
             # for a specified offset.
-            response = self._api._get_partial_object(self._bucket_name,
-                                                     self._object_name,
-                                                     self._offset, 0)
+            response = self._api.get_partial_object(self._bucket_name,
+                                                    self._object_name,
+                                                    self._offset, 0)
 
             if response.status != 206 and response.status != 200:
                 response_error = ResponseError(response)

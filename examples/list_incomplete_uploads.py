@@ -24,4 +24,4 @@ uploads = client.list_incomplete_uploads('bucketName',
                                          prefix='prefixName',
                                          recursive=True)
 for obj in uploads:
-    print obj.bucketName, obj.objectName, obj.upload_id
+    print(obj.bucket_name, obj.object_name, obj.upload_id)
