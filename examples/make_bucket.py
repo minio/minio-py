@@ -20,4 +20,4 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Make a new bucket
-client.make_bucket('bucketName')
+client.make_bucket('bucket-name')

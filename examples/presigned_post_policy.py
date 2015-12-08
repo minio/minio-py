@@ -20,7 +20,7 @@ from minio import PostPolicy
 
 post_policy = PostPolicy()
 # set bucket name location for uploads.
-post_policy.set_bucket_name('bucketName')
+post_policy.set_bucket_name('bucket-name')
 # set key prefix for all incoming uploads.
 post_policy.set_key_startswith('objectName')
 # set content length for incoming uploads.
@@ -34,7 +34,7 @@ client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-curl_str = 'curl -X POST https://bucketName.s3.amazonaws.com/'
+curl_str = 'curl -X POST https://bucket-name.s3.amazonaws.com/'
 curl_cmd = [curl_str]
 signed_form_data = client.presigned_post_policy(post_policy)
 for field in signed_form_data:

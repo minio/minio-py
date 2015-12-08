@@ -20,7 +20,7 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # List all object paths in bucket that begin with prefixName.
-uploads = client.list_incomplete_uploads('bucketName',
+uploads = client.list_incomplete_uploads('bucket-name',
                                          prefix='prefixName',
                                          recursive=True)
 for obj in uploads:

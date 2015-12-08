@@ -21,4 +21,4 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Set bucket name to private.
-client.set_bucket_acl('bucketName', Acl.private())
+client.set_bucket_acl('bucket-name', Acl.private())

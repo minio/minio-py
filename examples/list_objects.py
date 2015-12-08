@@ -20,8 +20,8 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # List all object paths in bucket that begin with hello.
-objects = client.list_objects('bucketName', prefix='prefixName',
+objects = client.list_objects('bucket-name', prefix='prefixName',
                               recursive=True)
 for obj in objects:
-    print(obj.bucket_name, obj.object_name, obj.last_modified,
+    print(obj.bucket_name, obj.object_name.encode('utf-8'), obj.last_modified,
           obj.etag, obj.size, obj.content_type)

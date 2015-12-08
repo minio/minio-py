@@ -19,4 +19,4 @@ client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-print(client.bucket_exists('bucketName'))
+print(client.bucket_exists('bucket-name'))

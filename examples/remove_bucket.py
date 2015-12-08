@@ -21,4 +21,4 @@ client = Minio('https://s3.amazonaws.com',
 
 # Remove a bucket
 # This operation will only work if your bucket is empty.
-client.remove_bucket('bucketName')
+client.remove_bucket('bucket-name')

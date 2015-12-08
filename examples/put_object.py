@@ -24,4 +24,4 @@ client = Minio('https://s3.amazonaws.com',
 # Put a file
 file_stat = os.stat('testfile')
 with open('testfile', 'rb') as file_data:
-    client.put_object('bucketName', 'objectName', file_data, file_stat.st_size)
+    client.put_object('bucket-name', 'objectName', file_data, file_stat.st_size)
