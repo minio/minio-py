@@ -27,6 +27,21 @@ for bucket in buckets:
 
 ```
 
+## Setting up development environment
+
+You can follow below mentioned steps for downloading minio-py from source.
+
+```sh
+$ sudo apt-get install git python-pip
+$ sudo  pip install virtualenv
+$ cd my_project_folder
+$ virtualenv --no-site-packages venv
+$ source venv/bin/activate
+$ git clone https://github.com/minio/minio-py
+$ cd minio-py
+$ python setup.py install
+```
+
 ## Examples:
 
 ### Bucket Operations.
