@@ -1,5 +1,14 @@
 # For maintainers only
 
+## Responsibilities
+
+Please go through this link [Maintainer Responsibility](https://gist.github.com/abperiasamy/f4d9b31d3186bbd26522)
+
+## Current Maintainers
+
+- Harshavardhana
+- Balamurugan Arumugam
+
 ### Setup your minio-py Github Repository
 
 Fork [minio-py upstream](https://github.com/minio/minio-py/fork) source repository to your own personal repository.
