@@ -27,6 +27,19 @@ for bucket in buckets:
 
 ```
 
+## Setting up developement enviornment
+
+```sh
+$sudo apt-get install git python-pip
+$sudo  pip install virtualenv
+$cd my_project_folder
+$virtualenv --no-site-packages venv 
+$source venv/bin/activate
+$git clone https://github.com/minio/minio-py
+$cd minio-py
+$python setup.py install
+```
+
 ## Examples:
 
 ### Bucket Operations.
