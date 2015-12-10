@@ -20,4 +20,4 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Remove an partially uploaded object.
-client.remove_incomplete_upload('bucketName', 'objectName')
+client.remove_incomplete_upload('bucket-name', 'objectName')

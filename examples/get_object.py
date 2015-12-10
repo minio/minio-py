@@ -20,7 +20,7 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Get a full object
-data = client.get_object('bucketName', 'objectName')
+data = client.get_object('bucket-name', 'objectName')
 
 with open('testfile', 'wb') as file_data:
     for d in data:

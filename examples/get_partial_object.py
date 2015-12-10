@@ -20,7 +20,7 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Offset the download by 2 bytes and retrieve a total of 4 bytes.
-data = client.get_partial_object('bucketName', 'objectName', 2, 4)
+data = client.get_partial_object('bucket-name', 'objectName', 2, 4)
 
 with open('testfile', 'wb') as file_data:
     for d in data:
