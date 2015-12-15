@@ -58,6 +58,7 @@ def parse_list_buckets(data):
         raise InvalidXMLError('"ListBucketsResult" XML is not parsable. '
                               'Message: {0}'.format(error.message))
 
+    bucket_list = []
     for buckets in root:
         if buckets.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Owner':
             continue
@@ -74,8 +75,8 @@ def parse_list_buckets(data):
                 if attribute.tag == \
                    '{http://s3.amazonaws.com/doc/2006-03-01/}CreationDate':
                     creation_date = _iso8601_to_localized_time(attribute.text)
-            yield Bucket(name, creation_date)
-
+                bucket_list.append(Bucket(name, creation_date))
+    return bucket_list
 
 def parse_acl(data):
     """
