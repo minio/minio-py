@@ -87,12 +87,13 @@ class IncompleteUpload(object):
         self.bucket_name = bucket_name
         self.object_name = object_name
         self.upload_id = upload_id
+        self.size = 0
 
     def __str__(self):
         string_format = ('<IncompleteUpload: bucket_name: {0}'
-                         ' object_name: {1} upload_id: {2}>')
+                         ' object_name: {1} upload_id: {2} size: {3}>')
         return string_format.format(self.bucket_name, self.object_name,
-                                    self.upload_id)
+                                    self.upload_id, self.size)
 
 
 class UploadPart(object):
