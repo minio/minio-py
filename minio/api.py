@@ -773,14 +773,35 @@ class Minio(object):
         if recursive is True:
             delimiter = None
         region = self._get_region(bucket_name)
-        return ListIncompleteUploadsIterator(self._http,
-                                             self._endpoint_url,
-                                             bucket_name,
-                                             prefix,
-                                             delimiter,
-                                             self._access_key,
-                                             self._secret_key,
-                                             region)
+        # get the uploads_iter.
+        uploads_iter = ListIncompleteUploadsIterator(self._http,
+                                                     self._endpoint_url,
+                                                     bucket_name,
+                                                     prefix,
+                                                     delimiter,
+                                                     self._access_key,
+                                                     self._secret_key,
+                                                     region)
+
+        # range over uploads_iter.
+        for upload in uploads_iter:
+            upload.size = 0
+            # Use upload metadata to gather total parts size.
+            part_iter = ListUploadPartsIterator(self._http,
+                                                self._endpoint_url,
+                                                upload.bucket_name,
+                                                upload.object_name,
+                                                upload.upload_id,
+                                                self._access_key,
+                                                self._secret_key,
+                                                region)
+            total_uploaded_size = 0
+            for part in part_iter:
+                total_uploaded_size += part.size
+
+            # update total part size and yield.
+            upload.size = total_uploaded_size
+            yield upload
 
     def remove_incomplete_upload(self, bucket_name, object_name):
         """
