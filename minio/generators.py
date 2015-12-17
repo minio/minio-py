@@ -195,8 +195,7 @@ class ListIncompleteUploadsIterator(object):
         headers = {}
 
         headers = sign_v4(method=method, url=url,
-                          region=self._region,
-                          headers=headers,
+                          region=self._region, headers=headers,
                           access_key=self._access_key,
                           secret_key=self._secret_key)
 
