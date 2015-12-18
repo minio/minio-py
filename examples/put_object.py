@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-testfile, my-bucketname and
+# my-objectname are dummy values, please replace them with original values.
+
 import os
 
 from minio import Minio
@@ -22,6 +25,6 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Put a file
-file_stat = os.stat('testfile')
-with open('testfile', 'rb') as file_data:
-    client.put_object('bucket-name', 'objectName', file_data, file_stat.st_size)
+file_stat = os.stat('my-testfile')
+with open('my-testfile', 'rb') as file_data:
+    client.put_object('my-bucketname', 'my-objectname', file_data, file_stat.st_size)
