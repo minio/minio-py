@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#Note: YOUR-ACCESSKEYID and YOUR-SECRETACCESSKEY are
+# dummy values, please replace them with original values.
+
 from minio import Minio
 
 client = Minio('https://s3.amazonaws.com',

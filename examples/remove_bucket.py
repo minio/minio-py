@@ -13,6 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and  my-bucketname are
+# dummy values, please replace them with original values.
+
+#Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, and my-bucketname
+# are dummy values, please replace them with original values.
+
 from minio import Minio
 
 client = Minio('https://s3.amazonaws.com',
@@ -21,4 +27,4 @@ client = Minio('https://s3.amazonaws.com',
 
 # Remove a bucket
 # This operation will only work if your bucket is empty.
-client.remove_bucket('bucket-name')
+client.remove_bucket('my-bucketname')

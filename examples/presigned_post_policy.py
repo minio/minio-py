@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#Note: my-bucketname, my-objectname, YOUR-ACCESSKEYID, and YOUR-SECRETACCESSKEY
+# are dummy values, please replace them with original values.
+
 from datetime import datetime, timedelta
 
 from minio import Minio
@@ -20,9 +23,9 @@ from minio import PostPolicy
 
 post_policy = PostPolicy()
 # set bucket name location for uploads.
-post_policy.set_bucket_name('bucket-name')
+post_policy.set_bucket_name('my-bucketname')
 # set key prefix for all incoming uploads.
-post_policy.set_key_startswith('objectName')
+post_policy.set_key_startswith('my-objectname')
 # set content length for incoming uploads.
 post_policy.set_content_length_range(10, 1024)
 
@@ -34,7 +37,7 @@ client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-curl_str = 'curl -X POST https://bucket-name.s3.amazonaws.com/'
+curl_str = 'curl -X POST https://my-bucketname.s3.amazonaws.com/'
 curl_cmd = [curl_str]
 signed_form_data = client.presigned_post_policy(post_policy)
 for field in signed_form_data:

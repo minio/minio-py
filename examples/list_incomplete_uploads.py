@@ -13,15 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-prefixname
+# are dummy values, please replace them with original values.
+
 from minio import Minio
 
 client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-# List all object paths in bucket that begin with prefixName.
-uploads = client.list_incomplete_uploads('bucket-name',
-                                         prefix='prefixName',
+# List all object paths in bucket that begin with my-prefixname.
+uploads = client.list_incomplete_uploads('my-bucketname',
+                                         prefix='my-prefixname',
                                          recursive=True)
 for obj in uploads:
     print(obj.bucket_name, obj.object_name, obj.upload_id, obj.size)
