@@ -655,9 +655,9 @@ class Minio(object):
         return ListObjectsIterator(self._http, self._endpoint_url,
                                    bucket_name,
                                    prefix, recursive,
-                                   self._access_key,
-                                   self._secret_key,
-                                   self._get_region(bucket_name))
+                                   access_key=self._access_key,
+                                   secret_key=self._secret_key,
+                                   region=self._get_region(bucket_name))
 
     def stat_object(self, bucket_name, object_name):
         """
@@ -777,11 +777,11 @@ class Minio(object):
         uploads_iter = ListIncompleteUploadsIterator(self._http,
                                                      self._endpoint_url,
                                                      bucket_name,
-                                                     prefix,
-                                                     delimiter,
-                                                     self._access_key,
-                                                     self._secret_key,
-                                                     region)
+                                                     prefix=prefix,
+                                                     delimiter=delimiter,
+                                                     access_key=self._access_key,
+                                                     secret_key=self._secret_key,
+                                                     region=region)
 
         # range over uploads_iter.
         for upload in uploads_iter:
@@ -814,11 +814,14 @@ class Minio(object):
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
+        region = self._get_region(bucket_name)
         # check key
         uploads = ListIncompleteUploadsIterator(self._http, self._endpoint_url,
-                                                bucket_name, object_name,
+                                                bucket_name, prefix=object_name,
+                                                delimiter='',
                                                 access_key=self._access_key,
-                                                secret_key=self._secret_key)
+                                                secret_key=self._secret_key,
+                                                region=region)
         for upload in uploads:
             if object_name == upload.object_name:
                 self._remove_incomplete_upload(bucket_name, object_name,
@@ -928,10 +931,11 @@ class Minio(object):
         current_uploads = ListIncompleteUploadsIterator(self._http,
                                                         self._endpoint_url,
                                                         bucket_name,
-                                                        object_name,
-                                                        self._access_key,
-                                                        self._secret_key,
-                                                        region)
+                                                        prefix=object_name,
+                                                        delimiter='',
+                                                        access_key=self._access_key,
+                                                        secret_key=self._secret_key,
+                                                        region=region)
         upload_id = None
         for upload in current_uploads:
             if object_name == upload.object_name:
