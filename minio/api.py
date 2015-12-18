@@ -40,7 +40,6 @@ import certifi
 # Internal imports
 from . import __title__, __version__
 from .compat import urlsplit
-from .io import HTTPReadSeeker
 from .error import ResponseError, InvalidArgumentError
 from .bucket_acl import is_valid_acl
 from .definitions import Object
@@ -490,13 +489,14 @@ class Minio(object):
 
         :param bucket_name: Bucket to read object from
         :param object_name: Name of object to read
-        :return: :class:`HTTPReadSeeker` object.
+        :return: :class:`urllib3.response.HTTPResponse` object.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
-        api = self
-        return HTTPReadSeeker(api, bucket_name, object_name)
+        response = self._get_partial_object(bucket_name,
+                                            object_name)
+        return response
 
     def get_partial_object(self, bucket_name, object_name, offset=0, length=0):
         """
