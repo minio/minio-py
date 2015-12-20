@@ -30,6 +30,7 @@ import collections
 import binascii
 import hashlib
 import re
+import os, errno
 
 from .compat import urlsplit, basestring, urlencode
 from .error import InvalidBucketError, InvalidEndpointError
@@ -55,6 +56,14 @@ class PartMetadata(object):
         self.sha256digest = sha256digest
         self.size = size
 
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
 
 def parts_manager(data, part_size=5*1024*1024):
     """
