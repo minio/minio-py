@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
+# dummy values, please replace them with original values.
+
 from minio import Acl
 from minio import Minio
 
@@ -21,4 +24,4 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Print current bucket acl.
-print(client.get_bucket_acl('bucket-name'))
+print(client.get_bucket_acl('my-bucketname'))
