@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-objectname
+# are dummy values, please replace them with original values.
+
 from minio import Minio
 
 client = Minio('https://s3.amazonaws.com',
@@ -20,4 +23,4 @@ client = Minio('https://s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Remove an partially uploaded object.
-client.remove_incomplete_upload('bucket-name', 'objectName')
+client.remove_incomplete_upload('my-bucketname', 'my-objectname')

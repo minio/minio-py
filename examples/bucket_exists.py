@@ -13,10 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
+# dummy values, please replace them with original values.
+
 from minio import Minio
 
 client = Minio('https://s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-print(client.bucket_exists('bucket-name'))
+print(client.bucket_exists('my-bucketname'))
