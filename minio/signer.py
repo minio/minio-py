@@ -36,6 +36,8 @@ from .compat import urlsplit, basestring, urlencode
 from .helpers import (ignore_headers, encode_to_hex,
                       get_sha256)
 
+# Signature version '4' algorithm.
+_SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'
 
 def post_presign_signature(date, region, secret_key, policy_str):
     """
@@ -96,7 +98,7 @@ def presign_v4(method, url, access_key, secret_key, region=None,
 
     # Construct queries.
     query = {}
-    query['X-Amz-Algorithm'] = 'AWS4-HMAC-SHA256'
+    query['X-Amz-Algorithm'] = _SIGN_V4_ALGORITHM
     query['X-Amz-Credential'] = generate_credential_string(access_key,
                                                            date, region)
     query['X-Amz-Date'] = iso8601Date
@@ -276,7 +278,7 @@ def generate_string_to_sign(date, region, canonical_request):
     canonical_request_sha256 = canonical_request_hasher.hexdigest()
     scope = generate_scope_string(date, region)
 
-    return '\n'.join(['AWS4-HMAC-SHA256',
+    return '\n'.join([_SIGN_V4_ALGORITHM,
                       formatted_date_time,
                       scope,
                       canonical_request_sha256])
@@ -342,7 +344,7 @@ def generate_authorization_header(access_key, date, region,
     """
     signed_headers_string = ';'.join(signed_headers)
     credential = generate_credential_string(access_key, date, region)
-    auth_header = ['AWS4-HMAC-SHA256', 'Credential=' + credential + ',',
+    auth_header = [_SIGN_V4_ALGORITHM, 'Credential=' + credential + ',',
                    'SignedHeaders=' + signed_headers_string + ',',
                    'Signature=' + signature]
     return ' '.join(auth_header)

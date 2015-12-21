@@ -37,6 +37,7 @@ import os
 # Dependencies
 import urllib3
 import certifi
+import hashlib
 
 # Internal imports
 from . import __title__, __version__
@@ -56,10 +57,10 @@ from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_bucket_name, parts_manager, mkdir_p)
 from .signer import (sign_v4, presign_v4,
                      generate_credential_string,
-                     post_presign_signature)
+                     post_presign_signature, _SIGN_V4_ALGORITHM)
 from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_complete_multipart_upload)
-
+from .section_file import SectionFile
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
@@ -78,6 +79,7 @@ MAX_FILE_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024 # 5TiB
 MAX_STREAM_OBJECT_SIZE = 50 * 1024 * 1024 * 1024 # 50GiB
 MIN_STREAM_OBJECT_SIZE = 5 * 1024 * 1024 # 5MiB
 
+_SEVEN_DAYS_SECONDS = 604800 # 7days
 
 class Minio(object):
     """
@@ -325,6 +327,146 @@ class Minio(object):
                        query={"acl": None},
                        headers=headers)
 
+    def _get_upload_id(self, bucket_name, object_name, region, data_content_type):
+        current_uploads = ListIncompleteUploadsIterator(self._http,
+                                                        self._endpoint_url,
+                                                        bucket_name,
+                                                        prefix=object_name,
+                                                        delimiter='',
+                                                        access_key=self._access_key,
+                                                        secret_key=self._secret_key,
+                                                        region=region)
+        upload_id = None
+        for upload in current_uploads:
+            if object_name == upload.object_name:
+                upload_id = upload.upload_id
+
+        # If upload_id is None its a new multipart upload.
+        if not upload_id:
+            upload_id = self._new_multipart_upload(bucket_name,
+                                                   object_name,
+                                                   data_content_type)
+
+        return upload_id
+
+    def fput_object(self, bucket_name, object_name, file_path,
+                    content_type='application/octet-stream'):
+        """
+        Add a new object to the cloud storage server.
+
+        Examples:
+            minio.fput_object('foo', 'bar', 'filepath', 'text/plain')
+
+        :param bucket_name: Bucket to read object from.
+        :param object_name: Name of the object to read.
+        :param file_path: Local file path to be uploaded.
+        :param content_type: Content type of the object.
+        """
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+
+        # save file_size.
+        file_size = os.stat(file_path).st_size
+
+        # optimal part_size value.
+        part_size = calculate_part_size(file_size)
+
+        # get region.
+        region = self._get_bucket_region(bucket_name)
+
+        # get upload id.
+        upload_id = self._get_upload_id(bucket_name, object_name,
+                                        region, content_type)
+
+        # Initialize variables
+        uploaded_parts = {}
+        uploaded_etags = []
+        total_uploaded = 0
+
+        # Iter over the uploaded parts.
+        part_iter = ListUploadPartsIterator(self._http,
+                                            self._endpoint_url,
+                                            bucket_name,
+                                            object_name,
+                                            upload_id,
+                                            self._access_key,
+                                            self._secret_key,
+                                            region)
+        for part in part_iter:
+            # Save uploaded parts for future verification.
+            uploaded_parts[part.part_number] = part
+            # Save uploaded tags for future use.
+            uploaded_etags.append(part.etag)
+
+        # Open file in 'read' mode.
+        file_data = io.open(file_path, mode='rb', buffering=0,
+                            encoding=None, errors=None,
+                            newline=None, closefd=True)
+
+        # Always start with first part number.
+        part_number = 1
+        while True:
+            # If EOF reached, break out of the loop.
+            if total_uploaded == file_size:
+                break
+
+            # Save current offset as previous offset.
+            prev_offset = file_data.seek(0, 1)
+
+            # Save SectionFile, read upto part_size.
+            part = SectionFile(file_data, part_size)
+
+            # Calculate md5sum and sha256.
+            md5hasher = hashlib.md5()
+            sha256hasher = hashlib.sha256()
+            total_read = 0
+            while total_read < part_size:
+                current_data = part.read(8*1024)
+                if not current_data or len(current_data) == 0:
+                    break
+                md5hasher.update(current_data)
+                sha256hasher.update(current_data)
+                total_read = total_read + len(current_data)
+
+            part_md5_hex = encode_to_hex(md5hasher.digest())
+            # Verify if current part number has been already uploaded.
+            # Further verify if we have matching md5sum as well.
+            if part_number in uploaded_parts:
+                previous_part = uploaded_parts[part_number]
+                if previous_part.etag == part_md5_hex:
+                    total_uploaded += previous_part.size
+                    part_number += 1
+                    continue
+
+            part_sha256_hex = encode_to_hex(sha256hasher.digest())
+            part_md5_base64 = encode_to_base64(md5hasher.digest())
+            # Seek back to previous offset position.
+            part.seek(prev_offset, 0)
+
+            # Initiate multipart put.
+            etag = self._do_put_multipart_object(bucket_name, object_name,
+                                                 part, part_md5_base64,
+                                                 part_sha256_hex, total_read,
+                                                 content_type, upload_id,
+                                                 part_number)
+
+            # Save etags.
+            uploaded_etags.append(etag)
+            # Total uploaded.
+            total_uploaded += total_read
+            # Increment part number.
+            part_number += 1
+
+        if total_uploaded != file_size:
+            msg = 'Data read {0} bytes is smaller than the' \
+                  'specified size {1} bytes'.format(total_uploaded, file_size)
+            raise InvalidSizeError(msg)
+
+        # Complete all multipart transactions if possible.
+        self._complete_multipart_upload(bucket_name, object_name,
+                                        upload_id, uploaded_etags)
+
+
     def fget_object(self, bucket_name, object_name, file_path):
         """
         Retrieves an object from a bucket and writes at file_path.
@@ -332,8 +474,9 @@ class Minio(object):
         Examples:
             minio.fget_object('foo', 'bar', 'localfile')
 
-        :param bucket_name: Bucket to read object from
-        :param object_name: Name of the object to read
+        :param bucket_name: Bucket to read object from.
+        :param object_name: Name of the object to read.
+        :param file_path: Local file path to save the object.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -675,9 +818,9 @@ class Minio(object):
            Defaults to 7days.
         :return: Presigned url.
         """
-        if expires.total_seconds() < 1 or expires.total_seconds() > 604800:
+        if expires.total_seconds() < 1 or expires.total_seconds() > _SEVEN_DAYS_SECONDS:
             raise InvalidArgumentError('Expires param valid values are'
-                                       ' between 1 secs to 604800 secs')
+                                       ' between 1 secs to {0} secs'.format(_SEVEN_DAYS_SECONDS))
 
         return self._presigned_get_partial_object(bucket_name,
                                                    object_name,
@@ -702,9 +845,9 @@ class Minio(object):
            Defaults to 7days.
         :return: Presigned put object url.
         """
-        if expires.total_seconds() < 1 or expires.total_seconds() > 604800:
+        if expires.total_seconds() < 1 or expires.total_seconds() > _SEVEN_DAYS_SECONDS:
             raise InvalidArgumentError('Expires param valid values are'
-                                       ' between 1 secs to 604800 secs')
+                                       ' between 1 secs to {0} secs'.format(_SEVEN_DAYS_SECONDS))
 
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -755,21 +898,21 @@ class Minio(object):
 
         date = datetime.utcnow()
         iso8601_date = date.strftime("%Y%m%dT%H%M%SZ")
-        region = self._get_region(policy.form_data['bucket'])
+        region = self._get_bucket_region(policy.form_data['bucket'])
         credential_string = generate_credential_string(self._access_key,
                                                        date, region)
         policy.policies.append(('eq', '$x-amz-date',
                                 iso8601_date))
         policy.policies.append(('eq',
                                 '$x-amz-algorithm',
-                                'AWS4-HMAC-SHA256'))
+                                _SIGN_V4_ALGORITHM))
         policy.policies.append(('eq',
                                 '$x-amz-credential',
                                 credential_string))
 
         policy_base64 = policy.base64()
         policy.form_data['policy'] = policy_base64
-        policy.form_data['x-amz-algorithm'] = 'AWS4-HMAC-SHA256'
+        policy.form_data['x-amz-algorithm'] = _SIGN_V4_ALGORITHM
         policy.form_data['x-amz-credential'] = credential_string
         policy.form_data['x-amz-date'] = iso8601_date
         signature = post_presign_signature(date, region,
@@ -819,7 +962,7 @@ class Minio(object):
                                   headers=headers)
 
         return response
-    
+
     def _presigned_get_partial_object(self, bucket_name, object_name,
                                        expires=timedelta(days=7),
                                        offset=0, length=0):
@@ -991,6 +1134,10 @@ class Minio(object):
         # reaches actual data_content_size. Additionally part_manager()
         # also provides md5digest and sha256digest for the partitioned data.
         while True:
+            # If total_uploaded equal to data_content_size break the loop.
+            if total_uploaded == data_content_size:
+                break
+
             part_metadata = parts_manager(data)
             data_md5_hex = encode_to_hex(part_metadata.md5digest)
             # Verify if part number has been already uploaded.
@@ -1017,9 +1164,6 @@ class Minio(object):
                                                  part_number)
             # Save etags.
             uploaded_etags.append(etag)
-            # If total_uploaded equal to data_content_size break the loop.
-            if total_uploaded == data_content_size:
-                break
             part_number += 1
             total_uploaded += part_metadata.size
 

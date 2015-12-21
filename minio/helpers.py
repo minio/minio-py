@@ -41,6 +41,19 @@ _ALLOWED_HOSTNAME_REGEX = re.compile(
     re.IGNORECASE)
 
 
+def mkdir_p(path):
+    """
+    Recursively creates parent and sub directories.
+
+    :param path:
+    """
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
+
 class PartMetadata(object):
     """
     Parts manager split parts metadata :class:`PartMetadata <PartMetadata>`.
@@ -55,15 +68,6 @@ class PartMetadata(object):
         self.md5digest = md5digest
         self.sha256digest = sha256digest
         self.size = size
-
-
-def mkdir_p(path):
-    try:
-        os.makedirs(path)
-    except OSError as exc: # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else: raise
 
 def parts_manager(data, part_size=5*1024*1024):
     """

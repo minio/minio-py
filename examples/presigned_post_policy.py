@@ -33,11 +33,11 @@ post_policy.set_content_length_range(10, 1024)
 expires_date = datetime.utcnow()+timedelta(days=10)
 post_policy.set_expires(expires_date)
 
-client = Minio('https://s3.amazonaws.com',
+client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-curl_str = 'curl -X POST https://my-bucketname.s3.amazonaws.com/'
+curl_str = 'curl -X POST my-bucketname.s3.amazonaws.com/'
 curl_cmd = [curl_str]
 signed_form_data = client.presigned_post_policy(post_policy)
 for field in signed_form_data:

@@ -62,6 +62,9 @@ def main():
         client.put_object(bucket_name, object_name, file_data, file_stat.st_size)
     file_data.close()
 
+    # Fput a file
+    client.fput_object(bucket_name, object_name+'-f', 'testfile')
+
     # Fetch stats on your object.
     print(client.stat_object(bucket_name, object_name))
 
@@ -72,16 +75,14 @@ def main():
             file_data.write(data)
     file_data.close()
 
+    # Get a full object locally.
+    client.fget_object(bucket_name, object_name, 'newfile-f')
+
     # List all object paths in bucket.
     objects = client.list_objects(bucket_name, recursive=True)
     for obj in objects:
         print(obj.bucket_name, obj.object_name, obj.last_modified, \
             obj.etag, obj.size, obj.content_type)
-
-    # List all incomplete uploads in bucket.
-    uploads = client.list_incomplete_uploads(bucket_name, recursive=True)
-    for obj in uploads:
-        print(obj.bucket_name, obj.object_name, obj.upload_id)
 
     print(client.presigned_get_object(bucket_name, object_name))
     print(client.presigned_put_object(bucket_name, object_name))
@@ -97,6 +98,7 @@ def main():
 
     # Remove an object.
     print(client.remove_object(bucket_name, object_name))
+    print(client.remove_object(bucket_name, object_name+'-f'))
 
     # Remove a bucket. This operation will only work if your bucket is empty.
     print(client.remove_bucket(bucket_name))
@@ -104,6 +106,7 @@ def main():
     # Remove temporary files.
     os.remove('testfile')
     os.remove('newfile')
+    os.remove('newfile-f')
 
 if __name__ == "__main__":
     # Execute only if run as a script
