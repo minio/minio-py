@@ -28,12 +28,12 @@ from .helpers import generate_error
 class MakeBucket(TestCase):
     @raises(TypeError)
     def test_bucket_is_string(self):
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         client.make_bucket(1234)
 
     @raises(InvalidBucketError)
     def test_bucket_is_not_empty_string(self):
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         client.make_bucket('  \t \n  ')
 
     @mock.patch('urllib3.PoolManager')
@@ -41,21 +41,22 @@ class MakeBucket(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('PUT',
-                                                  'http://localhost:9000/hello/',
+                                                  'https://localhost:9000/hello/',
                                                   {'User-Agent': _DEFAULT_USER_AGENT},
                                                   200))
-        Minio('http://localhost:9000')
+        Minio('localhost:9000')
 
     @mock.patch('urllib3.PoolManager')
     @raises(ResponseError)
     def test_make_bucket_throws_fail(self, mock_connection):
         error_xml = generate_error('code', 'message', 'request_id',
-                                   'host_id', 'resource')
+                                   'host_id', 'resource', 'bucket',
+                                   'object')
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('PUT',
-                                                  'http://localhost:9000/hello/',
+                                                  'https://localhost:9000/hello/',
                                                   {'User-Agent': _DEFAULT_USER_AGENT},
                                                   409, content=error_xml))
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         client.make_bucket('hello')

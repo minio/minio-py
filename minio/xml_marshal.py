@@ -56,12 +56,12 @@ def xml_marshal_complete_multipart_upload(etags):
     :return: Marshalled XML data.
     """
     root = s3_xml.Element('CompleteMultipartUpload', {'xmlns': S3_NAMESPACE})
-    for part_number in range(1, len(etags)):
+    for part_number in range(1, len(etags)+1):
         part = s3_xml.SubElement(root, 'Part')
         part_num = s3_xml.SubElement(part, 'PartNumber')
         part_num.text = str(part_number)
         etag = s3_xml.SubElement(part, 'ETag')
-        etag.text = etags[part_number-1]
+        etag.text = '"' + etags[part_number-1] + '"'
         data = io.BytesIO()
         s3_xml.ElementTree(root).write(data, encoding=None,
                                        xml_declaration=False)

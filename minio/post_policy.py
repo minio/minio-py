@@ -148,7 +148,7 @@ class PostPolicy(object):
             return_str = return_str + policies_str
 
         return_str = return_str + '}'
-        return bytearray(return_str)
+        return bytearray(return_str.encode('utf-8'))
 
     def base64(self):
         """

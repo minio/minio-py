@@ -20,34 +20,34 @@ from unittest import TestCase
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
-from minio.error import ResponseError, InvalidBucketError
+from minio.error import InvalidBucketError
 from minio.bucket_acl import Acl
 
 from .minio_mocks import MockResponse, MockConnection
-from .helpers import generate_error
 
 class SetBucketAclTest(TestCase):
     @raises(TypeError)
     def test_bucket_is_string(self):
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         client.set_bucket_acl(1234, Acl.private())
 
     @raises(InvalidBucketError)
     def test_bucket_is_not_empty_string(self):
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         client.set_bucket_acl('  \t \n  ', Acl.private())
 
     @raises(InvalidBucketError)
     def test_set_bucket_acl_invalid_name(self):
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         client.set_bucket_acl('ABCD', Acl.private())
 
     @mock.patch('urllib3.PoolManager')
     def test_set_bucket_acl_works(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('PUT', 'http://localhost:9000/hello/?acl',
+        mock_server.mock_add_request(MockResponse('PUT',
+                                                  'https://localhost:9000/hello/?acl',
                                                   {'x-amz-acl': 'private',
                                                    'User-Agent':  _DEFAULT_USER_AGENT}, 200))
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         client.set_bucket_acl('hello', Acl.private())

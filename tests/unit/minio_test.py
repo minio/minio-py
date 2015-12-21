@@ -15,12 +15,25 @@
 import platform
 from unittest import TestCase
 
-from nose.tools import *
+from nose.tools import raises, eq_
 
 from minio import Minio, __version__
 from minio.api import _DEFAULT_USER_AGENT
-from minio.error import InvalidEndpointError
-from minio.helpers import get_target_url
+from minio.error import InvalidEndpointError, InvalidBucketError
+from minio.helpers import get_target_url, is_valid_bucket_name
+
+class ValidBucketName(TestCase):
+    @raises(InvalidBucketError)
+    def test_bucket_name(self):
+        is_valid_bucket_name('bucketName')
+
+    @raises(InvalidBucketError)
+    def test_bucket_name_invalid_characters(self):
+        is_valid_bucket_name('$$$bcuket')
+
+    @raises(InvalidBucketError)
+    def test_bucket_name_length(self):
+        is_valid_bucket_name('dd')
 
 class GetURLTests(TestCase):
     def test_get_target_url_works(self):
@@ -46,31 +59,27 @@ class GetURLTests(TestCase):
         Minio(10)
 
     @raises(InvalidEndpointError)
-    def test_minio_requires_scheme(self):
-        Minio('play.minio.io')
-
-    @raises(InvalidEndpointError)
-    def test_minio_requires_netloc(self):
+    def test_minio_requires_hostname(self):
         Minio('http://')
 
 
 class UserAgentTests(TestCase):
     def test_default_user_agent(self):
-        client = Minio('http://localhost')
+        client = Minio('localhost')
         eq_(client._user_agent, _DEFAULT_USER_AGENT)
 
     def test_set_app_info(self):
-        client = Minio('http://localhost')
+        client = Minio('localhost')
         expected_user_agent = _DEFAULT_USER_AGENT + ' hello/1.0.0'
         client.set_app_info('hello', '1.0.0')
         eq_(client._user_agent, expected_user_agent)
 
     @raises(ValueError)
     def test_set_app_info_requires_non_empty_name(self):
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         client.set_app_info('', '1.0.0')
 
     @raises(ValueError)
     def test_set_app_info_requires_non_empty_version(self):
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         client.set_app_info('hello', '')

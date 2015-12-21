@@ -13,28 +13,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest import TestCase
+from datetime import timedelta
+
+import mock
 from nose.tools import raises
+from unittest import TestCase
 
 from minio import Minio
+from minio.error import InvalidArgumentError
 
-class PutObjectTest(TestCase):
+class PresignedGetObjectTest(TestCase):
     @raises(TypeError)
     def test_object_is_string(self):
         client = Minio('localhost:9000')
-        client.put_object('hello', 1234, 1, iter([1, 2, 3]))
+        client.presigned_get_object('hello', 1234)
 
     @raises(ValueError)
     def test_object_is_not_empty_string(self):
         client = Minio('localhost:9000')
-        client.put_object('hello', ' \t \n ', 1, iter([1, 2, 3]))
+        client.presigned_get_object('hello', ' \t \n ')
 
-    @raises(TypeError)
-    def test_length_is_string(self):
+    @raises(InvalidArgumentError)
+    def test_expiry_limit(self):
         client = Minio('localhost:9000')
-        client.put_object('hello', 1234, '1', iter([1, 2, 3]))
-
-    @raises(ValueError)
-    def test_length_is_not_empty_string(self):
-        client = Minio('localhost:9000')
-        client.put_object('hello', ' \t \n ', -1, iter([1, 2, 3]))
+        client.presigned_get_object('hello', 'key', expires=timedelta(days=8))

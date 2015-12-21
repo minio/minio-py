@@ -188,8 +188,10 @@ def is_valid_endpoint(endpoint):
     if not isinstance(endpoint, basestring):
         raise TypeError('endpoint')
 
-    parts = urlsplit(endpoint)
-    hostname = parts.hostname
+    if urlsplit(endpoint).scheme:
+        raise InvalidEndpointError('Hostname cannot have a scheme.')
+
+    hostname = endpoint.split(':')[0]
     if hostname is None:
         raise InvalidEndpointError('Hostname cannot be empty.')
 

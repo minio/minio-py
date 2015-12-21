@@ -78,18 +78,26 @@ class Minio(object):
     Constructs a :class:`Minio <Minio>`.
 
     Examples:
-        client = Minio('https://play.minio.io:9000')
-        client = Minio('https://s3.amazonaws.com',
-                       'ACCESS_KEY', 'SECRET_KEY')
+        client = Minio('play.minio.io:9000')
+        client = Minio('s3.amazonaws.com', 'ACCESS_KEY', 'SECRET_KEY')
 
-    :param endpoint: A string of the URL of the cloud storage server.
+    :param endpoint: Hostname of the cloud storage server.
     :param access_key: Access key to sign self._http.request with.
     :param secret_key: Secret key to sign self._http.request with.
+    :param insecure: Set this value if wish to make insecure requests.
+         Default is false.
     :return: :class:`Minio <Minio>` object
     """
-    def __init__(self, endpoint, access_key=None, secret_key=None):
+    def __init__(self, endpoint, access_key=None, secret_key=None, insecure=False):
+        # Validate endpoint.
         is_valid_endpoint(endpoint)
-        url_components = urlsplit(endpoint)
+
+        # Default is a secured connection.
+        endpoint_url = 'https://' + endpoint
+        if insecure:
+            endpoint_url = 'http://' + endpoint
+
+        url_components = urlsplit(endpoint_url)
         self._region_map = dict()
         self._endpoint_url = url_components.geturl()
         self._access_key = access_key

@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-def generate_error(code, message, request_id, host_id, resource):
+def generate_error(code, message, request_id, host_id,
+                   resource, bucket_name, object_name):
     return '''
     <Error>
       <Code>{0}</Code>
@@ -21,5 +22,8 @@ def generate_error(code, message, request_id, host_id, resource):
       <RequestId>{2}</RequestId>
       <HostId>{3}</HostId>
       <Resource>{4}</Resource>
+      <BucketName>{5}</BucketName>
+      <Key>{6}</Key>
     </Error>
-    '''.format(code, message, request_id, host_id, resource)
+    '''.format(code, message, request_id, host_id,
+               resource, bucket_name, object_name)

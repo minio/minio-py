@@ -20,20 +20,19 @@ from unittest import TestCase
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
-from minio.error import ResponseError, InvalidBucketError
+from minio.error import InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
-from .helpers import generate_error
 
 class BucketExists(TestCase):
     @raises(TypeError)
     def test_bucket_is_string(self):
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         client.bucket_exists(1234)
 
     @raises(InvalidBucketError)
     def test_bucket_is_not_empty_string(self):
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         client.bucket_exists('  \t \n  ')
 
     @mock.patch('urllib3.PoolManager')
@@ -41,14 +40,14 @@ class BucketExists(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('HEAD',
-                                                  'http://localhost:9000/hello/',
+                                                  'https://localhost:9000/hello/',
                                                   {'User-Agent': _DEFAULT_USER_AGENT},
                                                   200))
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         result = client.bucket_exists('hello')
         eq_(True, result)
 
     @raises(InvalidBucketError)
     def test_bucket_exists_invalid_name(self):
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         client.bucket_exists('ABCD')
