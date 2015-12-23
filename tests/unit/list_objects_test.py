@@ -36,8 +36,10 @@ class ListObjectsTest(TestCase):
         '''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket/?max-keys=1000', {}, 200, content=mock_data))
-        client = Minio('http://localhost:9000')
+        mock_server.mock_add_request(MockResponse('GET',
+                                                  'https://localhost:9000/bucket/?max-keys=1000',
+                                                  {}, 200, content=mock_data))
+        client = Minio('localhost:9000')
         bucket_iter = client.list_objects('bucket', recursive=True)
         buckets = []
         for bucket in bucket_iter:
@@ -81,13 +83,17 @@ class ListObjectsTest(TestCase):
         '''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket/?max-keys=1000', {}, 200, content=mock_data))
-        client = Minio('http://localhost:9000')
+        mock_server.mock_add_request(MockResponse('GET',
+                                                  'https://localhost:9000/bucket/?max-keys=1000',
+                                                  {}, 200, content=mock_data))
+        client = Minio('localhost:9000')
         bucket_iter = client.list_objects('bucket')
         buckets = []
         for bucket in bucket_iter:
             # cause an xml exception and fail if we try retrieving again
-            mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket/?max-keys=1000', {}, 200, content=''))
+            mock_server.mock_add_request(MockResponse('GET',
+                                                      'https://localhost:9000/bucket/?max-keys=1000',
+                                                      {}, 200, content=''))
             buckets.append(bucket)
 
         eq_(2, len(buckets))
@@ -162,12 +168,15 @@ class ListObjectsTest(TestCase):
         '''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket/?max-keys=1000', {}, 200, content=mock_data1))
-        client = Minio('http://localhost:9000')
+        mock_server.mock_add_request(MockResponse('GET',
+                                                  'https://localhost:9000/bucket/?max-keys=1000',
+                                                  {}, 200, content=mock_data1))
+        client = Minio('localhost:9000')
         bucket_iter = client.list_objects('bucket', recursive=True)
         buckets = []
         for bucket in bucket_iter:
-            mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/bucket/?marker=marker&max-keys=1000', {}, 200,
+            url = 'https://localhost:9000/bucket/?marker=marker&max-keys=1000'
+            mock_server.mock_add_request(MockResponse('GET', url, {}, 200,
                                                       content=mock_data2))
             buckets.append(bucket)
 

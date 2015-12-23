@@ -32,10 +32,10 @@ class ListBucketsTest(TestCase):
                     '</Buckets><Owner><ID>minio</ID><DisplayName>minio</DisplayName></Owner></ListAllMyBucketsResult>'
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/',
+        mock_server.mock_add_request(MockResponse('GET', 'https://localhost:9000/',
                                                   {'User-Agent': _DEFAULT_USER_AGENT},
                                                   200, content=mock_data))
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         buckets = client.list_buckets()
         count = 0
         for bucket in buckets:
@@ -50,10 +50,10 @@ class ListBucketsTest(TestCase):
                     '</Buckets><Owner><ID>minio</ID><DisplayName>minio</DisplayName></Owner></ListAllMyBucketsResult>'
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET', 'http://localhost:9000/',
+        mock_server.mock_add_request(MockResponse('GET', 'https://localhost:9000/',
                                                   {'User-Agent': _DEFAULT_USER_AGENT},
                                                   200, content=mock_data))
-        client = Minio('http://localhost:9000')
+        client = Minio('localhost:9000')
         buckets = client.list_buckets()
         buckets_list = []
         count = 0

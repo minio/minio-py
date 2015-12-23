@@ -15,14 +15,11 @@
 # limitations under the License.
 
 import os
-import io
-from os.path import expanduser
-
 import uuid
-import json
 
-from minio import Acl
-from minio import Minio
+from datetime import datetime, timedelta
+
+from minio import Minio, Acl, PostPolicy
 from faker import Factory
 
 def main():
@@ -30,7 +27,7 @@ def main():
     Functional testing of minio python library.
     """
     fake = Factory.create()
-    client = Minio('https://play.minio.io:9002',
+    client = Minio('play.minio.io:9002',
                    'Q3AM3UQ867SPQQA43P2F',
                    'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
 
@@ -69,32 +66,39 @@ def main():
     print(client.stat_object(bucket_name, object_name))
 
     # Get a full object
-    data = client.get_object(bucket_name, object_name)
+    object_data = client.get_object(bucket_name, object_name)
     with open('newfile', 'wb') as file_data:
-        for d in data:
-            file_data.write(d)
+        for data in object_data:
+            file_data.write(data)
     file_data.close()
 
-    # List all object paths in bucket that begin with hello.
-    objects = client.list_objects(bucket_name)
+    # List all object paths in bucket.
+    objects = client.list_objects(bucket_name, recursive=True)
     for obj in objects:
         print(obj.bucket_name, obj.object_name, obj.last_modified, \
             obj.etag, obj.size, obj.content_type)
 
-    uploads = client.list_incomplete_uploads(bucket_name,
-                                             prefix='',
-                                             recursive=True)
+    # List all incomplete uploads in bucket.
+    uploads = client.list_incomplete_uploads(bucket_name, recursive=True)
     for obj in uploads:
         print(obj.bucket_name, obj.object_name, obj.upload_id)
 
     print(client.presigned_get_object(bucket_name, object_name))
     print(client.presigned_put_object(bucket_name, object_name))
 
+    # Post policy.
+    policy = PostPolicy()
+    policy.set_bucket_name('bucket-name')
+    policy.set_key_startswith('objectPrefix/')
+
+    expires_date = datetime.utcnow()+timedelta(days=10)
+    policy.set_expires(expires_date)
+    print(client.presigned_post_policy(policy))
+
     # Remove an object.
     print(client.remove_object(bucket_name, object_name))
 
-    # Remove a bucket.
-    # This operation will only work if your bucket is empty.
+    # Remove a bucket. This operation will only work if your bucket is empty.
     print(client.remove_bucket(bucket_name))
 
     # Remove temporary files.
