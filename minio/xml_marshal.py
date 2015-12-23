@@ -47,21 +47,21 @@ def xml_marshal_bucket_constraint(region):
     return data.getvalue()
 
 
-def xml_marshal_complete_multipart_upload(etags):
+def xml_marshal_complete_multipart_upload(uploaded_parts):
     """
-    Marshal's complete multipart upload request based on *etags*.
+    Marshal's complete multipart upload request based on *uploaded_parts*.
 .
-    :param etags: List of Etags generated for each parts ordered in
-    the way they were uploaded.
+    :param uploaded_parts: List of all uploaded parts ordered in the
+           way they were uploaded.
     :return: Marshalled XML data.
     """
     root = s3_xml.Element('CompleteMultipartUpload', {'xmlns': S3_NAMESPACE})
-    for part_number in range(1, len(etags)+1):
+    for part_number in uploaded_parts.keys():
         part = s3_xml.SubElement(root, 'Part')
         part_num = s3_xml.SubElement(part, 'PartNumber')
         part_num.text = str(part_number)
         etag = s3_xml.SubElement(part, 'ETag')
-        etag.text = '"' + etags[part_number-1] + '"'
+        etag.text = '"' + uploaded_parts[part_number].etag + '"'
         data = io.BytesIO()
         s3_xml.ElementTree(root).write(data, encoding=None,
                                        xml_declaration=False)

@@ -44,7 +44,7 @@ from . import __title__, __version__
 from .compat import urlsplit
 from .error import ResponseError, InvalidArgumentError
 from .bucket_acl import is_valid_acl
-from .definitions import Object
+from .definitions import Object, UploadPart
 from .generators import (ListObjects, ListIncompleteUploads,
                          ListUploadParts)
 from .parsers import (parse_list_buckets, parse_acl,
@@ -383,7 +383,6 @@ class Minio(object):
 
         # Initialize variables
         uploaded_parts = {}
-        uploaded_etags = []
         total_uploaded = 0
 
         # Iter over the uploaded parts.
@@ -399,8 +398,6 @@ class Minio(object):
         for part in part_iter:
             # Save uploaded parts for future verification.
             uploaded_parts[part.part_number] = part
-            # Save uploaded tags for future use.
-            uploaded_etags.append(part.etag)
 
         # Open file in 'read' mode.
         file_data = io.open(file_path, mode='rb', buffering=0,
@@ -455,7 +452,12 @@ class Minio(object):
                                                  part_number)
 
             # Save etags.
-            uploaded_etags.append(etag)
+            uploaded_parts[part_number] = UploadPart(bucket_name,
+                                                     object_name,
+                                                     upload_id,
+                                                     part_number,
+                                                     etag, None,
+                                                     total_read)
             # Total uploaded.
             total_uploaded += total_read
             # Increment part number.
@@ -468,7 +470,7 @@ class Minio(object):
 
         # Complete all multipart transactions if possible.
         self._complete_multipart_upload(bucket_name, object_name,
-                                        upload_id, uploaded_etags)
+                                        upload_id, uploaded_parts)
 
     def fget_object(self, bucket_name, object_name, file_path):
         """
@@ -590,7 +592,8 @@ class Minio(object):
 
         if length > MIN_STREAM_OBJECT_SIZE:
             return self._stream_put_object(bucket_name, object_name,
-                                           data, length, content_type)
+                                           data, length,
+                                           data_content_type=content_type)
 
         current_data = data.read(length)
         current_data_md5_base64 = encode_to_base64(get_md5(current_data))
@@ -599,7 +602,8 @@ class Minio(object):
                                    io.BytesIO(current_data),
                                    current_data_md5_base64,
                                    current_data_sha256_hex,
-                                   length, content_type)
+                                   length,
+                                   data_content_type=content_type)
 
     def list_objects(self, bucket_name, prefix=None, recursive=False):
         """
@@ -1103,11 +1107,10 @@ class Minio(object):
 
         # get upload id.
         upload_id = self._get_upload_id(bucket_name, object_name,
-                                        region, content_type)
+                                        region, data_content_type)
 
         # Initialize variables
         uploaded_parts = {}
-        uploaded_etags = []
         total_uploaded = 0
         part_number = 1
 
@@ -1124,8 +1127,6 @@ class Minio(object):
         for part in part_iter:
             # Save uploaded parts for future verification.
             uploaded_parts[part.part_number] = part
-            # Save uploaded tags for future use.
-            uploaded_etags.append(part.etag)
 
         # Generate new parts and upload <= part_size until total_uploaded
         # reaches actual data_content_size. Additionally part_manager()
@@ -1160,13 +1161,20 @@ class Minio(object):
                                                  upload_id,
                                                  part_number)
             # Save etags.
-            uploaded_etags.append(etag)
+            uploaded_parts[part_number] = UploadPart(bucket_name,
+                                                     object_name,
+                                                     upload_id,
+                                                     part_number,
+                                                     etag,
+                                                     None,
+                                                     part_metadata.size)
+
             part_number += 1
             total_uploaded += part_metadata.size
 
         # Complete all multipart transactions if possible.
         self._complete_multipart_upload(bucket_name, object_name,
-                                        upload_id, uploaded_etags)
+                                        upload_id, uploaded_parts)
 
     def _remove_incomplete_upload(self, bucket_name, object_name, upload_id):
         """
@@ -1208,13 +1216,14 @@ class Minio(object):
         return parse_new_multipart_upload(response.data)
 
     def _complete_multipart_upload(self, bucket_name, object_name,
-                                   upload_id, etags):
+                                   upload_id, uploaded_parts):
         """
         Complete an active multipart upload request.
 
         :param bucket_name: Bucket name of the multipart request.
         :param object_name: Object name of the multipart request.
         :param upload_id: Upload id of the active multipart request.
+        :param uploaded_parts: Key, Value dictionary of uploaded parts.
         """
 
         method = 'POST'
@@ -1223,7 +1232,7 @@ class Minio(object):
         }
         headers = {}
 
-        data = xml_marshal_complete_multipart_upload(etags)
+        data = xml_marshal_complete_multipart_upload(uploaded_parts)
         data_md5_base64 = encode_to_base64(get_md5(data))
         data_sha256_hex = encode_to_hex(get_sha256(data))
 
