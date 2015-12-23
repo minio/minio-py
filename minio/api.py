@@ -45,8 +45,8 @@ from .compat import urlsplit
 from .error import ResponseError, InvalidArgumentError
 from .bucket_acl import is_valid_acl
 from .definitions import Object
-from .generators import (ListObjectsIterator, ListIncompleteUploadsIterator,
-                         ListUploadPartsIterator)
+from .generators import (ListObjects, ListIncompleteUploads,
+                         ListUploadParts)
 from .parsers import (parse_list_buckets, parse_acl,
                       parse_new_multipart_upload,
                       parse_location_constraint)
@@ -75,11 +75,12 @@ _DEFAULT_USER_AGENT = 'Minio {0} {1}'.format(
                      __version__))
 
 # Constants
-MAX_FILE_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024 # 5TiB
-MAX_STREAM_OBJECT_SIZE = 50 * 1024 * 1024 * 1024 # 50GiB
-MIN_STREAM_OBJECT_SIZE = 5 * 1024 * 1024 # 5MiB
+MAX_FILE_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
+MAX_STREAM_OBJECT_SIZE = 50 * 1024 * 1024 * 1024  # 50GiB
+MIN_STREAM_OBJECT_SIZE = 5 * 1024 * 1024  # 5MiB
 
-_SEVEN_DAYS_SECONDS = 604800 # 7days
+_SEVEN_DAYS_SECONDS = 604800  # 7days
+
 
 class Minio(object):
     """
@@ -96,7 +97,8 @@ class Minio(object):
          Default is false.
     :return: :class:`Minio <Minio>` object
     """
-    def __init__(self, endpoint, access_key=None, secret_key=None, insecure=False):
+    def __init__(self, endpoint, access_key=None,
+                 secret_key=None, insecure=False):
         # Validate endpoint.
         is_valid_endpoint(endpoint)
 
@@ -327,15 +329,16 @@ class Minio(object):
                        query={"acl": None},
                        headers=headers)
 
-    def _get_upload_id(self, bucket_name, object_name, region, data_content_type):
-        current_uploads = ListIncompleteUploadsIterator(self._http,
-                                                        self._endpoint_url,
-                                                        bucket_name,
-                                                        prefix=object_name,
-                                                        delimiter='',
-                                                        access_key=self._access_key,
-                                                        secret_key=self._secret_key,
-                                                        region=region)
+    def _get_upload_id(self, bucket_name, object_name, region,
+                       data_content_type):
+        current_uploads = ListIncompleteUploads(self._http,
+                                                self._endpoint_url,
+                                                bucket_name,
+                                                prefix=object_name,
+                                                delimiter='',
+                                                access_key=self._access_key,
+                                                secret_key=self._secret_key,
+                                                region=region)
         upload_id = None
         for upload in current_uploads:
             if object_name == upload.object_name:
@@ -384,14 +387,15 @@ class Minio(object):
         total_uploaded = 0
 
         # Iter over the uploaded parts.
-        part_iter = ListUploadPartsIterator(self._http,
-                                            self._endpoint_url,
-                                            bucket_name,
-                                            object_name,
-                                            upload_id,
-                                            self._access_key,
-                                            self._secret_key,
-                                            region)
+        part_iter = ListUploadParts(self._http,
+                                    self._endpoint_url,
+                                    bucket_name,
+                                    object_name,
+                                    upload_id,
+                                    self._access_key,
+                                    self._secret_key,
+                                    region)
+
         for part in part_iter:
             # Save uploaded parts for future verification.
             uploaded_parts[part.part_number] = part
@@ -465,7 +469,6 @@ class Minio(object):
         # Complete all multipart transactions if possible.
         self._complete_multipart_upload(bucket_name, object_name,
                                         upload_id, uploaded_etags)
-
 
     def fget_object(self, bucket_name, object_name, file_path):
         """
@@ -582,7 +585,8 @@ class Minio(object):
         is_non_empty_string(object_name)
 
         if length > MAX_STREAM_OBJECT_SIZE:
-            raise InvalidArgumentError("Input content size is bigger than allowed maximum of 50GB.")
+            raise InvalidArgumentError('Input content size is bigger '
+                                       ' than allowed maximum of 50GB.')
 
         if length > MIN_STREAM_OBJECT_SIZE:
             return self._stream_put_object(bucket_name, object_name,
@@ -635,12 +639,16 @@ class Minio(object):
         :return: An iterator of objects in alphabetical order.
         """
         is_valid_bucket_name(bucket_name)
-        return ListObjectsIterator(self._http, self._endpoint_url,
-                                   bucket_name,
-                                   prefix, recursive,
-                                   access_key=self._access_key,
-                                   secret_key=self._secret_key,
-                                   region=self._get_bucket_region(bucket_name))
+
+        # Get region.
+        region = self._get_bucket_region(bucket_name)
+
+        return ListObjects(self._http, self._endpoint_url,
+                           bucket_name,
+                           prefix, recursive,
+                           access_key=self._access_key,
+                           secret_key=self._secret_key,
+                           region=region)
 
     def stat_object(self, bucket_name, object_name):
         """
@@ -695,7 +703,6 @@ class Minio(object):
                                   object_name=object_name,
                                   headers=headers)
 
-
     def list_incomplete_uploads(self, bucket_name, prefix=None,
                                 recursive=False):
         """
@@ -744,27 +751,27 @@ class Minio(object):
             delimiter = None
         region = self._get_bucket_region(bucket_name)
         # get the uploads_iter.
-        uploads_iter = ListIncompleteUploadsIterator(self._http,
-                                                     self._endpoint_url,
-                                                     bucket_name,
-                                                     prefix=prefix,
-                                                     delimiter=delimiter,
-                                                     access_key=self._access_key,
-                                                     secret_key=self._secret_key,
-                                                     region=region)
+        uploads_iter = ListIncompleteUploads(self._http,
+                                             self._endpoint_url,
+                                             bucket_name,
+                                             prefix=prefix,
+                                             delimiter=delimiter,
+                                             access_key=self._access_key,
+                                             secret_key=self._secret_key,
+                                             region=region)
 
         # range over uploads_iter.
         for upload in uploads_iter:
             upload.size = 0
             # Use upload metadata to gather total parts size.
-            part_iter = ListUploadPartsIterator(self._http,
-                                                self._endpoint_url,
-                                                upload.bucket_name,
-                                                upload.object_name,
-                                                upload.upload_id,
-                                                self._access_key,
-                                                self._secret_key,
-                                                region)
+            part_iter = ListUploadParts(self._http,
+                                        self._endpoint_url,
+                                        upload.bucket_name,
+                                        upload.object_name,
+                                        upload.upload_id,
+                                        self._access_key,
+                                        self._secret_key,
+                                        region)
             total_uploaded_size = 0
             for part in part_iter:
                 total_uploaded_size += part.size
@@ -786,12 +793,12 @@ class Minio(object):
 
         region = self._get_bucket_region(bucket_name)
         # check key
-        uploads = ListIncompleteUploadsIterator(self._http, self._endpoint_url,
-                                                bucket_name, prefix=object_name,
-                                                delimiter='',
-                                                access_key=self._access_key,
-                                                secret_key=self._secret_key,
-                                                region=region)
+        uploads = ListIncompleteUploads(self._http, self._endpoint_url,
+                                        bucket_name, prefix=object_name,
+                                        delimiter='',
+                                        access_key=self._access_key,
+                                        secret_key=self._secret_key,
+                                        region=region)
         for upload in uploads:
             if object_name == upload.object_name:
                 self._remove_incomplete_upload(bucket_name, object_name,
@@ -818,13 +825,15 @@ class Minio(object):
            Defaults to 7days.
         :return: Presigned url.
         """
-        if expires.total_seconds() < 1 or expires.total_seconds() > _SEVEN_DAYS_SECONDS:
-            raise InvalidArgumentError('Expires param valid values are'
-                                       ' between 1 secs to {0} secs'.format(_SEVEN_DAYS_SECONDS))
+        if expires.total_seconds() < 1 or \
+           expires.total_seconds() > _SEVEN_DAYS_SECONDS:
+            raise InvalidArgumentError('Expires param valid values'
+                                       ' are between 1 secs to'
+                                       ' {0} secs'.format(_SEVEN_DAYS_SECONDS))
 
         return self._presigned_get_partial_object(bucket_name,
-                                                   object_name,
-                                                   expires)
+                                                  object_name,
+                                                  expires)
 
     def presigned_put_object(self, bucket_name, object_name,
                              expires=timedelta(days=7)):
@@ -845,9 +854,11 @@ class Minio(object):
            Defaults to 7days.
         :return: Presigned put object url.
         """
-        if expires.total_seconds() < 1 or expires.total_seconds() > _SEVEN_DAYS_SECONDS:
-            raise InvalidArgumentError('Expires param valid values are'
-                                       ' between 1 secs to {0} secs'.format(_SEVEN_DAYS_SECONDS))
+        if expires.total_seconds() < 1 or \
+           expires.total_seconds() > _SEVEN_DAYS_SECONDS:
+            raise InvalidArgumentError('Expires param valid values'
+                                       ' are between 1 secs to'
+                                       ' {0} secs'.format(_SEVEN_DAYS_SECONDS))
 
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -964,8 +975,8 @@ class Minio(object):
         return response
 
     def _presigned_get_partial_object(self, bucket_name, object_name,
-                                       expires=timedelta(days=7),
-                                       offset=0, length=0):
+                                      expires=timedelta(days=7),
+                                      offset=0, length=0):
         """
         Presigns a get partial object request and provides a url,
         this is a internal function not exposed.
@@ -1089,19 +1100,10 @@ class Minio(object):
         """
         # Get region.
         region = self._get_bucket_region(bucket_name)
-        # Get list of all incomplete uploads.
-        current_uploads = ListIncompleteUploadsIterator(self._http,
-                                                        self._endpoint_url,
-                                                        bucket_name,
-                                                        prefix=object_name,
-                                                        delimiter='',
-                                                        access_key=self._access_key,
-                                                        secret_key=self._secret_key,
-                                                        region=region)
-        upload_id = None
-        for upload in current_uploads:
-            if object_name == upload.object_name:
-                upload_id = upload.upload_id
+
+        # get upload id.
+        upload_id = self._get_upload_id(bucket_name, object_name,
+                                        region, content_type)
 
         # Initialize variables
         uploaded_parts = {}
@@ -1109,26 +1111,21 @@ class Minio(object):
         total_uploaded = 0
         part_number = 1
 
-        # If upload_id is None its a new multipart upload.
-        if upload_id is None:
-            upload_id = self._new_multipart_upload(bucket_name,
-                                                   object_name,
-                                                   data_content_type)
-        else:
-            # Iter over the uploaded parts.
-            part_iter = ListUploadPartsIterator(self._http,
-                                                self._endpoint_url,
-                                                bucket_name,
-                                                object_name,
-                                                upload_id,
-                                                self._access_key,
-                                                self._secret_key,
-                                                region)
-            for part in part_iter:
-                # Save uploaded parts for future verification.
-                uploaded_parts[part.part_number] = part
-                # Save uploaded tags for future use.
-                uploaded_etags.append(part.etag)
+        # Iter over the uploaded parts.
+        part_iter = ListUploadParts(self._http,
+                                    self._endpoint_url,
+                                    bucket_name,
+                                    object_name,
+                                    upload_id,
+                                    self._access_key,
+                                    self._secret_key,
+                                    region)
+
+        for part in part_iter:
+            # Save uploaded parts for future verification.
+            uploaded_parts[part.part_number] = part
+            # Save uploaded tags for future use.
+            uploaded_etags.append(part.etag)
 
         # Generate new parts and upload <= part_size until total_uploaded
         # reaches actual data_content_size. Additionally part_manager()
@@ -1346,7 +1343,8 @@ class Minio(object):
                                       headers=headers,
                                       preload_content=False)
 
-        if response.status != 200 and response.status != 204 and response.status != 206:
+        if response.status != 200 and \
+           response.status != 204 and response.status != 206:
             response_error = ResponseError(response)
             if method == 'HEAD':
                 raise response_error.head(bucket_name, object_name)
@@ -1359,6 +1357,7 @@ class Minio(object):
             elif method == 'DELETE':
                 raise response_error.delete(bucket_name, object_name)
             else:
-                raise ValueError('Unsupported method returned error: ' + response.status)
+                raise ValueError('Unsupported method returned'
+                                 ' error: {0}'.format(response.status))
 
         return response

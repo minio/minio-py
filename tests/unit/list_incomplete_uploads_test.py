@@ -18,7 +18,7 @@ import mock
 from nose.tools import eq_
 from unittest import TestCase
 
-from minio.generators import ListIncompleteUploadsIterator
+from minio.generators import ListIncompleteUploads
 
 from .minio_mocks import MockResponse, MockConnection
 
@@ -45,9 +45,9 @@ class ListIncompleteUploadsTest(TestCase):
             MockResponse('GET',
                          'https://localhost:9000/bucket/?max-uploads=1000&uploads',
                          {}, 200, content=mock_data))
-        upload_iter = ListIncompleteUploadsIterator(mock_server,
-                                                    'https://localhost:9000',
-                                                    'bucket', delimiter=None)
+        upload_iter = ListIncompleteUploads(mock_server,
+                                            'https://localhost:9000',
+                                            'bucket', delimiter=None)
         uploads = []
         for upload in upload_iter:
             uploads.append(upload)
@@ -103,8 +103,8 @@ class ListIncompleteUploadsTest(TestCase):
             MockResponse('GET',
                          'https://localhost:9000/bucket/?delimiter=%2F&max-uploads=1000&uploads',
                          {}, 200, content=mock_data))
-        upload_iter = ListIncompleteUploadsIterator(mock_server,
-                                                    'https://localhost:9000', 'bucket')
+        upload_iter = ListIncompleteUploads(mock_server,
+                                            'https://localhost:9000', 'bucket')
         uploads = []
         for upload in upload_iter:
             uploads.append(upload)
@@ -202,9 +202,9 @@ class ListIncompleteUploadsTest(TestCase):
             MockResponse('GET',
                          'https://localhost:9000/bucket/?max-uploads=1000&uploads',
                          {}, 200, content=mock_data1))
-        upload_iter = ListIncompleteUploadsIterator(mock_server,
-                                                    'https://localhost:9000',
-                                                    'bucket', delimiter=None)
+        upload_iter = ListIncompleteUploads(mock_server,
+                                            'https://localhost:9000',
+                                            'bucket', delimiter=None)
         uploads = []
         for upload in upload_iter:
             mock_server.mock_add_request(MockResponse('GET',

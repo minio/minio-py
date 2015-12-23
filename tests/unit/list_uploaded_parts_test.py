@@ -18,7 +18,7 @@ import mock
 from nose.tools import eq_
 from unittest import TestCase
 
-from minio.generators import ListUploadPartsIterator
+from minio.generators import ListUploadParts
 
 from .minio_mocks import MockResponse, MockConnection
 
@@ -51,9 +51,9 @@ class ListPartsTest(TestCase):
             MockResponse('GET',
                          'https://localhost:9000/bucket/key?max-parts=1000&uploadId=upload_id',
                          {}, 200, content=mock_data))
-        part_iter = ListUploadPartsIterator(mock_server,
-                                            'https://localhost:9000',
-                                            'bucket', 'key', 'upload_id')
+        part_iter = ListUploadParts(mock_server,
+                                    'https://localhost:9000',
+                                    'bucket', 'key', 'upload_id')
         parts = []
         for part in part_iter:
             parts.append(part)
@@ -99,8 +99,9 @@ class ListPartsTest(TestCase):
                                                   'https://localhost:9000/bucket?max-uploads=1000&uploadId=upload_id',
                                                   {}, 200,
                                                   content=mock_data))
-        part_iter = ListUploadPartsIterator(mock_server,
-                                            'https://localhost:9000', 'bucket', 'key', 'upload_id')
+        part_iter = ListUploadParts(mock_server,
+                                    'https://localhost:9000',
+                                    'bucket', 'key', 'upload_id')
         parts = []
         for part in part_iter:
             parts.append(part)
@@ -179,9 +180,9 @@ class ListPartsTest(TestCase):
                          'https://localhost:9000/bucket/key?max-parts=1000&uploadId=upload_id',
                          {}, 200, content=mock_data1))
 
-        part_iter = ListUploadPartsIterator(mock_server,
-                                            'https://localhost:9000',
-                                            'bucket', 'key', 'upload_id')
+        part_iter = ListUploadParts(mock_server,
+                                    'https://localhost:9000',
+                                    'bucket', 'key', 'upload_id')
         parts = []
         for part in part_iter:
             mock_server.mock_add_request(

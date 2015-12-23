@@ -26,6 +26,7 @@ This module implements a part Object which gates readers.
 from __future__ import absolute_import
 import io
 
+
 class SectionFile(io.FileIO):
     """
     SectionFile is an object wrapper over FileIO.

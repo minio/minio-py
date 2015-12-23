@@ -39,6 +39,7 @@ from .helpers import (ignore_headers, encode_to_hex,
 # Signature version '4' algorithm.
 _SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'
 
+
 def post_presign_signature(date, region, secret_key, policy_str):
     """
     Calculates signature version '4' for POST policy string.
