@@ -51,14 +51,12 @@ from .parsers import (parse_list_buckets, parse_acl,
 from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_endpoint, get_sha256,
                       encode_to_base64, get_md5,
-                      calculate_part_size, encode_to_hex,
-                      is_valid_bucket_name, parts_manager)
+                      encode_to_hex, is_valid_bucket_name, parts_manager)
 from .signer import (sign_v4, presign_v4,
                      generate_credential_string,
                      post_presign_signature)
 from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_complete_multipart_upload)
-
 
 
 # Comment format.
@@ -72,6 +70,12 @@ _DEFAULT_USER_AGENT = 'Minio {0} {1}'.format(
                      platform.machine()),
     _APP_INFO.format(__title__,
                      __version__))
+
+# Constants
+MAX_FILE_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024 # 5TiB
+MAX_STREAM_OBJECT_SIZE = 50 * 1024 * 1024 * 1024 # 50GiB
+MIN_STREAM_OBJECT_SIZE = 5 * 1024 * 1024 # 5MiB
+
 
 class Minio(object):
     """
@@ -575,20 +579,17 @@ class Minio(object):
         """
         Add a new object to the cloud storage server.
 
+        NOTE: Maximum object size supported by this API is 50GB.
+
         Examples:
+         file_stat = os.stat('hello.txt')
          with open('hello.txt', 'rb') as data:
-             minio.put_object('foo', 'bar', data, -1, 'text/plain')
+             minio.put_object('foo', 'bar', data, file_stat.size, 'text/plain')
 
         - For length lesser than 5MB put_object automatically
           does single Put operation.
-        - For length equal to 0Bytes put_object automatically
-          does single Put operation.
         - For length larger than 5MB put_object automatically
           does resumable multipart operation.
-        - For length input as -1 put_object treats it as a
-          stream and does multipart operation until  input stream
-          reaches EOF. Maximum object size that can be uploaded
-          through this operation will be 5TB.
 
         :param bucket_name: Bucket of new object.
         :param object_name: Name of new object.
@@ -600,7 +601,10 @@ class Minio(object):
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
-        if length > 5 * 1024 * 1024:
+        if length > MAX_STREAM_OBJECT_SIZE:
+            raise InvalidArgumentError("Input content size is bigger than allowed maximum of 50GB.")
+
+        if length > MIN_STREAM_OBJECT_SIZE:
             return self._stream_put_object(bucket_name, object_name,
                                            data, length, content_type)
 
@@ -883,8 +887,7 @@ class Minio(object):
 
         return response.headers['etag'].replace('"', '')
 
-    def _stream_put_object(self, bucket_name,
-                           object_name, data,
+    def _stream_put_object(self, bucket_name, object_name, data,
                            data_content_size,
                            data_content_type='application/octet-stream'):
         """
@@ -896,8 +899,9 @@ class Minio(object):
         :param data_content_type: Content type of of the multipart upload.
            Defaults to 'application/octet-stream'.
         """
-        part_size = calculate_part_size(data_content_size)
+        # Get region.
         region = self._get_bucket_region(bucket_name)
+        # Get list of all incomplete uploads.
         current_uploads = ListIncompleteUploadsIterator(self._http,
                                                         self._endpoint_url,
                                                         bucket_name,
@@ -915,13 +919,7 @@ class Minio(object):
         uploaded_parts = {}
         uploaded_etags = []
         total_uploaded = 0
-        current_part_number = 1
-
-        # Some streams wouldn't implement seek() method.
-        # Handle it and set it to False.
-        is_seekable_stream = False
-        if hasattr(data, 'seek'):
-            is_seekable_stream = True
+        part_number = 1
 
         # If upload_id is None its a new multipart upload.
         if upload_id is None:
@@ -938,67 +936,46 @@ class Minio(object):
                                                 self._access_key,
                                                 self._secret_key,
                                                 region)
-            uploaded_parts_size = 0
-            latest_part_number = 0
             for part in part_iter:
-                # Save total uploaded parts size for potential seek offset.
-                uploaded_parts_size += part.size
                 # Save uploaded parts for future verification.
                 uploaded_parts[part.part_number] = part
-                # Save the latest_part_numer to indicate
-                # previously uploaded part.
-                latest_part_number = part.part_number
                 # Save uploaded tags for future use.
                 uploaded_etags.append(part.etag)
-
-            # If uploaded parts size is greater than zero and seekable.
-            # seek to the uploaded parts size.
-            if uploaded_parts_size > 0 and is_seekable_stream:
-                # Seek to uploaded parts size offset.
-                data.seek(uploaded_parts_size)
-                # Starts uploading from next part.
-                current_part_number = latest_part_number + 1
-                # Save total_uploaded for future use.
-                total_uploaded = uploaded_parts_size
 
         # Generate new parts and upload <= part_size until total_uploaded
         # reaches actual data_content_size. Additionally part_manager()
         # also provides md5digest and sha256digest for the partitioned data.
         while True:
-            part_metadata = parts_manager(data, part_size)
-            current_data_md5_hex = encode_to_hex(part_metadata.md5digest)
-            # This code block is only needed when the stream is non
-            # seekable, but we still verify md5sum to not upload the
-            # same part. Make sure that code is traversed only when
-            # input stream is not seekable.
-            if is_seekable_stream is False:
-                # Verify if current part number has been already uploaded.
-                # Further verify if we have matching md5sum as well.
-                if current_part_number in uploaded_parts:
-                    previous_part = uploaded_parts[current_part_number]
-                    if previous_part.etag == current_data_md5_hex:
-                        uploaded_etags.append(previous_part.etag)
-                        total_uploaded += previous_part.size
-                        continue
-            current_data_md5_base64 = encode_to_base64(part_metadata.md5digest)
-            current_data_sha256_hex = encode_to_hex(part_metadata.sha256digest)
+            part_metadata = parts_manager(data)
+            data_md5_hex = encode_to_hex(part_metadata.md5digest)
+            # Verify if part number has been already uploaded.
+            # Further verify if we have matching md5sum as well.
+            if part_number in uploaded_parts:
+                previous_part = uploaded_parts[part_number]
+                if previous_part.etag == data_md5_hex:
+                    total_uploaded += previous_part.size
+                    part_number += 1
+                    continue
+
+            data_md5_base64 = encode_to_base64(part_metadata.md5digest)
+            data_sha256_hex = encode_to_hex(part_metadata.sha256digest)
             # Seek back to starting position.
             part_metadata.data.seek(0)
             etag = self._do_put_multipart_object(bucket_name,
                                                  object_name,
                                                  part_metadata.data,
-                                                 current_data_md5_base64,
-                                                 current_data_sha256_hex,
+                                                 data_md5_base64,
+                                                 data_sha256_hex,
                                                  part_metadata.size,
                                                  data_content_type,
                                                  upload_id,
-                                                 current_part_number)
+                                                 part_number)
             # Save etags.
             uploaded_etags.append(etag)
             # If total_uploaded equal to data_content_size break the loop.
             if total_uploaded == data_content_size:
                 break
-            current_part_number += 1
+            part_number += 1
             total_uploaded += part_metadata.size
 
         # Complete all multipart transactions if possible.

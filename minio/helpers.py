@@ -23,10 +23,12 @@ This module implements all helper functions.
 
 """
 
+from __future__ import absolute_import
+import io
+
 import collections
 import binascii
 import hashlib
-import tempfile
 import re
 
 from .compat import urlsplit, basestring, urlencode
@@ -62,7 +64,7 @@ def parts_manager(data, part_size=5*1024*1024):
     :param part_size: Individual part number defaults to 5MB.
     :return: Returns :class:`PartMetadata <PartMetadata>`
     """
-    tmpdata = tempfile.NamedTemporaryFile(delete=True)
+    tmpdata = io.BytesIO()
     md5hasher = hashlib.md5()
     sha256hasher = hashlib.sha256()
     total_read = 0
