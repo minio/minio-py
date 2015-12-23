@@ -19,7 +19,7 @@
 from minio import Acl
 from minio import Minio
 
-client = Minio('https://s3.amazonaws.com',
+client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 

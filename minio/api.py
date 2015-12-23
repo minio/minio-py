@@ -33,9 +33,11 @@ from time import mktime, strptime
 from datetime import datetime, timedelta
 
 import io
+import os
 # Dependencies
 import urllib3
 import certifi
+import hashlib
 
 # Internal imports
 from . import __title__, __version__
@@ -51,13 +53,14 @@ from .parsers import (parse_list_buckets, parse_acl,
 from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_endpoint, get_sha256,
                       encode_to_base64, get_md5,
-                      encode_to_hex, is_valid_bucket_name, parts_manager)
+                      calculate_part_size, encode_to_hex,
+                      is_valid_bucket_name, parts_manager, mkdir_p)
 from .signer import (sign_v4, presign_v4,
                      generate_credential_string,
-                     post_presign_signature)
+                     post_presign_signature, _SIGN_V4_ALGORITHM)
 from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_complete_multipart_upload)
-
+from .section_file import SectionFile
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
@@ -76,6 +79,7 @@ MAX_FILE_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024 # 5TiB
 MAX_STREAM_OBJECT_SIZE = 50 * 1024 * 1024 * 1024 # 50GiB
 MIN_STREAM_OBJECT_SIZE = 5 * 1024 * 1024 # 5MiB
 
+_SEVEN_DAYS_SECONDS = 604800 # 7days
 
 class Minio(object):
     """
@@ -323,178 +327,196 @@ class Minio(object):
                        query={"acl": None},
                        headers=headers)
 
-    def presigned_get_object(self, bucket_name, object_name,
-                             expires=timedelta(days=7)):
-        """
-        Presigns a get object request and provides a url
+    def _get_upload_id(self, bucket_name, object_name, region, data_content_type):
+        current_uploads = ListIncompleteUploadsIterator(self._http,
+                                                        self._endpoint_url,
+                                                        bucket_name,
+                                                        prefix=object_name,
+                                                        delimiter='',
+                                                        access_key=self._access_key,
+                                                        secret_key=self._secret_key,
+                                                        region=region)
+        upload_id = None
+        for upload in current_uploads:
+            if object_name == upload.object_name:
+                upload_id = upload.upload_id
 
-        Example:
-
-            from datetime import timedelta
-
-            presignedURL = presigned_get_object('bucket_name',
-                                                'object_name',
-                                                timedelta(days=7))
-            print(presignedURL)
-
-        :param bucket_name: Bucket for the presigned url.
-        :param object_name: Object for which presigned url is generated.
-        :param expires: Optional expires argument to specify timedelta.
-           Defaults to 7days.
-        :return: Presigned url.
-        """
-        if expires.total_seconds() < 1 or expires.total_seconds() > 604800:
-            raise InvalidArgumentError('Expires param valid values are'
-                                       ' between 1 secs to 604800 secs')
-
-        return self.__presigned_get_partial_object(bucket_name,
+        # If upload_id is None its a new multipart upload.
+        if not upload_id:
+            upload_id = self._new_multipart_upload(bucket_name,
                                                    object_name,
-                                                   expires)
+                                                   data_content_type)
 
-    def __presigned_get_partial_object(self, bucket_name, object_name,
-                                       expires=timedelta(days=7),
-                                       offset=0, length=0):
+        return upload_id
+
+    def fput_object(self, bucket_name, object_name, file_path,
+                    content_type='application/octet-stream'):
         """
-        Presigns a get partial object request and provides a url,
-        this is a internal function not exposed.
+        Add a new object to the cloud storage server.
 
-        :param bucket_name: Bucket for the presigned url.
-        :param object_name: Object for which presigned url is generated.
-        :param expires: optional expires argument to specify timedelta.
-           Defaults to 7days.
-        :param offset, length: optional defaults to '0, 0'.
-        :return: Presigned url.
+        Examples:
+            minio.fput_object('foo', 'bar', 'filepath', 'text/plain')
+
+        :param bucket_name: Bucket to read object from.
+        :param object_name: Name of the object to read.
+        :param file_path: Local file path to be uploaded.
+        :param content_type: Content type of the object.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
-        request_range = ''
-        if offset is not 0 and length is not 0:
-            request_range = str(offset) + "-" + str(offset + length - 1)
-        if offset is not 0 and length is 0:
-            request_range = str(offset) + "-"
-        if offset is 0 and length is not 0:
-            request_range = "0-" + str(length - 1)
+        # save file_size.
+        file_size = os.stat(file_path).st_size
 
+        # optimal part_size value.
+        part_size = calculate_part_size(file_size)
+
+        # get region.
         region = self._get_bucket_region(bucket_name)
-        url = get_target_url(self._endpoint_url,
-                             bucket_name=bucket_name,
-                             object_name=object_name)
-        headers = {}
 
-        if request_range:
-            headers['Range'] = 'bytes=' + request_range
+        # get upload id.
+        upload_id = self._get_upload_id(bucket_name, object_name,
+                                        region, content_type)
 
-        method = 'GET'
-        presign_url = presign_v4(method, url,
-                                 self._access_key,
-                                 self._secret_key,
-                                 region=region,
-                                 headers=headers,
-                                 expires=int(expires.total_seconds()))
-        return presign_url
+        # Initialize variables
+        uploaded_parts = {}
+        uploaded_etags = []
+        total_uploaded = 0
 
-    def presigned_put_object(self, bucket_name, object_name,
-                             expires=timedelta(days=7)):
+        # Iter over the uploaded parts.
+        part_iter = ListUploadPartsIterator(self._http,
+                                            self._endpoint_url,
+                                            bucket_name,
+                                            object_name,
+                                            upload_id,
+                                            self._access_key,
+                                            self._secret_key,
+                                            region)
+        for part in part_iter:
+            # Save uploaded parts for future verification.
+            uploaded_parts[part.part_number] = part
+            # Save uploaded tags for future use.
+            uploaded_etags.append(part.etag)
+
+        # Open file in 'read' mode.
+        file_data = io.open(file_path, mode='rb', buffering=0,
+                            encoding=None, errors=None,
+                            newline=None, closefd=True)
+
+        # Always start with first part number.
+        part_number = 1
+        while True:
+            # If EOF reached, break out of the loop.
+            if total_uploaded == file_size:
+                break
+
+            # Save current offset as previous offset.
+            prev_offset = file_data.seek(0, 1)
+
+            # Save SectionFile, read upto part_size.
+            part = SectionFile(file_data, part_size)
+
+            # Calculate md5sum and sha256.
+            md5hasher = hashlib.md5()
+            sha256hasher = hashlib.sha256()
+            total_read = 0
+            while total_read < part_size:
+                current_data = part.read(8*1024)
+                if not current_data or len(current_data) == 0:
+                    break
+                md5hasher.update(current_data)
+                sha256hasher.update(current_data)
+                total_read = total_read + len(current_data)
+
+            part_md5_hex = encode_to_hex(md5hasher.digest())
+            # Verify if current part number has been already uploaded.
+            # Further verify if we have matching md5sum as well.
+            if part_number in uploaded_parts:
+                previous_part = uploaded_parts[part_number]
+                if previous_part.etag == part_md5_hex:
+                    total_uploaded += previous_part.size
+                    part_number += 1
+                    continue
+
+            part_sha256_hex = encode_to_hex(sha256hasher.digest())
+            part_md5_base64 = encode_to_base64(md5hasher.digest())
+            # Seek back to previous offset position.
+            part.seek(prev_offset, 0)
+
+            # Initiate multipart put.
+            etag = self._do_put_multipart_object(bucket_name, object_name,
+                                                 part, part_md5_base64,
+                                                 part_sha256_hex, total_read,
+                                                 content_type, upload_id,
+                                                 part_number)
+
+            # Save etags.
+            uploaded_etags.append(etag)
+            # Total uploaded.
+            total_uploaded += total_read
+            # Increment part number.
+            part_number += 1
+
+        if total_uploaded != file_size:
+            msg = 'Data read {0} bytes is smaller than the' \
+                  'specified size {1} bytes'.format(total_uploaded, file_size)
+            raise InvalidSizeError(msg)
+
+        # Complete all multipart transactions if possible.
+        self._complete_multipart_upload(bucket_name, object_name,
+                                        upload_id, uploaded_etags)
+
+
+    def fget_object(self, bucket_name, object_name, file_path):
         """
-        Presigns a put object request and provides a url
+        Retrieves an object from a bucket and writes at file_path.
 
-        Example:
-            from datetime import timedelta
+        Examples:
+            minio.fget_object('foo', 'bar', 'localfile')
 
-            presignedURL = presigned_put_object('bucket_name',
-                                                'object_name',
-                                                timedelta(days=7))
-            print(presignedURL)
-
-        :param bucket_name: Bucket for the presigned url.
-        :param object_name: Object for which presigned url is generated.
-        :param expires: optional expires argument to specify timedelta.
-           Defaults to 7days.
-        :return: Presigned put object url.
+        :param bucket_name: Bucket to read object from.
+        :param object_name: Name of the object to read.
+        :param file_path: Local file path to save the object.
         """
-        if expires.total_seconds() < 1 or expires.total_seconds() > 604800:
-            raise InvalidArgumentError('Expires param valid values are'
-                                       ' between 1 secs to 604800 secs')
-
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
-        region = self._get_bucket_region(bucket_name)
-        url = get_target_url(self._endpoint_url,
-                             bucket_name=bucket_name,
-                             object_name=object_name)
-        headers = {}
+        file_is_dir = os.path.isdir(file_path)
+        if file_is_dir:
+            raise OSError("file is a directory.")
 
-        method = 'PUT'
-        presign_url = presign_v4(method, url,
-                                 self._access_key,
-                                 self._secret_key,
-                                 region=region,
-                                 headers=headers,
-                                 expires=int(expires.total_seconds()))
-        return presign_url
+        # Create top level directory if needed.
+        top_level_dir = os.path.dirname(file_path)
+        if top_level_dir:
+            mkdir_p(top_level_dir)
 
-    def presigned_post_policy(self, policy):
-        """
-        Provides a POST form data that can be used for object uploads.
+        # Write to a temporary file "file_path.part.minio-py" before saving.
+        file_part_path = file_path + '.part.minio-py'
 
-        Example:
-            policy = PostPolicy()
-            policy.set_bucket_name('bucket_name')
-            policy.set_key_startswith('objectPrefix/')
+        # Open file in 'write+append' mode.
+        with open(file_part_path, 'ab') as file_part_data:
+            # Save current file_part statinfo.
+            file_statinfo = os.stat(file_part_path)
 
-            expires_date = datetime.utcnow()+timedelta(days=10)
-            policy.set_expires(expires_date)
+            # Get partial object.
+            response = self._get_partial_object(bucket_name, object_name,
+                                                offset=file_statinfo.st_size,
+                                                length=0)
+            for data in response.stream(amt=1024*1024):
+                file_part_data.write(data)
 
-            print(presigned_post_policy(policy))
+        # Close the file.
+        file_part_data.close()
 
-        :param policy: Policy object.
-        :return: Policy form dictionary to be used in curl or HTML forms.
-        """
-        if not policy:
-            raise InvalidArgumentError('Policy cannot be NoneType.')
-
-        if not policy.is_expiration_set():
-            raise InvalidArgumentError('Expiration time must be specified.')
-
-        if not policy.is_bucket_set():
-            raise InvalidArgumentError('bucket name must be specified.')
-
-        if not policy.is_key_set():
-            raise InvalidArgumentError('object key must be specified.')
-
-        date = datetime.utcnow()
-        iso8601_date = date.strftime("%Y%m%dT%H%M%SZ")
-        region = self._get_bucket_region(policy.form_data['bucket'])
-        credential_string = generate_credential_string(self._access_key,
-                                                       date, region)
-        policy.policies.append(('eq', '$x-amz-date',
-                                iso8601_date))
-        policy.policies.append(('eq',
-                                '$x-amz-algorithm',
-                                'AWS4-HMAC-SHA256'))
-        policy.policies.append(('eq',
-                                '$x-amz-credential',
-                                credential_string))
-
-        policy_base64 = policy.base64()
-        policy.form_data['policy'] = policy_base64
-        policy.form_data['x-amz-algorithm'] = 'AWS4-HMAC-SHA256'
-        policy.form_data['x-amz-credential'] = credential_string
-        policy.form_data['x-amz-date'] = iso8601_date
-        signature = post_presign_signature(date, region,
-                                           self._secret_key,
-                                           policy_base64)
-        policy.form_data['x-amz-signature'] = signature
-        return policy.form_data
+        # Rename with destination file.
+        os.rename(file_part_path, file_path)
 
     def get_object(self, bucket_name, object_name):
         """
         Retrieves an object from a bucket.
 
         Examples:
-            my_partial_object = minio.get_partial_object('foo', 'bar')
+            my_object = minio.get_partial_object('foo', 'bar')
 
         :param bucket_name: Bucket to read object from
         :param object_name: Name of object to read
@@ -530,48 +552,6 @@ class Minio(object):
         response = self._get_partial_object(bucket_name,
                                             object_name,
                                             offset, length)
-        return response
-
-    # Object Level
-    def _get_partial_object(self, bucket_name, object_name,
-                            offset=0, length=0):
-        """
-        Retrieves an object from a bucket.
-
-        Optionally takes an offset and length of data to retrieve.
-
-        Examples:
-            partial_object = minio.get_partial_object('foo', 'bar', 2, 4)
-
-        :param bucket_name: Bucket to retrieve object from
-        :param object_name: Name of object to retrieve
-        :param offset: Optional offset to retrieve bytes from.
-           Must be >= 0.
-        :param length: Optional number of bytes to retrieve.
-           Must be an integer.
-        :return: :class:`urllib3.response.HTTPResponse` object.
-        """
-        request_range = ''
-        if offset is not 0 and length is not 0:
-            request_range = str(offset) + '-' + str(offset + length - 1)
-        if offset is not 0 and length is 0:
-            request_range = str(offset) + '-'
-        if length < 0 and offset == 0:
-            request_range = '%d' % length
-        if offset is 0 and length is not 0:
-            request_range = '0-' + str(length - 1)
-
-        method = 'GET'
-        headers = {}
-
-        if request_range:
-            headers['Range'] = 'bytes=' + request_range
-
-        response = self._url_open(method,
-                                  bucket_name=bucket_name,
-                                  object_name=object_name,
-                                  headers=headers)
-
         return response
 
     def put_object(self, bucket_name, object_name, data, length,
@@ -818,6 +798,214 @@ class Minio(object):
                                                upload.upload_id)
                 return
 
+    def presigned_get_object(self, bucket_name, object_name,
+                             expires=timedelta(days=7)):
+        """
+        Presigns a get object request and provides a url
+
+        Example:
+
+            from datetime import timedelta
+
+            presignedURL = presigned_get_object('bucket_name',
+                                                'object_name',
+                                                timedelta(days=7))
+            print(presignedURL)
+
+        :param bucket_name: Bucket for the presigned url.
+        :param object_name: Object for which presigned url is generated.
+        :param expires: Optional expires argument to specify timedelta.
+           Defaults to 7days.
+        :return: Presigned url.
+        """
+        if expires.total_seconds() < 1 or expires.total_seconds() > _SEVEN_DAYS_SECONDS:
+            raise InvalidArgumentError('Expires param valid values are'
+                                       ' between 1 secs to {0} secs'.format(_SEVEN_DAYS_SECONDS))
+
+        return self._presigned_get_partial_object(bucket_name,
+                                                   object_name,
+                                                   expires)
+
+    def presigned_put_object(self, bucket_name, object_name,
+                             expires=timedelta(days=7)):
+        """
+        Presigns a put object request and provides a url
+
+        Example:
+            from datetime import timedelta
+
+            presignedURL = presigned_put_object('bucket_name',
+                                                'object_name',
+                                                timedelta(days=7))
+            print(presignedURL)
+
+        :param bucket_name: Bucket for the presigned url.
+        :param object_name: Object for which presigned url is generated.
+        :param expires: optional expires argument to specify timedelta.
+           Defaults to 7days.
+        :return: Presigned put object url.
+        """
+        if expires.total_seconds() < 1 or expires.total_seconds() > _SEVEN_DAYS_SECONDS:
+            raise InvalidArgumentError('Expires param valid values are'
+                                       ' between 1 secs to {0} secs'.format(_SEVEN_DAYS_SECONDS))
+
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+
+        region = self._get_bucket_region(bucket_name)
+        url = get_target_url(self._endpoint_url,
+                             bucket_name=bucket_name,
+                             object_name=object_name)
+        headers = {}
+
+        method = 'PUT'
+        presign_url = presign_v4(method, url,
+                                 self._access_key,
+                                 self._secret_key,
+                                 region=region,
+                                 headers=headers,
+                                 expires=int(expires.total_seconds()))
+        return presign_url
+
+    def presigned_post_policy(self, policy):
+        """
+        Provides a POST form data that can be used for object uploads.
+
+        Example:
+            policy = PostPolicy()
+            policy.set_bucket_name('bucket_name')
+            policy.set_key_startswith('objectPrefix/')
+
+            expires_date = datetime.utcnow()+timedelta(days=10)
+            policy.set_expires(expires_date)
+
+            print(presigned_post_policy(policy))
+
+        :param policy: Policy object.
+        :return: Policy form dictionary to be used in curl or HTML forms.
+        """
+        if not policy:
+            raise InvalidArgumentError('Policy cannot be NoneType.')
+
+        if not policy.is_expiration_set():
+            raise InvalidArgumentError('Expiration time must be specified.')
+
+        if not policy.is_bucket_set():
+            raise InvalidArgumentError('bucket name must be specified.')
+
+        if not policy.is_key_set():
+            raise InvalidArgumentError('object key must be specified.')
+
+        date = datetime.utcnow()
+        iso8601_date = date.strftime("%Y%m%dT%H%M%SZ")
+        region = self._get_bucket_region(policy.form_data['bucket'])
+        credential_string = generate_credential_string(self._access_key,
+                                                       date, region)
+        policy.policies.append(('eq', '$x-amz-date',
+                                iso8601_date))
+        policy.policies.append(('eq',
+                                '$x-amz-algorithm',
+                                _SIGN_V4_ALGORITHM))
+        policy.policies.append(('eq',
+                                '$x-amz-credential',
+                                credential_string))
+
+        policy_base64 = policy.base64()
+        policy.form_data['policy'] = policy_base64
+        policy.form_data['x-amz-algorithm'] = _SIGN_V4_ALGORITHM
+        policy.form_data['x-amz-credential'] = credential_string
+        policy.form_data['x-amz-date'] = iso8601_date
+        signature = post_presign_signature(date, region,
+                                           self._secret_key,
+                                           policy_base64)
+        policy.form_data['x-amz-signature'] = signature
+        return policy.form_data
+
+    # All private functions below.
+    def _get_partial_object(self, bucket_name, object_name,
+                            offset=0, length=0):
+        """
+        Retrieves an object from a bucket.
+
+        Optionally takes an offset and length of data to retrieve.
+
+        Examples:
+            partial_object = minio.get_partial_object('foo', 'bar', 2, 4)
+
+        :param bucket_name: Bucket to retrieve object from
+        :param object_name: Name of object to retrieve
+        :param offset: Optional offset to retrieve bytes from.
+           Must be >= 0.
+        :param length: Optional number of bytes to retrieve.
+           Must be an integer.
+        :return: :class:`urllib3.response.HTTPResponse` object.
+        """
+        request_range = ''
+        if offset is not 0 and length is not 0:
+            request_range = str(offset) + '-' + str(offset + length - 1)
+        if offset is not 0 and length is 0:
+            request_range = str(offset) + '-'
+        if length < 0 and offset == 0:
+            request_range = '%d' % length
+        if offset is 0 and length is not 0:
+            request_range = '0-' + str(length - 1)
+
+        method = 'GET'
+        headers = {}
+
+        if request_range:
+            headers['Range'] = 'bytes=' + request_range
+
+        response = self._url_open(method,
+                                  bucket_name=bucket_name,
+                                  object_name=object_name,
+                                  headers=headers)
+
+        return response
+
+    def _presigned_get_partial_object(self, bucket_name, object_name,
+                                       expires=timedelta(days=7),
+                                       offset=0, length=0):
+        """
+        Presigns a get partial object request and provides a url,
+        this is a internal function not exposed.
+
+        :param bucket_name: Bucket for the presigned url.
+        :param object_name: Object for which presigned url is generated.
+        :param expires: optional expires argument to specify timedelta.
+           Defaults to 7days.
+        :param offset, length: optional defaults to '0, 0'.
+        :return: Presigned url.
+        """
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+
+        request_range = ''
+        if offset is not 0 and length is not 0:
+            request_range = str(offset) + "-" + str(offset + length - 1)
+        if offset is not 0 and length is 0:
+            request_range = str(offset) + "-"
+        if offset is 0 and length is not 0:
+            request_range = "0-" + str(length - 1)
+
+        region = self._get_bucket_region(bucket_name)
+        url = get_target_url(self._endpoint_url,
+                             bucket_name=bucket_name,
+                             object_name=object_name)
+        headers = {}
+
+        if request_range:
+            headers['Range'] = 'bytes=' + request_range
+
+        method = 'GET'
+        presign_url = presign_v4(method, url,
+                                 self._access_key,
+                                 self._secret_key,
+                                 region=region,
+                                 headers=headers,
+                                 expires=int(expires.total_seconds()))
+        return presign_url
+
     def _do_put_multipart_object(self, bucket_name, object_name, data,
                                  data_md5_base64,
                                  data_sha256_hex,
@@ -946,6 +1134,10 @@ class Minio(object):
         # reaches actual data_content_size. Additionally part_manager()
         # also provides md5digest and sha256digest for the partitioned data.
         while True:
+            # If total_uploaded equal to data_content_size break the loop.
+            if total_uploaded == data_content_size:
+                break
+
             part_metadata = parts_manager(data)
             data_md5_hex = encode_to_hex(part_metadata.md5digest)
             # Verify if part number has been already uploaded.
@@ -972,9 +1164,6 @@ class Minio(object):
                                                  part_number)
             # Save etags.
             uploaded_etags.append(etag)
-            # If total_uploaded equal to data_content_size break the loop.
-            if total_uploaded == data_content_size:
-                break
             part_number += 1
             total_uploaded += part_metadata.size
 

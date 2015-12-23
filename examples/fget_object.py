@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-objectname
-# are dummy values, please replace them with original values.
+# Note: YOUR-ACCESSKEYID and YOUR-SECRETACCESSKEY are
+# dummy values, please replace them with original values.
 
 from minio import Minio
 
@@ -22,5 +22,5 @@ client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-# presigned get object URL for object name, expires in 7 days.
-print(client.presigned_get_object('my-bucketname', 'my-objectname'))
+# Get a full object
+client.fget_object('bucket-name', 'objectName', 'filepath')

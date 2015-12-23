@@ -75,6 +75,21 @@ class InvalidArgumentError(Exception):
         return string_format.format(self.message)
 
 
+class InvalidSizeError(Exception):
+    """
+    InvalidSizeError is raised when an unexpected size mismatch occurs.
+
+    :param message: user defined message.
+    """
+    def __init__(self, message, **kwargs):
+        super(InvalidSizeError, self).__init__(**kwargs)
+        self.message = message
+
+    def __str__(self):
+        string_format = 'InvalidSizeError: message: {0}'
+        return string_format.format(self.message)
+
+
 class InvalidXMLError(Exception):
     """
     InvalidXMLError is raised when an unexpected XML tag or
