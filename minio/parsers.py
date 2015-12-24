@@ -78,6 +78,7 @@ def parse_list_buckets(data):
                 bucket_list.append(Bucket(name, creation_date))
     return bucket_list
 
+
 def parse_acl(data):
     """
     Parser for access control list response.

@@ -32,7 +32,7 @@ from .parsers import (parse_list_objects, parse_list_multipart_uploads,
 from .signer import sign_v4
 
 
-class ListObjectsIterator(object):
+class ListObjects(object):
     """
     Implements list objects iterator for list objects parser.
 
@@ -116,7 +116,7 @@ class ListObjectsIterator(object):
         return parse_list_objects(response.data, bucket_name=self._bucket_name)
 
 
-class ListIncompleteUploadsIterator(object):
+class ListIncompleteUploads(object):
     """
     Implements list incomplete uploads iterator for list multipart uploads
     parser.
@@ -209,7 +209,7 @@ class ListIncompleteUploadsIterator(object):
                                             bucket_name=self._bucket_name)
 
 
-class ListUploadPartsIterator(object):
+class ListUploadParts(object):
     """
     Implements list upload parts iterator for list parts parser.
 
