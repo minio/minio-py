@@ -16,6 +16,7 @@
 from unittest import TestCase
 from nose.tools import eq_
 
+from minio.definitions import UploadPart
 from minio.xml_marshal import (xml_marshal_bucket_constraint,
                                xml_marshal_complete_multipart_upload)
 
@@ -32,8 +33,17 @@ class GenerateRequestTest(TestCase):
                           b'<Part><PartNumber>2</PartNumber><ETag>"0c78aef83f66abc1fa1e8477f296d394"</ETag>' \
                           b'</Part><Part><PartNumber>3</PartNumber><ETag>"acbd18db4cc2f85cedef654fccc4a4d8"' \
                           b'</ETag></Part></CompleteMultipartUpload>'
-        etags = ['a54357aff0632cce46d942af68356b38',
-                 '0c78aef83f66abc1fa1e8477f296d394',
-                 'acbd18db4cc2f85cedef654fccc4a4d8']
+        etags = {}
+        etags = {
+            1: UploadPart('bucket', 'object', 'upload_id', 1,
+                            'a54357aff0632cce46d942af68356b38',
+                            None, 0),
+            2: UploadPart('bucket', 'object', 'upload_id', 2,
+                            '0c78aef83f66abc1fa1e8477f296d394',
+                            None, 0),
+            3: UploadPart('bucket', 'object', 'upload_id', 3,
+                            'acbd18db4cc2f85cedef654fccc4a4d8',
+                            None, 0),
+        }
         actual_string = xml_marshal_complete_multipart_upload(etags)
         eq_(expected_string, actual_string)
