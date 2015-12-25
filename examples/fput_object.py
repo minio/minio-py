@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID and YOUR-SECRETACCESSKEY are
-# dummy values, please replace them with original values.
+# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname, my-objectname and
+# my-filepath dummy values, please replace them with original values.
 
 from minio import Minio
 
@@ -23,4 +23,4 @@ client = Minio('s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Get a full object
-client.fput_object('bucket-name', 'objectName', 'filepath')
+client.fput_object('my-bucketname', 'my-objectname', 'my-filepath')
