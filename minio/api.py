@@ -42,7 +42,7 @@ import hashlib
 # Internal imports
 from . import __title__, __version__
 from .compat import urlsplit
-from .error import ResponseError, InvalidArgumentError
+from .error import ResponseError, InvalidArgumentError, InvalidSizeError
 from .bucket_acl import is_valid_acl
 from .definitions import Object, UploadPart
 from .generators import (ListObjects, ListIncompleteUploads,
@@ -463,11 +463,6 @@ class Minio(object):
             # Increment part number.
             part_number += 1
 
-        if total_uploaded != file_size:
-            msg = 'Data read {0} bytes is smaller than the' \
-                  'specified size {1} bytes'.format(total_uploaded, file_size)
-            raise InvalidSizeError(msg)
-
         # Complete all multipart transactions if possible.
         self._complete_multipart_upload(bucket_name, object_name,
                                         upload_id, uploaded_parts)
@@ -486,6 +481,8 @@ class Minio(object):
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
+        stat = self.stat_object(bucket_name, object_name)
+
         file_is_dir = os.path.isdir(file_path)
         if file_is_dir:
             raise OSError("file is a directory.")
@@ -496,7 +493,7 @@ class Minio(object):
             mkdir_p(top_level_dir)
 
         # Write to a temporary file "file_path.part.minio-py" before saving.
-        file_part_path = file_path + '.part.minio-py'
+        file_part_path = file_path + stat.etag + '.part.minio'
 
         # Open file in 'write+append' mode.
         with open(file_part_path, 'ab') as file_part_data:
@@ -507,8 +504,28 @@ class Minio(object):
             response = self._get_partial_object(bucket_name, object_name,
                                                 offset=file_statinfo.st_size,
                                                 length=0)
+
+            # Save content_size to verify if we wrote more data.
+            content_size = int(response.headers['content-length'])
+
+            # Save total_written.
+            total_written = 0
             for data in response.stream(amt=1024*1024):
                 file_part_data.write(data)
+                total_written += len(data)
+
+            # Verify if we wrote data properly.
+            if total_written < content_size:
+                msg = 'Data written {0} bytes is smaller than the' \
+                      'specified size {1} bytes'.format(total_written,
+                                                        content_size)
+                raise InvalidSizeError(msg)
+
+            if total_written > content_size:
+                msg = 'Data written {0} bytes is in excess than the' \
+                      'specified size {1} bytes'.format(total_written,
+                                                        content_size)
+                raise InvalidSizeError(msg)
 
         # Close the file.
         file_part_data.close()
