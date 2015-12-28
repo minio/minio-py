@@ -74,6 +74,29 @@ class Object(object):
                                     self.is_dir)
 
 
+class MultipartUploadResult(object):
+    """
+    A completed multipart upload metadata
+         :class:`MultipartUploadResult <MultipartUploadResult>`.
+
+    :param bucket_name: Bucket name.
+    :param object_name: Object name.
+    :param location: Object uploaded location.
+    :param etag: Object final etag.
+    """
+    def __init__(self, bucket_name, object_name, location, etag):
+        self.bucket_name = bucket_name
+        self.object_name = object_name
+        self.location = location
+        self.etag = etag
+
+    def __str__(self):
+        string_format = ('<IncompleteUpload: bucket_name: {0}'
+                         ' object_name: {1} location: {2} etag: {3}>')
+        return string_format.format(self.bucket_name, self.object_name,
+                                    self.location, self.etag)
+
+
 class IncompleteUpload(object):
     """
     A partially uploaded object's metadata
