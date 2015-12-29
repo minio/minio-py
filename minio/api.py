@@ -49,7 +49,8 @@ from .generators import (ListObjects, ListIncompleteUploads,
                          ListUploadParts)
 from .parsers import (parse_list_buckets, parse_acl,
                       parse_new_multipart_upload,
-                      parse_location_constraint)
+                      parse_location_constraint,
+                      parse_multipart_upload_result)
 from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_endpoint, get_sha256,
                       encode_to_base64, get_md5,
@@ -464,8 +465,8 @@ class Minio(object):
             part_number += 1
 
         # Complete all multipart transactions if possible.
-        self._complete_multipart_upload(bucket_name, object_name,
-                                        upload_id, uploaded_parts)
+        return self._complete_multipart_upload(bucket_name, object_name,
+                                               upload_id, uploaded_parts)
 
     def fget_object(self, bucket_name, object_name, file_path):
         """
@@ -720,9 +721,11 @@ class Minio(object):
         method = 'DELETE'
         headers = {}
 
-        response = self._url_open(method, bucket_name=bucket_name,
-                                  object_name=object_name,
-                                  headers=headers)
+        # No reason to store successful response, for errors
+        # relevant exceptions are thrown.
+        self._url_open(method, bucket_name=bucket_name,
+                       object_name=object_name,
+                       headers=headers)
 
     def list_incomplete_uploads(self, bucket_name, prefix=None,
                                 recursive=False):
@@ -1190,8 +1193,8 @@ class Minio(object):
             total_uploaded += part_metadata.size
 
         # Complete all multipart transactions if possible.
-        self._complete_multipart_upload(bucket_name, object_name,
-                                        upload_id, uploaded_parts)
+        return self._complete_multipart_upload(bucket_name, object_name,
+                                               upload_id, uploaded_parts)
 
     def _remove_incomplete_upload(self, bucket_name, object_name, upload_id):
         """
@@ -1207,9 +1210,11 @@ class Minio(object):
         }
         headers = {}
 
-        response = self._url_open(method, bucket_name=bucket_name,
-                                  object_name=object_name, query=query,
-                                  headers=headers)
+        # No reason to store successful response, for errors
+        # relevant exceptions are thrown.
+        self._url_open(method, bucket_name=bucket_name,
+                       object_name=object_name, query=query,
+                       headers=headers)
 
     def _new_multipart_upload(self, bucket_name, object_name, content_type):
         """
@@ -1259,9 +1264,10 @@ class Minio(object):
 
         response = self._url_open(method, bucket_name=bucket_name,
                                   object_name=object_name, query=query,
-                                  headers=headers,
-                                  body=data,
+                                  headers=headers, body=data,
                                   content_sha256=data_sha256_hex)
+
+        return parse_multipart_upload_result(response.data)
 
     def _delete_bucket_region(self, bucket_name):
         """
@@ -1371,6 +1377,11 @@ class Minio(object):
 
         if response.status != 200 and \
            response.status != 204 and response.status != 206:
+            # Upon any response error invalidate the region cache
+            # proactively for the bucket name.
+            self._delete_bucket_region(bucket_name)
+
+            # Populate response_error with error response.
             response_error = ResponseError(response)
             if method == 'HEAD':
                 raise response_error.head(bucket_name, object_name)

@@ -63,7 +63,7 @@ def main():
     file_data.close()
 
     # Fput a file
-    client.fput_object(bucket_name, object_name+'-f', 'testfile')
+    print(client.fput_object(bucket_name, object_name+'-f', 'testfile'))
 
     # Fetch stats on your object.
     print(client.stat_object(bucket_name, object_name))
@@ -76,7 +76,7 @@ def main():
     file_data.close()
 
     # Get a full object locally.
-    client.fget_object(bucket_name, object_name, 'newfile-f')
+    print(client.fget_object(bucket_name, object_name, 'newfile-f'))
 
     # List all object paths in bucket.
     objects = client.list_objects(bucket_name, recursive=True)

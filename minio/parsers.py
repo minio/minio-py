@@ -37,13 +37,55 @@ import pytz
 from .error import InvalidXMLError
 from .bucket_acl import Acl
 from .compat import urldecode
-from .definitions import (Object, Bucket, IncompleteUpload, UploadPart)
+from .definitions import (Object, Bucket, IncompleteUpload,
+                          UploadPart, MultipartUploadResult)
 
 if hasattr(cElementTree, 'ParseError'):
     _ETREE_EXCEPTIONS = (ParseError, AttributeError, ValueError)
 else:
     _ETREE_EXCEPTIONS = (SyntaxError, AttributeError, ValueError)
 
+
+def parse_multipart_upload_result(data):
+    """
+    Parser for complete multipart upload response.
+
+    :param data: Respone data for complete multipart upload.
+    :return: :class:`MultipartUploadResult <MultipartUploadResult>`.
+    """
+    try:
+        root = cElementTree.fromstring(data)
+    except _ETREE_EXCEPTIONS as error:
+        raise InvalidXMLError('"CompleteMultipartUploadResult" XML is not parsable. '
+                              'Message: {0}'.format(error.message))
+
+    bucket_name = None
+    object_name = None
+    location = None
+    etag = None
+
+    # Loop through response XML and extract relevant data.
+    for multipart_upload in root:
+        if multipart_upload.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Bucket':
+            bucket_name = multipart_upload.text
+        if multipart_upload.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
+            object_name = multipart_upload.text
+        if multipart_upload.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Location':
+            location = multipart_upload.text
+        if multipart_upload.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
+            etag = multipart_upload.text
+            etag = etag.replace('"', '')
+
+    if not bucket_name:
+        raise InvalidXMLError('Missing "Bucket" XML attribute.')
+    if not object_name:
+        raise InvalidXMLError('Missing "Key" XML attribute.')
+    if not location:
+        raise InvalidXMLError('Missing "Location" XML attribute.')
+    if not etag:
+        raise InvalidXMLError('Missing "ETag" XML attribute.')
+
+    return MultipartUploadResult(bucket_name, object_name, location, etag)
 
 def parse_list_buckets(data):
     """
