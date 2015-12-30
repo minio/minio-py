@@ -24,8 +24,10 @@ This module contains core iterators.
 
 """
 
+import sys
+
 from .error import ResponseError
-from .helpers import get_target_url
+from .helpers import get_target_url, dump_http
 from .parsers import (parse_list_objects, parse_list_multipart_uploads,
                       parse_list_parts)
 
@@ -47,8 +49,11 @@ class ListObjects(object):
     :param region: Optional if provided requests will be served to this region.
     """
     def __init__(self, client, url, bucket_name, prefix, recursive,
-                 access_key=None, secret_key=None, region='us-east-1'):
+                 access_key=None, secret_key=None, region='us-east-1',
+                 is_trace_enabled=False, output_stream=sys.stdout):
         self._http = client
+        self._is_trace_enabled = is_trace_enabled
+        self._output_stream = output_stream
         self._endpoint_url = url
         self._bucket_name = bucket_name
         self._prefix = prefix
@@ -109,7 +114,16 @@ class ListObjects(object):
 
         response = self._http.request(method, url, headers=headers)
 
+        if self._is_trace_enabled:
+            dump_http(method, url, response.status,
+                      headers, response.headers,
+                      self._output_stream)
+
         if response.status != 200:
+            # Upon any response error invalidate the region cache
+            # proactively for the bucket name.
+            self._delete_bucket_region(bucket_name)
+
             response_error = ResponseError(response)
             raise response_error.get(self._bucket_name)
 
@@ -131,9 +145,12 @@ class ListIncompleteUploads(object):
     :param region: Optional if provided requests will be served to this region.
     """
     def __init__(self, client, url, bucket_name, prefix=None, delimiter='/',
-                 access_key=None, secret_key=None, region='us-east-1'):
+                 access_key=None, secret_key=None, region='us-east-1',
+                 is_trace_enabled=False, output_stream=sys.stdout):
         # from user
         self._http = client
+        self._is_trace_enabled = is_trace_enabled
+        self._output_stream = output_stream
         self._endpoint_url = url
         self._bucket_name = bucket_name
         self._prefix = prefix
@@ -201,7 +218,16 @@ class ListIncompleteUploads(object):
 
         response = self._http.request(method, url, headers=headers)
 
+        if self._is_trace_enabled:
+            dump_http(method, url, response.status,
+                      headers, response.headers,
+                      self._output_stream)
+
         if response.status != 200:
+            # Upon any response error invalidate the region cache
+            # proactively for the bucket name.
+            self._delete_bucket_region(bucket_name)
+
             response_error = ResponseError(response)
             raise response_error.get(self._bucket_name)
 
@@ -223,9 +249,12 @@ class ListUploadParts(object):
     :param region: Optional if provided requests will be served to this region.
     """
     def __init__(self, client, url, bucket_name, object_name, upload_id,
-                 access_key=None, secret_key=None, region='us-east-1'):
+                 access_key=None, secret_key=None, region='us-east-1',
+                 is_trace_enabled=False, output_stream=sys.stdout):
         # from user
         self._http = client
+        self._is_trace_enabled = is_trace_enabled
+        self._output_stream = output_stream
         self._endpoint_url = url
         self._bucket_name = bucket_name
         self._object_name = object_name
@@ -296,7 +325,16 @@ class ListUploadParts(object):
 
         response = self._http.request(method, url, headers=headers)
 
+        if self._is_trace_enabled:
+            dump_http(method, url, response.status,
+                      headers, response.headers,
+                      self._output_stream)
+
         if response.status != 200:
+            # Upon any response error invalidate the region cache
+            # proactively for the bucket name.
+            self._delete_bucket_region(bucket_name)
+
             response_error = ResponseError(response)
             raise response_error.get(self._bucket_name, self._object_name)
 

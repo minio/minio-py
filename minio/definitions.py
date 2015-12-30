@@ -67,7 +67,7 @@ class Object(object):
                         ' last_modified: {2} etag: {3} size: {4}' \
                         ' content_type: {5}, is_dir: {6}>'
         return string_format.format(self.bucket_name,
-                                    self.object_name,
+                                    self.object_name.encode('utf-8'),
                                     self.last_modified,
                                     self.etag, self.size,
                                     self.content_type,
