@@ -49,6 +49,7 @@ def dump_http(method, url, status, request_headers, response_headers, output_str
     :param response_headers: Dictionary of HTTP response headers.
     :param output_stream: Stream where the request is being dumped at.
     """
+
     # Start header.
     output_stream.write('---------START-HTTP---------\n')
 

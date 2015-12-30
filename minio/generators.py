@@ -24,8 +24,6 @@ This module contains core iterators.
 
 """
 
-import sys
-
 from .error import ResponseError
 from .helpers import get_target_url, dump_http
 from .parsers import (parse_list_objects, parse_list_multipart_uploads,
@@ -49,15 +47,14 @@ class ListObjects(object):
     :param region: Optional if provided requests will be served to this region.
     """
     def __init__(self, client, url, bucket_name, prefix, recursive,
-                 access_key=None, secret_key=None, region='us-east-1',
-                 is_trace_enabled=False, output_stream=sys.stdout):
+                 trace_output_stream, access_key=None, secret_key=None,
+                 region='us-east-1'):
         self._http = client
-        self._is_trace_enabled = is_trace_enabled
-        self._output_stream = output_stream
         self._endpoint_url = url
         self._bucket_name = bucket_name
         self._prefix = prefix
         self._recursive = recursive
+        self._trace_output_stream = trace_output_stream
         self._results = []
         self._complete = False
         self._access_key = access_key
@@ -93,11 +90,11 @@ class ListObjects(object):
     def _fetch(self):
         query = {}
         query['max-keys'] = 1000
-        if self._prefix is not None:
+        if self._prefix:
             query['prefix'] = self._prefix
         if not self._recursive:
             query['delimiter'] = '/'
-        if self._marker is not None:
+        if self._marker:
             query['marker'] = self._marker
 
         url = get_target_url(self._endpoint_url,
@@ -114,10 +111,10 @@ class ListObjects(object):
 
         response = self._http.request(method, url, headers=headers)
 
-        if self._is_trace_enabled:
+        if self._trace_output_stream:
             dump_http(method, url, response.status,
                       headers, response.headers,
-                      self._output_stream)
+                      self._trace_output_stream)
 
         if response.status != 200:
             # Upon any response error invalidate the region cache
@@ -139,22 +136,22 @@ class ListIncompleteUploads(object):
     :param url: Target endpoint url where request is served to.
     :param bucket_name: Bucket name resource where request will be served from.
     :param prefix: Prefix name resource for filtering objects.
-    :param delimiter: Default is non recursive, set to *None* to be recursive.
+    :param recursive: Default is non recursive, set True lists all incomplete uploads.
+       iteratively.
     :param access_key: Optional if provided requests will be authenticated.
     :param secret_key: Optional if provided requests will be authenticated.
     :param region: Optional if provided requests will be served to this region.
     """
-    def __init__(self, client, url, bucket_name, prefix=None, delimiter='/',
-                 access_key=None, secret_key=None, region='us-east-1',
-                 is_trace_enabled=False, output_stream=sys.stdout):
+    def __init__(self, client, url, bucket_name, prefix, recursive,
+                 trace_output_stream, access_key=None, secret_key=None,
+                 region='us-east-1'):
         # from user
         self._http = client
-        self._is_trace_enabled = is_trace_enabled
-        self._output_stream = output_stream
         self._endpoint_url = url
         self._bucket_name = bucket_name
         self._prefix = prefix
-        self._delimiter = delimiter
+        self._recursive = recursive
+        self._trace_output_stream = trace_output_stream
         self._access_key = access_key
         self._secret_key = secret_key
         self._region = region
@@ -196,17 +193,18 @@ class ListIncompleteUploads(object):
             'uploads': None
         }
         query['max-uploads'] = 1000
-        if self._prefix is not None:
+        if self._prefix:
             query['prefix'] = self._prefix
-        if self._key_marker is not None:
+        if self._key_marker:
             query['key-marker'] = self._key_marker
-        if self._upload_id_marker is not None:
+        if self._upload_id_marker:
             query['upload-id-marker'] = self._upload_id_marker
-        if self._delimiter is not None:
-            query['delimiter'] = self._delimiter
+        if not self._recursive:
+            query['delimiter'] = '/'
 
         url = get_target_url(self._endpoint_url,
-                             bucket_name=self._bucket_name, query=query)
+                             bucket_name=self._bucket_name,
+                             query=query)
 
         method = 'GET'
         headers = {}
@@ -218,10 +216,10 @@ class ListIncompleteUploads(object):
 
         response = self._http.request(method, url, headers=headers)
 
-        if self._is_trace_enabled:
+        if self._trace_output_stream:
             dump_http(method, url, response.status,
                       headers, response.headers,
-                      self._output_stream)
+                      self._trace_output_stream)
 
         if response.status != 200:
             # Upon any response error invalidate the region cache
@@ -249,16 +247,15 @@ class ListUploadParts(object):
     :param region: Optional if provided requests will be served to this region.
     """
     def __init__(self, client, url, bucket_name, object_name, upload_id,
-                 access_key=None, secret_key=None, region='us-east-1',
-                 is_trace_enabled=False, output_stream=sys.stdout):
+                 trace_output_stream, access_key=None, secret_key=None,
+                 region='us-east-1'):
         # from user
         self._http = client
-        self._is_trace_enabled = is_trace_enabled
-        self._output_stream = output_stream
         self._endpoint_url = url
         self._bucket_name = bucket_name
         self._object_name = object_name
         self._upload_id = upload_id
+        self._trace_output_stream = trace_output_stream
         self._access_key = access_key
         self._secret_key = secret_key
         self._region = region
@@ -325,10 +322,10 @@ class ListUploadParts(object):
 
         response = self._http.request(method, url, headers=headers)
 
-        if self._is_trace_enabled:
+        if self._trace_output_stream:
             dump_http(method, url, response.status,
                       headers, response.headers,
-                      self._output_stream)
+                      self._trace_output_stream)
 
         if response.status != 200:
             # Upon any response error invalidate the region cache
