@@ -15,11 +15,16 @@
 # limitations under the License.
 
 import os
+import io
 import uuid
+import urllib3
+import certifi
 
 from datetime import datetime, timedelta
 
 from minio import Minio, Acl, PostPolicy
+from minio.error import ResponseError
+
 from faker import Factory
 
 def main():
@@ -31,9 +36,17 @@ def main():
                    'Q3AM3UQ867SPQQA43P2F',
                    'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
 
+    _http = urllib3.PoolManager(
+        cert_reqs='CERT_REQUIRED',
+        ca_certs=certifi.where()
+    )
+
     # Get unique bucket_name, object_name.
     bucket_name = uuid.uuid4().__str__()
     object_name = uuid.uuid4().__str__()
+
+    # Enable trace
+    # client.trace_on()
 
     # Make a new bucket.
     print(client.make_bucket(bucket_name))
@@ -84,8 +97,23 @@ def main():
         print(obj.bucket_name, obj.object_name, obj.last_modified, \
             obj.etag, obj.size, obj.content_type)
 
-    print(client.presigned_get_object(bucket_name, object_name))
-    print(client.presigned_put_object(bucket_name, object_name))
+    presigned_get_object_url = client.presigned_get_object(bucket_name, object_name)
+    response = _http.urlopen('GET', presigned_get_object_url)
+    if response.status != 200:
+        response_error = ResponseError(response)
+        raise response_error.get(bucket_name, object_name)
+
+    presigned_put_object_url = client.presigned_put_object(bucket_name, object_name)
+    value = fake.text().encode('utf-8')
+    data = io.BytesIO(value).getvalue()
+    response = _http.urlopen('PUT', presigned_put_object_url, body=data)
+    if response.status != 200:
+        response_error = ResponseError(response)
+        raise response_error.put(bucket_name, object_name)
+
+    object_data = client.get_object(bucket_name, object_name)
+    if object_data.read() != value:
+        raise ValueError('Bytes not equal')
 
     # Post policy.
     policy = PostPolicy()
