@@ -41,6 +41,45 @@ _ALLOWED_HOSTNAME_REGEX = re.compile(
     '^((?!-)[A-Z\\d-]{1,63}(?<!-)\\.)*((?!-)[A-Z\\d-]{1,63}(?<!-))$',
     re.IGNORECASE)
 
+def dump_http(method, url, status, request_headers, response_headers, output_stream):
+    """
+    Dump all headers and response headers into output_stream.
+
+    :param request_headers: Dictionary of HTTP request headers.
+    :param response_headers: Dictionary of HTTP response headers.
+    :param output_stream: Stream where the request is being dumped at.
+    """
+
+    # Start header.
+    output_stream.write('---------START-HTTP---------\n')
+
+    # Get parsed url.
+    parsed_url = urlsplit(url)
+
+    # Dump all request headers recursively.
+    http_path = parsed_url.path
+    if parsed_url.query:
+        http_path = http_path + '?' + parsed_url.query
+    output_stream.write('{0} {1} HTTP/1.1\n'.format(method,
+                                                    http_path))
+
+    for k in request_headers.keys():
+        output_stream.write('{0}: {1}\n'.format(k.title(),
+                                                request_headers[k]))
+
+    # Write a new line.
+    output_stream.write('\n')
+
+    # Write response status code.
+    output_stream.write('HTTP/1.1 {0}\n'.format(status))
+
+    # Dump all response headers recursively.
+    for k in response_headers.keys():
+        output_stream.write('{0}: {1}\n'.format(k.title(),
+                                                response_headers[k]))
+
+    # End header.
+    output_stream.write('---------END-HTTP---------\n')
 
 def mkdir_p(path):
     """

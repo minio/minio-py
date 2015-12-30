@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 import mock
 
 from nose.tools import eq_
@@ -53,7 +55,8 @@ class ListPartsTest(TestCase):
                          {}, 200, content=mock_data))
         part_iter = ListUploadParts(mock_server,
                                     'https://localhost:9000',
-                                    'bucket', 'key', 'upload_id')
+                                    'bucket', 'key',
+                                    'upload_id', None)
         parts = []
         for part in part_iter:
             parts.append(part)
@@ -101,7 +104,8 @@ class ListPartsTest(TestCase):
                                                   content=mock_data))
         part_iter = ListUploadParts(mock_server,
                                     'https://localhost:9000',
-                                    'bucket', 'key', 'upload_id')
+                                    'bucket', 'key',
+                                    'upload_id', None)
         parts = []
         for part in part_iter:
             parts.append(part)
@@ -182,7 +186,8 @@ class ListPartsTest(TestCase):
 
         part_iter = ListUploadParts(mock_server,
                                     'https://localhost:9000',
-                                    'bucket', 'key', 'upload_id')
+                                    'bucket', 'key',
+                                    'upload_id', None)
         parts = []
         for part in part_iter:
             mock_server.mock_add_request(

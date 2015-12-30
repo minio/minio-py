@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 import mock
 
 from nose.tools import eq_
@@ -47,7 +49,7 @@ class ListIncompleteUploadsTest(TestCase):
                          {}, 200, content=mock_data))
         upload_iter = ListIncompleteUploads(mock_server,
                                             'https://localhost:9000',
-                                            'bucket', delimiter=None)
+                                            'bucket', '', True, None)
         uploads = []
         for upload in upload_iter:
             uploads.append(upload)
@@ -104,7 +106,8 @@ class ListIncompleteUploadsTest(TestCase):
                          'https://localhost:9000/bucket/?delimiter=%2F&max-uploads=1000&uploads',
                          {}, 200, content=mock_data))
         upload_iter = ListIncompleteUploads(mock_server,
-                                            'https://localhost:9000', 'bucket')
+                                            'https://localhost:9000',
+                                            'bucket', '', False, None)
         uploads = []
         for upload in upload_iter:
             uploads.append(upload)
@@ -204,7 +207,7 @@ class ListIncompleteUploadsTest(TestCase):
                          {}, 200, content=mock_data1))
         upload_iter = ListIncompleteUploads(mock_server,
                                             'https://localhost:9000',
-                                            'bucket', delimiter=None)
+                                            'bucket', '', True, None)
         uploads = []
         for upload in upload_iter:
             mock_server.mock_add_request(MockResponse('GET',

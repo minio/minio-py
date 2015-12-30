@@ -34,10 +34,11 @@ from datetime import datetime, timedelta
 
 import io
 import os
+import hashlib
+
 # Dependencies
 import urllib3
 import certifi
-import hashlib
 
 # Internal imports
 from . import __title__, __version__
@@ -55,7 +56,8 @@ from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_endpoint, get_sha256,
                       encode_to_base64, get_md5,
                       calculate_part_size, encode_to_hex,
-                      is_valid_bucket_name, parts_manager, mkdir_p)
+                      is_valid_bucket_name, parts_manager,
+                      mkdir_p, dump_http)
 from .signer import (sign_v4, presign_v4,
                      generate_credential_string,
                      post_presign_signature, _SIGN_V4_ALGORITHM)
@@ -114,6 +116,7 @@ class Minio(object):
         self._access_key = access_key
         self._secret_key = secret_key
         self._user_agent = _DEFAULT_USER_AGENT
+        self._trace_output_stream = None
         self._http = urllib3.PoolManager(
             cert_reqs='CERT_REQUIRED',
             ca_certs=certifi.where()
@@ -139,6 +142,25 @@ class Minio(object):
         app_info = _APP_INFO.format(app_name,
                                     app_version)
         self._user_agent = ' '.join([_DEFAULT_USER_AGENT, app_info])
+
+    # enable HTTP trace.
+    def trace_on(self, stream):
+        """
+        Enable http trace.
+
+        :param output_stream: Stream where trace is written to.
+        """
+        if not stream:
+            raise ValueError('Input stream for trace output is invalid.')
+        # Save new output stream.
+        self._trace_output_stream = stream
+
+    # disable HTTP trace.
+    def trace_off(self):
+        """
+        Disable HTTP trace.
+        """
+        self._trace_output_stream = None
 
     # Bucket level
     def make_bucket(self, bucket_name, location='us-east-1', acl=None):
@@ -238,6 +260,11 @@ class Minio(object):
                                       headers=headers,
                                       preload_content=False)
 
+        if self._trace_output_stream:
+            dump_http(method, url, response.status,
+                      headers, response.headers,
+                      self._trace_output_stream)
+
         if response.status != 200:
             response_error = ResponseError(response)
             raise response_error.get()
@@ -332,11 +359,13 @@ class Minio(object):
 
     def _get_upload_id(self, bucket_name, object_name, region,
                        data_content_type):
+        recursive = True
         current_uploads = ListIncompleteUploads(self._http,
                                                 self._endpoint_url,
                                                 bucket_name,
-                                                prefix=object_name,
-                                                delimiter='',
+                                                object_name,
+                                                recursive,
+                                                self._trace_output_stream,
                                                 access_key=self._access_key,
                                                 secret_key=self._secret_key,
                                                 region=region)
@@ -392,9 +421,10 @@ class Minio(object):
                                     bucket_name,
                                     object_name,
                                     upload_id,
-                                    self._access_key,
-                                    self._secret_key,
-                                    region)
+                                    self._trace_output_stream,
+                                    access_key=self._access_key,
+                                    secret_key=self._secret_key,
+                                    region=region)
 
         for part in part_iter:
             # Save uploaded parts for future verification.
@@ -668,6 +698,7 @@ class Minio(object):
         return ListObjects(self._http, self._endpoint_url,
                            bucket_name,
                            prefix, recursive,
+                           self._trace_output_stream,
                            access_key=self._access_key,
                            secret_key=self._secret_key,
                            region=region)
@@ -770,19 +801,18 @@ class Minio(object):
         :return: None
         """
         is_valid_bucket_name(bucket_name)
-        delimiter = '/'
-        if recursive is True:
-            delimiter = None
         region = self._get_bucket_region(bucket_name)
         # get the uploads_iter.
         uploads_iter = ListIncompleteUploads(self._http,
                                              self._endpoint_url,
                                              bucket_name,
-                                             prefix=prefix,
-                                             delimiter=delimiter,
+                                             prefix,
+                                             recursive,
+                                             self._trace_output_stream,
                                              access_key=self._access_key,
                                              secret_key=self._secret_key,
                                              region=region)
+
 
         # range over uploads_iter.
         for upload in uploads_iter:
@@ -793,9 +823,12 @@ class Minio(object):
                                         upload.bucket_name,
                                         upload.object_name,
                                         upload.upload_id,
-                                        self._access_key,
-                                        self._secret_key,
-                                        region)
+                                        self._trace_output_stream,
+                                        access_key=self._access_key,
+                                        secret_key=self._secret_key,
+                                        region=region)
+
+
             total_uploaded_size = 0
             for part in part_iter:
                 total_uploaded_size += part.size
@@ -816,10 +849,13 @@ class Minio(object):
         is_non_empty_string(object_name)
 
         region = self._get_bucket_region(bucket_name)
+        recursive = True
         # check key
         uploads = ListIncompleteUploads(self._http, self._endpoint_url,
-                                        bucket_name, prefix=object_name,
-                                        delimiter='',
+                                        bucket_name,
+                                        object_name,
+                                        recursive,
+                                        self._trace_output_stream,
                                         access_key=self._access_key,
                                         secret_key=self._secret_key,
                                         region=region)
@@ -1140,9 +1176,10 @@ class Minio(object):
                                     bucket_name,
                                     object_name,
                                     upload_id,
-                                    self._access_key,
-                                    self._secret_key,
-                                    region)
+                                    self._trace_output_stream,
+                                    access_key=self._access_key,
+                                    secret_key=self._secret_key,
+                                    region=region)
 
         for part in part_iter:
             # Save uploaded parts for future verification.
@@ -1374,6 +1411,11 @@ class Minio(object):
                                       body=body,
                                       headers=headers,
                                       preload_content=False)
+
+        if self._trace_output_stream:
+            dump_http(method, url, response.status,
+                      headers, response.headers,
+                      self._trace_output_stream)
 
         if response.status != 200 and \
            response.status != 204 and response.status != 206:
