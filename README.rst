@@ -16,7 +16,7 @@ $ pip install minio
 from minio import Minio
 
 # Instantiate a client
-client = Minio('https://s3.amazonaws.com',
+client = Minio('s3.amazonaws.com',
                 access_key='access_key',
                 secret_key='secret_key')
 
