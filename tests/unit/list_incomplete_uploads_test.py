@@ -20,7 +20,8 @@ import mock
 from nose.tools import eq_
 from unittest import TestCase
 
-from minio.generators import ListIncompleteUploads
+from minio import Minio
+from minio.api import _DEFAULT_USER_AGENT
 
 from .minio_mocks import MockResponse, MockConnection
 
@@ -46,10 +47,9 @@ class ListIncompleteUploadsTest(TestCase):
         mock_server.mock_add_request(
             MockResponse('GET',
                          'https://localhost:9000/bucket/?max-uploads=1000&uploads',
-                         {}, 200, content=mock_data))
-        upload_iter = ListIncompleteUploads(mock_server,
-                                            'https://localhost:9000',
-                                            'bucket', '', True, None)
+                         {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data))
+        client = Minio('localhost:9000')
+        upload_iter = client._list_incomplete_uploads('bucket', '', True, False)
         uploads = []
         for upload in upload_iter:
             uploads.append(upload)
@@ -104,17 +104,18 @@ class ListIncompleteUploadsTest(TestCase):
         mock_server.mock_add_request(
             MockResponse('GET',
                          'https://localhost:9000/bucket/?delimiter=%2F&max-uploads=1000&uploads',
-                         {}, 200, content=mock_data))
-        upload_iter = ListIncompleteUploads(mock_server,
-                                            'https://localhost:9000',
-                                            'bucket', '', False, None)
+                         {'User-Agent': _DEFAULT_USER_AGENT},
+                         200, content=mock_data))
+
+        client = Minio('localhost:9000')
+        upload_iter = client._list_incomplete_uploads('bucket', '', False, False)
         uploads = []
         for upload in upload_iter:
             uploads.append(upload)
         eq_(2, len(uploads))
 
     @mock.patch('urllib3.PoolManager')
-    def test_list_objects_works(self, mock_connection):
+    def test_list_multipart_uploads_works(self, mock_connection):
         mock_data1 = '''<?xml version="1.0"?>
                         <ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                           <Bucket>golang</Bucket>
@@ -204,10 +205,10 @@ class ListIncompleteUploadsTest(TestCase):
         mock_server.mock_add_request(
             MockResponse('GET',
                          'https://localhost:9000/bucket/?max-uploads=1000&uploads',
-                         {}, 200, content=mock_data1))
-        upload_iter = ListIncompleteUploads(mock_server,
-                                            'https://localhost:9000',
-                                            'bucket', '', True, None)
+                         {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data1))
+
+        client = Minio('localhost:9000')
+        upload_iter = client._list_incomplete_uploads('bucket', '', True, False)
         uploads = []
         for upload in upload_iter:
             mock_server.mock_add_request(MockResponse('GET',
@@ -215,7 +216,7 @@ class ListIncompleteUploadsTest(TestCase):
                                                       'key-marker=keymarker&'
                                                       'max-uploads=1000&'
                                                       'upload-id-marker=uploadidmarker&uploads',
-                                                      {}, 200, content=mock_data2))
+                                                      {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data2))
             uploads.append(upload)
 
         eq_(4, len(uploads))

@@ -20,7 +20,8 @@ import mock
 from nose.tools import eq_
 from unittest import TestCase
 
-from minio.generators import ListUploadParts
+from minio import Minio
+from minio.api import _DEFAULT_USER_AGENT
 
 from .minio_mocks import MockResponse, MockConnection
 
@@ -52,18 +53,17 @@ class ListPartsTest(TestCase):
         mock_server.mock_add_request(
             MockResponse('GET',
                          'https://localhost:9000/bucket/key?max-parts=1000&uploadId=upload_id',
-                         {}, 200, content=mock_data))
-        part_iter = ListUploadParts(mock_server,
-                                    'https://localhost:9000',
-                                    'bucket', 'key',
-                                    'upload_id', None)
+                         {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data))
+
+        client = Minio('localhost:9000')
+        part_iter = client._list_object_parts('bucket', 'key', 'upload_id')
         parts = []
         for part in part_iter:
             parts.append(part)
         eq_(0, len(parts))
 
     @mock.patch('urllib3.PoolManager')
-    def test_list_objects_works(self, mock_connection):
+    def test_list_object_parts_works(self, mock_connection):
         mock_data = '''<?xml version="1.0"?>
                        <ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                          <Bucket>bucket</Bucket>
@@ -99,13 +99,12 @@ class ListPartsTest(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET',
-                                                  'https://localhost:9000/bucket?max-uploads=1000&uploadId=upload_id',
-                                                  {}, 200,
+                                                  'https://localhost:9000/bucket/key?max-parts=1000&uploadId=upload_id',
+                                                  {'User-Agent': _DEFAULT_USER_AGENT}, 200,
                                                   content=mock_data))
-        part_iter = ListUploadParts(mock_server,
-                                    'https://localhost:9000',
-                                    'bucket', 'key',
-                                    'upload_id', None)
+        client = Minio('localhost:9000')
+        part_iter = client._list_object_parts('bucket', 'key', 'upload_id')
+
         parts = []
         for part in part_iter:
             parts.append(part)
@@ -182,17 +181,17 @@ class ListPartsTest(TestCase):
         mock_server.mock_add_request(
             MockResponse('GET',
                          'https://localhost:9000/bucket/key?max-parts=1000&uploadId=upload_id',
-                         {}, 200, content=mock_data1))
+                         {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data1))
 
-        part_iter = ListUploadParts(mock_server,
-                                    'https://localhost:9000',
-                                    'bucket', 'key',
-                                    'upload_id', None)
+
+        client = Minio('localhost:9000')
+        part_iter = client._list_object_parts('bucket', 'key', 'upload_id')
+
         parts = []
         for part in part_iter:
             mock_server.mock_add_request(
                 MockResponse('GET',
                              'https://localhost:9000/bucket/key?max-parts=1000&part-number-marker=2&uploadId=upload_id',
-                             {}, 200, content=mock_data2))
+                             {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data2))
             parts.append(part)
         eq_(4, len(parts))
