@@ -19,6 +19,8 @@ from nose.tools import eq_, timed
 from unittest import TestCase
 
 from minio import Minio
+from minio.api import _DEFAULT_USER_AGENT
+
 from .minio_mocks import MockResponse, MockConnection
 
 class ListObjectsTest(TestCase):
@@ -29,16 +31,16 @@ class ListObjectsTest(TestCase):
   <Name>bucket</Name>
   <Prefix/>
   <Marker/>
+  <IsTruncated>false</IsTruncated>
   <MaxKeys>1000</MaxKeys>
   <Delimiter/>
-  <IsTruncated>true</IsTruncated>
 </ListBucketResult>
         '''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET',
                                                   'https://localhost:9000/bucket/?max-keys=1000',
-                                                  {}, 200, content=mock_data))
+                                                  {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data))
         client = Minio('localhost:9000')
         bucket_iter = client.list_objects('bucket', recursive=True)
         buckets = []
@@ -84,16 +86,16 @@ class ListObjectsTest(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET',
-                                                  'https://localhost:9000/bucket/?max-keys=1000',
-                                                  {}, 200, content=mock_data))
+                                                  'https://localhost:9000/bucket/?delimiter=%2F&max-keys=1000',
+                                                  {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data))
         client = Minio('localhost:9000')
         bucket_iter = client.list_objects('bucket')
         buckets = []
         for bucket in bucket_iter:
             # cause an xml exception and fail if we try retrieving again
             mock_server.mock_add_request(MockResponse('GET',
-                                                      'https://localhost:9000/bucket/?max-keys=1000',
-                                                      {}, 200, content=''))
+                                                      'https://localhost:9000/bucket/?delimiter=%2F&max-keys=1000',
+                                                      {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=''))
             buckets.append(bucket)
 
         eq_(2, len(buckets))
@@ -170,13 +172,14 @@ class ListObjectsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET',
                                                   'https://localhost:9000/bucket/?max-keys=1000',
-                                                  {}, 200, content=mock_data1))
+                                                  {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data1))
         client = Minio('localhost:9000')
         bucket_iter = client.list_objects('bucket', recursive=True)
         buckets = []
         for bucket in bucket_iter:
             url = 'https://localhost:9000/bucket/?marker=marker&max-keys=1000'
-            mock_server.mock_add_request(MockResponse('GET', url, {}, 200,
+            mock_server.mock_add_request(MockResponse('GET', url,
+                                                      {'User-Agent': _DEFAULT_USER_AGENT}, 200,
                                                       content=mock_data2))
             buckets.append(bucket)
 

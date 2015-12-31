@@ -46,9 +46,11 @@ from .compat import urlsplit
 from .error import ResponseError, InvalidArgumentError, InvalidSizeError
 from .bucket_acl import is_valid_acl
 from .definitions import Object, UploadPart
-from .generators import (ListObjects, ListIncompleteUploads,
-                         ListUploadParts)
-from .parsers import (parse_list_buckets, parse_acl,
+from .parsers import (parse_list_buckets,
+                      parse_list_objects,
+                      parse_list_parts,
+                      parse_list_multipart_uploads,
+                      parse_acl,
                       parse_new_multipart_upload,
                       parse_location_constraint,
                       parse_multipart_upload_result)
@@ -357,18 +359,20 @@ class Minio(object):
                        query={"acl": None},
                        headers=headers)
 
-    def _get_upload_id(self, bucket_name, object_name, region,
-                       data_content_type):
+    def _get_upload_id(self, bucket_name, object_name, data_content_type):
+        """
+        Get previously uploaded upload id for object name or initiate a request to
+        fetch a new upload id.
+
+        :param bucket_name: Bucket name where the incomplete upload resides.
+        :param object_name: Object name for which the upload id is requested for.
+        :param data_content_type: Content type of the object.
+        """
         recursive = True
-        current_uploads = ListIncompleteUploads(self._http,
-                                                self._endpoint_url,
-                                                bucket_name,
-                                                object_name,
-                                                recursive,
-                                                self._trace_output_stream,
-                                                access_key=self._access_key,
-                                                secret_key=self._secret_key,
-                                                region=region)
+        current_uploads = self._list_incomplete_uploads(bucket_name,
+                                                        object_name,
+                                                        recursive,
+                                                        is_aggregate_size=False)
         upload_id = None
         for upload in current_uploads:
             if object_name == upload.object_name:
@@ -408,25 +412,18 @@ class Minio(object):
         region = self._get_bucket_region(bucket_name)
 
         # get upload id.
-        upload_id = self._get_upload_id(bucket_name, object_name,
-                                        region, content_type)
+        upload_id = self._get_upload_id(bucket_name, object_name, content_type)
 
         # Initialize variables
         uploaded_parts = {}
         total_uploaded = 0
 
         # Iter over the uploaded parts.
-        part_iter = ListUploadParts(self._http,
-                                    self._endpoint_url,
-                                    bucket_name,
-                                    object_name,
-                                    upload_id,
-                                    self._trace_output_stream,
-                                    access_key=self._access_key,
-                                    secret_key=self._secret_key,
-                                    region=region)
+        parts_iter = self._list_object_parts(bucket_name,
+                                             object_name,
+                                             upload_id)
 
-        for part in part_iter:
+        for part in parts_iter:
             # Save uploaded parts for future verification.
             uploaded_parts[part.part_number] = part
 
@@ -692,16 +689,34 @@ class Minio(object):
         """
         is_valid_bucket_name(bucket_name)
 
-        # Get region.
-        region = self._get_bucket_region(bucket_name)
+        method = 'GET'
 
-        return ListObjects(self._http, self._endpoint_url,
-                           bucket_name,
-                           prefix, recursive,
-                           self._trace_output_stream,
-                           access_key=self._access_key,
-                           secret_key=self._secret_key,
-                           region=region)
+        # Initialize query parameters.
+        query = {}
+        query['max-keys'] = 1000
+        # Add if prefix present.
+        if prefix:
+            query['prefix'] = prefix
+
+        # Delimited by default.
+        query['delimiter'] = '/'
+        if recursive:
+            del query['delimiter']
+
+        marker = ''
+        is_truncated = True
+        while is_truncated:
+            if marker:
+                query['marker'] = marker
+            headers = {}
+            response = self._url_open(method,
+                                      bucket_name=bucket_name,
+                                      query=query,
+                                      headers=headers)
+            objects, is_truncated, marker = parse_list_objects(response.data,
+                                                               bucket_name=bucket_name)
+            for obj in objects:
+                yield obj
 
     def stat_object(self, bucket_name, object_name):
         """
@@ -795,47 +810,110 @@ class Minio(object):
             # hello/world/2
 
         :param bucket_name: Bucket to list incomplete uploads
-        :param prefix: String specifying objects returned must begin with
+        :param prefix: String specifying objects returned must begin with.
         :param recursive: If yes, returns all incomplete uploads for
-           a specified prefix
-        :return: None
+           a specified prefix.
+        :return: An generator of incomplete uploads in alphabetical order.
         """
         is_valid_bucket_name(bucket_name)
-        region = self._get_bucket_region(bucket_name)
-        # get the uploads_iter.
-        uploads_iter = ListIncompleteUploads(self._http,
-                                             self._endpoint_url,
-                                             bucket_name,
-                                             prefix,
-                                             recursive,
-                                             self._trace_output_stream,
-                                             access_key=self._access_key,
-                                             secret_key=self._secret_key,
-                                             region=region)
 
+        return self._list_incomplete_uploads(bucket_name, prefix, recursive)
 
-        # range over uploads_iter.
-        for upload in uploads_iter:
-            upload.size = 0
-            # Use upload metadata to gather total parts size.
-            part_iter = ListUploadParts(self._http,
-                                        self._endpoint_url,
-                                        upload.bucket_name,
-                                        upload.object_name,
-                                        upload.upload_id,
-                                        self._trace_output_stream,
-                                        access_key=self._access_key,
-                                        secret_key=self._secret_key,
-                                        region=region)
+    def _list_incomplete_uploads(self, bucket_name, prefix, recursive, is_aggregate_size=True):
+        """
+        List incomplete uploads list all previously uploaded incomplete multipart objects.
 
+        :param bucket_name: Bucket name to list uploaded objects.
+        :param prefix: String specifying objects returned must begin with.
+        :param recursive: If yes, returns all incomplete objects for a specified prefix.
+        :return: An generator of incomplete uploads in alphabetical order.
+        """
+        method = 'GET'
 
-            total_uploaded_size = 0
-            for part in part_iter:
-                total_uploaded_size += part.size
+        # Initialize query parameters.
+        query = {
+            'uploads': None
+        }
+        query['max-uploads'] = 1000
+        if prefix:
+            query['prefix'] = prefix
 
-            # update total part size and yield.
-            upload.size = total_uploaded_size
-            yield upload
+        # Default is delimited.
+        query['delimiter'] = '/'
+        if recursive:
+            del query['delimiter']
+
+        key_marker = ''
+        upload_id_marker = ''
+        is_truncated = True
+        while is_truncated:
+            headers = {}
+            if key_marker:
+                query['key-marker'] = key_marker
+            if upload_id_marker:
+                query['upload-id-marker'] = upload_id_marker
+
+            response = self._url_open(method,
+                                      bucket_name=bucket_name,
+                                      query=query,
+                                      headers=headers)
+            uploads, is_truncated, key_marker, upload_id_marker = parse_list_multipart_uploads(response.data,
+                                                                                               bucket_name=bucket_name)
+            for upload in uploads:
+                if is_aggregate_size:
+                    upload.size = self._get_total_multipart_upload_size(upload.bucket_name,
+                                                                        upload.object_name,
+                                                                        upload.upload_id)
+                yield upload
+
+    def _get_total_multipart_upload_size(self, bucket_name, object_name, upload_id):
+        """
+        Get total multipart upload size.
+
+        :param bucket_name: Bucket name to list parts for.
+        :param object_name: Object name to list parts for.
+        :param upload_id: Upload id of the previously uploaded object name.
+        """
+        total_part_size = 0
+        for part in self._list_object_parts(bucket_name, object_name, upload_id):
+            total_part_size += part.size
+
+        return total_part_size
+
+    def _list_object_parts(self, bucket_name, object_name, upload_id):
+        """
+        List all parts.
+
+        :param bucket_name: Bucket name to list parts for.
+        :param object_name: Object name to list parts for.
+        :param upload_id: Upload id of the previously uploaded object name.
+        """
+        method = 'GET'
+
+        query = {
+            'uploadId': upload_id
+        }
+        query['max-parts'] = 1000
+        is_truncated = True
+
+        part_number_marker = None
+        while is_truncated:
+            headers = {}
+            if part_number_marker:
+                query['part-number-marker'] = part_number_marker
+
+            response = self._url_open(method,
+                                      bucket_name=bucket_name,
+                                      object_name=object_name,
+                                      query=query,
+                                      headers=headers)
+
+            parts, is_truncated, part_number_marker = parse_list_parts(response.data,
+                                                                       bucket_name=bucket_name,
+                                                                       object_name=object_name,
+                                                                       upload_id=upload_id)
+            for part in parts:
+                yield part
 
     def remove_incomplete_upload(self, bucket_name, object_name):
         """
@@ -848,17 +926,10 @@ class Minio(object):
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
-        region = self._get_bucket_region(bucket_name)
         recursive = True
-        # check key
-        uploads = ListIncompleteUploads(self._http, self._endpoint_url,
-                                        bucket_name,
-                                        object_name,
-                                        recursive,
-                                        self._trace_output_stream,
-                                        access_key=self._access_key,
-                                        secret_key=self._secret_key,
-                                        region=region)
+        uploads = self._list_incomplete_uploads(bucket_name, object_name,
+                                                recursive,
+                                                is_aggregate_size=False)
         for upload in uploads:
             if object_name == upload.object_name:
                 self._remove_incomplete_upload(bucket_name, object_name,
@@ -1162,8 +1233,7 @@ class Minio(object):
         region = self._get_bucket_region(bucket_name)
 
         # get upload id.
-        upload_id = self._get_upload_id(bucket_name, object_name,
-                                        region, data_content_type)
+        upload_id = self._get_upload_id(bucket_name, object_name, data_content_type)
 
         # Initialize variables
         uploaded_parts = {}
@@ -1171,17 +1241,11 @@ class Minio(object):
         part_number = 1
 
         # Iter over the uploaded parts.
-        part_iter = ListUploadParts(self._http,
-                                    self._endpoint_url,
-                                    bucket_name,
-                                    object_name,
-                                    upload_id,
-                                    self._trace_output_stream,
-                                    access_key=self._access_key,
-                                    secret_key=self._secret_key,
-                                    region=region)
+        parts_iter = self._list_object_parts(bucket_name,
+                                             object_name,
+                                             upload_id)
 
-        for part in part_iter:
+        for part in parts_iter:
             # Save uploaded parts for future verification.
             uploaded_parts[part.part_number] = part
 
