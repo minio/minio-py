@@ -1,4 +1,4 @@
-.PHONY: examples
+.PHONY: examples tests publish
 
 publish:
 	python setup.py register
