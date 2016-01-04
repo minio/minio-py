@@ -50,6 +50,8 @@ def main():
     # client.trace_on(sys.stderr)
 
     # Make a new bucket.
+    bucket_name = 'minio-pytest'
+
     print(client.make_bucket(bucket_name))
 
     # Check if bucket was created properly.
@@ -58,8 +60,26 @@ def main():
     # Set bucket name to private.
     print(client.set_bucket_acl(bucket_name, Acl.private()))
 
-    # Print current bucket acl.
-    print(client.get_bucket_acl(bucket_name))
+    # Verify current bucket acl.
+    acl = client.get_bucket_acl(bucket_name)
+    if acl != 'private':
+        raise ValueError('Invalid acl type found: ' + acl)
+
+    # Set bucket name to public-read.
+    print(client.set_bucket_acl(bucket_name, Acl.public_read()))
+
+    # Verify current bucket acl.
+    acl = client.get_bucket_acl(bucket_name)
+    if acl != 'public-read':
+        raise ValueError('Invalid acl type found: ' + acl)
+
+    # Set bucket name to public-read-write.
+    print(client.set_bucket_acl(bucket_name, Acl.public_read_write()))
+
+    # Verify current bucket acl.
+    acl = client.get_bucket_acl(bucket_name)
+    if acl != 'public-read-write':
+        raise ValueError('Invalid acl type found: ' + acl)
 
     # List all buckets.
     buckets = client.list_buckets()

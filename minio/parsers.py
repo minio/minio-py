@@ -45,6 +45,18 @@ if hasattr(cElementTree, 'ParseError'):
 else:
     _ETREE_EXCEPTIONS = (SyntaxError, AttributeError, ValueError)
 
+_S3_NS = {'s3' : 'http://s3.amazonaws.com/doc/2006-03-01/'}
+
+
+def get_element_text(element, xpath, ns=_S3_NS):
+    """
+    Get element text for a given xpath.
+
+    :param element: Element xml object.
+    :param xpath: XML attribute inside the element.
+    :param ns: Necessary namespace to look for.
+    """
+    return element.find(xpath, ns).text
 
 def parse_multipart_upload_result(data):
     """
@@ -58,34 +70,20 @@ def parse_multipart_upload_result(data):
     except _ETREE_EXCEPTIONS as error:
         raise InvalidXMLError('"CompleteMultipartUploadResult" XML is not parsable. '
                               'Message: {0}'.format(error.message))
+    try:
+        bucket_name = get_element_text(root, 's3:Bucket')
+        object_name = get_element_text(root, 's3:Key')
+        location = get_element_text(root, 's3:Location')
+        etag = get_element_text(root, 's3:ETag')
+        # Strip off quotes from begining and the end.
+        if etag.startswith('"') and etag.endswith('"'):
+            etag = etag[len('"'):]
+            etag = etag[:-len('"')]
 
-    bucket_name = None
-    object_name = None
-    location = None
-    etag = None
-
-    # Loop through response XML and extract relevant data.
-    for multipart_upload in root:
-        if multipart_upload.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Bucket':
-            bucket_name = multipart_upload.text
-        if multipart_upload.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
-            object_name = multipart_upload.text
-        if multipart_upload.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Location':
-            location = multipart_upload.text
-        if multipart_upload.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
-            etag = multipart_upload.text
-            etag = etag.replace('"', '')
-
-    if not bucket_name:
-        raise InvalidXMLError('Missing "Bucket" XML attribute.')
-    if not object_name:
-        raise InvalidXMLError('Missing "Key" XML attribute.')
-    if not location:
-        raise InvalidXMLError('Missing "Location" XML attribute.')
-    if not etag:
-        raise InvalidXMLError('Missing "ETag" XML attribute.')
-
-    return MultipartUploadResult(bucket_name, object_name, location, etag)
+        return MultipartUploadResult(bucket_name, object_name, location, etag)
+    except _ETREE_EXCEPTIONS as error:
+        raise InvalidXMLError('Invalid XML provided for "CompleteMultipartUploadResult" '
+                              'some fields are missing. Message: {0}'.format(error.message))
 
 def parse_list_buckets(data):
     """
@@ -101,25 +99,17 @@ def parse_list_buckets(data):
                               'Message: {0}'.format(error.message))
 
     bucket_list = []
-    for buckets in root:
-        if buckets.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Owner':
-            continue
-        if buckets.tag != '{http://s3.amazonaws.com/doc/2006-03-01/}Buckets':
-            raise InvalidXMLError('Missing "Buckets" XML attribute.')
-        for bucket in buckets:
-            name = None
-            creation_date = None
-            for attribute in bucket:
-                if attribute.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}Name':
-                    name = attribute.text
-                    continue
-                if attribute.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}CreationDate':
-                    creation_date = _iso8601_to_localized_time(attribute.text)
+    try:
+        for buckets in root.findall('s3:Buckets', _S3_NS):
+            for bucket in buckets:
+                name = get_element_text(bucket, 's3:Name')
+                creation_date = _iso8601_to_localized_time(get_element_text(bucket,
+                                                                            's3:CreationDate'))
                 bucket_list.append(Bucket(name, creation_date))
-    return bucket_list
-
+            return bucket_list
+    except _ETREE_EXCEPTIONS as error:
+        raise InvalidXMLError('Invalid XML provided for "ListBucketsResult" '
+                              'some fields are missing. Message: {0}'.format(error.message))
 
 def parse_acl(data):
     """
@@ -137,45 +127,36 @@ def parse_acl(data):
     public_read = False
     public_write = False
 
-    for acls in root:
-        if acls.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Owner':
-            continue
-        if acls.tag != \
-           '{http://s3.amazonaws.com/doc/2006-03-01/}AccessControlList':
-            raise InvalidXMLError('Missing "AccessControlList" XML attribute.')
-
-        for grant in acls:
-            user_uri = None
-            permission = None
-            for grant_property in grant:
-                if grant_property.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}Grantee':
-                    for grantee in grant_property:
-                        if grantee.tag == \
-                           '{http://s3.amazonaws.com/doc/2006-03-01/}URI':
-                            user_uri = grantee.text
-                            break
-                    continue
-                if grant_property.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}Permission':
-                    permission = grant_property.text
-                    break
-            if user_uri == \
-               'http://acs.amazonaws.com/groups/global/AuthenticatedUsers':
-                if permission == 'READ':
+    try:
+        for acls in root.findall('s3:AccessControlList', _S3_NS):
+            for grant in acls:
+                user_uri = None
+                permission = None
+                # In case of user_uri, we shouldn't use get_element_text() wrapper.
+                user_uri_prop = grant.find('s3:Grantee/s3:URI', _S3_NS)
+                if user_uri_prop is not None:
+                    user_uri = user_uri_prop.text
+                permission = get_element_text(grant, 's3:Permission')
+                # Verify if URI has authenticated users.
+                if user_uri == \
+                   'http://acs.amazonaws.com/groups/global/AuthenticatedUsers' \
+                   and permission == 'READ':
                     return Acl.authenticated_read()
-            if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' \
-               and permission == 'WRITE':
-                public_write = True
-            if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' \
-               and permission == 'READ':
-                public_read = True
-    if public_read is True and public_write is True:
-        return Acl.public_read_write()
-    if public_read is True and public_write is False:
-        return Acl.public_read()
-    return Acl.private()
-
+                # Verify if URI has all users.
+                if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' \
+                   and permission == 'WRITE':
+                    public_write = True
+                if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' \
+                   and permission == 'READ':
+                    public_read = True
+        if public_read is True and public_write is True:
+            return Acl.public_read_write()
+        if public_read is True and public_write is False:
+            return Acl.public_read()
+        return Acl.private()
+    except _ETREE_EXCEPTIONS as error:
+        raise InvalidXMLError('Invalid XML provided for "AccessControlPolicy" '
+                              'some fields are missing. Message: {0}'.format(error.message))
 
 def parse_list_objects(data, bucket_name):
     """
@@ -362,12 +343,12 @@ def parse_new_multipart_upload(data):
         raise InvalidXMLError('"NewMultipartUpload" XML is not parsable. '
                               'Message: {0}'.format(error.message))
 
-    for contents in root:
-        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}UploadId':
-            return contents.text
-
-    raise InvalidXMLError('Missing "UploadId" XML attribute.')
-
+    try:
+        upload_id = get_element_text(root, 's3:UploadId')
+    except _ETREE_EXCEPTIONS as error:
+        raise InvalidXMLError('Missing "UploadId" XML attribute from "NewMultipartUpload". '
+                              'Message: {0}'.format(error.message))
+    return upload_id
 
 def parse_location_constraint(data):
     """
@@ -377,17 +358,18 @@ def parse_location_constraint(data):
     :return: Returns location of your bucket.
     """
     try:
-        content = cElementTree.fromstring(data)
+        bucket_location = cElementTree.fromstring(data)
     except _ETREE_EXCEPTIONS as error:
         raise InvalidXMLError('"BucketLocationConstraint" XML is not parsable.'
                               ' Message: {0}'.format(error.message))
 
-    if content.tag == \
-       '{http://s3.amazonaws.com/doc/2006-03-01/}LocationConstraint':
-        return content.text
+    try:
+        location_constraint = bucket_location.text
+    except _ETREE_EXCEPTIONS as error:
+        raise InvalidXMLError('Missing "LocationConstraint" XML attribute from '
+                              '"BucketLocationConstraint". Message: {0}'.format(error.message))
 
-    raise InvalidXMLError('Missing "LocationConstraint" XML attribute.')
-
+    return location_constraint
 
 def _iso8601_to_localized_time(date_string):
     """
