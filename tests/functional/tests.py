@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import os
+import sys
 import io
 import uuid
 import urllib3
@@ -32,9 +33,9 @@ def main():
     Functional testing of minio python library.
     """
     fake = Factory.create()
-    client = Minio('play.minio.io:9002',
-                   'Q3AM3UQ867SPQQA43P2F',
-                   'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
+    client = Minio('s3.amazonaws.com',
+                   os.getenv('ACCESS_KEY'),
+                   os.getenv('SECRET_KEY'))
 
     _http = urllib3.PoolManager(
         cert_reqs='CERT_REQUIRED',
@@ -46,7 +47,7 @@ def main():
     object_name = uuid.uuid4().__str__()
 
     # Enable trace
-    # client.trace_on(sys.stdout)
+    # client.trace_on(sys.stderr)
 
     # Make a new bucket.
     print(client.make_bucket(bucket_name))
@@ -117,7 +118,7 @@ def main():
 
     # Post policy.
     policy = PostPolicy()
-    policy.set_bucket_name('bucket-name')
+    policy.set_bucket_name(bucket_name)
     policy.set_key_startswith('objectPrefix/')
 
     expires_date = datetime.utcnow()+timedelta(days=10)

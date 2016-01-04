@@ -263,8 +263,7 @@ class Minio(object):
                                       preload_content=False)
 
         if self._trace_output_stream:
-            dump_http(method, url, response.status,
-                      headers, response.headers,
+            dump_http(method, url, headers, response,
                       self._trace_output_stream)
 
         if response.status != 200:
@@ -1477,8 +1476,7 @@ class Minio(object):
                                       preload_content=False)
 
         if self._trace_output_stream:
-            dump_http(method, url, response.status,
-                      headers, response.headers,
+            dump_http(method, url, headers, response,
                       self._trace_output_stream)
 
         if response.status != 200 and \

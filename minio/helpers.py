@@ -41,7 +41,7 @@ _ALLOWED_HOSTNAME_REGEX = re.compile(
     '^((?!-)[A-Z\\d-]{1,63}(?<!-)\\.)*((?!-)[A-Z\\d-]{1,63}(?<!-))$',
     re.IGNORECASE)
 
-def dump_http(method, url, status, request_headers, response_headers, output_stream):
+def dump_http(method, url, request_headers, response, output_stream):
     """
     Dump all headers and response headers into output_stream.
 
@@ -60,23 +60,31 @@ def dump_http(method, url, status, request_headers, response_headers, output_str
     http_path = parsed_url.path
     if parsed_url.query:
         http_path = http_path + '?' + parsed_url.query
+
     output_stream.write('{0} {1} HTTP/1.1\n'.format(method,
                                                     http_path))
 
-    for k in request_headers.keys():
-        output_stream.write('{0}: {1}\n'.format(k.title(),
-                                                request_headers[k]))
+    for k, v in list(request_headers.items()):
+        if k is 'authorization':
+            # Redact signature header value from trace logs.
+            v = re.sub(r'Signature=([[0-9a-f]+)', 'Signature=*REDACTED*', v)
+        output_stream.write('{0}: {1}\n'.format(k.title(), v))
 
     # Write a new line.
     output_stream.write('\n')
 
     # Write response status code.
-    output_stream.write('HTTP/1.1 {0}\n'.format(status))
+    output_stream.write('HTTP/1.1 {0}\n'.format(response.status))
 
     # Dump all response headers recursively.
-    for k in response_headers.keys():
-        output_stream.write('{0}: {1}\n'.format(k.title(),
-                                                response_headers[k]))
+    for k, v in list(response.getheaders().items()):
+        output_stream.write('{0}: {1}\n'.format(k.title(), v))
+
+    # For all errors write all the available response body.
+    if response.status != 200 and \
+       response.status != 204 and response.status != 206:
+        resp_body_size = int(response.headers['content-length'])
+        output_stream.write('{0}', response.read(resp_body_size))
 
     # End header.
     output_stream.write('---------END-HTTP---------\n')
