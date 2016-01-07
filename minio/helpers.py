@@ -251,32 +251,31 @@ def is_valid_endpoint(endpoint):
     :return: True if the endpoint is valid. Raise :exc:`InvalidEndpointError`
        otherwise.
     """
-    if not isinstance(endpoint, basestring):
-        raise TypeError('endpoint')
+    try:
+        if urlsplit(endpoint).scheme:
+            raise InvalidEndpointError('Hostname cannot have a scheme.')
 
-    if urlsplit(endpoint).scheme:
-        raise InvalidEndpointError('Hostname cannot have a scheme.')
+        hostname = endpoint.split(':')[0]
+        if hostname is None:
+            raise InvalidEndpointError('Hostname cannot be empty.')
 
-    hostname = endpoint.split(':')[0]
-    if hostname is None:
-        raise InvalidEndpointError('Hostname cannot be empty.')
+        if len(hostname) > 255:
+            raise InvalidEndpointError('Hostname cannot be greater than 255.')
 
-    if len(hostname) > 255:
-        raise InvalidEndpointError('Hostname cannot be greater than 255.')
+        if hostname[-1] == '.':
+            hostname = hostname[:-1]
 
-    if hostname[-1] == '.':
-        hostname = hostname[:-1]
+        if not _ALLOWED_HOSTNAME_REGEX.match(hostname):
+            raise InvalidEndpointError('Hostname does not meet URL standards.')
 
-    if not _ALLOWED_HOSTNAME_REGEX.match(hostname):
-        raise InvalidEndpointError('Hostname does not meet URL standards.')
-
-    if hostname.endswith('.amazonaws.com') and \
-       (hostname != 's3.amazonaws.com'):
-        raise InvalidEndpointError('Amazon S3 hostname should be '
-                                   's3.amazonaws.com.')
+        if hostname.endswith('.amazonaws.com') and \
+           (hostname != 's3.amazonaws.com'):
+            raise InvalidEndpointError('Amazon S3 hostname should be '
+                                       's3.amazonaws.com.')
+    except AttributeError as error:
+        raise TypeError(error)
 
     return True
-
 
 def is_valid_bucket_name(bucket_name):
     """
@@ -314,12 +313,14 @@ def is_non_empty_string(input_string):
     Validate if non empty string
 
     :param input_string: Input is a *str*.
-    :return: True if input is string. Raise :exc:`Exception` otherwise.
+    :return: True if input is string and non empty.
+       Raise :exc:`Exception` otherwise.
     """
-    if not isinstance(input_string, basestring):
-        raise TypeError()
-    if not input_string.strip():
-        raise ValueError()
+    try:
+        if not input_string.strip():
+            raise ValueError()
+    except AttributeError as error:
+        raise TypeError(error)
 
     return True
 

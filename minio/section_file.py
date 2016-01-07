@@ -78,6 +78,8 @@ class SectionFile(io.FileIO):
         elif whence == 1:
             self._offset_location += offset
         elif whence == 2:
+            if offset > 0:
+                raise ValueError('Offset cannot be positive for whence "2"')
             self._offset_location = self._limit + offset
         else:
             raise ValueError("Invalid whence: ", whence)

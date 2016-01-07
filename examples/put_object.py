@@ -24,7 +24,12 @@ client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-# Put a file
+# Put a file with default content-type.
 file_stat = os.stat('my-testfile')
-with open('my-testfile', 'rb') as file_data:
-    client.put_object('my-bucketname', 'my-objectname', file_data, file_stat.st_size)
+file_data = open('my-testfile', 'rb')
+client.put_object('my-bucketname', 'my-objectname', file_data, file_stat.st_size)
+
+# Put a file with 'application/csv'
+file_stat = os.stat('my-testfile.csv')
+file_data = open('my-testfile.csv', 'rb')
+client.put_object('my-bucketname', 'my-objectname', file_data, file_stat.st_size)
