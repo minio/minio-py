@@ -22,5 +22,10 @@ client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-# Get a full object
+# Put an object 'my-objectname' with contents from 'my-filepath'
 client.fput_object('my-bucketname', 'my-objectname', 'my-filepath')
+
+# Put on object 'my-objectname-csv' with contents from
+# 'my-filepath.csv' as 'application/csv'.
+client.fput_object('my-bucketname', 'my-objectname-csv',
+                   'my-filepath.csv', content_type='application/csv')

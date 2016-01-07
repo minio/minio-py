@@ -55,8 +55,8 @@ from .parsers import (parse_list_buckets,
                       parse_location_constraint,
                       parse_multipart_upload_result)
 from .helpers import (get_target_url, is_non_empty_string,
-                      is_valid_endpoint, get_sha256,
-                      encode_to_base64, get_md5,
+                      is_valid_endpoint,
+                      get_sha256, encode_to_base64, get_md5,
                       calculate_part_size, encode_to_hex,
                       is_valid_bucket_name, parts_manager,
                       mkdir_p, dump_http)
@@ -81,7 +81,7 @@ _DEFAULT_USER_AGENT = 'Minio {0} {1}'.format(
 
 # Constants
 MAX_FILE_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
-MAX_STREAM_OBJECT_SIZE = 50 * 1024 * 1024 * 1024  # 50GiB
+MAX_STREAM_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
 MIN_STREAM_OBJECT_SIZE = 5 * 1024 * 1024  # 5MiB
 
 _SEVEN_DAYS_SECONDS = 604800  # 7days
@@ -400,6 +400,7 @@ class Minio(object):
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
+        is_non_empty_string(file_path)
 
         # save file_size.
         file_size = os.stat(file_path).st_size
@@ -449,7 +450,7 @@ class Minio(object):
             sha256hasher = hashlib.sha256()
             total_read = 0
             while total_read < part_size:
-                current_data = part.read(8*1024)
+                current_data = part.read(64*1024) # Read in 64k chunks.
                 if not current_data or len(current_data) == 0:
                     break
                 md5hasher.update(current_data)
@@ -457,8 +458,9 @@ class Minio(object):
                 total_read = total_read + len(current_data)
 
             part_md5_hex = encode_to_hex(md5hasher.digest())
-            # Verify if current part number has been already uploaded.
-            # Further verify if we have matching md5sum as well.
+            # Verify if current part number has been already
+            # uploaded. Further verify if we have matching md5sum as
+            # well.
             if part_number in uploaded_parts:
                 previous_part = uploaded_parts[part_number]
                 if previous_part.etag == part_md5_hex:
@@ -629,10 +631,12 @@ class Minio(object):
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
+        if not callable(getattr(data, 'read')):
+            raise ValueError('Invalid input data does not implement a callable read() method')
 
         if length > MAX_STREAM_OBJECT_SIZE:
             raise InvalidArgumentError('Input content size is bigger '
-                                       ' than allowed maximum of 50GB.')
+                                       ' than allowed maximum of 5TiB.')
 
         if length > MIN_STREAM_OBJECT_SIZE:
             return self._stream_put_object(bucket_name, object_name,
@@ -818,7 +822,7 @@ class Minio(object):
 
         return self._list_incomplete_uploads(bucket_name, prefix, recursive)
 
-    def _list_incomplete_uploads(self, bucket_name, prefix, recursive, is_aggregate_size=True):
+    def _list_incomplete_uploads(self, bucket_name, prefix=None, recursive=False, is_aggregate_size=True):
         """
         List incomplete uploads list all previously uploaded incomplete multipart objects.
 
@@ -827,6 +831,8 @@ class Minio(object):
         :param recursive: If yes, returns all incomplete objects for a specified prefix.
         :return: An generator of incomplete uploads in alphabetical order.
         """
+        is_valid_bucket_name(bucket_name)
+
         method = 'GET'
 
         # Initialize query parameters.
@@ -887,6 +893,10 @@ class Minio(object):
         :param object_name: Object name to list parts for.
         :param upload_id: Upload id of the previously uploaded object name.
         """
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+        is_non_empty_string(upload_id)
+
         method = 'GET'
 
         query = {
@@ -984,14 +994,14 @@ class Minio(object):
            Defaults to 7days.
         :return: Presigned put object url.
         """
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+
         if expires.total_seconds() < 1 or \
            expires.total_seconds() > _SEVEN_DAYS_SECONDS:
             raise InvalidArgumentError('Expires param valid values'
                                        ' are between 1 secs to'
                                        ' {0} secs'.format(_SEVEN_DAYS_SECONDS))
-
-        is_valid_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
 
         region = self._get_bucket_region(bucket_name)
         url = get_target_url(self._endpoint_url,
@@ -1081,6 +1091,9 @@ class Minio(object):
            Must be an integer.
         :return: :class:`urllib3.response.HTTPResponse` object.
         """
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+
         request_range = ''
         if offset is not 0 and length is not 0:
             request_range = str(offset) + '-' + str(offset + length - 1)
@@ -1166,6 +1179,10 @@ class Minio(object):
         :param upload_id: Upload id of the multipart request.
         :param part_number: Part number of the data to be uploaded.
         """
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+        if not callable(getattr(data, 'read')):
+            raise ValueError('Invalid input data does not implement a callable read() method')
 
         method = 'PUT'
         headers = {
@@ -1200,6 +1217,10 @@ class Minio(object):
         :param data_content_size: Input data size.
         :param data_content_type: Content type of put request.
         """
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+        if not callable(getattr(data, 'read')):
+            raise ValueError('Invalid input data does not implement a callable read() method')
 
         method = 'PUT'
         headers = {
@@ -1214,10 +1235,17 @@ class Minio(object):
                                   body=data,
                                   content_sha256=data_sha256_hex)
 
-        return response.headers['etag'].replace('"', '')
+        etag = response.headers['etag']
+        # Strip off quotes from begining and the end.
+        if etag.startswith('"') and etag.endswith('"'):
+            etag = etag[len('"'):]
+            etag = etag[:-len('"')]
 
-    def _stream_put_object(self, bucket_name, object_name, data,
-                           data_content_size,
+        # Returns here.
+        return etag
+
+    def _stream_put_object(self, bucket_name, object_name,
+                           data, data_content_size,
                            data_content_type='application/octet-stream'):
         """
         Streaming multipart upload operation.
@@ -1228,6 +1256,11 @@ class Minio(object):
         :param data_content_type: Content type of of the multipart upload.
            Defaults to 'application/octet-stream'.
         """
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+        if not callable(getattr(data, 'read')):
+            raise ValueError('Invalid input data does not implement a callable read() method')
+
         # Get region.
         region = self._get_bucket_region(bucket_name)
 
@@ -1316,7 +1349,8 @@ class Minio(object):
                        object_name=object_name, query=query,
                        headers=headers)
 
-    def _new_multipart_upload(self, bucket_name, object_name, content_type):
+    def _new_multipart_upload(self, bucket_name, object_name,
+                              content_type='application/octet-stream'):
         """
         Initialize new multipart upload request.
 
@@ -1325,6 +1359,9 @@ class Minio(object):
         :param content_type: Content type of the new object.
         :return: Returns an upload id.
         """
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+
         method = 'POST'
         query = {
             'uploads': None
@@ -1347,6 +1384,9 @@ class Minio(object):
         :param upload_id: Upload id of the active multipart request.
         :param uploaded_parts: Key, Value dictionary of uploaded parts.
         """
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+        is_non_empty_string(upload_id)
 
         method = 'POST'
         query = {
