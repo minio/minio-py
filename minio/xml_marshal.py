@@ -29,7 +29,7 @@ import io
 
 from xml.etree import ElementTree as s3_xml
 
-S3_NAMESPACE = 'http://s3.amazonaws.com/doc/2006-03-01/'
+_S3_NAMESPACE = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
 
 def xml_marshal_bucket_constraint(region):
@@ -39,7 +39,7 @@ def xml_marshal_bucket_constraint(region):
     :param region: Region name of a given bucket.
     :return: Marshalled XML data.
     """
-    root = s3_xml.Element('CreateBucketConfiguration', {'xmlns': S3_NAMESPACE})
+    root = s3_xml.Element('CreateBucketConfiguration', {'xmlns': _S3_NAMESPACE})
     location_constraint = s3_xml.SubElement(root, 'LocationConstraint')
     location_constraint.text = region
     data = io.BytesIO()
@@ -55,7 +55,7 @@ def xml_marshal_complete_multipart_upload(uploaded_parts):
            way they were uploaded.
     :return: Marshalled XML data.
     """
-    root = s3_xml.Element('CompleteMultipartUpload', {'xmlns': S3_NAMESPACE})
+    root = s3_xml.Element('CompleteMultipartUpload', {'xmlns': _S3_NAMESPACE})
     for part_number in uploaded_parts.keys():
         part = s3_xml.SubElement(root, 'Part')
         part_num = s3_xml.SubElement(part, 'PartNumber')
