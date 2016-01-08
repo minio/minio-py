@@ -46,6 +46,12 @@ class BucketExists(TestCase):
         client = Minio('localhost:9000')
         result = client.bucket_exists('hello')
         eq_(True, result)
+        mock_server.mock_add_request(MockResponse('HEAD',
+                                                  'https://localhost:9000/goodbye/',
+                                                  {'User-Agent': _DEFAULT_USER_AGENT},
+                                                  404))
+        false_result = client.bucket_exists('goodbye')
+        eq_(False, result)
 
     @raises(InvalidBucketError)
     def test_bucket_exists_invalid_name(self):
