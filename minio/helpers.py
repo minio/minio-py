@@ -36,7 +36,7 @@ import errno
 from .compat import urlsplit, basestring, urlencode
 from .error import InvalidBucketError, InvalidEndpointError
 
-_VALID_BUCKETNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\\-]+[a-z0-9]$')
+_VALID_BUCKETNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\\-_]+[a-z0-9]$')
 _ALLOWED_HOSTNAME_REGEX = re.compile(
     '^((?!-)[A-Z\\d-]{1,63}(?<!-)\\.)*((?!-)[A-Z\\d-]{1,63}(?<!-))$',
     re.IGNORECASE)
