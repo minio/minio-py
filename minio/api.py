@@ -405,6 +405,26 @@ class Minio(object):
         # save file_size.
         file_size = os.stat(file_path).st_size
 
+        if file_size > MAX_STREAM_OBJECT_SIZE:
+            raise InvalidArgumentError('Input content size is bigger '
+                                       ' than allowed maximum of 5TiB.')
+
+        # Open file in 'read' mode.
+        file_data = io.open(file_path, mode='rb', buffering=0,
+                            encoding=None, errors=None,
+                            newline=None, closefd=True)
+
+        if file_size <= MIN_STREAM_OBJECT_SIZE:
+            current_data = file_data.read(file_size)
+            current_data_md5_base64 = encode_to_base64(get_md5(current_data))
+            current_data_sha256_hex = encode_to_hex(get_sha256(current_data))
+            return self._do_put_object(bucket_name, object_name,
+                                       io.BytesIO(current_data),
+                                       current_data_md5_base64,
+                                       current_data_sha256_hex,
+                                       file_size,
+                                       data_content_type=content_type)
+
         # optimal part_size value.
         part_size = calculate_part_size(file_size)
 
@@ -426,11 +446,6 @@ class Minio(object):
         for part in parts_iter:
             # Save uploaded parts for future verification.
             uploaded_parts[part.part_number] = part
-
-        # Open file in 'read' mode.
-        file_data = io.open(file_path, mode='rb', buffering=0,
-                            encoding=None, errors=None,
-                            newline=None, closefd=True)
 
         # Always start with first part number.
         part_number = 1

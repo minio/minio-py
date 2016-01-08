@@ -74,14 +74,21 @@ class SectionFile(io.FileIO):
         """
         # Handle whence for internal offsets.
         if whence == 0:
-            self._offset_location = 0
+            if offset < 0:
+                raise IOError('invalid argument offset cannot be '
+                              'negative for whence "0"')
+            self._offset_location = offset
         elif whence == 1:
+            if self._offset_location + offset > self._limit:
+                raise ValueError('offset reaches beyond limit')
             self._offset_location += offset
         elif whence == 2:
             if offset > 0:
-                raise ValueError('Offset cannot be positive for whence "2"')
+                raise ValueError('offset cannot be positive for whence "2"')
+            if self._limit + offset < 0:
+                raise ValueError('effective offset leads to negative location')
             self._offset_location = self._limit + offset
         else:
-            raise ValueError("Invalid whence: ", whence)
+            raise ValueError('invalid whence: ', whence)
         # Pass down the value to wrapped FileIO.
         return self.reader.seek(offset, whence)
