@@ -26,6 +26,12 @@ and API specific errors.
 """
 
 from xml.etree import cElementTree
+from xml.etree.cElementTree import ParseError
+
+if hasattr(cElementTree, 'ParseError'):
+    _ETREE_EXCEPTIONS = (ParseError, AttributeError, ValueError, TypeError)
+else:
+    _ETREE_EXCEPTIONS = (SyntaxError, AttributeError, ValueError, TypeError)
 
 
 class InvalidEndpointError(Exception):
@@ -196,7 +202,7 @@ class ResponseError(Exception):
         Sets error response uses xml body if available, otherwise
         relies on HTTP headers.
         """
-        if len(self._response.data) == 0:
+        if not self._response.data:
             self._set_error_response_without_body(bucket_name, object_name)
         else:
             self._set_error_response_with_body(bucket_name, object_name)
@@ -252,8 +258,8 @@ class ResponseError(Exception):
         self.object_name = object_name
 
         if self._response.status == 404:
-            if bucket_name is not None:
-                if object_name is not None:
+            if bucket_name:
+                if object_name:
                     self.code = 'NoSuchKey'
                     self.message = self._response.reason
                 else:
@@ -290,7 +296,7 @@ class ResponseError(Exception):
         """
         Sets x-amz-* error response fields from response headers.
         """
-        if self._response.headers is not None:
+        if self._response.headers:
             # keeping x-amz-id-2 as part of amz_host_id.
             if 'x-amz-id-2' in self._response.headers:
                 self.host_id = self._response.headers['x-amz-id-2']

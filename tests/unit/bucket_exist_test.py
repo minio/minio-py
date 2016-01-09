@@ -51,7 +51,7 @@ class BucketExists(TestCase):
                                                   {'User-Agent': _DEFAULT_USER_AGENT},
                                                   404))
         false_result = client.bucket_exists('goodbye')
-        eq_(False, result)
+        eq_(False, false_result)
 
     @raises(InvalidBucketError)
     def test_bucket_exists_invalid_name(self):

@@ -289,7 +289,7 @@ class Minio(object):
                            headers=headers)
         # If the bucket has not been created yet, Minio will return a "NoSuchBucket" error.
         except ResponseError as e:
-            if e.code == 'NoSuchBucket':
+            if e.code is 'NoSuchBucket':
                 return False
             raise
 

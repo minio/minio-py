@@ -41,9 +41,9 @@ from .definitions import (Object, Bucket, IncompleteUpload,
                           UploadPart, MultipartUploadResult)
 
 if hasattr(cElementTree, 'ParseError'):
-    _ETREE_EXCEPTIONS = (ParseError, AttributeError, ValueError)
+    _ETREE_EXCEPTIONS = (ParseError, AttributeError, ValueError, TypeError)
 else:
-    _ETREE_EXCEPTIONS = (SyntaxError, AttributeError, ValueError)
+    _ETREE_EXCEPTIONS = (SyntaxError, AttributeError, ValueError, TypeError)
 
 _S3_NS = {'s3' : 'http://s3.amazonaws.com/doc/2006-03-01/'}
 
