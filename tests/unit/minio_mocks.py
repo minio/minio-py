@@ -13,6 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from minio.compat import is_py3
+
+if is_py3:
+    import http.client as httplib
+else:
+    import httplib
+
 from nose.tools import eq_
 
 class MockResponse(object):
@@ -24,6 +31,8 @@ class MockResponse(object):
         self.status = status_code
         self.headers = response_headers
         self.data = content
+        if content is None:
+            self.reason = httplib.responses[status_code]
 
     # noinspection PyUnusedLocal
     def read(self, amt=1024):

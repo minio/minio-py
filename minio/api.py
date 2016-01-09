@@ -284,8 +284,14 @@ class Minio(object):
         method = 'HEAD'
         headers = {}
 
-        self._url_open(method, bucket_name=bucket_name,
-                       headers=headers)
+        try:
+            self._url_open(method, bucket_name=bucket_name,
+                           headers=headers)
+        # If the bucket has not been created yet, Minio will return a "NoSuchBucket" error.
+        except ResponseError as e:
+            if e.code is 'NoSuchBucket':
+                return False
+            raise
 
         return True
 
