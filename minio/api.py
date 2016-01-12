@@ -1456,18 +1456,13 @@ class Minio(object):
         :param bucket_name: Bucket name for which region will be fetched.
         :return: Region of bucket name.
         """
-        # Location set to 'us-east-1' if not Amazon S3.
-        if '.amazonaws.com' not in self._endpoint_url:
-            return 'us-east-1'
-
         # get bucket location for Amazon S3.
-        region = ''
+        region = 'us-east-1' # default to US standard.
         if bucket_name in self._region_map:
             region = self._region_map[bucket_name]
         else:
             region = self._get_bucket_location(bucket_name)
             self._region_map[bucket_name] = region
-
         return region
 
     def _get_bucket_location(self, bucket_name):
