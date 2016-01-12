@@ -330,7 +330,7 @@ class Minio(object):
         headers = {}
 
         response = self._url_open(method, bucket_name=bucket_name,
-                                  query={"acl": None},
+                                  query={'acl': None},
                                   headers=headers)
         return parse_acl(response.data)
 
@@ -361,7 +361,7 @@ class Minio(object):
         }
 
         self._url_open(method, bucket_name=bucket_name,
-                       query={"acl": None},
+                       query={'acl': None},
                        headers=headers)
 
     def _get_upload_id(self, bucket_name, object_name, data_content_type):
@@ -1473,7 +1473,9 @@ class Minio(object):
         :return: location of bucket name is returned.
         """
         method = 'GET'
-        url = self._endpoint_url + '/' + bucket_name + '?location'
+        url = get_target_url(self._endpoint_url,
+                             bucket_name=bucket_name,
+                             query={'location': None})
         headers = {}
         # default for all requests.
         region = 'us-east-1'
@@ -1482,7 +1484,7 @@ class Minio(object):
         if self._access_key is None or self._secret_key is None:
             return 'us-east-1'
 
-        # Get signature headers if any.
+        # get signature headers for 'us-east-1'.
         headers = sign_v4(method, url, region,
                           headers, self._access_key,
                           self._secret_key, None)
@@ -1492,15 +1494,19 @@ class Minio(object):
                                       headers=headers,
                                       preload_content=False)
 
+        if self._trace_output_stream:
+            dump_http(method, url, headers, response,
+                      self._trace_output_stream)
+
         if response.status != 200:
             response_error = ResponseError(response)
             raise response_error.get(bucket_name)
 
         location = parse_location_constraint(response.data)
-        # location is empty for 'US standard region'
+        # location is empty for 'US standard region'.
         if not location:
             return 'us-east-1'
-        # location can be 'EU' convert it to meaningful 'eu-west-1'
+        # location can be 'EU' convert it to meaningful 'eu-west-1'.
         if location is 'EU':
             return 'eu-west-1'
         return location

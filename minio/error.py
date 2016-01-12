@@ -235,6 +235,8 @@ class ResponseError(Exception):
                 self.bucket_name = attribute.text
             elif attribute.tag == 'Key':
                 self.object_name = attribute.text
+            elif attribute.tag == 'Region':
+                self.region = attribute.text
             elif attribute.tag == 'Message':
                 self.message = attribute.text
             elif attribute.tag == 'RequestId':

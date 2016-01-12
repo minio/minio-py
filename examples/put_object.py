@@ -32,4 +32,5 @@ client.put_object('my-bucketname', 'my-objectname', file_data, file_stat.st_size
 # Put a file with 'application/csv'
 file_stat = os.stat('my-testfile.csv')
 file_data = open('my-testfile.csv', 'rb')
-client.put_object('my-bucketname', 'my-objectname', file_data, file_stat.st_size)
+client.put_object('my-bucketname', 'my-objectname', file_data, file_stat.st_size,
+                  content_type='application/csv')
