@@ -205,7 +205,7 @@ def get_target_url(endpoint, bucket_name=None, object_name=None, query=None):
     if bucket_name is None:
         url = parsed_url.scheme + '://' + parsed_url.netloc
     else:
-        if 'amazonaws.com' in parsed_url.netloc:
+        if '.amazonaws.com' in parsed_url.netloc:
             url = (parsed_url.scheme + '://' +
                    bucket_name + '.' + parsed_url.netloc)
         else:

@@ -96,11 +96,37 @@ def main():
         client.put_object(bucket_name, object_name, file_data, file_stat.st_size)
     file_data.close()
 
+    file_stat = os.stat('testfile')
+    with open('testfile', 'rb') as file_data:
+        client.put_object(bucket_name, object_name+'-csv', file_data, file_stat.st_size,
+                          content_type='application/csv')
+    file_data.close()
+
     # Fput a file
     print(client.fput_object(bucket_name, object_name+'-f', 'testfile'))
 
+    # Fput a file
+    print(client.fput_object(bucket_name, object_name+'-f-txt', 'testfile',
+                             content_type='text/plain'))
+
     # Fetch stats on your object.
-    print(client.stat_object(bucket_name, object_name))
+    object_info = client.stat_object(bucket_name, object_name)
+    if object_info.content_type != 'application/octet-stream':
+        raise ValueError('Content type not expected got: '
+                         + object_info.content_type
+                         + ' want: application/octet-stream')
+
+    object_info = client.stat_object(bucket_name, object_name+'-csv')
+    if object_info.content_type != 'application/csv':
+        raise ValueError('Content type not expected got: '
+                         + object_info.content_type
+                         + ' want: application/csv')
+
+    object_info = client.stat_object(bucket_name, object_name+'-f-txt')
+    if object_info.content_type != 'text/plain':
+        raise ValueError('Content type not expected got: '
+                         + object_info.content_type
+                         + ' want: text/plain')
 
     # Get a full object
     object_data = client.get_object(bucket_name, object_name)
@@ -147,7 +173,9 @@ def main():
 
     # Remove an object.
     print(client.remove_object(bucket_name, object_name))
+    print(client.remove_object(bucket_name, object_name+'-csv'))
     print(client.remove_object(bucket_name, object_name+'-f'))
+    print(client.remove_object(bucket_name, object_name+'-f-txt'))
 
     # Remove a bucket. This operation will only work if your bucket is empty.
     print(client.remove_bucket(bucket_name))
