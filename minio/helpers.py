@@ -32,14 +32,22 @@ import hashlib
 import re
 import os
 import errno
+import math
 
-from .compat import urlsplit, basestring, urlencode
-from .error import InvalidBucketError, InvalidEndpointError
+from .compat import urlsplit, urlencode
+from .error import (InvalidBucketError, InvalidEndpointError,
+                    InvalidArgumentError)
+
+# Constants
+MAX_MULTIPART_COUNT = 10000 # 10000 parts
+MAX_MULTIPART_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
+MIN_OBJECT_SIZE = 5 * 1024 * 1024  # 5MiB
 
 _VALID_BUCKETNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\\-]+[a-z0-9]$')
 _ALLOWED_HOSTNAME_REGEX = re.compile(
     '^((?!-)[A-Z\\d-]{1,63}(?<!-)\\.)*((?!-)[A-Z\\d-]{1,63}(?<!-))$',
     re.IGNORECASE)
+
 
 def dump_http(method, url, request_headers, response, output_stream):
     """
@@ -83,8 +91,7 @@ def dump_http(method, url, request_headers, response, output_stream):
     # For all errors write all the available response body.
     if response.status != 200 and \
        response.status != 204 and response.status != 206:
-        resp_body_size = int(response.headers['content-length'])
-        output_stream.write('{0}', response.read(resp_body_size))
+        output_stream.write('{0}'.format(response.read()))
 
     # End header.
     output_stream.write('---------END-HTTP---------\n')
@@ -384,19 +391,29 @@ def encode_to_hex(content):
     return binascii.hexlify(content)
 
 
-def calculate_part_size(length):
+def optimal_part_info(length):
     """
     Calculate optimal part size for multipart uploads.
 
     :param length: Input length to calculate part size of.
     :return: Optimal part size.
     """
-    minimum_part_size = 1024 * 1024 * 5
-    maximum_part_size = 1024 * 1024 * 1024 * 5
+    # object size is '-1' set it to 5TiB.
     if length == -1:
-        return maximum_part_size
-    # make sure last part has enough buffer
-    proposed_part_size = length / 9999
-    if proposed_part_size > maximum_part_size:
-        return maximum_part_size
-    return max(minimum_part_size, proposed_part_size)
+        length = MAX_MULTIPART_OBJECT_SIZE
+    if length > MAX_MULTIPART_OBJECT_SIZE:
+        raise InvalidArgumentError('Input content size is bigger '
+                                   ' than allowed maximum of 5TiB.')
+
+    # Use floats for part size for all calculations to avoid
+    # overflows during float64 to int64 conversions.
+    part_size_float = math.ceil(length/MAX_MULTIPART_COUNT)
+    part_size_float = (math.ceil(part_size_float/MIN_OBJECT_SIZE)
+                       * MIN_OBJECT_SIZE)
+    # Total parts count.
+    total_parts_count = int(math.ceil(length/part_size_float))
+    # Part size.
+    part_size = int(part_size_float)
+    # Last part size.
+    last_part_size = length - int(total_parts_count-1)*part_size
+    return total_parts_count, part_size, last_part_size

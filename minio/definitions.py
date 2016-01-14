@@ -105,18 +105,21 @@ class IncompleteUpload(object):
     :param bucket_name: Bucket name.
     :param object_name: Object name.
     :param upload_id: Partially uploaded object's upload id.
+    :param initiated: Date when the multipart was initiated.
     """
-    def __init__(self, bucket_name, object_name, upload_id):
+    def __init__(self, bucket_name, object_name, upload_id, initiated):
         self.bucket_name = bucket_name
         self.object_name = object_name
         self.upload_id = upload_id
+        self.initiated = initiated
         self.size = 0
 
     def __str__(self):
         string_format = ('<IncompleteUpload: bucket_name: {0}'
-                         ' object_name: {1} upload_id: {2} size: {3}>')
+                         ' object_name: {1} upload_id: {2}'
+                         ' initiated:{3} size: {4}>')
         return string_format.format(self.bucket_name, self.object_name,
-                                    self.upload_id, self.size)
+                                    self.upload_id, self.initiated, self.size)
 
 
 class UploadPart(object):
