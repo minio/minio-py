@@ -39,6 +39,7 @@ import hashlib
 # Dependencies
 import urllib3
 import certifi
+import pytz
 
 # Internal imports
 from . import __title__, __version__
@@ -57,15 +58,17 @@ from .parsers import (parse_list_buckets,
 from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_endpoint,
                       get_sha256, encode_to_base64, get_md5,
-                      calculate_part_size, encode_to_hex,
+                      optimal_part_info, encode_to_hex,
                       is_valid_bucket_name, parts_manager,
                       mkdir_p, dump_http)
+from .helpers import (MAX_MULTIPART_OBJECT_SIZE,
+                      MIN_OBJECT_SIZE)
 from .signer import (sign_v4, presign_v4,
                      generate_credential_string,
                      post_presign_signature, _SIGN_V4_ALGORITHM)
 from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_complete_multipart_upload)
-from .section_file import SectionFile
+from .limited_reader import LimitedReader
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
@@ -78,11 +81,6 @@ _DEFAULT_USER_AGENT = 'Minio {0} {1}'.format(
                      platform.machine()),
     _APP_INFO.format(__title__,
                      __version__))
-
-# Constants
-MAX_FILE_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
-MAX_STREAM_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
-MIN_STREAM_OBJECT_SIZE = 5 * 1024 * 1024  # 5MiB
 
 _SEVEN_DAYS_SECONDS = 604800  # 7days
 
@@ -364,14 +362,14 @@ class Minio(object):
                        query={"acl": None},
                        headers=headers)
 
-    def _get_upload_id(self, bucket_name, object_name, data_content_type):
+    def _get_upload_id(self, bucket_name, object_name, content_type):
         """
         Get previously uploaded upload id for object name or initiate a request to
         fetch a new upload id.
 
         :param bucket_name: Bucket name where the incomplete upload resides.
         :param object_name: Object name for which the upload id is requested for.
-        :param data_content_type: Content type of the object.
+        :param content_type: Content type of the object.
         """
         recursive = True
         current_uploads = self._list_incomplete_uploads(bucket_name,
@@ -379,15 +377,19 @@ class Minio(object):
                                                         recursive,
                                                         is_aggregate_size=False)
         upload_id = None
+        # Default to '0'th epoch.
+        latest_initiated_time = datetime.fromtimestamp(0, pytz.utc)
         for upload in current_uploads:
             if object_name == upload.object_name:
+                latest_initiated_time = max((upload.initiated,
+                                             latest_initiated_time))
                 upload_id = upload.upload_id
 
         # If upload_id is None its a new multipart upload.
         if not upload_id:
             upload_id = self._new_multipart_upload(bucket_name,
                                                    object_name,
-                                                   data_content_type)
+                                                   content_type)
 
         return upload_id
 
@@ -411,31 +413,26 @@ class Minio(object):
         # save file_size.
         file_size = os.stat(file_path).st_size
 
-        if file_size > MAX_STREAM_OBJECT_SIZE:
+        if file_size > MAX_MULTIPART_OBJECT_SIZE:
             raise InvalidArgumentError('Input content size is bigger '
                                        ' than allowed maximum of 5TiB.')
 
         # Open file in 'read' mode.
-        file_data = io.open(file_path, mode='rb', buffering=0,
-                            encoding=None, errors=None,
-                            newline=None, closefd=True)
+        file_data = io.open(file_path, mode='rb')
 
-        if file_size <= MIN_STREAM_OBJECT_SIZE:
-            current_data = file_data.read(file_size)
-            current_data_md5_base64 = encode_to_base64(get_md5(current_data))
-            current_data_sha256_hex = encode_to_hex(get_sha256(current_data))
+        if file_size <= MIN_OBJECT_SIZE:
+            data = file_data.read(file_size)
+            md5_base64 = encode_to_base64(get_md5(data))
+            sha256_hex = encode_to_hex(get_sha256(data))
             return self._do_put_object(bucket_name, object_name,
-                                       io.BytesIO(current_data),
-                                       current_data_md5_base64,
-                                       current_data_sha256_hex,
+                                       io.BytesIO(data),
+                                       md5_base64,
+                                       sha256_hex,
                                        file_size,
-                                       data_content_type=content_type)
+                                       content_type=content_type)
 
-        # optimal part_size value.
-        part_size = calculate_part_size(file_size)
-
-        # get region.
-        region = self._get_bucket_region(bucket_name)
+        # Calculate optimal part info.
+        total_parts_count, part_size, last_part_size = optimal_part_info(file_size)
 
         # get upload id.
         upload_id = self._get_upload_id(bucket_name, object_name, content_type)
@@ -454,24 +451,25 @@ class Minio(object):
             uploaded_parts[part.part_number] = part
 
         # Always start with first part number.
-        part_number = 1
-        while True:
-            # If EOF reached, break out of the loop.
-            if total_uploaded == file_size:
-                break
+        for part_number in xrange(1, total_parts_count):
+            # Save the current part size that needs to be uploaded.
+            current_part_size = part_size
+            if part_number == total_parts_count:
+                current_part_size = last_part_size
 
             # Save current offset as previous offset.
             prev_offset = file_data.seek(0, 1)
-
-            # Save SectionFile, read upto part_size.
-            part = SectionFile(file_data, part_size)
 
             # Calculate md5sum and sha256.
             md5hasher = hashlib.md5()
             sha256hasher = hashlib.sha256()
             total_read = 0
-            while total_read < part_size:
-                current_data = part.read(64*1024) # Read in 64k chunks.
+
+            # Save LimitedReader, read upto current_part_size for
+            # md5sum and sha256 calculation.
+            part = LimitedReader(file_data, current_part_size)
+            while total_read < current_part_size:
+                current_data = part.read() # Read in 64k chunks.
                 if not current_data or len(current_data) == 0:
                     break
                 md5hasher.update(current_data)
@@ -480,19 +478,26 @@ class Minio(object):
 
             part_md5_hex = encode_to_hex(md5hasher.digest())
             # Verify if current part number has been already
-            # uploaded. Further verify if we have matching md5sum as
-            # well.
+            # uploaded. Verify if the size is same, further verify if
+            # we have matching md5sum as well.
             if part_number in uploaded_parts:
                 previous_part = uploaded_parts[part_number]
-                if previous_part.etag == part_md5_hex:
-                    total_uploaded += previous_part.size
-                    part_number += 1
-                    continue
+                if previous_part.size == current_part_size:
+                    if previous_part.etag == part_md5_hex:
+                        total_uploaded += previous_part.size
+                        continue
 
+            # Save hexlified sha256.
             part_sha256_hex = encode_to_hex(sha256hasher.digest())
+            # Save base64 md5sum.
             part_md5_base64 = encode_to_base64(md5hasher.digest())
-            # Seek back to previous offset position.
-            part.seek(prev_offset, 0)
+
+            # Seek back to previous offset position before checksum
+            # calculation.
+            file_data.seek(prev_offset, 0)
+
+            # Create the LimitedReader again for the http reader.
+            part = LimitedReader(file_data, current_part_size)
 
             # Initiate multipart put.
             etag = self._do_put_multipart_object(bucket_name, object_name,
@@ -510,8 +515,11 @@ class Minio(object):
                                                      total_read)
             # Total uploaded.
             total_uploaded += total_read
-            # Increment part number.
-            part_number += 1
+
+        if total_uploaded != file_size:
+            msg = 'Data uploaded {0} is not equal input size ' \
+                  '{1}'.format(total_uploaded, file_size)
+            raise InvalidSizeError(msg)
 
         # Complete all multipart transactions if possible.
         return self._complete_multipart_upload(bucket_name, object_name,
@@ -631,7 +639,7 @@ class Minio(object):
         """
         Add a new object to the cloud storage server.
 
-        NOTE: Maximum object size supported by this API is 50GB.
+        NOTE: Maximum object size supported by this API is 5TiB.
 
         Examples:
          file_stat = os.stat('hello.txt')
@@ -655,24 +663,24 @@ class Minio(object):
         if not callable(getattr(data, 'read')):
             raise ValueError('Invalid input data does not implement a callable read() method')
 
-        if length > MAX_STREAM_OBJECT_SIZE:
+        if length > MAX_MULTIPART_OBJECT_SIZE:
             raise InvalidArgumentError('Input content size is bigger '
                                        ' than allowed maximum of 5TiB.')
 
-        if length > MIN_STREAM_OBJECT_SIZE:
+        if length > MIN_OBJECT_SIZE:
             return self._stream_put_object(bucket_name, object_name,
                                            data, length,
-                                           data_content_type=content_type)
+                                           content_type=content_type)
 
         current_data = data.read(length)
-        current_data_md5_base64 = encode_to_base64(get_md5(current_data))
-        current_data_sha256_hex = encode_to_hex(get_sha256(current_data))
+        data_md5_base64 = encode_to_base64(get_md5(current_data))
+        data_sha256_hex = encode_to_hex(get_sha256(current_data))
         return self._do_put_object(bucket_name, object_name,
                                    io.BytesIO(current_data),
-                                   current_data_md5_base64,
-                                   current_data_sha256_hex,
+                                   data_md5_base64,
+                                   data_sha256_hex,
                                    length,
-                                   data_content_type=content_type)
+                                   content_type=content_type)
 
     def list_objects(self, bucket_name, prefix=None, recursive=False):
         """
@@ -1182,10 +1190,10 @@ class Minio(object):
         return presign_url
 
     def _do_put_multipart_object(self, bucket_name, object_name, data,
-                                 data_md5_base64,
-                                 data_sha256_hex,
-                                 data_content_size,
-                                 data_content_type='application/octet-stream',
+                                 md5_base64,
+                                 sha256_hex,
+                                 content_size,
+                                 content_type='application/octet-stream',
                                  upload_id='', part_number=0):
         """
         Initiate a multipart PUT operation for a part number.
@@ -1193,10 +1201,10 @@ class Minio(object):
         :param bucket_name: Bucket name for the multipart request.
         :param object_name: Object name for the multipart request.
         :param data: Input data for the multipart request.
-        :param data_md5_base64: Base64 md5 of data.
-        :param data_sha256_hex: Hexadecimal sha256 of data.
-        :param data_content_size: Input data size.
-        :param data_content_type: Content type of multipart request.
+        :param md5_base64: Base64 md5 of data.
+        :param sha256_hex: Hexadecimal sha256 of data.
+        :param content_size: Input data size.
+        :param content_type: Content type of multipart request.
         :param upload_id: Upload id of the multipart request.
         :param part_number: Part number of the data to be uploaded.
         """
@@ -1207,9 +1215,9 @@ class Minio(object):
 
         method = 'PUT'
         headers = {
-            'Content-Length': data_content_size,
-            'Content-Type': data_content_type,
-            'Content-MD5': data_md5_base64
+            'Content-Length': content_size,
+            'Content-Type': content_type,
+            'Content-MD5': md5_base64
         }
 
         response = self._url_open(method, bucket_name=bucket_name,
@@ -1218,25 +1226,25 @@ class Minio(object):
                                          'partNumber': part_number},
                                   headers=headers,
                                   body=data,
-                                  content_sha256=data_sha256_hex)
+                                  content_sha256=sha256_hex)
 
         return response.headers['etag'].replace('"', '')
 
     def _do_put_object(self, bucket_name, object_name, data,
-                       data_md5_base64,
-                       data_sha256_hex,
-                       data_content_size,
-                       data_content_type='application/octet-stream'):
+                       md5_base64,
+                       sha256_hex,
+                       content_size,
+                       content_type='application/octet-stream'):
         """
         Initiate a single PUT operation.
 
         :param bucket_name: Bucket name for the put request.
         :param object_name: Object name for the put request.
         :param data: Input data for the put request.
-        :param data_md5_base64: Base64 md5 of data.
-        :param data_sha256_hex: Hexadecimal sha256 of data.
-        :param data_content_size: Input data size.
-        :param data_content_type: Content type of put request.
+        :param md5_base64: Base64 md5 of data.
+        :param sha256_hex: Hexadecimal sha256 of data.
+        :param content_size: Input data size.
+        :param content_type: Content type of put request.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -1245,16 +1253,16 @@ class Minio(object):
 
         method = 'PUT'
         headers = {
-            'Content-Length': data_content_size,
-            'Content-Type': data_content_type,
-            'Content-MD5': data_md5_base64
+            'Content-Length': content_size,
+            'Content-Type': content_type,
+            'Content-MD5': md5_base64
         }
 
         response = self._url_open(method, bucket_name=bucket_name,
                                   object_name=object_name,
                                   headers=headers,
                                   body=data,
-                                  content_sha256=data_sha256_hex)
+                                  content_sha256=sha256_hex)
 
         etag = response.headers['etag']
         # Strip off quotes from begining and the end.
@@ -1266,15 +1274,15 @@ class Minio(object):
         return etag
 
     def _stream_put_object(self, bucket_name, object_name,
-                           data, data_content_size,
-                           data_content_type='application/octet-stream'):
+                           data, content_size,
+                           content_type='application/octet-stream'):
         """
         Streaming multipart upload operation.
 
         :param bucket_name: Bucket name of the multipart upload.
         :param object_name: Object name of the multipart upload.
-        :param data_content_size: Total size of the content to be uploaded.
-        :param data_content_type: Content type of of the multipart upload.
+        :param content_size: Total size of the content to be uploaded.
+        :param content_type: Content type of of the multipart upload.
            Defaults to 'application/octet-stream'.
         """
         is_valid_bucket_name(bucket_name)
@@ -1282,16 +1290,15 @@ class Minio(object):
         if not callable(getattr(data, 'read')):
             raise ValueError('Invalid input data does not implement a callable read() method')
 
-        # Get region.
-        region = self._get_bucket_region(bucket_name)
-
         # get upload id.
-        upload_id = self._get_upload_id(bucket_name, object_name, data_content_type)
+        upload_id = self._get_upload_id(bucket_name, object_name, content_type)
 
         # Initialize variables
         uploaded_parts = {}
         total_uploaded = 0
-        part_number = 1
+
+        # Calculate optimal part info.
+        total_parts_count, part_size, last_part_size = optimal_part_info(content_size)
 
         # Iter over the uploaded parts.
         parts_iter = self._list_object_parts(bucket_name,
@@ -1302,36 +1309,36 @@ class Minio(object):
             # Save uploaded parts for future verification.
             uploaded_parts[part.part_number] = part
 
-        # Generate new parts and upload <= part_size until total_uploaded
-        # reaches actual data_content_size. Additionally part_manager()
-        # also provides md5digest and sha256digest for the partitioned data.
-        while True:
-            # If total_uploaded equal to data_content_size break the loop.
-            if total_uploaded == data_content_size:
-                break
-
-            part_metadata = parts_manager(data)
-            data_md5_hex = encode_to_hex(part_metadata.md5digest)
+        # Generate new parts and upload <= current_part_size until
+        # part_number reaches total_parts_count calculated for the
+        # given size. Additionally part_manager() also provides
+        # md5digest and sha256digest for the partitioned data.
+        for part_number in xrange(1, total_parts_count):
+            current_part_size = part_size
+            if part_number == total_parts_count:
+                current_part_size = last_part_size
+            part_metadata = parts_manager(data, current_part_size)
+            md5_hex = encode_to_hex(part_metadata.md5digest)
             # Verify if part number has been already uploaded.
             # Further verify if we have matching md5sum as well.
             if part_number in uploaded_parts:
                 previous_part = uploaded_parts[part_number]
-                if previous_part.etag == data_md5_hex:
-                    total_uploaded += previous_part.size
-                    part_number += 1
-                    continue
+                if previous_part.size == current_part_size:
+                    if previous_part.etag == md5_hex:
+                        total_uploaded += previous_part.size
+                        continue
 
-            data_md5_base64 = encode_to_base64(part_metadata.md5digest)
-            data_sha256_hex = encode_to_hex(part_metadata.sha256digest)
+            md5_base64 = encode_to_base64(part_metadata.md5digest)
+            sha256_hex = encode_to_hex(part_metadata.sha256digest)
             # Seek back to starting position.
             part_metadata.data.seek(0)
             etag = self._do_put_multipart_object(bucket_name,
                                                  object_name,
                                                  part_metadata.data,
-                                                 data_md5_base64,
-                                                 data_sha256_hex,
+                                                 md5_base64,
+                                                 sha256_hex,
                                                  part_metadata.size,
-                                                 data_content_type,
+                                                 content_type,
                                                  upload_id,
                                                  part_number)
             # Save etags.
@@ -1343,8 +1350,12 @@ class Minio(object):
                                                      None,
                                                      part_metadata.size)
 
-            part_number += 1
             total_uploaded += part_metadata.size
+
+        if total_uploaded != content_size:
+            msg = 'Data uploaded {0} is not equal input size ' \
+                  '{1}'.format(total_uploaded, content_size)
+            raise InvalidSizeError(msg)
 
         # Complete all multipart transactions if possible.
         return self._complete_multipart_upload(bucket_name, object_name,
@@ -1416,17 +1427,17 @@ class Minio(object):
         headers = {}
 
         data = xml_marshal_complete_multipart_upload(uploaded_parts)
-        data_md5_base64 = encode_to_base64(get_md5(data))
-        data_sha256_hex = encode_to_hex(get_sha256(data))
+        md5_base64 = encode_to_base64(get_md5(data))
+        sha256_hex = encode_to_hex(get_sha256(data))
 
         headers['Content-Length'] = len(data)
         headers['Content-Type'] = 'application/xml'
-        headers['Content-MD5'] = data_md5_base64
+        headers['Content-MD5'] = md5_base64
 
         response = self._url_open(method, bucket_name=bucket_name,
                                   object_name=object_name, query=query,
                                   headers=headers, body=data,
-                                  content_sha256=data_sha256_hex)
+                                  content_sha256=sha256_hex)
 
         return parse_multipart_upload_result(response.data)
 

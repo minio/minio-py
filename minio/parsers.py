@@ -259,6 +259,7 @@ def parse_list_multipart_uploads(data, bucket_name):
         if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Upload':
             object_name = None
             upload_id = None
+            initiated = None
             for content in contents:
                 if content.tag == \
                    '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
@@ -266,9 +267,13 @@ def parse_list_multipart_uploads(data, bucket_name):
                 if content.tag == \
                    '{http://s3.amazonaws.com/doc/2006-03-01/}UploadId':
                     upload_id = content.text
+                if content.tag == \
+                   '{http://s3.amazonaws.com/doc/2006-03-01/}Initiated':
+                    initiated = _iso8601_to_localized_time(content.text)
             uploads.append(IncompleteUpload(bucket_name,
                                             object_name,
-                                            upload_id))
+                                            upload_id,
+                                            initiated))
     return uploads, is_truncated, key_marker, upload_id_marker
 
 
