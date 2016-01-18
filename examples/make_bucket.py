@@ -17,10 +17,14 @@
 # dummy values, please replace them with original values.
 
 from minio import Minio
+from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Make a new bucket
-client.make_bucket('my-bucketname')
+try:
+    client.make_bucket('my-bucketname')
+except ResponseError as err:
+    print(err)

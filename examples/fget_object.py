@@ -17,10 +17,14 @@
 # dummy values, please replace them with original values.
 
 from minio import Minio
+from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Get a full object
-client.fget_object('my-bucketname', 'my-objectname', 'filepath')
+try:
+    client.fget_object('my-bucketname', 'my-objectname', 'filepath')
+except ResponseError as err:
+    print(err)

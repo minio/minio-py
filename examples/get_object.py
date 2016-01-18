@@ -17,14 +17,17 @@
 # my-testfile are dummy values, please replace them with original values.
 
 from minio import Minio
+from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Get a full object
-data = client.get_object('my-bucketname', 'my-objectname')
-
-with open('my-testfile', 'wb') as file_data:
-    for d in data:
-        file_data.write(d)
+try:
+    data = client.get_object('my-bucketname', 'my-objectname')
+    with open('my-testfile', 'wb') as file_data:
+        for d in data:
+            file_data.write(d)
+except ResponseError as err:
+    print(err)

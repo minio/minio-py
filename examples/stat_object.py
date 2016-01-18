@@ -17,10 +17,14 @@
 # are dummy values, please replace them with original values.
 
 from minio import Minio
+from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Fetch stats on your object.
-print(client.stat_object('my-bucketname', 'my-objectname'))
+try:
+    print(client.stat_object('my-bucketname', 'my-objectname'))
+except ResponseError as err:
+    print(err)

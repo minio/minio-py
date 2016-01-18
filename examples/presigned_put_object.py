@@ -19,11 +19,18 @@
 import datetime
 
 from minio import Minio
+from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # presigned Put object URL for an object name, expires in 3 days.
-print(client.presigned_put_object('my-bucketname', 'my-objectname',
-                                  datetime.timedelta(days=3)))
+try:
+    print(client.presigned_put_object('my-bucketname',
+                                      'my-objectname',
+                                      datetime.timedelta(days=3)))
+# Response error is still possible since internally presigned does get
+# bucket location.
+except ResponseError as err:
+    print(err)
