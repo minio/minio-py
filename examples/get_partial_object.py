@@ -17,14 +17,17 @@
 # my-testfile are dummy values, please replace them with original values.
 
 from minio import Minio
+from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Offset the download by 2 bytes and retrieve a total of 4 bytes.
-data = client.get_partial_object('my-bucketname', 'my-objectname', 2, 4)
-
-with open('my-testfile', 'wb') as file_data:
-    for d in data:
-        file_data.write(d)
+try:
+    data = client.get_partial_object('my-bucketname', 'my-objectname', 2, 4)
+    with open('my-testfile', 'wb') as file_data:
+        for d in data:
+            file_data.write(d)
+except ResponseError as err:
+    print(err)

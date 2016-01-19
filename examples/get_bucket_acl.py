@@ -18,10 +18,14 @@
 
 from minio import Acl
 from minio import Minio
+from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Print current bucket acl.
-print(client.get_bucket_acl('my-bucketname'))
+try:
+    print(client.get_bucket_acl('my-bucketname'))
+except ResponseError as err:
+    print(err)

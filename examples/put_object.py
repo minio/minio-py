@@ -19,17 +19,25 @@
 import os
 
 from minio import Minio
+from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Put a file with default content-type.
-file_stat = os.stat('my-testfile')
-file_data = open('my-testfile', 'rb')
-client.put_object('my-bucketname', 'my-objectname', file_data, file_stat.st_size)
+try:
+    file_stat = os.stat('my-testfile')
+    file_data = open('my-testfile', 'rb')
+    client.put_object('my-bucketname', 'my-objectname', file_data, file_stat.st_size)
+except ResponseError as err:
+    print(err)
 
 # Put a file with 'application/csv'
-file_stat = os.stat('my-testfile.csv')
-file_data = open('my-testfile.csv', 'rb')
-client.put_object('my-bucketname', 'my-objectname', file_data, file_stat.st_size)
+try:
+    file_stat = os.stat('my-testfile.csv')
+    file_data = open('my-testfile.csv', 'rb')
+    client.put_object('my-bucketname', 'my-objectname', file_data,
+                      file_stat.st_size, content_type='application/csv')
+except ResponseError as err:
+    print(err)

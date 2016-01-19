@@ -20,6 +20,7 @@ from datetime import datetime, timedelta
 
 from minio import Minio
 from minio import PostPolicy
+from minio.error import ResponseError
 
 post_policy = PostPolicy()
 # set bucket name location for uploads.
@@ -37,12 +38,15 @@ client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-curl_str = 'curl -X POST my-bucketname.s3.amazonaws.com/'
-curl_cmd = [curl_str]
-signed_form_data = client.presigned_post_policy(post_policy)
-for field in signed_form_data:
-    curl_cmd.append('-F {0}={1}'.format(field, signed_form_data[field]))
+try:
+    curl_str = 'curl -X POST my-bucketname.s3.amazonaws.com/'
+    curl_cmd = [curl_str]
+    signed_form_data = client.presigned_post_policy(post_policy)
+    for field in signed_form_data:
+        curl_cmd.append('-F {0}={1}'.format(field, signed_form_data[field]))
 
-# print curl command to upload files.
-curl_cmd.append('-F file=@<FILE>')
-print(' '.join(curl_cmd))
+        # print curl command to upload files.
+        curl_cmd.append('-F file=@<FILE>')
+        print(' '.join(curl_cmd))
+except ResponseError as err:
+    print(err)

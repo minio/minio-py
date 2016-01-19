@@ -17,10 +17,14 @@
 # are dummy values, please replace them with original values.
 
 from minio import Minio
+from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Remove an partially uploaded object.
-client.remove_incomplete_upload('my-bucketname', 'my-objectname')
+try:
+    client.remove_incomplete_upload('my-bucketname', 'my-objectname')
+except ResponseError as err:
+    print(err)

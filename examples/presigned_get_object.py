@@ -17,10 +17,16 @@
 # are dummy values, please replace them with original values.
 
 from minio import Minio
+from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # presigned get object URL for object name, expires in 7 days.
-print(client.presigned_get_object('my-bucketname', 'my-objectname'))
+try:
+    print(client.presigned_get_object('my-bucketname', 'my-objectname'))
+# Response error is still possible since internally presigned does get
+# bucket location.
+except ResponseError as err:
+    print(err)

@@ -17,11 +17,15 @@
 # are dummy values, please replace them with original values.
 
 from minio import Acl
-from minio import Minio
+from minio import Mini
+from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Set bucket name to private.
-client.set_bucket_acl('my-bucketname', Acl.private())
+try:
+    client.set_bucket_acl('my-bucketname', Acl.private())
+except ResponseError as err:
+    print(err)

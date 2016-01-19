@@ -16,10 +16,8 @@
 # Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and  my-bucketname are
 # dummy values, please replace them with original values.
 
-#Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, and my-bucketname
-# are dummy values, please replace them with original values.
-
 from minio import Minio
+from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
@@ -27,4 +25,7 @@ client = Minio('s3.amazonaws.com',
 
 # Remove a bucket
 # This operation will only work if your bucket is empty.
-client.remove_bucket('my-bucketname')
+try:
+    client.remove_bucket('my-bucketname')
+except ResponseError as err:
+    print(err)
