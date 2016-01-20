@@ -200,7 +200,7 @@ class Minio(object):
         headers['User-Agent'] = self._user_agent
 
         content = ''
-        if location != 'us-east-1':
+        if location and location != 'us-east-1':
             content = xml_marshal_bucket_constraint(location)
             headers['Content-Length'] = str(len(content))
 
@@ -210,10 +210,11 @@ class Minio(object):
             headers['Content-MD5'] = content_md5_base64
 
         # Construct target url.
-        url = get_target_url(self._endpoint_url, bucket_name=bucket_name)
+        url = get_target_url(self._endpoint_url,
+                             bucket_name=bucket_name)
 
         # Get signature headers if any.
-        headers = sign_v4(method, url, location,
+        headers = sign_v4(method, url, 'us-east-1',
                           headers, self._access_key,
                           self._secret_key, content_sha256_hex)
 
@@ -1035,7 +1036,8 @@ class Minio(object):
         region = self._get_bucket_region(bucket_name)
         url = get_target_url(self._endpoint_url,
                              bucket_name=bucket_name,
-                             object_name=object_name)
+                             object_name=object_name,
+                             bucket_region=region)
         headers = {}
 
         method = 'PUT'
@@ -1174,7 +1176,8 @@ class Minio(object):
         region = self._get_bucket_region(bucket_name)
         url = get_target_url(self._endpoint_url,
                              bucket_name=bucket_name,
-                             object_name=object_name)
+                             object_name=object_name,
+                             bucket_region=region)
         headers = {}
 
         if request_range:
@@ -1530,7 +1533,8 @@ class Minio(object):
 
         # Construct target url.
         url = get_target_url(self._endpoint_url, bucket_name=bucket_name,
-                             object_name=object_name, query=query)
+                             object_name=object_name, bucket_region=region,
+                             query=query)
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,

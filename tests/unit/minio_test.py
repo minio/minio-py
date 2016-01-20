@@ -38,21 +38,30 @@ class ValidBucketName(TestCase):
 class GetURLTests(TestCase):
     def test_get_target_url_works(self):
         url = 'http://localhost:9000'
-        eq_(get_target_url(url, 'bucketName'),
-            'http://localhost:9000/bucketName/')
-        eq_(get_target_url(url, 'bucketName', 'objectName'),
-            'http://localhost:9000/bucketName/objectName')
-        eq_(get_target_url(url, 'bucketName', 'objectName', None),
-            'http://localhost:9000/bucketName/objectName')
-        eq_(get_target_url(url, 'bucketName', 'objectName', {'foo': 'bar'}),
-            'http://localhost:9000/bucketName/objectName?foo=bar')
-        eq_(get_target_url(url, 'bucketName', 'objectName',
+        eq_(get_target_url(url, 'bucket-name'),
+            'http://localhost:9000/bucket-name/')
+        eq_(get_target_url(url, 'bucket-name', 'objectName'),
+            'http://localhost:9000/bucket-name/objectName')
+        eq_(get_target_url(url, 'bucket-name', 'objectName', None),
+            'http://localhost:9000/bucket-name/objectName')
+        eq_(get_target_url(url, 'bucket-name', 'objectName', 'us-east-1',
+                           {'foo': 'bar'}),
+            'http://localhost:9000/bucket-name/objectName?foo=bar')
+        eq_(get_target_url(url, 'bucket-name', 'objectName', 'us-east-1',
                            {'foo': 'bar',
                             'b': 'c',
                             'a': 'b'}),
-            'http://localhost:9000/bucketName/objectName?a=b&b=c&foo=bar')
+            'http://localhost:9000/bucket-name/objectName?a=b&b=c&foo=bar')
+        # S3 urls.
         s3_url = 'https://s3.amazonaws.com'
         eq_(get_target_url(s3_url), 'https://s3.amazonaws.com/')
+        eq_(get_target_url(s3_url, 'my.bucket.name'),
+            'https://s3.amazonaws.com/my.bucket.name/')
+        eq_(get_target_url(s3_url,
+                           'bucket-name',
+                           'objectName',
+                           'us-west-2', None),
+            'https://bucket-name.s3-us-west-2.amazonaws.com/objectName')
 
     @raises(TypeError)
     def test_minio_requires_string(self):
