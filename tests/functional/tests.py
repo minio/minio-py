@@ -53,31 +53,46 @@ def main():
     bucket_name = 'minio-pytest'
 
     print(client.make_bucket(bucket_name))
+    print(client.make_bucket(bucket_name+'.unique',
+                             location='us-west-1'))
 
     # Check if bucket was created properly.
     print(client.bucket_exists(bucket_name))
+    print(client.bucket_exists(bucket_name+'.unique'))
 
     # Set bucket name to private.
     print(client.set_bucket_acl(bucket_name, Acl.private()))
+    print(client.set_bucket_acl(bucket_name+'.unique', Acl.private()))
 
     # Verify current bucket acl.
     acl = client.get_bucket_acl(bucket_name)
     if acl != 'private':
         raise ValueError('Invalid acl type found: ' + acl)
+    acl = client.get_bucket_acl(bucket_name+'.unique')
+    if acl != 'private':
+        raise ValueError('Invalid acl type found: ' + acl)
 
     # Set bucket name to public-read.
     print(client.set_bucket_acl(bucket_name, Acl.public_read()))
+    print(client.set_bucket_acl(bucket_name+'.unique', Acl.public_read()))
 
     # Verify current bucket acl.
     acl = client.get_bucket_acl(bucket_name)
     if acl != 'public-read':
         raise ValueError('Invalid acl type found: ' + acl)
+    acl = client.get_bucket_acl(bucket_name+'.unique')
+    if acl != 'public-read':
+        raise ValueError('Invalid acl type found: ' + acl)
 
     # Set bucket name to public-read-write.
     print(client.set_bucket_acl(bucket_name, Acl.public_read_write()))
+    print(client.set_bucket_acl(bucket_name+'.unique', Acl.public_read_write()))
 
     # Verify current bucket acl.
     acl = client.get_bucket_acl(bucket_name)
+    if acl != 'public-read-write':
+        raise ValueError('Invalid acl type found: ' + acl)
+    acl = client.get_bucket_acl(bucket_name+'.unique')
     if acl != 'public-read-write':
         raise ValueError('Invalid acl type found: ' + acl)
 
@@ -151,6 +166,7 @@ def main():
 
     # Remove a bucket. This operation will only work if your bucket is empty.
     print(client.remove_bucket(bucket_name))
+    print(client.remove_bucket(bucket_name+'.unique'))
 
     # Remove temporary files.
     os.remove('testfile')

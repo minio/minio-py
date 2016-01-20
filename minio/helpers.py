@@ -43,7 +43,7 @@ MAX_MULTIPART_COUNT = 10000 # 10000 parts
 MAX_MULTIPART_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
 MIN_OBJECT_SIZE = 5 * 1024 * 1024  # 5MiB
 
-_VALID_BUCKETNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\\-]+[a-z0-9]$')
+_VALID_BUCKETNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\\.\\-]+[a-z0-9]$')
 _ALLOWED_HOSTNAME_REGEX = re.compile(
     '^((?!-)[A-Z\\d-]{1,63}(?<!-)\\.)*((?!-)[A-Z\\d-]{1,63}(?<!-))$',
     re.IGNORECASE)
@@ -196,38 +196,66 @@ def ignore_headers(headers_to_sign):
 
     return headers_to_sign
 
+AWS_S3_ENDPOINT_MAP = {
+    'us-east-1': 's3.amazonaws.com',
+    'us-west-2': 's3-us-west-2.amazonaws.com',
+    'us-west-1': 's3-us-west-1.amazonaws.com',
+    'eu-west-1': 's3-eu-west-1.amazonaws.com',
+    'sa-east-1': 's3-sa-east-1.amazonaws.com',
+    'eu-central-1': 's3-eu-central-1.amazonaws.com',
+    'ap-southeast-1': 's3-ap-southeast-1.amazonaws.com',
+    'ap-northeast-1': 's3-ap-northeast-1.amazonaws.com',
+    'ap-northeast-2': 's3-ap-northeast-2.amazonaws.com',
+}
 
-def get_target_url(endpoint, bucket_name=None, object_name=None, query=None):
+def get_s3_endpoint(region):
+    if region in AWS_S3_ENDPOINT_MAP:
+        return AWS_S3_ENDPOINT_MAP[region]
+    return 's3.amazonaws.com'
+
+def get_target_url(endpoint_url, bucket_name=None, object_name=None,
+                   bucket_region='us-east-1', query=None):
     """
     Construct final target url.
 
-    :param endpoint: Target endpoint url where request is served to.
+    :param endpoint_url: Target endpoint url where request is served to.
     :param bucket_name: Bucket component for the target url.
     :param object_name: Object component for the target url.
+    :param bucket_region: Bucket region for the target url.
     :param query: Query parameters as a *dict* for the target url.
     :return: Returns final target url as *str*.
     """
-    parsed_url = urlsplit(endpoint)
+    # New url
     url = None
-    if bucket_name is None:
-        url = parsed_url.scheme + '://' + parsed_url.netloc
-    else:
-        if 'amazonaws.com' in parsed_url.netloc:
-            url = (parsed_url.scheme + '://' +
-                   bucket_name + '.' + parsed_url.netloc)
+
+    # Parse url
+    parsed_url = urlsplit(endpoint_url)
+
+    # Get new host, scheme.
+    host = parsed_url.netloc
+    if 's3.amazonaws.com' in host:
+        host = get_s3_endpoint(bucket_region)
+    scheme = parsed_url.scheme
+
+    url = scheme + '://' + host
+    if bucket_name:
+        # Save if target url will have buckets which suppport
+        # virtual host.
+        is_virtual_host_style = is_virtual_host(endpoint_url,
+                                                bucket_name)
+        if is_virtual_host_style:
+            url = (scheme + '://' + bucket_name + '.' + host)
         else:
-            url = (parsed_url.scheme + '://' +
-                   parsed_url.netloc + '/' + bucket_name)
+            url = (scheme + '://' + host + '/' + bucket_name)
 
     url_components = [url]
     url_components.append('/')
 
-    if object_name is not None:
+    if object_name:
         object_name = encode_object_name(object_name)
-    if object_name is not None:
         url_components.append(object_name)
 
-    if query is not None:
+    if query:
         ordered_query = collections.OrderedDict(sorted(query.items()))
         query_components = []
         for component_key in ordered_query:
@@ -284,22 +312,37 @@ def is_valid_endpoint(endpoint):
 
     return True
 
+def is_virtual_host(endpoint_url, bucket_name):
+    """
+    Check to see if the ``bucket_name`` can be part of virtual host
+    style.
+
+    :param endpoint_url: Endpoint url which will be used for virtual host.
+    :param bucket_name: Bucket name to be validated against.
+    """
+    is_valid_bucket_name(bucket_name)
+
+    parsed_url = urlsplit(endpoint_url)
+    # bucket_name can be valid but '.' in the hostname will fail
+    # SSL certificate validation. So do not use host-style for
+    # such buckets.
+    if 'https' in parsed_url.scheme and '.' in bucket_name:
+        return False
+    if 's3.amazonaws.com' in parsed_url.netloc:
+        return True
+    return False
+
 def is_valid_bucket_name(bucket_name):
     """
     Check to see if the ``bucket_name`` complies with the
     restricted DNS naming conventions necessary to allow
     access via virtual-hosting style.
 
-    Even though '.' characters are perfectly valid in this DNS
-    naming scheme, we are going to punt on any name containing a
-    '.' character because these will cause SSL cert validation
-    problems if we try to use virtual-hosting style addressing.
-
     :param bucket_name: Bucket name in *str*.
     :return: True if the bucket is valid. Raise :exc:`InvalidBucketError`
        otherwise.
     """
-    # verify bucket name length.
+    # Verify bucket name length.
     if len(bucket_name) < 3:
         raise InvalidBucketError('Bucket name cannot be less than'
                                  ' 3 characters.')
@@ -310,7 +353,7 @@ def is_valid_bucket_name(bucket_name):
     match = _VALID_BUCKETNAME_REGEX.match(bucket_name)
     if match is None or match.end() != len(bucket_name):
         raise InvalidBucketError('Bucket name does not follow S3 standards.'
-                                 'Bucket: {0}'.format(bucket_name))
+                                 ' Bucket: {0}'.format(bucket_name))
 
     return True
 
