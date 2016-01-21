@@ -35,6 +35,14 @@ class ValidBucketName(TestCase):
     def test_bucket_name_length(self):
         is_valid_bucket_name('dd')
 
+    @raises(InvalidBucketError)
+    def test_bucket_name_periods(self):
+        is_valid_bucket_name('dd..mybucket')
+
+    @raises(InvalidBucketError)
+    def test_bucket_name_begins_period(self):
+        is_valid_bucket_name('.ddmybucket')
+
 class GetURLTests(TestCase):
     def test_get_target_url_works(self):
         url = 'http://localhost:9000'
