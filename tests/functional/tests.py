@@ -56,6 +56,16 @@ def main():
     print(client.make_bucket(bucket_name+'.unique',
                              location='us-west-1'))
 
+    ## Check if return codes a valid from server.
+    try:
+        client.make_bucket(bucket_name+'.unique',
+                           location='us-west-1')
+    except ResponseError as err:
+        if str(err.code) in ['BucketAlreadyOwnedByYou', 'BucketAlreadyExists']:
+            pass
+        else:
+            raise
+
     # Check if bucket was created properly.
     print(client.bucket_exists(bucket_name))
     print(client.bucket_exists(bucket_name+'.unique'))
