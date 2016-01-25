@@ -209,9 +209,14 @@ class Minio(object):
             content_md5_base64 = encode_to_base64(get_md5(content))
             headers['Content-MD5'] = content_md5_base64
 
+        # In case of Amazon S3.  The make bucket issued on already
+        # existing bucket would fail with 'AuthorizationMalformed'
+        # error if virtual style is used. So we default to 'path
+        # style' as that is the preferred method here. The final
+        # location of the 'bucket' is provided through XML
+        # LocationConstraint data with the request.
         # Construct target url.
-        url = get_target_url(self._endpoint_url,
-                             bucket_name=bucket_name)
+        url = self._endpoint_url + '/' + bucket_name + '/'
 
         # Get signature headers if any.
         headers = sign_v4(method, url, 'us-east-1',
