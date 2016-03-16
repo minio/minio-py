@@ -54,9 +54,9 @@ $ python setup.py install
 
 [remove_bucket(bucket)](examples/remove_bucket.py)
 
-[get_bucket_acl(bucket)](examples/bucket_acl.py)
+[get_bucket_acl(bucket)](examples/get_bucket_acl.py)
 
-[set_bucket_acl(bucket_name, acl=Acl.private())](examples/bucket_acl.py)
+[set_bucket_acl(bucket_name, acl=Acl.private())](examples/set_bucket_acl.py)
 
 [list_incomplete_uploads(bucket_name, prefix=None, recursive=False)](examples/list_incomplete_uploads.py)
 
