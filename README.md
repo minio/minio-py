@@ -41,8 +41,11 @@ $ git clone https://github.com/minio/minio-py
 $ cd minio-py
 $ python setup.py install
 ```
+## Documentation
 
-## Examples:
+[API documentation](./API.md)
+
+## Examples
 
 ### Bucket Operations.
 
