@@ -202,7 +202,8 @@ def parse_list_objects(data, bucket_name):
                 if content.tag == \
                    '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
                     etag = content.text
-                    etag = etag.replace('"', '')
+                    if etag:
+                        etag = etag.replace('"', '')
                 if content.tag == \
                    '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
                     size = int(content.text)
