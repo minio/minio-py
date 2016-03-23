@@ -87,14 +87,14 @@ class UserAgentTests(TestCase):
 
     def test_set_app_info(self):
         client = Minio('localhost')
-        expected_user_agent = _DEFAULT_USER_AGENT + ' hello/1.0.0'
-        client.set_app_info('hello', '1.0.0')
+        expected_user_agent = _DEFAULT_USER_AGENT + ' hello/1.0.1'
+        client.set_app_info('hello', '1.0.1')
         eq_(client._user_agent, expected_user_agent)
 
     @raises(ValueError)
     def test_set_app_info_requires_non_empty_name(self):
         client = Minio('localhost:9000')
-        client.set_app_info('', '1.0.0')
+        client.set_app_info('', '1.0.1')
 
     @raises(ValueError)
     def test_set_app_info_requires_non_empty_version(self):
