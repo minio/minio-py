@@ -1106,7 +1106,10 @@ class Minio(object):
                                            self._secret_key,
                                            policy_base64)
         policy.form_data['x-amz-signature'] = signature
-        return policy.form_data
+        url_str = get_target_url(self._endpoint_url,
+                                 bucket_name=policy.form_data['bucket'],
+                                 bucket_region=region)
+        return (url_str, policy.form_data)
 
     # All private functions below.
     def _get_partial_object(self, bucket_name, object_name,

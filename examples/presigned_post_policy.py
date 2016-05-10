@@ -39,9 +39,9 @@ client = Minio('s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 try:
-    curl_str = 'curl -X POST my-bucketname.s3.amazonaws.com/'
+    url_str, signed_form_data = client.presigned_post_policy(post_policy)
+    curl_str = 'curl -X POST {0}'.format(url_str)
     curl_cmd = [curl_str]
-    signed_form_data = client.presigned_post_policy(post_policy)
     for field in signed_form_data:
         curl_cmd.append('-F {0}={1}'.format(field, signed_form_data[field]))
 

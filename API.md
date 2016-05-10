@@ -439,7 +439,7 @@ except ResponseError as err:
 
 ---------------------------------------
 <a name="presigned_post_policy">
-#### presigned_post_policy
+#### presigned_post_policy(policy)
 presigned_post_policy we can provide policies specifying conditions restricting
 what you want to allow in a POST request, such as bucket name where objects can be
 uploaded, key name prefixes that you want to allow for the object being created and more.
@@ -466,14 +466,14 @@ post_policy.set_expires(expires_date)
 Get the POST form key/value object:
 ```py
 try:
-    signed_form_data = s3client.presigned_post_policy(post_policy)
+    url_str, signed_form_data = s3client.presigned_post_policy(post_policy)
 except ResponseError as err:
     print(err)    
 ```
 
 POST your content from the command line using `curl`:
 ```py
-curl_str = 'curl -X POST my-bucketname.s3.amazonaws.com/'
+curl_str = 'curl -X POST {0}'.format(url_str)
 curl_cmd = [curl_str]
 for field in signed_form_data:
     curl_cmd.append('-F {0}={1}'.format(field, signed_form_data[field]))
