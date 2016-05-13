@@ -45,13 +45,11 @@ import pytz
 from . import __title__, __version__
 from .compat import urlsplit
 from .error import ResponseError, InvalidArgumentError, InvalidSizeError
-from .bucket_acl import is_valid_acl
 from .definitions import Object, UploadPart
 from .parsers import (parse_list_buckets,
                       parse_list_objects,
                       parse_list_parts,
                       parse_list_multipart_uploads,
-                      parse_acl,
                       parse_new_multipart_upload,
                       parse_location_constraint,
                       parse_multipart_upload_result)
@@ -96,18 +94,18 @@ class Minio(object):
     :param endpoint: Hostname of the cloud storage server.
     :param access_key: Access key to sign self._http.request with.
     :param secret_key: Secret key to sign self._http.request with.
-    :param insecure: Set this value if wish to make insecure requests.
-         Default is false.
+    :param secure: Set this value if wish to make secure requests.
+         Default is True.
     :return: :class:`Minio <Minio>` object
     """
     def __init__(self, endpoint, access_key=None,
-                 secret_key=None, insecure=False):
+                 secret_key=None, secure=True):
         # Validate endpoint.
         is_valid_endpoint(endpoint)
 
         # Default is a secured connection.
         endpoint_url = 'https://' + endpoint
-        if insecure:
+        if not secure:
             endpoint_url = 'http://' + endpoint
 
         url_components = urlsplit(endpoint_url)
@@ -163,7 +161,7 @@ class Minio(object):
         self._trace_output_stream = None
 
     # Bucket level
-    def make_bucket(self, bucket_name, location='us-east-1', acl=None):
+    def make_bucket(self, bucket_name, location='us-east-1'):
         """
         Make a new bucket on the server.
 
@@ -172,12 +170,6 @@ class Minio(object):
             'ap-southeast-1', 'ap-southeast-2', 'ap-northeast-1', 'sa-east-1',
             'cn-north-1']
 
-        Optionally include an ACL. Valid ACLs are as follows:
-            Acl.public_read_write()
-            Acl.public_read()
-            Acl.authenticated_read()
-            Acl.private()
-
         Examples:
             minio.make_bucket('foo')
             minio.make_bucket('foo', 'us-west-1')
@@ -185,16 +177,10 @@ class Minio(object):
         :param bucket_name: Bucket to create on server
         :param location: Location to create bucket on
         """
-        if acl is not None:
-            is_valid_acl(acl)
-
         is_valid_bucket_name(bucket_name)
 
         method = 'PUT'
         headers = {}
-
-        if acl is not None:
-            headers['x-amz-acl'] = acl
 
         # Set user agent once before the request.
         headers['User-Agent'] = self._user_agent
@@ -315,58 +301,6 @@ class Minio(object):
 
         # Make sure to purge bucket_name from region cache.
         self._delete_bucket_region(bucket_name)
-
-    def get_bucket_acl(self, bucket_name):
-        """
-        Get a bucket's canned ACL, if any.
-
-        Example:
-            canned_acl = minio.get_bucket_acl('foo')
-            if canned_acl == Acl.private():
-                # do something
-
-        :param bucket_name: Bucket to check canned ACL of.
-        :return: A string representing canned ACL on the bucket.
-        """
-        is_valid_bucket_name(bucket_name)
-
-        method = 'GET'
-        headers = {}
-
-        response = self._url_open(method, bucket_name=bucket_name,
-                                  query={"acl": None},
-                                  headers=headers)
-        return parse_acl(response.data)
-
-    def set_bucket_acl(self, bucket_name, acl):
-        """
-        Set a bucket's canned acl
-
-        Valid ACLs include:
-            Acl.public_read_write()
-            Acl.public_read()
-            Acl.authenticated_read()
-            Acl.private()
-
-        Example:
-            canned_acl = minio.get_bucket_acl('foo')
-            if canned_acl == Acl.private():
-                # do something
-
-        :param bucket_name: Bucket to set ACL for.
-        :param acl: ACL to set.
-        """
-        is_valid_bucket_name(bucket_name)
-        is_valid_acl(acl)
-
-        method = 'PUT'
-        headers = {
-            'x-amz-acl': acl,
-        }
-
-        self._url_open(method, bucket_name=bucket_name,
-                       query={"acl": None},
-                       headers=headers)
 
     def _get_upload_id(self, bucket_name, object_name, content_type):
         """

@@ -49,17 +49,13 @@ $ python setup.py install
 
 ### Bucket Operations.
 
-[make_bucket(bucket, location, acl)](examples/make_bucket.py)
+[make_bucket(bucket, location)](examples/make_bucket.py)
 
 [list_buckets()](examples/list_buckets.py)
 
 [bucket_exists(bucket)](examples/bucket_exists.py)
 
 [remove_bucket(bucket)](examples/remove_bucket.py)
-
-[get_bucket_acl(bucket)](examples/get_bucket_acl.py)
-
-[set_bucket_acl(bucket_name, acl=Acl.private())](examples/set_bucket_acl.py)
 
 [list_incomplete_uploads(bucket_name, prefix=None, recursive=False)](examples/list_incomplete_uploads.py)
 

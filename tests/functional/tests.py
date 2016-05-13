@@ -23,7 +23,7 @@ import certifi
 
 from datetime import datetime, timedelta
 
-from minio import Minio, Acl, PostPolicy
+from minio import Minio, PostPolicy
 from minio.error import ResponseError
 
 from faker import Factory
@@ -69,42 +69,6 @@ def main():
     # Check if bucket was created properly.
     print(client.bucket_exists(bucket_name))
     print(client.bucket_exists(bucket_name+'.unique'))
-
-    # Set bucket name to private.
-    print(client.set_bucket_acl(bucket_name, Acl.private()))
-    print(client.set_bucket_acl(bucket_name+'.unique', Acl.private()))
-
-    # Verify current bucket acl.
-    acl = client.get_bucket_acl(bucket_name)
-    if acl != 'private':
-        raise ValueError('Invalid acl type found: ' + acl)
-    acl = client.get_bucket_acl(bucket_name+'.unique')
-    if acl != 'private':
-        raise ValueError('Invalid acl type found: ' + acl)
-
-    # Set bucket name to public-read.
-    print(client.set_bucket_acl(bucket_name, Acl.public_read()))
-    print(client.set_bucket_acl(bucket_name+'.unique', Acl.public_read()))
-
-    # Verify current bucket acl.
-    acl = client.get_bucket_acl(bucket_name)
-    if acl != 'public-read':
-        raise ValueError('Invalid acl type found: ' + acl)
-    acl = client.get_bucket_acl(bucket_name+'.unique')
-    if acl != 'public-read':
-        raise ValueError('Invalid acl type found: ' + acl)
-
-    # Set bucket name to public-read-write.
-    print(client.set_bucket_acl(bucket_name, Acl.public_read_write()))
-    print(client.set_bucket_acl(bucket_name+'.unique', Acl.public_read_write()))
-
-    # Verify current bucket acl.
-    acl = client.get_bucket_acl(bucket_name)
-    if acl != 'public-read-write':
-        raise ValueError('Invalid acl type found: ' + acl)
-    acl = client.get_bucket_acl(bucket_name+'.unique')
-    if acl != 'public-read-write':
-        raise ValueError('Invalid acl type found: ' + acl)
 
     # List all buckets.
     buckets = client.list_buckets()
