@@ -35,7 +35,6 @@ import pytz
 
 # minio specific.
 from .error import InvalidXMLError
-from .bucket_acl import Acl
 from .compat import urldecode
 from .definitions import (Object, Bucket, IncompleteUpload,
                           UploadPart, MultipartUploadResult)
@@ -109,53 +108,6 @@ def parse_list_buckets(data):
             return bucket_list
     except _ETREE_EXCEPTIONS as error:
         raise InvalidXMLError('Invalid XML provided for "ListBucketsResult" '
-                              'some fields are missing. Message: {0}'.format(error.message))
-
-def parse_acl(data):
-    """
-    Parser for access control list response.
-
-    :param data: Response data of access control list for a bucket.
-    :return: :class:`Acl <Acl>`
-    """
-    try:
-        root = cElementTree.fromstring(data)
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('"AccessControlList" XML is not parsable. '
-                              'Message: {0}'.format(error.message))
-
-    public_read = False
-    public_write = False
-
-    try:
-        for acls in root.findall('s3:AccessControlList', _S3_NS):
-            for grant in acls:
-                user_uri = None
-                permission = None
-                # In case of user_uri, we shouldn't use get_element_text() wrapper.
-                user_uri_prop = grant.find('s3:Grantee/s3:URI', _S3_NS)
-                if user_uri_prop is not None:
-                    user_uri = user_uri_prop.text
-                permission = get_element_text(grant, 's3:Permission')
-                # Verify if URI has authenticated users.
-                if user_uri == \
-                   'http://acs.amazonaws.com/groups/global/AuthenticatedUsers' \
-                   and permission == 'READ':
-                    return Acl.authenticated_read()
-                # Verify if URI has all users.
-                if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' \
-                   and permission == 'WRITE':
-                    public_write = True
-                if user_uri == 'http://acs.amazonaws.com/groups/global/AllUsers' \
-                   and permission == 'READ':
-                    public_read = True
-        if public_read is True and public_write is True:
-            return Acl.public_read_write()
-        if public_read is True and public_write is False:
-            return Acl.public_read()
-        return Acl.private()
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('Invalid XML provided for "AccessControlPolicy" '
                               'some fields are missing. Message: {0}'.format(error.message))
 
 def parse_list_objects(data, bucket_name):

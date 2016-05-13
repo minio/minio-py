@@ -18,8 +18,6 @@ s3client can be used to perform operations on S3 storage. APIs are described bel
 * [`list_buckets`](#list_buckets)
 * [`bucket_exists`](#bucket_exist)
 * [`remove_bucket`](#remove_bucket)
-* [`get_bucket_acl`](#get_bucket_acl)
-* [`set_bucket_acl`](#set_bucket_acl)
 * [`list_objects`](#list_objects)
 * [`list_incomplete_uploads`](#list_incomplete_uploads)
 
@@ -44,20 +42,17 @@ s3client can be used to perform operations on S3 storage. APIs are described bel
 ### Bucket operations
 ---------------------------------------
 <a name="make_bucket">
-#### make_bucket(bucket_name, location, acl)
+#### make_bucket(bucket_name, location='us-east-1')
 Create a new bucket.
 
 __Arguments__
 * `bucket_name` _string_ - Name of the bucket.
 * `location` _string_ - region valid values are _us-west-1_, _us-west-2_,  _eu-west-1_, _eu-central-1_, _ap-southeast-1_, _ap-northeast-1_, _ap-southeast-2_, _sa-east-1_(defaults to _us-east-1_, optional)
-* `acl`   _string_ - acl  _Acl.public_read_write()_, _Acl.public_read()_, _Acl.authenticated_read()_, _Acl.private()_ (defaults to _Acl.private()_, optional)
 
 __Example__
 ```py
-from minio import Acl
-
 try:
-    s3client.make_bucket("mybucket", location="us-west-1", acl=Acl.public_read_write())
+    s3client.make_bucket("mybucket", location="us-west-1")
 except ResponseError as err:
     print(err)
 ```
@@ -103,40 +98,6 @@ __Example__
 ```py
 try:
     s3client.remove_bucket("mybucket")
-except ResponseError as err:
-    print(err)
-```
----------------------------------------
-<a name="get_bucket_acl">
-#### get_bucket_acl(bucket_name)
-Get access permissions.
-
-__Arguments__
-* `bucket_name` _string_ : name of the bucket
-
-__Example__
-```py
-try:
-    print(client.get_bucket_acl('my-bucketname'))
-except ResponseError as err:
-    print(err)
-```
----------------------------------------
-<a name="set_bucket_acl">
-#### set_bucket_acl(bucketname, acl)
-Set access permissions.
-
-__Arguments__
-* `bucket_name` _string_: name of the bucket
-* `acl` _string_: acl can be _private_, _public-read_, _public-read-write_, _authenticated-read_
-
-__Example__
-```py
-from minio import Acl
-
-# Set bucket name to private.
-try:
-    client.set_bucket_acl('my-bucketname', Acl.private())
 except ResponseError as err:
     print(err)
 ```
