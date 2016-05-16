@@ -42,6 +42,7 @@ if is_py2:
     str = unicode
     basestring = basestring
     numeric_types = (int, long, float)
+    range = xrange
 
 elif is_py3:
     from urllib.request import pathname2url as urlencode
@@ -53,3 +54,4 @@ elif is_py3:
     bytes = bytes
     basestring = (str, bytes)
     numeric_types = (int, float)
+    range = range
