@@ -43,7 +43,7 @@ import pytz
 
 # Internal imports
 from . import __title__, __version__
-from .compat import urlsplit
+from .compat import urlsplit, range
 from .error import ResponseError, InvalidArgumentError, InvalidSizeError
 from .definitions import Object, UploadPart
 from .parsers import (parse_list_buckets,
@@ -391,7 +391,7 @@ class Minio(object):
             uploaded_parts[part.part_number] = part
 
         # Always start with first part number.
-        for part_number in xrange(1, total_parts_count):
+        for part_number in range(1, total_parts_count):
             # Save the current part size that needs to be uploaded.
             current_part_size = part_size
             if part_number == total_parts_count:
@@ -1258,7 +1258,7 @@ class Minio(object):
         # part_number reaches total_parts_count calculated for the
         # given size. Additionally part_manager() also provides
         # md5digest and sha256digest for the partitioned data.
-        for part_number in xrange(1, total_parts_count):
+        for part_number in range(1, total_parts_count):
             current_part_size = part_size
             if part_number == total_parts_count:
                 current_part_size = last_part_size
