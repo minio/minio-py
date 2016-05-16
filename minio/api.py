@@ -129,7 +129,7 @@ class Minio(object):
               Minio (OS; ARCH) LIB/VER APP/VER
 
         Example:
-            client.set_app_info('my_app', '1.0.1')
+            client.set_app_info('my_app', '1.0.2')
 
         :param app_name: application name.
         :param app_version: application version.
