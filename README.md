@@ -99,7 +99,8 @@ The full API Reference is available here.
 * [`put_object`](https://docs.minio.io/docs/python-client-api-reference#put_object)
 * [`stat_object`](https://docs.minio.io/docs/python-client-api-reference#stat_object)
 * [`remove_object`](https://docs.minio.io/docs/python-client-api-reference#remove_object)
-* [`removeIncompleteUpload`](https://docs.minio.io/docs/python-client-api-reference#remove_incomplete_upload)
+* [`remove_incomplete_upload`](https://docs.minio.io/docs/python-client-api-reference#remove_incomplete_upload)
+* [`get_partial_object`](https://docs.minio.io/docs/python-client-api-reference#get_partial_object)
 
 ### API Reference : Presigned Operations
 * [`presigned_get_object`](https://docs.minio.io/docs/python-client-api-reference#presigned_get_object)
@@ -115,6 +116,7 @@ The full API Reference is available here.
 * [make_bucket.py](./examples/make_bucket.py)
 * [remove_bucket.py](./examples/remove_bucket.py)
 * [list_incomplete_uploads.py](./examples/list_incomplete_uploads.py)
+* [remove_incomplete_upload.py](./examples/remove_incomplete_upload.py)
 
 #### Full Examples : File Object Operations
 * [fput_object.py](./examples/fput_object.py)
