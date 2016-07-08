@@ -1,205 +1,339 @@
-## API Documentation
+# Python Client API Reference
 
-### Minio client object creation
-Minio client object is created using minio-py:
+Initialize Minio Client object.
+
+``1. Minio``
 ```py
 from minio import Minio
 from minio.error import ResponseError
 
-s3client = Minio('s3.amazonaws.com',
-                 access_key='YOUR-ACCESSKEYID',
-                 secret_key='YOUR-SECRETACCESSKEY')
+minioClient = Minio('play.minio.io:9000',
+                  access_key='Q3AM3UQ867SPQQA43P2F',
+                  secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
+                  secure=True)
 ```
 
-s3client can be used to perform operations on S3 storage. APIs are described below.
+``2.AWS S3``
+```py
+from minio import Minio
+from minio.error import ResponseError
 
-### Bucket operations
-* [`make_bucket`](#make_bucket)
-* [`list_buckets`](#list_buckets)
-* [`bucket_exists`](#bucket_exist)
-* [`remove_bucket`](#remove_bucket)
-* [`list_objects`](#list_objects)
-* [`list_incomplete_uploads`](#list_incomplete_uploads)
+s3Client = Minio('s3.amazonaws.com',
+                 access_key='YOUR-ACCESSKEYID',
+                 secret_key='YOUR-SECRETACCESSKEY',
+                 secure=True)
+```
 
-### Object operations
 
-* [`get_object`](#get_object)
-* [`put_object`](#put_object)
-* [`stat_object`](#stat_object)
-* [`remove_object`](#remove_object)
-* [`remove_incomplete_upload`](#remove_incomplete_upload)
 
-### File operations.
-* [`fput_object`](#fput_object)
-* [`fget_object`](#fget_object)
+|Bucket operations | Object operations| Presigned operations |
+|---|---|---|
+| [`make_bucket`](#make_bucket)  | [`get_object`](#get_object)  | [`presigned_get_object`](#presigned_get_object)  |
+|[`list_buckets`](#list_buckets)   | [`put_object`](#put_object)  | [`presigned_put_object`](#presigned_put_object)  |
+| [`bucket_exists`](#bucket_exists)  |[`stat_object`](#stat_object)   |[`presigned_post_policy`](#presigned_post_policy)   |
+|[`remove_bucket`](#remove_bucket)   | [`remove_object`](#remove_object)  |   |
+| [`list_objects`](#list_objects)  | [`remove_incomplete_upload`](#remove_incomplete_upload)  |   | 
+|[`list_incomplete_uploads`](#list_incomplete_uploads)   |  [`fput_object`](#fput_object) |   |
+|  |[`fget_object`](#fget_object)  |  | 
+|  |[`get_partial_object`](#get_partial_object)  |  | 
 
-### Presigned operations
+## 1. Constructor
+---------------------------------------
+<a name="Minio">
+#### Minio(endpoint, access_key=None, secret_key=None, secure=True)
 
-* [`presigned_get_object`](#presigned_get_object)
-* [`presigned_put_object`](#presigned_put_object)
-* [`presigned_post_policy`](#presigned_post_policy)
+|   |
+|---|
+| `Minio(endpoint, access_key=None, secret_key=None, secure=True)`  |
+| Initializes a new client object.  |
 
-### Bucket operations
+__Parameters__
+
+
+| Param  |  Type | Description  |
+|---|---|---|
+| `endpoint`  | _string_  | S3 object storage endpoint.  |
+| `access_key`  | _string_  | Access key for the object storage endpoint. (Optional if you need anonymous access).  |
+|  `secret_key` | _string_  |  Secret key for the object storage endpoint. (Optional if you need anonymous access). |
+| `secure`  |_bool_   | Set this value to `True` to enable secure (HTTPS) access. (Optional defaults to `True`).  |
+
+__Example__
+
+``1. Minio``
+```py
+from minio import Minio
+from minio.error import ResponseError
+
+minioClient = Minio('play.minio.io:9000',
+                    access_key='Q3AM3UQ867SPQQA43P2F',
+                    secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
+```
+
+``2.AWS S3``
+```py
+from minio import Minio
+from minio.error import ResponseError
+
+s3Client = Minio('s3.amazonaws.com',
+                 access_key='ACCESS_KEY',
+                 secret_key='SECRET_KEY')
+```
+
+## 2. Bucket operations
 ---------------------------------------
 <a name="make_bucket">
 #### make_bucket(bucket_name, location='us-east-1')
-Create a new bucket.
+Creates a new bucket.
 
-__Arguments__
-* `bucket_name` _string_ - Name of the bucket.
-* `location` _string_ - region valid values are _us-west-1_, _us-west-2_,  _eu-west-1_, _eu-central-1_, _ap-southeast-1_, _ap-northeast-1_, _ap-southeast-2_, _sa-east-1_(defaults to _us-east-1_, optional)
+__Parameters__
+
+<table>
+    <thead>
+        <tr>
+            <th>Param</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+           bucket_name
+            </td>
+            <td> string</td>
+            <td> Name of the bucket.</td>
+            </tr>
+            <tr>
+            <td>location</td>
+            <td>string</td>
+            <td>Default value is us-east-1<br/>
+Location valid values are us-west-1, us-west-2, eu-west-1, eu-central-1, ap-southeast-1, ap-northeast-1, ap-southeast-2, sa-east-1(defaults to us-east-1, optional).</td>
+            </tr>
+               </tbody>
+</table>
+
 
 __Example__
 ```py
 try:
-    s3client.make_bucket("mybucket", location="us-west-1")
+    minioClient.make_bucket("mybucket", location="us-east-1")
 except ResponseError as err:
     print(err)
 ```
+
 ---------------------------------------
 <a name="list_buckets">
 #### list_buckets()
-List all buckets.
+Lists all buckets.
 
-`bucketList` lists bucket with the format:
-* `bucket.name` _string_: bucket name
-* `bucket.creation_date` time.Time : date when bucket was created
+__Parameters__
+
+|Return   |Type   |Description   |
+|---|---|---|
+|``bucketList``   |*function*   |List of all buckets. |
+|``bucket_name``   |*string*   |Bucket name. |
+|``bucket.creation_date`` |*time*   |Time: date when bucket was created. |
 
 __Example__
 ```py
-buckets = s3client.list_buckets()
+buckets = minioClient.list_buckets()
 for bucket in buckets:
     print(bucket.name, bucket.creation_date)
 ```
 ---------------------------------------
 <a name="bucket_exists">
 #### bucket_exists(bucket_name)
-Check if bucket exists.
+Checks if a bucket exists.
 
-__Arguments__
-* `bucket_name` _string_ : name of the bucket
+__Parameters__
+
+|Param   |Type   |Description   |
+|---|---|---|
+|``bucket_name``   |*string*   |Name of the bucket. |
 
 __Example__
+
 ```py
 try:
-    print(s3client.bucket_exists("mybucket"))
+    print(minioClient.bucket_exists("mybucket"))
 except ResponseError as err:
     print(err)
 ```
 ---------------------------------------
 <a name="remove_bucket">
 #### remove_bucket(bucket_name)
-Remove a bucket.
+Removes a bucket.
 
-__Arguments__
-* `bucket_name` _string_ : name of the bucket
+__Parameters__
+
+|Param   |Type   |Description   |
+|---|---|---|
+|``bucket_name``   |*string*   |Name of the bucket. |
 
 __Example__
 ```py
 try:
-    s3client.remove_bucket("mybucket")
+    minioClient.remove_bucket("mybucket")
 except ResponseError as err:
     print(err)
 ```
-
 ---------------------------------------
 <a name="list_objects">
 #### list_objects(bucket_name, prefix, recursive=False)
-List objects in a bucket.
+Lists objects in a bucket.
 
-__Arguments__
-* `bucket_name` _string_: name of the bucket
-* `objectPrefix` _string_: the prefix of the objects that should be listed
-* `recursive` _bool_: `true` indicates recursive style listing and `false` indicates directory style listing delimited by '/'
+__Parameters__
+
+| Param  |Type  | Description  |
+|---|---|---|
+|``bucket_name``   |*string*   | Name of the bucket.  |
+|``objectPrefix``   | *string*   |The prefix of the objects that should be listed. |
+|``recursive``   | *bool*   |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional default is False.   |
 
 __Return Value__
- ` object` _Object_: Iterator for all the objects in the bucket, the object is of the format:
-  * `object.object_name` _string_: name of the object
-  * `object.size` _int_: size of the object
-  * `object.etag` _string_: etag of the object
-  * `object.last_modified` _datetime.datetime_: modified time stamp
+
+<table>
+    <thead>
+        <tr>
+            <th>Param</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+           object
+            </td>
+            <td> Object</td>
+            <td> Iterator for all the objects in the bucket, the object is of the format:
+            <ul>
+            <li>object.object_name string: name of the object. </li>
+            <li>object.size int: size of the object.</li>
+            <li>object.etag string: etag of the object. </li>
+            <li>object.last_modified datetime.datetime: modified time stamp. </li>
+            </ul>
+            </td>
+            </tr>
+               </tbody>
+</table>
 
 __Example__
+
 ```py
 # List all object paths in bucket that begin with my-prefixname.
-objects = client.list_objects('my-bucketname', prefix='my-prefixname',
+objects = minioClient.list_objects('mybucket', prefix='my-prefixname',
                               recursive=True)
 for obj in objects:
     print(obj.bucket_name, obj.object_name.encode('utf-8'), obj.last_modified,
           obj.etag, obj.size, obj.content_type)
-
 ```
-
----------------------------------------
+--------------------------------------
 <a name="list_incomplete_uploads">
-#### list_incomplete_uploads(bucket_name, prefix, recursive)
-List partially uploaded objects in a bucket.
+#### list_incomplete_uploads(bucket_name, prefix, recursive=False)
+Lists partially uploaded objects in a bucket.
 
-__Arguments__
-* `bucketname` _string_: name of the bucket
-* `prefix` _string_: prefix of the object names that are partially uploaded
-* `recursive` bool: directory style listing when false, recursive listing when true
+__Parameters__
+
+|Param   |Type   |Description   |
+|---|---|---|
+|``bucketname``   | *string*  |Name of the bucket.|
+|``prefix``   |*string*    |The prefix of the incomplete objects uploaded should be listed. |
+|``recursive`` |*bool*   |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional default is ``False``.   |
 
 __Return Value__
-* `multipart_obj` _IncompleteUpload_ : Iterator of multipart objects of the format:
-  * `multipart_obj.object_name` _string_: name of the incomplete object
-  * `multipart_obj.upload_id` _string_: upload ID of the incomplete object
-  * `multipart_obj.size` _int_: size of the incompletely uploaded object
+
+<table>
+    <thead>
+        <tr>
+            <th>Param</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+           multipart_obj
+            </td>
+            <td> Object</td>
+            <td> Iterator of multipart objects of the format:
+            <ul>
+            <li>multipart_obj.object_name string: name of the incomplete object.</li>
+            <li>multipart_obj.upload_id string: upload ID of the incomplete object.</li>
+            <li>multipart_obj.size int: size of the incompletely uploaded object. </li>
+            </ul>
+            </td>
+            </tr>
+               </tbody>
+</table>
 
 __Example__
+
 ```py
 # List all object paths in bucket that begin with my-prefixname.
-uploads = client.list_incomplete_uploads('my-bucketname',
+uploads = minioClient.list_incomplete_uploads('mybucket',
                                          prefix='my-prefixname',
                                          recursive=True)
 for obj in uploads:
     print(obj.bucket_name, obj.object_name, obj.upload_id, obj.size)
 ```
-
----------------------------------------
-### Object operations
+--------------------------------------
+## 3. Object operations
 <a name="get_object">
 #### get_object(bucket_name, object_name)
-Download an object.
+Downloads an object.
 
-__Arguments__
-* `bucket_name` _string_: name of the bucket
-* `object_name` _string_: name of the object
+__Parameters__
 
+|Param   |Type   |Description   |
+|---|---|---|
+|``bucket_name``   |*string*   |Name of the bucket.   |
+|``object_name``   |*string*   |Name of the object.   |
 __Return Value__
-* `object` _io.IOBase_ : _io.IOBase_ represents object reader.
+
+|Param   |Type   |Description   |
+|---|---|---|
+|``object``   | *io.IOBase*   |Represents object reader.   |
 
 __Example__
+
 ```py
-# Get a full object
+# Get a full object.
 try:
-    data = client.get_object('my-bucketname', 'my-objectname')
+    data = minioClient.get_object('mybucket', 'myobject')
     with open('my-testfile', 'wb') as file_data:
         for d in data:
             file_data.write(d)
 except ResponseError as err:
     print(err)
 ```
-
----------------------------------------
+--------------------------------------
 <a name="get_partial_object">
-#### get_partial_object(bucket_name, object_name, offset, length)
-Download an object.
+#### get_partial_object(bucket_name, object_name, offset=0, length=0)
+Downloads the specified range bytes of an object.
 
-__Arguments__
-* `bucket_name` _string_: name of the bucket
-* `object_name` _string_: name of the object
-* `offset` _int_: offset of the object from where the stream will start
-* `length` _int_ : length of the object that will be read in the stream (optional, if not specified we read the rest of the file from the offset)
+__Parameters__
+
+|Param   |Type   |Description   |
+|---|---|---|
+|``bucket_name``   |*string*   |Name of the bucket.   |
+|``object_name``   |*string*    |Name of the object.   |
+|``offset``   |*int*   |``offset`` of the object from where the stream will start.   |
+|``length``   |*int*    |``length`` of the object that will be read in the stream (optional, if not specified we read the rest of the file from the offset).   |
 
 __Return Value__
-* `object` _io.IOBase_ : _io.IOBase_ represents object reader.
+
+|Param   |Type   |Description   |
+|---|---|---|
+|``object``   | *io.IOBase*   |Represents object reader.   |
 
 __Example__
+
 ```py
 # Offset the download by 2 bytes and retrieve a total of 4 bytes.
 try:
-    data = client.get_partial_object('my-bucketname', 'my-objectname', 2, 4)
+    data = minioClient.get_partial_object('mybucket', 'myobject', 2, 4)
     with open('my-testfile', 'wb') as file_data:
         for d in data:
             file_data.write(d)
@@ -207,181 +341,234 @@ except ResponseError as err:
     print(err)
 ```
 ---------------------------------------
----------------------------------------
 <a name="fget_object">
-#### fget_object(bucket_name, object_name, filePath)
-Callback is called with `error` in case of error or `null` in case of success
+#### fget_object(bucket_name, object_name, file_path)
+Downloads and saves the object as a file in the local filesystem.
 
-__Arguments__
-* `bucket_name` _string_: name of the bucket
-* `object_name` _string_: name of the object
-* `filePath` _string_: path to which the object data will be written to
+__Parameters__
+
+
+|Param   |Type   |Description   |
+|---|---|---|
+|``bucket_name``   |*string*   |Name of the bucket.   |
+|``object_name``   |*string*    |Name of the object.   |
+|``file_path``   |*string* | Path on the local filesystem to which the object data will be written. |
 
 __Example__
+
 ```py
-# Get a full object
+# Get a full object.
 try:
-    client.fget_object('my-bucketname', 'my-objectname', 'filepath')
+    minioClient.fget_object('mybucket', 'myobject', '/tmp/myobject')
 except ResponseError as err:
     print(err)
 ```
 ---------------------------------------
 <a name="put_object">
 #### put_object(bucket_name, object_name, data, length, content_type)
-Upload an object.
+Uploads an object.
 
-Uploading a stream
-__Arguments__
-* `bucket_name` _string_: name of the bucket
-* `object_name` _string_: name of the object
-* `data` _io.IOBase_: Any python object implementing io.IOBase
-* `length` _int_ : total length of object
-* `content_type` _string_: content type of the object. (optional, defaults to _'application/octet-stream'_)
+__Parameters__
+
+|Param   |Type   |Description   |
+|---|---|---|
+|``bucket_name``   |*string*   |Name of the bucket.   |
+|``object_name``   |*string*    |Name of the object.   |
+|``data``   |*io.IOBase*   |Any python object implementing io.IOBase. |
+|``length``   |*int*   |Total length of object.   |
+|``content_type``   |*string* | Content type of the object. (optional, defaults to 'application/octet-stream').   |
 
 __Example__
+
+The maximum size of a single object is limited to 5TB. put_object transparently uploads objects larger than 5MiB in multiple parts. This allows failed uploads to resume safely by only uploading the missing parts. Uploaded data is carefully verified using MD5SUM signatures.
+
 ```py
+import os
 # Put a file with default content-type.
 try:
     file_stat = os.stat('my-testfile')
     file_data = open('my-testfile', 'rb')
-    client.put_object('my-bucketname', 'my-objectname', file_data, file_stat.st_size)
+    minioClient.put_object('mybucket', 'myobject', file_data, file_stat.st_size)
 except ResponseError as err:
     print(err)
 
-# Put a file with 'application/csv'
+# Put a file with 'application/csv'.
 try:
     file_stat = os.stat('my-testfile.csv')
     file_data = open('my-testfile.csv', 'rb')
-    client.put_object('my-bucketname', 'my-objectname', file_data,
+    minioClient.put_object('mybucket', 'myobject.csv', file_data,
                       file_stat.st_size, content_type='application/csv')
 except ResponseError as err:
     print(err)
 ```
 
-
----------------------------------------
+-------------------------------------
 <a name="fput_object">
 #### fput_object(bucket_name, object_name, file_path, content_type)
-Uploads the object using contents from a file
+Uploads contents from a file to objectName. 
 
-__Arguments__
-* `bucket_name` _string_: name of the bucket
-* `object_name` _string_: name of the object
-* `file_path` _string_: file path of the file to be uploaded
-* `content_type` _string_: content type of the object (optional, defaults to _'application/octet-stream'_)
+__Parameters__
+
+|Param   |Type   |Description   |
+|---|---|---|
+|``bucket_name``   |*string*   |Name of the bucket.   |
+|``object_name``   |*string*    |Name of the object.   |
+|``file_path``   |*string*   |Path on the local filesystem to which the object data will be written. |
+|``content_type``   |*string* | Content type of the object. (optional, defaults to 'application/octet-stream').   |
 
 __Example__
+
+The maximum size of a single object is limited to 5TB. fput_object transparently uploads objects larger than 5MiB in multiple parts. This allows failed uploads to resume safely by only uploading the missing parts. Uploaded data is carefully verified using MD5SUM signatures.
+
 ```py
-# Put an object 'my-objectname' with contents from 'my-filepath'
+# Put an object 'myobject' with contents from '/tmp/otherobject'.
 try:
-    client.fput_object('my-bucketname', 'my-objectname', 'my-filepath')
+    minioClient.fput_object('mybucket', 'myobject', '/tmp/otherobject')
 except ResponseError as err:
     print(err)
 
-# Put on object 'my-objectname-csv' with contents from
-# 'my-filepath.csv' as 'application/csv'.
+# Put on object 'myobject.csv' with contents from
+# '/tmp/otherobject.csv' as 'application/csv'.
 try:
-    client.fput_object('my-bucketname', 'my-objectname-csv',
-                       'my-filepath.csv', content_type='application/csv')
+    minioClient.fput_object('mybucket', 'myobject.csv',
+                       '/tmp/otherobject.csv', content_type='application/csv')
 except ResponseError as err:
     print(err)
 
 ```
----------------------------------------
+------------------------------------
 <a name="stat_object">
 #### stat_object(bucket_name, object_name)
-Get metadata of an object.
+Gets metadata of an object.
 
-__Arguments__
-* `bucket_name` _string_: name of the bucket
-* `object_name` _string_: name of the object
+__Parameters__
+
+|Param   |Type   |Description   |
+|---|---|---|
+|``bucket_name``   |*string*   |Name of the bucket.   |
+|``object_name``   |*string*    |Name of the object.   |
 
 __Return Value__
-   `obj`   _Object_ : object stat info for following format:
-  * `obj.size` _int_: size of the object
-  * `obj.etag` _string_: etag of the object
-  * `obj.content_type` _string_: Content-Type of the object
-  * `obj.last_modified` _time.time_: modified time stamp
+
+<table>
+    <thead>
+        <tr>
+            <th>Param</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+           obj
+            </td>
+            <td> Object</td>
+            <td> object stat info for following format:
+            <ul>
+            <li>obj.size int: size of the object.</li>
+            <li>obj.etag string: etag of the object.</li>
+            <li>obj.content_type string: Content-Type of the object.</li>
+            <li>obj.last_modified time.time: modified time stamp.</li>
+            </ul>
+            </td>
+            </tr>
+               </tbody>
+</table>
 
 __Example__
 ```py
 # Fetch stats on your object.
 try:
-    print(client.stat_object('my-bucketname', 'my-objectname'))
+    print(minioClient.stat_object('mybucket', 'myobject'))
 except ResponseError as err:
     print(err)
 ```
----------------------------------------
+------------------------------------
 <a name="remove_object">
 #### remove_object(bucket_name, object_name)
-Remove an object.
+Removes an object.
 
-__Arguments__
-* `bucket_name` _string_: name of the bucket
-* `object_name` _string_: name of the object
+__Parameters__
+
+|Param   |Type   |Description   |
+|---|---|---|
+|``bucket_name``   |*string*   |Name of the bucket.   |
+|``object_name``   |*string*    |Name of the object.   |
 
 __Example__
+
 ```py
 # Remove an object.
 try:
-    client.remove_object('my-bucketname', 'my-objectname')
+    minioClient.remove_object('mybucket', 'myobject')
 except ResponseError as err:
     print(err)
-
 ```
----------------------------------------
+
+-----------------------------------
 <a name="remove_incomplete_upload">
 #### remove_incomplete_upload(bucket_name, object_name)
-Remove an partially uploaded object.
+Removes a partially uploaded object.
 
-__Arguments__
-* `bucket_name` _string_: name of the bucket
-* `object_name` _string_: name of the object
+__Parameters__
+
+|Param   |Type   |Description   |
+|---|---|---|
+|``bucket_name``   |*string*   |Name of the bucket.   |
+|``object_name``   |*string*    |Name of the object.   |
 
 __Example__
+
 ```py
 # Remove an partially uploaded object.
 try:
-    client.remove_incomplete_upload('my-bucketname', 'my-objectname')
+    minioClient.remove_incomplete_upload('mybucket', 'myobject')
 except ResponseError as err:
     print(err)
 ```
-
-### Presigned operations
+## 4. Presigned operations
 ---------------------------------------
 <a name="presigned_get_object">
-#### presigned_get_object(bucket_name, object_name, expiry)
-Generate a presigned URL for GET.
+#### presigned_get_object(bucket_name, object_name, expiry=timedelta(days=7))
+Generates a presigned URL for HTTP GET operations. Browsers/Mobile clients may point to this URL to directly download objects even if the bucket is private. This presigned URL can have an associated expiration time in seconds after which it is no longer operational. The default expiry is set to 7 days.
 
-__Arguments__
-* `bucket_name` _string_: name of the bucket.
-* `object_name` _string_: name of the object.
-* `expires` _datetime.datetime_: expiry in seconds.
+__Parameters__
+
+|Param   |Type   |Description   |
+|---|---|---|
+|``bucket_name``   |*string*   |Name of the bucket.   |
+|``object_name``   |*string*    |Name of the object.   |
+|``expiry``   | *datetime.datetime*    |Expiry in seconds. Default expiry is set to 7 days.    |
 
 __Example__
+
 ```py
 from datetime import timedelta
 
 # presigned get object URL for object name, expires in 2 days.
 try:
-    print(client.presigned_get_object('my-bucketname', 'my-objectname', expires=timedelta(days=2)))
+    print(minioClient.presigned_get_object('mybucket', 'myobject', expires=timedelta(days=2)))
 # Response error is still possible since internally presigned does get bucket location.
 except ResponseError as err:
     print(err)
 ```
 
----------------------------------------
+------------------------------------
 <a name="presigned_put_object">
-#### presigned_put_object(bucket_name, object_name, expires)
-Generate a presigned URL for PUT.
-<blockquote>
-NOTE: you can upload to S3 only with specified object name.
-</blockquote>
+#### presigned_put_object(bucket_name, object_name, expires=timedelta(days=7))
+Generates a presigned URL for HTTP PUT operations. Browsers/Mobile clients may point to this URL to upload objects directly to a bucket even if it is private. This presigned URL can have an associated expiration time in seconds after which it is no longer operational. The default expiry is set to 7 days.
 
-__Arguments__
-* `bucket_name` _string_: name of the bucket
-* `object_name` _string_: name of the object
-* `expires` _datetime.datetime_: expiry in seconds
+NOTE: you can upload to S3 only with specified object name.
+
+
+__Parameters__
+
+|Param   |Type   |Description   |
+|---|---|---|
+|``bucket_name``   |*string*   |Name of the bucket.   |
+|``object_name``   |*string*    |Name of the object.   |
+|``expiry``   | *datetime.datetime*    |Expiry in seconds. Default expiry is set to 7 days.    |
 
 __Example__
 ```py
@@ -389,57 +576,73 @@ from datetime import timedelta
 
 # presigned Put object URL for an object name, expires in 3 days.
 try:
-    print(client.presigned_put_object('my-bucketname',
-                                      'my-objectname',
+    print(minioClient.presigned_put_object('mybucket',
+                                      'myobject',
                                       expires=timedelta(days=3)))
 # Response error is still possible since internally presigned does get
 # bucket location.
 except ResponseError as err:
     print(err)
 ```
-
----------------------------------------
+-----------------------------------
 <a name="presigned_post_policy">
-#### presigned_post_policy(policy)
-presigned_post_policy we can provide policies specifying conditions restricting
-what you want to allow in a POST request, such as bucket name where objects can be
-uploaded, key name prefixes that you want to allow for the object being created and more.
+#### presigned_post_policy
+Allows setting policy conditions to a presigned URL for POST operations. Policies such as bucket name to receive object uploads, key name prefixes, expiry policy may be set.
 
-We need to create our policy first:
+Create policy:
 ```py
+from datetime import datetime, timedelta
+
 from minio import PostPolicy
 post_policy = PostPolicy()
-```
-Apply upload policy restrictions:
-```py
+
+# Apply upload policy restrictions:
+
 # set bucket name location for uploads.
-post_policy.set_bucket_name('my-bucketname')
+post_policy.set_bucket_name('mybucket')
 # set key prefix for all incoming uploads.
-post_policy.set_key_startswith('my-objectname')
+post_policy.set_key_startswith('myobject')
 # set content length for incoming uploads.
 post_policy.set_content_length_range(10, 1024)
 
 # set expiry 10 days into future.
 expires_date = datetime.utcnow()+timedelta(days=10)
 post_policy.set_expires(expires_date)
-
 ```
 Get the POST form key/value object:
 ```py
 try:
-    url_str, signed_form_data = s3client.presigned_post_policy(post_policy)
+    signed_form_data = minioClient.presigned_post_policy(post_policy)
 except ResponseError as err:
     print(err)    
 ```
-
 POST your content from the command line using `curl`:
-```py
-curl_str = 'curl -X POST {0}'.format(url_str)
-curl_cmd = [curl_str]
-for field in signed_form_data:
-    curl_cmd.append('-F {0}={1}'.format(field, signed_form_data[field]))
 
-    # print curl command to upload files.
-    curl_cmd.append('-F file=@<FILE>')
-    print(' '.join(curl_cmd))
+```py
+curl_str = 'curl -X POST {0}'.format(signed_form_data[0])
+curl_cmd = [curl_str]
+for field in signed_form_data[1]:
+    curl_cmd.append('-F {0}={1}'.format(field, signed_form_data[1][field]))
+
+# print curl command to upload files.
+curl_cmd.append('-F file=@<FILE>')
+print(' '.join(curl_cmd))
 ```
+
+## 5. Explore Further
+ 
+- [Minio Golang Client SDK Quickstart Guide](/docs/golang-client-quickstart-guide) 
+- [Minio Java Client SDK Quickstart Guide](/docs/java-client-quickstart-guide) 
+- [Minio JavaScript Client SDK Quickstart Guide](/docs/javascript-client-quickstart-guide)
+
+
+
+
+
+
+
+
+
+
+
+
