@@ -13,7 +13,7 @@ minioClient = Minio('play.minio.io:9000',
                   secure=True)
 ```
 
-``2.AWS S3``
+``2. AWS S3``
 ```py
 from minio import Minio
 from minio.error import ResponseError
@@ -27,7 +27,7 @@ s3Client = Minio('s3.amazonaws.com',
 
 
 |Bucket operations | Object operations| Presigned operations |
-|---|---|---|
+|:--- |:--- |:--- |
 | [`make_bucket`](#make_bucket)  | [`get_object`](#get_object)  | [`presigned_get_object`](#presigned_get_object)  |
 |[`list_buckets`](#list_buckets)   | [`put_object`](#put_object)  | [`presigned_put_object`](#presigned_put_object)  |
 | [`bucket_exists`](#bucket_exists)  |[`stat_object`](#stat_object)   |[`presigned_post_policy`](#presigned_post_policy)   |
@@ -38,7 +38,7 @@ s3Client = Minio('s3.amazonaws.com',
 |  |[`get_partial_object`](#get_partial_object)  |  | 
 
 ## 1. Constructor
----------------------------------------
+
 <a name="Minio">
 #### Minio(endpoint, access_key=None, secret_key=None, secure=True)
 
@@ -50,8 +50,8 @@ s3Client = Minio('s3.amazonaws.com',
 __Parameters__
 
 
-| Param  |  Type | Description  |
-|---|---|---|
+| Param  | Type | Description  |
+|:--- |:--- |:--- |
 | `endpoint`  | _string_  | S3 object storage endpoint.  |
 | `access_key`  | _string_  | Access key for the object storage endpoint. (Optional if you need anonymous access).  |
 |  `secret_key` | _string_  |  Secret key for the object storage endpoint. (Optional if you need anonymous access). |
@@ -69,7 +69,7 @@ minioClient = Minio('play.minio.io:9000',
                     secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
 ```
 
-``2.AWS S3``
+``2. AWS S3``
 ```py
 from minio import Minio
 from minio.error import ResponseError
@@ -80,7 +80,7 @@ s3Client = Minio('s3.amazonaws.com',
 ```
 
 ## 2. Bucket operations
----------------------------------------
+
 <a name="make_bucket">
 #### make_bucket(bucket_name, location='us-east-1')
 Creates a new bucket.
@@ -121,7 +121,6 @@ except ResponseError as err:
     print(err)
 ```
 
----------------------------------------
 <a name="list_buckets">
 #### list_buckets()
 Lists all buckets.
@@ -129,7 +128,7 @@ Lists all buckets.
 __Parameters__
 
 |Return   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucketList``   |*function*   |List of all buckets. |
 |``bucket_name``   |*string*   |Bucket name. |
 |``bucket.creation_date`` |*time*   |Time: date when bucket was created. |
@@ -140,7 +139,7 @@ buckets = minioClient.list_buckets()
 for bucket in buckets:
     print(bucket.name, bucket.creation_date)
 ```
----------------------------------------
+
 <a name="bucket_exists">
 #### bucket_exists(bucket_name)
 Checks if a bucket exists.
@@ -148,7 +147,7 @@ Checks if a bucket exists.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket. |
 
 __Example__
@@ -159,7 +158,7 @@ try:
 except ResponseError as err:
     print(err)
 ```
----------------------------------------
+
 <a name="remove_bucket">
 #### remove_bucket(bucket_name)
 Removes a bucket.
@@ -167,7 +166,7 @@ Removes a bucket.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket. |
 
 __Example__
@@ -177,7 +176,7 @@ try:
 except ResponseError as err:
     print(err)
 ```
----------------------------------------
+
 <a name="list_objects">
 #### list_objects(bucket_name, prefix, recursive=False)
 Lists objects in a bucket.
@@ -185,10 +184,10 @@ Lists objects in a bucket.
 __Parameters__
 
 | Param  |Type  | Description  |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   | Name of the bucket.  |
 |``objectPrefix``   | *string*   |The prefix of the objects that should be listed. |
-|``recursive``   | *bool*   |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional default is False.   |
+|``recursive``   | *bool*   |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional default is ``False``.   |
 
 __Return Value__
 
@@ -228,7 +227,7 @@ for obj in objects:
     print(obj.bucket_name, obj.object_name.encode('utf-8'), obj.last_modified,
           obj.etag, obj.size, obj.content_type)
 ```
---------------------------------------
+
 <a name="list_incomplete_uploads">
 #### list_incomplete_uploads(bucket_name, prefix, recursive=False)
 Lists partially uploaded objects in a bucket.
@@ -236,7 +235,7 @@ Lists partially uploaded objects in a bucket.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucketname``   | *string*  |Name of the bucket.|
 |``prefix``   |*string*    |The prefix of the incomplete objects uploaded should be listed. |
 |``recursive`` |*bool*   |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional default is ``False``.   |
@@ -278,7 +277,7 @@ uploads = minioClient.list_incomplete_uploads('mybucket',
 for obj in uploads:
     print(obj.bucket_name, obj.object_name, obj.upload_id, obj.size)
 ```
---------------------------------------
+
 ## 3. Object operations
 <a name="get_object">
 #### get_object(bucket_name, object_name)
@@ -287,13 +286,13 @@ Downloads an object.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*   |Name of the object.   |
 __Return Value__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``object``   | *io.IOBase*   |Represents object reader.   |
 
 __Example__
@@ -308,7 +307,7 @@ try:
 except ResponseError as err:
     print(err)
 ```
---------------------------------------
+
 <a name="get_partial_object">
 #### get_partial_object(bucket_name, object_name, offset=0, length=0)
 Downloads the specified range bytes of an object.
@@ -316,7 +315,7 @@ Downloads the specified range bytes of an object.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 |``offset``   |*int*   |``offset`` of the object from where the stream will start.   |
@@ -325,7 +324,7 @@ __Parameters__
 __Return Value__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``object``   | *io.IOBase*   |Represents object reader.   |
 
 __Example__
@@ -340,7 +339,7 @@ try:
 except ResponseError as err:
     print(err)
 ```
----------------------------------------
+
 <a name="fget_object">
 #### fget_object(bucket_name, object_name, file_path)
 Downloads and saves the object as a file in the local filesystem.
@@ -349,7 +348,7 @@ __Parameters__
 
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 |``file_path``   |*string* | Path on the local filesystem to which the object data will be written. |
@@ -363,7 +362,7 @@ try:
 except ResponseError as err:
     print(err)
 ```
----------------------------------------
+
 <a name="put_object">
 #### put_object(bucket_name, object_name, data, length, content_type)
 Uploads an object.
@@ -371,12 +370,12 @@ Uploads an object.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 |``data``   |*io.IOBase*   |Any python object implementing io.IOBase. |
 |``length``   |*int*   |Total length of object.   |
-|``content_type``   |*string* | Content type of the object. (optional, defaults to 'application/octet-stream').   |
+|``content_type``   |*string* | Content type of the object. (optional, defaults to '``application/octet-stream``').   |
 
 __Example__
 
@@ -402,7 +401,6 @@ except ResponseError as err:
     print(err)
 ```
 
--------------------------------------
 <a name="fput_object">
 #### fput_object(bucket_name, object_name, file_path, content_type)
 Uploads contents from a file to objectName. 
@@ -410,11 +408,11 @@ Uploads contents from a file to objectName.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 |``file_path``   |*string*   |Path on the local filesystem to which the object data will be written. |
-|``content_type``   |*string* | Content type of the object. (optional, defaults to 'application/octet-stream').   |
+|``content_type``   |*string* | Content type of the object. (optional, defaults to '``application/octet-stream``').   |
 
 __Example__
 
@@ -436,7 +434,7 @@ except ResponseError as err:
     print(err)
 
 ```
-------------------------------------
+
 <a name="stat_object">
 #### stat_object(bucket_name, object_name)
 Gets metadata of an object.
@@ -444,7 +442,7 @@ Gets metadata of an object.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 
@@ -484,7 +482,7 @@ try:
 except ResponseError as err:
     print(err)
 ```
-------------------------------------
+
 <a name="remove_object">
 #### remove_object(bucket_name, object_name)
 Removes an object.
@@ -492,7 +490,7 @@ Removes an object.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 
@@ -506,7 +504,7 @@ except ResponseError as err:
     print(err)
 ```
 
------------------------------------
+
 <a name="remove_incomplete_upload">
 #### remove_incomplete_upload(bucket_name, object_name)
 Removes a partially uploaded object.
@@ -514,7 +512,7 @@ Removes a partially uploaded object.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 
@@ -528,7 +526,7 @@ except ResponseError as err:
     print(err)
 ```
 ## 4. Presigned operations
----------------------------------------
+
 <a name="presigned_get_object">
 #### presigned_get_object(bucket_name, object_name, expiry=timedelta(days=7))
 Generates a presigned URL for HTTP GET operations. Browsers/Mobile clients may point to this URL to directly download objects even if the bucket is private. This presigned URL can have an associated expiration time in seconds after which it is no longer operational. The default expiry is set to 7 days.
@@ -536,7 +534,7 @@ Generates a presigned URL for HTTP GET operations. Browsers/Mobile clients may p
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 |``expiry``   | *datetime.datetime*    |Expiry in seconds. Default expiry is set to 7 days.    |
@@ -554,7 +552,7 @@ except ResponseError as err:
     print(err)
 ```
 
-------------------------------------
+
 <a name="presigned_put_object">
 #### presigned_put_object(bucket_name, object_name, expires=timedelta(days=7))
 Generates a presigned URL for HTTP PUT operations. Browsers/Mobile clients may point to this URL to upload objects directly to a bucket even if it is private. This presigned URL can have an associated expiration time in seconds after which it is no longer operational. The default expiry is set to 7 days.
@@ -565,7 +563,7 @@ NOTE: you can upload to S3 only with specified object name.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 |``expiry``   | *datetime.datetime*    |Expiry in seconds. Default expiry is set to 7 days.    |
@@ -584,7 +582,7 @@ try:
 except ResponseError as err:
     print(err)
 ```
------------------------------------
+
 <a name="presigned_post_policy">
 #### presigned_post_policy
 Allows setting policy conditions to a presigned URL for POST operations. Policies such as bucket name to receive object uploads, key name prefixes, expiry policy may be set.
