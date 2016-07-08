@@ -27,7 +27,7 @@ s3Client = Minio('s3.amazonaws.com',
 
 
 |Bucket operations | Object operations| Presigned operations |
-|:---|:---|:---|
+|:--- |:--- |:--- |
 | [`make_bucket`](#make_bucket)  | [`get_object`](#get_object)  | [`presigned_get_object`](#presigned_get_object)  |
 |[`list_buckets`](#list_buckets)   | [`put_object`](#put_object)  | [`presigned_put_object`](#presigned_put_object)  |
 | [`bucket_exists`](#bucket_exists)  |[`stat_object`](#stat_object)   |[`presigned_post_policy`](#presigned_post_policy)   |
@@ -50,8 +50,8 @@ s3Client = Minio('s3.amazonaws.com',
 __Parameters__
 
 
-| :Param  | :Type | :Description  |
-|---|---|---|
+| Param  | Type | Description  |
+|:--- |:--- |:--- |
 | `endpoint`  | _string_  | S3 object storage endpoint.  |
 | `access_key`  | _string_  | Access key for the object storage endpoint. (Optional if you need anonymous access).  |
 |  `secret_key` | _string_  |  Secret key for the object storage endpoint. (Optional if you need anonymous access). |
@@ -128,7 +128,7 @@ Lists all buckets.
 __Parameters__
 
 |Return   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucketList``   |*function*   |List of all buckets. |
 |``bucket_name``   |*string*   |Bucket name. |
 |``bucket.creation_date`` |*time*   |Time: date when bucket was created. |
@@ -147,7 +147,7 @@ Checks if a bucket exists.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket. |
 
 __Example__
@@ -166,7 +166,7 @@ Removes a bucket.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket. |
 
 __Example__
@@ -184,7 +184,7 @@ Lists objects in a bucket.
 __Parameters__
 
 | Param  |Type  | Description  |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   | Name of the bucket.  |
 |``objectPrefix``   | *string*   |The prefix of the objects that should be listed. |
 |``recursive``   | *bool*   |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional default is ``False``.   |
@@ -235,7 +235,7 @@ Lists partially uploaded objects in a bucket.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucketname``   | *string*  |Name of the bucket.|
 |``prefix``   |*string*    |The prefix of the incomplete objects uploaded should be listed. |
 |``recursive`` |*bool*   |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional default is ``False``.   |
@@ -286,13 +286,13 @@ Downloads an object.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*   |Name of the object.   |
 __Return Value__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``object``   | *io.IOBase*   |Represents object reader.   |
 
 __Example__
@@ -315,7 +315,7 @@ Downloads the specified range bytes of an object.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 |``offset``   |*int*   |``offset`` of the object from where the stream will start.   |
@@ -324,7 +324,7 @@ __Parameters__
 __Return Value__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``object``   | *io.IOBase*   |Represents object reader.   |
 
 __Example__
@@ -348,7 +348,7 @@ __Parameters__
 
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 |``file_path``   |*string* | Path on the local filesystem to which the object data will be written. |
@@ -370,7 +370,7 @@ Uploads an object.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 |``data``   |*io.IOBase*   |Any python object implementing io.IOBase. |
@@ -408,7 +408,7 @@ Uploads contents from a file to objectName.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 |``file_path``   |*string*   |Path on the local filesystem to which the object data will be written. |
@@ -442,7 +442,7 @@ Gets metadata of an object.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 
@@ -490,7 +490,7 @@ Removes an object.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 
@@ -512,7 +512,7 @@ Removes a partially uploaded object.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 
@@ -534,7 +534,7 @@ Generates a presigned URL for HTTP GET operations. Browsers/Mobile clients may p
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 |``expiry``   | *datetime.datetime*    |Expiry in seconds. Default expiry is set to 7 days.    |
@@ -563,7 +563,7 @@ NOTE: you can upload to S3 only with specified object name.
 __Parameters__
 
 |Param   |Type   |Description   |
-|---|---|---|
+|:--- |:--- |:--- |
 |``bucket_name``   |*string*   |Name of the bucket.   |
 |``object_name``   |*string*    |Name of the object.   |
 |``expiry``   | *datetime.datetime*    |Expiry in seconds. Default expiry is set to 7 days.    |
