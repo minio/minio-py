@@ -38,6 +38,8 @@ s3Client = Minio('s3.amazonaws.com',
 |[`remove_bucket`](#remove_bucket)   | [`remove_object`](#remove_object)  |   |
 | [`list_objects`](#list_objects)  | [`remove_incomplete_upload`](#remove_incomplete_upload)  |   | 
 |[`list_incomplete_uploads`](#list_incomplete_uploads)   |  [`fput_object`](#fput_object) |   |
+| [`get_bucket_policy`](#get_bucket_policy) |  |  | 
+| [`set_bucket_policy`](#set_bucket_policy) |  |  | 
 |  |[`fget_object`](#fget_object)  |  | 
 |  |[`get_partial_object`](#get_partial_object)  |  | 
 
@@ -299,6 +301,59 @@ uploads = minioClient.list_incomplete_uploads('mybucket',
                                          recursive=True)
 for obj in uploads:
     print(obj.bucket_name, obj.object_name, obj.upload_id, obj.size)
+
+```
+
+<a name="get_bucket_policy"></a>
+### get_bucket_policy(bucket_name, prefix)
+Gets current policy of a bucket.
+
+__Parameters__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``bucketname``   | *string*  |Name of the bucket.|
+|``prefix``   |*string*    |The prefix of objects to get current policy. |
+
+__Return Value__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``Policy``   | *minio.policy.Policy*   |Policy enum. Policy.READ_ONLY,Policy.WRITE_ONLY,Policy.READ_WRITE or Policy.NONE.   |
+
+__Example__
+
+
+```py
+
+# Get current policy of all object paths in bucket that begin with my-prefixname.
+policy = minioClient.get_bucket_policy('mybucket',
+                                       'my-prefixname')
+print(policy)
+
+```
+
+<a name="set_bucket_policy"></a>
+### set_bucket_policy(policy, bucket_name, prefix)
+Sets policy to a bucket.
+
+__Parameters__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``Policy``   | *minio.policy.Policy*   |Policy enum. Policy.READ_ONLY,Policy.WRITE_ONLY,Policy.READ_WRITE or Policy.NONE.   |
+|``bucketname``   | *string*  |Name of the bucket.|
+|``prefix``   |*string*    |The prefix of objects to get current policy. |
+
+__Example__
+
+
+```py
+
+# Set policy Policy.READ_ONLY to all object paths in bucket that begin with my-prefixname.
+minioClient.get_bucket_policy(Policy.READ_ONLY,
+                              'mybucket',
+                              'my-prefixname')
 
 ```
 
