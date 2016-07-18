@@ -14,7 +14,7 @@ minioClient = Minio('play.minio.io:9000',
                   secure=True)
 ```
 
-### 2.AWS S3
+### 2. AWS S3
 
 ```py
 from minio import Minio
@@ -72,7 +72,7 @@ minioClient = Minio('play.minio.io:9000',
                     secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
 ```
 
-### 2.AWS S3
+### 2. AWS S3
 
 ```py
 from minio import Minio
@@ -576,7 +576,7 @@ except ResponseError as err:
     print(err)
 ```
 <a name="presigned_post_policy">
-#### presigned_post_policy
+#### presigned_post_policy(PostPolicy)
 Allows setting policy conditions to a presigned URL for POST operations. Policies such as bucket name to receive object uploads, key name prefixes, expiry policy may be set.
 
 Create policy:
