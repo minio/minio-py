@@ -9,17 +9,23 @@ This document assumes that you have a working [Python](https://www.python.org/do
 ## Download from pip
 
 ```sh
+
 $ pip install minio
+
 ```
 
 ## Download from source
 
 ```sh
+
 $ git clone https://github.com/minio/minio-py
 $ cd minio-py
 $ python setup.py install
+
 ```
+
 ## Initialize Minio Client
+
 You need four items in order to connect to Minio object storage server.
 
 | Params     | Description |  
@@ -28,7 +34,9 @@ You need four items in order to connect to Minio object storage server.
 | access_key| Access key is like user ID that uniquely identifies your account.   |   
 | secret_key| Secret key is the password to your account.    |
 |secure|Set this value to 'True' to enable secure (HTTPS) access.|
+
 ```python
+
 from minio import Minio
 from minio.error import ResponseError
 
@@ -46,7 +54,9 @@ This example program connects to a Minio object storage server, makes a bucket o
 We will use the Minio server running at [https://play.minio.io:9000](https://play.minio.io:9000) in this example. Feel free to use this service for testing and development. Access credentials shown in this example are open to the public.
 
 #### file-uploader.py
+
 ```python 
+
 # Import Minio library.
 from minio import Minio
 from minio.error import ResponseError
@@ -70,19 +80,25 @@ else:
                print(error)
  
 ```
+
 #### Run file-uploader
+
 ```bash
+
 $ python file_uploader.py
 
 $ mc ls play/maylogs/
 [2016-05-27 16:41:37 PDT]  12MiB pumaserver_debug.log
+
 ```
 
 ## API Reference
+
 The full API Reference is available here. 
 * [Complete API Reference](https://docs.minio.io/docs/python-client-api-reference)
 
 ### API Reference : Bucket Operations
+
 * [`make_bucket`](https://docs.minio.io/docs/python-client-api-reference#make_bucket)
 * [`list_buckets`](https://docs.minio.io/docs/python-client-api-reference#list_buckets)
 * [`bucket_exists`](https://docs.minio.io/docs/python-client-api-reference#bucket_exists)
@@ -91,10 +107,12 @@ The full API Reference is available here.
 * [`list_incomplete_uploads`](https://docs.minio.io/docs/python-client-api-reference#list_incomplete_uploads)
 
 ### API Reference : File Object Operations
+
 * [`fput_object`](https://docs.minio.io/docs/python-client-api-reference#fput_object)
 * [`fget_object`](https://docs.minio.io/docs/python-client-api-reference#fget_object)
 
 ### API Reference : Object Operations
+
 * [`get_object`](https://docs.minio.io/docs/python-client-api-reference#get_object)
 * [`put_object`](https://docs.minio.io/docs/python-client-api-reference#put_object)
 * [`stat_object`](https://docs.minio.io/docs/python-client-api-reference#stat_object)
@@ -103,6 +121,7 @@ The full API Reference is available here.
 * [`get_partial_object`](https://docs.minio.io/docs/python-client-api-reference#get_partial_object)
 
 ### API Reference : Presigned Operations
+
 * [`presigned_get_object`](https://docs.minio.io/docs/python-client-api-reference#presigned_get_object)
 * [`presigned_put_object`](https://docs.minio.io/docs/python-client-api-reference#presigned_put_object)
 * [`presigned_post_policy`](https://docs.minio.io/docs/python-client-api-reference#presigned_post_policy)
@@ -110,6 +129,7 @@ The full API Reference is available here.
 ## Full Examples
 
 #### Full Examples : Bucket Operations
+
 * [list_buckets.py](./examples/list_buckets.py)
 * [list_objects.py](./examples/list_objects.py)
 * [bucket_exists.py](./examples/bucket_exists.py)
@@ -119,10 +139,12 @@ The full API Reference is available here.
 * [remove_incomplete_upload.py](./examples/remove_incomplete_upload.py)
 
 #### Full Examples : File Object Operations
+
 * [fput_object.py](./examples/fput_object.py)
 * [fget_object.py](./examples/fget_object.py)
 
 #### Full Examples : Object Operations
+
 * [put_object.py](./examples/put_object.py)
 * [get_object.py](./examples/get_object.py)
 * [get_partial_object.py](./examples/get_partial_object.py)
@@ -130,11 +152,13 @@ The full API Reference is available here.
 * [stat_object.py](./examples/stat_object.py)
 
 #### Full Examples : Presigned Operations
+
 * [presigned_get_object.py](./examples/presigned_get_object.py)
 * [presigned_put_object.py](./examples/presigned_put_object.py)
 * [presigned_post_policy.py](./examples/presigned_post_policy.py)
 
 ## Explore Further
+
 * [Complete Documentation](https://docs.minio.io)
 * [Minio Python SDK API Reference](https://docs.minio.io/docs/python-client-api-reference) 
 

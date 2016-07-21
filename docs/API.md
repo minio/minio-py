@@ -5,6 +5,7 @@ Initialize Minio Client object.
 ### 1. Minio
 
 ```py
+
 from minio import Minio
 from minio.error import ResponseError
 
@@ -14,9 +15,10 @@ minioClient = Minio('play.minio.io:9000',
                   secure=True)
 ```
 
-### 2.AWS S3
+### 2. AWS S3
 
 ```py
+
 from minio import Minio
 from minio.error import ResponseError
 
@@ -64,6 +66,7 @@ __Example__
 ### 1. Minio
 
 ```py
+
 from minio import Minio
 from minio.error import ResponseError
 
@@ -72,15 +75,17 @@ minioClient = Minio('play.minio.io:9000',
                     secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
 ```
 
-### 2.AWS S3
+### 2. AWS S3
 
 ```py
+
 from minio import Minio
 from minio.error import ResponseError
 
 s3Client = Minio('s3.amazonaws.com',
                  access_key='ACCESS_KEY',
                  secret_key='SECRET_KEY')
+
 ```
 
 ## 2. Bucket operations
@@ -118,12 +123,16 @@ Location valid values are us-west-1, us-west-2, eu-west-1, eu-central-1, ap-sout
 
 
 __Example__
+
 ```py
+
 try:
     minioClient.make_bucket("mybucket", location="us-east-1")
 except ResponseError as err:
     print(err)
+
 ```
+
 <a name="list_buckets">
 #### list_buckets()
 Lists all buckets.
@@ -137,11 +146,15 @@ __Parameters__
 |``bucket.creation_date`` |*time*   |Time: date when bucket was created. |
 
 __Example__
+
 ```py
+
 buckets = minioClient.list_buckets()
 for bucket in buckets:
     print(bucket.name, bucket.creation_date)
+
 ```
+
 <a name="bucket_exists">
 #### bucket_exists(bucket_name)
 Checks if a bucket exists.
@@ -155,11 +168,14 @@ __Parameters__
 __Example__
 
 ```py
+
 try:
     print(minioClient.bucket_exists("mybucket"))
 except ResponseError as err:
     print(err)
+
 ```
+
 <a name="remove_bucket">
 #### remove_bucket(bucket_name)
 Removes a bucket.
@@ -171,12 +187,16 @@ __Parameters__
 |``bucket_name``   |*string*   |Name of the bucket. |
 
 __Example__
+
 ```py
+
 try:
     minioClient.remove_bucket("mybucket")
 except ResponseError as err:
     print(err)
+
 ```
+
 <a name="list_objects">
 #### list_objects(bucket_name, prefix, recursive=False)
 Lists objects in a bucket.
@@ -220,6 +240,7 @@ __Return Value__
 __Example__
 
 ```py
+
 # List all object paths in bucket that begin with my-prefixname.
 objects = minioClient.list_objects('mybucket', prefix='my-prefixname',
                               recursive=True)
@@ -227,6 +248,7 @@ for obj in objects:
     print(obj.bucket_name, obj.object_name.encode('utf-8'), obj.last_modified,
           obj.etag, obj.size, obj.content_type)
 ```
+
 <a name="list_incomplete_uploads">
 #### list_incomplete_uploads(bucket_name, prefix, recursive=False)
 Lists partially uploaded objects in a bucket.
@@ -268,14 +290,18 @@ __Return Value__
 
 __Example__
 
+
 ```py
+
 # List all object paths in bucket that begin with my-prefixname.
 uploads = minioClient.list_incomplete_uploads('mybucket',
                                          prefix='my-prefixname',
                                          recursive=True)
 for obj in uploads:
     print(obj.bucket_name, obj.object_name, obj.upload_id, obj.size)
+
 ```
+
 ## 3. Object operations
 <a name="get_object">
 #### get_object(bucket_name, object_name)
@@ -296,7 +322,9 @@ __Return Value__
 
 __Example__
 
+
 ```py
+
 # Get a full object.
 try:
     data = minioClient.get_object('mybucket', 'myobject')
@@ -305,7 +333,9 @@ try:
             file_data.write(d)
 except ResponseError as err:
     print(err)
+
 ```
+
 <a name="get_partial_object">
 #### get_partial_object(bucket_name, object_name, offset=0, length=0)
 Downloads the specified range bytes of an object.
@@ -328,6 +358,7 @@ __Return Value__
 __Example__
 
 ```py
+
 # Offset the download by 2 bytes and retrieve a total of 4 bytes.
 try:
     data = minioClient.get_partial_object('mybucket', 'myobject', 2, 4)
@@ -336,7 +367,9 @@ try:
             file_data.write(d)
 except ResponseError as err:
     print(err)
+
 ```
+
 <a name="fget_object">
 #### fget_object(bucket_name, object_name, file_path)
 Downloads and saves the object as a file in the local filesystem.
@@ -352,13 +385,17 @@ __Parameters__
 
 __Example__
 
+
 ```py
+
 # Get a full object.
 try:
     minioClient.fget_object('mybucket', 'myobject', '/tmp/myobject')
 except ResponseError as err:
     print(err)
+
 ```
+
 <a name="put_object">
 #### put_object(bucket_name, object_name, data, length, content_type)
 Uploads an object.
@@ -378,6 +415,7 @@ __Example__
 The maximum size of a single object is limited to 5TB. put_object transparently uploads objects larger than 5MiB in multiple parts. This allows failed uploads to resume safely by only uploading the missing parts. Uploaded data is carefully verified using MD5SUM signatures.
 
 ```py
+
 import os
 # Put a file with default content-type.
 try:
@@ -395,6 +433,7 @@ try:
                       file_stat.st_size, content_type='application/csv')
 except ResponseError as err:
     print(err)
+
 ```
 
 <a name="fput_object">
@@ -415,6 +454,7 @@ __Example__
 The maximum size of a single object is limited to 5TB. fput_object transparently uploads objects larger than 5MiB in multiple parts. This allows failed uploads to resume safely by only uploading the missing parts. Uploaded data is carefully verified using MD5SUM signatures.
 
 ```py
+
 # Put an object 'myobject' with contents from '/tmp/otherobject'.
 try:
     minioClient.fput_object('mybucket', 'myobject', '/tmp/otherobject')
@@ -429,7 +469,9 @@ try:
 except ResponseError as err:
     print(err)
 
+
 ```
+
 <a name="stat_object">
 #### stat_object(bucket_name, object_name)
 Gets metadata of an object.
@@ -471,13 +513,17 @@ __Return Value__
 
 __Example__
 
+
 ```py
+
 # Fetch stats on your object.
 try:
     print(minioClient.stat_object('mybucket', 'myobject'))
 except ResponseError as err:
     print(err)
+
 ```
+
 <a name="remove_object">
 #### remove_object(bucket_name, object_name)
 Removes an object.
@@ -491,12 +537,15 @@ __Parameters__
 
 __Example__
 
+
 ```py
+
 # Remove an object.
 try:
     minioClient.remove_object('mybucket', 'myobject')
 except ResponseError as err:
     print(err)
+
 ```
 
 <a name="remove_incomplete_upload">
@@ -512,13 +561,17 @@ __Parameters__
 
 __Example__
 
+
 ```py
+
 # Remove an partially uploaded object.
 try:
     minioClient.remove_incomplete_upload('mybucket', 'myobject')
 except ResponseError as err:
     print(err)
+
 ```
+
 ## 4. Presigned operations
 
 <a name="presigned_get_object">
@@ -535,7 +588,9 @@ __Parameters__
 
 __Example__
 
+
 ```py
+
 from datetime import timedelta
 
 # presigned get object URL for object name, expires in 2 days.
@@ -544,6 +599,7 @@ try:
 # Response error is still possible since internally presigned does get bucket location.
 except ResponseError as err:
     print(err)
+
 ```
 
 <a name="presigned_put_object">
@@ -562,7 +618,9 @@ __Parameters__
 |``expiry``   | *datetime.datetime*    |Expiry in seconds. Default expiry is set to 7 days.    |
 
 __Example__
+
 ```py
+
 from datetime import timedelta
 
 # presigned Put object URL for an object name, expires in 3 days.
@@ -574,13 +632,17 @@ try:
 # bucket location.
 except ResponseError as err:
     print(err)
+
 ```
+
 <a name="presigned_post_policy">
-#### presigned_post_policy
+#### presigned_post_policy(PostPolicy)
 Allows setting policy conditions to a presigned URL for POST operations. Policies such as bucket name to receive object uploads, key name prefixes, expiry policy may be set.
 
 Create policy:
+
 ```py
+
 from datetime import datetime, timedelta
 
 from minio import PostPolicy
@@ -600,15 +662,21 @@ expires_date = datetime.utcnow()+timedelta(days=10)
 post_policy.set_expires(expires_date)
 ```
 Get the POST form key/value object:
+
 ```py
+
 try:
     signed_form_data = minioClient.presigned_post_policy(post_policy)
 except ResponseError as err:
     print(err)    
+
 ```
+
 POST your content from the command line using `curl`:
 
+
 ```py
+
 curl_str = 'curl -X POST {0}'.format(signed_form_data[0])
 curl_cmd = [curl_str]
 for field in signed_form_data[1]:
@@ -617,6 +685,7 @@ for field in signed_form_data[1]:
 # print curl command to upload files.
 curl_cmd.append('-F file=@<FILE>')
 print(' '.join(curl_cmd))
+
 ```
 
 ## 5. Explore Further
