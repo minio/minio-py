@@ -43,8 +43,8 @@ s3Client = Minio('s3.amazonaws.com',
 
 ## 1. Constructor
 
-<a name="Minio">
-#### Minio(endpoint, access_key=None, secret_key=None, secure=True)
+<a name="Minio"></a>
+### Minio(endpoint, access_key=None, secret_key=None, secure=True)
 
 |   |
 |---|
@@ -90,8 +90,8 @@ s3Client = Minio('s3.amazonaws.com',
 
 ## 2. Bucket operations
 
-<a name="make_bucket">
-#### make_bucket(bucket_name, location='us-east-1')
+<a name="make_bucket"></a>
+### make_bucket(bucket_name, location='us-east-1')
 Creates a new bucket.
 
 __Parameters__
@@ -133,8 +133,8 @@ except ResponseError as err:
 
 ```
 
-<a name="list_buckets">
-#### list_buckets()
+<a name="list_buckets"></a>
+### list_buckets()
 Lists all buckets.
 
 __Parameters__
@@ -155,8 +155,8 @@ for bucket in buckets:
 
 ```
 
-<a name="bucket_exists">
-#### bucket_exists(bucket_name)
+<a name="bucket_exists"></a>
+### bucket_exists(bucket_name)
 Checks if a bucket exists.
 
 __Parameters__
@@ -176,8 +176,8 @@ except ResponseError as err:
 
 ```
 
-<a name="remove_bucket">
-#### remove_bucket(bucket_name)
+<a name="remove_bucket"></a>
+### remove_bucket(bucket_name)
 Removes a bucket.
 
 __Parameters__
@@ -197,8 +197,8 @@ except ResponseError as err:
 
 ```
 
-<a name="list_objects">
-#### list_objects(bucket_name, prefix, recursive=False)
+<a name="list_objects"></a>
+### list_objects(bucket_name, prefix, recursive=False)
 Lists objects in a bucket.
 
 __Parameters__
@@ -249,8 +249,8 @@ for obj in objects:
           obj.etag, obj.size, obj.content_type)
 ```
 
-<a name="list_incomplete_uploads">
-#### list_incomplete_uploads(bucket_name, prefix, recursive=False)
+<a name="list_incomplete_uploads"></a>
+### list_incomplete_uploads(bucket_name, prefix, recursive=False)
 Lists partially uploaded objects in a bucket.
 
 __Parameters__
@@ -303,8 +303,8 @@ for obj in uploads:
 ```
 
 ## 3. Object operations
-<a name="get_object">
-#### get_object(bucket_name, object_name)
+<a name="get_object"></a>
+### get_object(bucket_name, object_name)
 Downloads an object.
 
 __Parameters__
@@ -336,8 +336,8 @@ except ResponseError as err:
 
 ```
 
-<a name="get_partial_object">
-#### get_partial_object(bucket_name, object_name, offset=0, length=0)
+<a name="get_partial_object"></a>
+### get_partial_object(bucket_name, object_name, offset=0, length=0)
 Downloads the specified range bytes of an object.
 
 __Parameters__
@@ -370,8 +370,8 @@ except ResponseError as err:
 
 ```
 
-<a name="fget_object">
-#### fget_object(bucket_name, object_name, file_path)
+<a name="fget_object"></a>
+### fget_object(bucket_name, object_name, file_path)
 Downloads and saves the object as a file in the local filesystem.
 
 __Parameters__
@@ -396,8 +396,8 @@ except ResponseError as err:
 
 ```
 
-<a name="put_object">
-#### put_object(bucket_name, object_name, data, length, content_type)
+<a name="put_object"></a>
+### put_object(bucket_name, object_name, data, length, content_type)
 Uploads an object.
 
 __Parameters__
@@ -436,8 +436,8 @@ except ResponseError as err:
 
 ```
 
-<a name="fput_object">
-#### fput_object(bucket_name, object_name, file_path, content_type)
+<a name="fput_object"></a>
+### fput_object(bucket_name, object_name, file_path, content_type)
 Uploads contents from a file to objectName. 
 
 __Parameters__
@@ -472,8 +472,8 @@ except ResponseError as err:
 
 ```
 
-<a name="stat_object">
-#### stat_object(bucket_name, object_name)
+<a name="stat_object"></a>
+### stat_object(bucket_name, object_name)
 Gets metadata of an object.
 
 __Parameters__
@@ -524,8 +524,8 @@ except ResponseError as err:
 
 ```
 
-<a name="remove_object">
-#### remove_object(bucket_name, object_name)
+<a name="remove_object"></a>
+### remove_object(bucket_name, object_name)
 Removes an object.
 
 __Parameters__
@@ -548,8 +548,8 @@ except ResponseError as err:
 
 ```
 
-<a name="remove_incomplete_upload">
-#### remove_incomplete_upload(bucket_name, object_name)
+<a name="remove_incomplete_upload"></a>
+### remove_incomplete_upload(bucket_name, object_name)
 Removes a partially uploaded object.
 
 __Parameters__
@@ -574,8 +574,8 @@ except ResponseError as err:
 
 ## 4. Presigned operations
 
-<a name="presigned_get_object">
-#### presigned_get_object(bucket_name, object_name, expiry=timedelta(days=7))
+<a name="presigned_get_object"></a>
+### presigned_get_object(bucket_name, object_name, expiry=timedelta(days=7))
 Generates a presigned URL for HTTP GET operations. Browsers/Mobile clients may point to this URL to directly download objects even if the bucket is private. This presigned URL can have an associated expiration time in seconds after which it is no longer operational. The default expiry is set to 7 days.
 
 __Parameters__
@@ -602,8 +602,8 @@ except ResponseError as err:
 
 ```
 
-<a name="presigned_put_object">
-#### presigned_put_object(bucket_name, object_name, expires=timedelta(days=7))
+<a name="presigned_put_object"></a>
+### presigned_put_object(bucket_name, object_name, expires=timedelta(days=7))
 Generates a presigned URL for HTTP PUT operations. Browsers/Mobile clients may point to this URL to upload objects directly to a bucket even if it is private. This presigned URL can have an associated expiration time in seconds after which it is no longer operational. The default expiry is set to 7 days.
 
 NOTE: you can upload to S3 only with specified object name.
@@ -635,8 +635,8 @@ except ResponseError as err:
 
 ```
 
-<a name="presigned_post_policy">
-#### presigned_post_policy(PostPolicy)
+<a name="presigned_post_policy"></a>
+### presigned_post_policy(PostPolicy)
 Allows setting policy conditions to a presigned URL for POST operations. Policies such as bucket name to receive object uploads, key name prefixes, expiry policy may be set.
 
 Create policy:
