@@ -1,8 +1,8 @@
-# Python Client API Reference
+# Python Client API Reference [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Minio/minio?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Initialize Minio Client object.
+## Initialize Minio Client object.
 
-### 1. Minio
+## Minio
 
 ```py
 
@@ -15,7 +15,7 @@ minioClient = Minio('play.minio.io:9000',
                   secure=True)
 ```
 
-### 2. AWS S3
+## AWS S3
 
 ```py
 
@@ -63,7 +63,7 @@ __Parameters__
 
 __Example__
 
-### 1. Minio
+### Minio
 
 ```py
 
@@ -75,7 +75,7 @@ minioClient = Minio('play.minio.io:9000',
                     secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
 ```
 
-### 2. AWS S3
+### AWS S3
 
 ```py
 
