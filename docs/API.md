@@ -107,14 +107,14 @@ __Parameters__
     <tbody>
         <tr>
             <td>
-           bucket_name
+          <code>  bucket_name </code>
             </td>
-            <td> string</td>
+            <td> <i> string </i></td>
             <td> Name of the bucket.</td>
             </tr>
             <tr>
-            <td>location</td>
-            <td>string</td>
+            <td> <code> location </code> </td>
+            <td> <i> string </i> </td>
             <td>Default value is us-east-1<br/>
 Location valid values are us-west-1, us-west-2, eu-west-1, eu-central-1, ap-southeast-1, ap-northeast-1, ap-southeast-2, sa-east-1(defaults to us-east-1, optional).</td>
             </tr>
@@ -222,9 +222,9 @@ __Return Value__
     <tbody>
         <tr>
             <td>
-           object
+           <code> object </code>
             </td>
-            <td> Object</td>
+            <td> <i> Object </i> </td>
             <td> Iterator for all the objects in the bucket, the object is of the format:
             <ul>
             <li>object.object_name string: name of the object. </li>
@@ -274,9 +274,9 @@ __Return Value__
     <tbody>
         <tr>
             <td>
-           multipart_obj
+           <code> multipart_obj </code>
             </td>
-            <td> Object</td>
+            <td> <i> Object </i> </td>
             <td> Iterator of multipart objects of the format:
             <ul>
             <li>multipart_obj.object_name string: name of the incomplete object.</li>
@@ -496,9 +496,9 @@ __Return Value__
     <tbody>
         <tr>
             <td>
-           obj
+           <code> obj </code>
             </td>
-            <td> Object</td>
+            <td> <i> Object </i> </td>
             <td> object stat info for following format:
             <ul>
             <li>obj.size int: size of the object.</li>
