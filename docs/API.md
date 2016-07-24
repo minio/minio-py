@@ -227,10 +227,10 @@ __Return Value__
             <td> <i> Object </i> </td>
             <td> Iterator for all the objects in the bucket, the object is of the format:
             <ul>
-            <li>object.object_name string: name of the object. </li>
-            <li>object.size int: size of the object.</li>
-            <li>object.etag string: etag of the object. </li>
-            <li>object.last_modified datetime.datetime: modified time stamp. </li>
+            <li> <code>object.object_name</code> <i>string</i>: name of the object. </li>
+            <li> <code>object.size</code> <i>int</i>: size of the object.</li>
+            <li> <code>object.etag</code> <i>string</i>: etag of the object. </li>
+            <li> <code>object.last_modified</code>  <i>datetime.datetime</i>: modified time stamp. </li>
             </ul>
             </td>
             </tr>
@@ -279,9 +279,9 @@ __Return Value__
             <td> <i> Object </i> </td>
             <td> Iterator of multipart objects of the format:
             <ul>
-            <li>multipart_obj.object_name string: name of the incomplete object.</li>
-            <li>multipart_obj.upload_id string: upload ID of the incomplete object.</li>
-            <li>multipart_obj.size int: size of the incompletely uploaded object. </li>
+            <li> <code>multipart_obj.object_name</code>  <i>string</i>: name of the incomplete object.</li>
+            <li> <code>multipart_obj.upload_id</code>  <i>string</i>: upload ID of the incomplete object.</li>
+            <li> <code>multipart_obj.size</code>  <i>int</i>: size of the incompletely uploaded object. </li>
             </ul>
             </td>
             </tr>
@@ -501,10 +501,10 @@ __Return Value__
             <td> <i> Object </i> </td>
             <td> object stat info for following format:
             <ul>
-            <li>obj.size int: size of the object.</li>
-            <li>obj.etag string: etag of the object.</li>
-            <li>obj.content_type string: Content-Type of the object.</li>
-            <li>obj.last_modified time.time: modified time stamp.</li>
+            <li> <code>obj.size</code> <i>int</i>: size of the object.</li>
+            <li> <code>obj.etag</code> <i>string</i>: etag of the object.</li>
+            <li> <code>obj.content_type</code> <i>string</i>: Content-Type of the object.</li>
+            <li> <code>obj.last_modified</code> <i>time.time</i>: modified time stamp.</li>
             </ul>
             </td>
             </tr>
