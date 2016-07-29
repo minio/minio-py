@@ -33,6 +33,7 @@ from time import mktime, strptime
 from datetime import datetime, timedelta
 
 import io
+import json
 import os
 import hashlib
 
@@ -67,6 +68,7 @@ from .signer import (sign_v4, presign_v4,
 from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_complete_multipart_upload)
 from .limited_reader import LimitedReader
+from . import policy
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
@@ -301,6 +303,81 @@ class Minio(object):
 
         # Make sure to purge bucket_name from region cache.
         self._delete_bucket_region(bucket_name)
+
+    def _get_bucket_policy(self, bucket_name):
+        policy_dict = {}
+        try:
+            response = self._url_open("GET",
+                                      bucket_name=bucket_name,
+                                      query={"policy": ""},
+                                      headers={})
+            policy_dict = json.loads(response.data)
+        except ResponseError as e:
+            # Ignore 'NoSuchBucketPolicy' error.
+            if e.code != 'NoSuchBucketPolicy':
+                raise
+
+        return policy_dict
+
+    def get_bucket_policy(self, bucket_name, prefix=""):
+        """
+        Get bucket policy of given bucket name.
+
+        :param bucket_name: Bucket name.
+        :param prefix: Object prefix.
+        """
+        is_valid_bucket_name(bucket_name)
+
+        policy_dict = self._get_bucket_policy(bucket_name)
+
+        # Normalize statements.
+        statements = []
+        policy.append_statements(statements, policy_dict.get('Statement', []))
+
+        return policy.get_policy(statements, bucket_name, prefix)
+
+    def set_bucket_policy(self, policy_access, bucket_name, prefix=""):
+        """
+        Set bucket policy of given bucket name and object prefix.
+
+        :param bucket_name: Bucket name.
+        :param prefix: Object prefix.
+        """
+        is_valid_bucket_name(bucket_name)
+
+        policy_dict = self._get_bucket_policy(bucket_name)
+        if policy_access == policy.Policy.NONE and not policy_dict:
+            return
+
+        if not policy_dict:
+            policy_dict = {'Statement': [],
+                           "Version": "2012-10-17"}
+
+        # Normalize statements.
+        statements = []
+        policy.append_statements(statements, policy_dict['Statement'])
+
+        statements = policy.set_policy(statements, policy_access,
+                                       bucket_name, prefix)
+        if not statements:
+            self._url_open("DELETE",
+                           bucket_name=bucket_name,
+                           query={"policy": ""},
+                           headers={})
+        else:
+            policy_dict['Statement'] = statements
+            content = json.dumps(policy_dict)
+
+            headers = {'Content-Length': str(len(content)),
+                       'Content-MD5': encode_to_base64(get_md5(content))}
+            content_sha256_hex = encode_to_hex(get_sha256(content))
+
+            self._url_open("PUT",
+                           bucket_name=bucket_name,
+                           query={"policy": ""},
+                           headers={},
+                           body=content,
+                           content_sha256=content_sha256_hex)
 
     def _get_upload_id(self, bucket_name, object_name, content_type):
         """

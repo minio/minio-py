@@ -117,6 +117,8 @@ API Reference : Bucket Operations
 -  `remove\_bucket <https://docs.minio.io/docs/python-client-api-reference#remove_bucket>`__
 -  `list\_objects <https://docs.minio.io/docs/python-client-api-reference#list_objects>`__
 -  `list\_incomplete\_uploads <https://docs.minio.io/docs/python-client-api-reference#list_incomplete_uploads>`__
+-  `get\_bucket\_policy <https://docs.minio.io/docs/python-client-api-reference#get_bucket_policy>`__
+-  `set\_bucket\_policy <https://docs.minio.io/docs/python-client-api-reference#set_bucket_policy>`__
 
 API Reference : File Object Operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
