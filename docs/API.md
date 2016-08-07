@@ -38,10 +38,8 @@ s3Client = Minio('s3.amazonaws.com',
 |[`remove_bucket`](#remove_bucket)   | [`remove_object`](#remove_object)  |   |
 | [`list_objects`](#list_objects)  | [`remove_incomplete_upload`](#remove_incomplete_upload)  |   | 
 |[`list_incomplete_uploads`](#list_incomplete_uploads)   |  [`fput_object`](#fput_object) |   |
-| [`get_bucket_policy`](#get_bucket_policy) |  |  | 
-| [`set_bucket_policy`](#set_bucket_policy) |  |  | 
-|  |[`fget_object`](#fget_object)  |  | 
-|  |[`get_partial_object`](#get_partial_object)  |  | 
+| [`get_bucket_policy`](#get_bucket_policy) |[`fget_object`](#fget_object)  |  | 
+| [`set_bucket_policy`](#set_bucket_policy) | [`get_partial_object`](#get_partial_object) |  | 
 
 ## 1. Constructor
 
