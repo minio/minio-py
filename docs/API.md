@@ -98,31 +98,19 @@ Creates a new bucket.
 
 __Parameters__
 
-<table>
-    <thead>
-        <tr>
-            <th>Param</th>
-            <th>Type</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-          <code>  bucket_name </code>
-            </td>
-            <td> <i> string </i></td>
-            <td> Name of the bucket.</td>
-            </tr>
-            <tr>
-            <td> <code> location </code> </td>
-            <td> <i> string </i> </td>
-            <td>Default value is us-east-1<br/>
-Location valid values are us-west-1, us-west-2, eu-west-1, eu-central-1, ap-southeast-1, ap-northeast-1, ap-southeast-2, sa-east-1(defaults to us-east-1, optional).</td>
-            </tr>
-               </tbody>
-</table>
-
+| Param  | Type  | Description  |
+|---|---|---|
+|`bucket_name`  | _string_  | Name of the bucket. | 
+| `location`  |  _string_ | Default value is us-east-1 Region where the bucket is created. Valid values are listed below: |
+| | |us-east-1 |
+| | |us-west-1 |
+| | |us-west-2 |
+| | |eu-west-1 |
+| | | eu-central-1|
+| | | ap-southeast-1|
+| | | ap-northeast-1|
+| | | ap-southeast-2|
+| | | sa-east-1| 
 
 __Example__
 
@@ -143,9 +131,9 @@ __Parameters__
 
 |Return   |Type   |Description   |
 |:---|:---|:---|
-|``bucketList``   |*function*   |List of all buckets. |
-|``bucket_name``   |*string*   |Bucket name. |
-|``bucket.creation_date`` |*time*   |Time: date when bucket was created. |
+|``bucketList``   |_function_ |List of all buckets. |
+|``bucket_name``   |_string_  |Bucket name. |
+|``bucket.creation_date`` |_time_   |Time: date when bucket was created. |
 
 __Example__
 
@@ -165,7 +153,7 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucket_name``   |*string*   |Name of the bucket. |
+|``bucket_name``   |_string_|Name of the bucket. |
 
 __Example__
 
@@ -186,7 +174,7 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucket_name``   |*string*   |Name of the bucket. |
+|``bucket_name``   |_string_ |Name of the bucket. |
 
 __Example__
 
@@ -207,37 +195,24 @@ __Parameters__
 
 | Param  |Type  | Description  |
 |:---|:---|:---|
-|``bucket_name``   |*string*   | Name of the bucket.  |
-|``objectPrefix``   | *string*   |The prefix of the objects that should be listed. |
-|``recursive``   | *bool*   |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional default is False.   |
+|``bucket_name``   |_string_ | Name of the bucket.  |
+|``objectPrefix``   | _string_ |The prefix of the objects that should be listed. |
+|``recursive``   | _bool_ |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional default is False.   |
 
 __Return Value__
 
-<table>
-    <thead>
-        <tr>
-            <th>Param</th>
-            <th>Type</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-           <code> object </code>
-            </td>
-            <td> <i> Object </i> </td>
-            <td> Iterator for all the objects in the bucket, the object is of the format:
-            <ul>
-            <li> <code>object.object_name</code> <i>string</i>: name of the object. </li>
-            <li> <code>object.size</code> <i>int</i>: size of the object.</li>
-            <li> <code>object.etag</code> <i>string</i>: etag of the object. </li>
-            <li> <code>object.last_modified</code>  <i>datetime.datetime</i>: modified time stamp. </li>
-            </ul>
-            </td>
-            </tr>
-               </tbody>
-</table>
+| Param  |Type  | Description  |
+|:---|:---|:---|
+|``object``   |_Object_ | Iterator for all the objects in the bucket, the object is of the format listed below:  |
+
+| Param  |Type  | Description  |
+|:---|:---|:---|
+|``object.object_name``   |_string_ | name of the object.  |
+|``object.size`` |_int_ | size of the object.  |
+|``object.etag``   |_string_ | etag of the object.  |
+|``object.last_modified`` |_datetime.datetime_ | modified time stamp.  |
+
+
 
 __Example__
 
@@ -259,36 +234,21 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucketname``   | *string*  |Name of the bucket.|
-|``prefix``   |*string*    |The prefix of the incomplete objects uploaded should be listed. |
-|``recursive`` |*bool*   |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional default is ``False``.   |
+|``bucketname``   | _string_|Name of the bucket.|
+|``prefix``   |_string_ |The prefix of the incomplete objects uploaded should be listed. |
+|``recursive`` |_bool_ |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional default is ``False``.   |
 
 __Return Value__
 
-<table>
-    <thead>
-        <tr>
-            <th>Param</th>
-            <th>Type</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-           <code> multipart_obj </code>
-            </td>
-            <td> <i> Object </i> </td>
-            <td> Iterator of multipart objects of the format:
-            <ul>
-            <li> <code>multipart_obj.object_name</code>  <i>string</i>: name of the incomplete object.</li>
-            <li> <code>multipart_obj.upload_id</code>  <i>string</i>: upload ID of the incomplete object.</li>
-            <li> <code>multipart_obj.size</code>  <i>int</i>: size of the incompletely uploaded object. </li>
-            </ul>
-            </td>
-            </tr>
-               </tbody>
-</table>
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``multipart_obj``   | _Object_  |Iterator of multipart objects of the format described below:|
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``multipart_obj.object_name``   | _string_  |name of the incomplete object.|
+|``multipart_obj.upload_id``   | _string_  |upload ID of the incomplete object.|
+|``multipart_obj.size``   | _int_  |size of the incompletely uploaded object.|
 
 __Example__
 
@@ -312,14 +272,14 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucketname``   | *string*  |Name of the bucket.|
-|``prefix``   |*string*    |The prefix of objects to get current policy. |
+|``bucketname``   | _string_  |Name of the bucket.|
+|``prefix``   |_string_    |The prefix of objects to get current policy. |
 
 __Return Value__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``Policy``   | *minio.policy.Policy*   |Policy enum. Policy.READ_ONLY,Policy.WRITE_ONLY,Policy.READ_WRITE or Policy.NONE.   |
+|``Policy``   | _minio.policy.Policy_   |Policy enum. Policy.READ_ONLY,Policy.WRITE_ONLY,Policy.READ_WRITE or Policy.NONE.   |
 
 __Example__
 
@@ -341,9 +301,9 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``Policy``   | *minio.policy.Policy*   |Policy enum. Policy.READ_ONLY,Policy.WRITE_ONLY,Policy.READ_WRITE or Policy.NONE.   |
-|``bucketname``   | *string*  |Name of the bucket.|
-|``prefix``   |*string*    |The prefix of objects to get current policy. |
+|``Policy``   | _minio.policy.Policy_   |Policy enum. Policy.READ_ONLY,Policy.WRITE_ONLY,Policy.READ_WRITE or Policy.NONE.   |
+|``bucketname``   | _string_  |Name of the bucket.|
+|``prefix``   |_string_ |The prefix of objects to get current policy. |
 
 __Example__
 
@@ -366,14 +326,14 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucket_name``   |*string*   |Name of the bucket.   |
-|``object_name``   |*string*   |Name of the object.   |
+|``bucket_name``   |_string_   |Name of the bucket.   |
+|``object_name``   |_string_   |Name of the object.   |
 
 __Return Value__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``object``   | *io.IOBase*   |Represents object reader.   |
+|``object``   | _io.IOBase_   |Represents object reader.   |
 
 __Example__
 
@@ -399,16 +359,16 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucket_name``   |*string*   |Name of the bucket.   |
-|``object_name``   |*string*    |Name of the object.   |
-|``offset``   |*int*   |``offset`` of the object from where the stream will start.   |
-|``length``   |*int*    |``length`` of the object that will be read in the stream (optional, if not specified we read the rest of the file from the offset).   |
+|``bucket_name``   |_string_  |Name of the bucket.   |
+|``object_name``   |_string_  |Name of the object.   |
+|``offset``   |_int_ |``offset`` of the object from where the stream will start.   |
+|``length``   |_int_ |``length`` of the object that will be read in the stream (optional, if not specified we read the rest of the file from the offset).   |
 
 __Return Value__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``object``   | *io.IOBase*   |Represents object reader.   |
+|``object``   | _io.IOBase_   |Represents object reader.   |
 
 __Example__
 
@@ -434,9 +394,9 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucket_name``   |*string*   |Name of the bucket.   |
-|``object_name``   |*string*    |Name of the object.   |
-|``file_path``   |*string* | Path on the local filesystem to which the object data will be written. |
+|``bucket_name``   |_string_   |Name of the bucket.   |
+|``object_name``   |_string_    |Name of the object.   |
+|``file_path``   |_string_ | Path on the local filesystem to which the object data will be written. |
 
 __Example__
 
@@ -459,11 +419,11 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucket_name``   |*string*   |Name of the bucket.   |
-|``object_name``   |*string*    |Name of the object.   |
-|``data``   |*io.IOBase*   |Any python object implementing io.IOBase. |
-|``length``   |*int*   |Total length of object.   |
-|``content_type``   |*string* | Content type of the object. (optional, defaults to 'application/octet-stream').   |
+|``bucket_name``   |_string_   |Name of the bucket.   |
+|``object_name``   |_string_    |Name of the object.   |
+|``data``   |_io.IOBase_   |Any python object implementing io.IOBase. |
+|``length``   |_int_   |Total length of object.   |
+|``content_type``   |_string_ | Content type of the object. (optional, defaults to 'application/octet-stream').   |
 
 __Example__
 
@@ -499,10 +459,10 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucket_name``   |*string*   |Name of the bucket.   |
-|``object_name``   |*string*    |Name of the object.   |
-|``file_path``   |*string*   |Path on the local filesystem to which the object data will be written. |
-|``content_type``   |*string* | Content type of the object. (optional, defaults to 'application/octet-stream').   |
+|``bucket_name``   |_string_  |Name of the bucket.   |
+|``object_name``   |_string_    |Name of the object.   |
+|``file_path``   |_string_ |Path on the local filesystem to which the object data will be written. |
+|``content_type``   |_string_ | Content type of the object. (optional, defaults to 'application/octet-stream').   |
 
 __Example__
 
@@ -535,36 +495,23 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucket_name``   |*string*   |Name of the bucket.   |
-|``object_name``   |*string*    |Name of the object.   |
+|``bucket_name``   |_string_  |Name of the bucket.   |
+|``object_name``   |_string_  |Name of the object.   |
 
 __Return Value__
 
-<table>
-    <thead>
-        <tr>
-            <th>Param</th>
-            <th>Type</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-           <code> obj </code>
-            </td>
-            <td> <i> Object </i> </td>
-            <td> object stat info for following format:
-            <ul>
-            <li> <code>obj.size</code> <i>int</i>: size of the object.</li>
-            <li> <code>obj.etag</code> <i>string</i>: etag of the object.</li>
-            <li> <code>obj.content_type</code> <i>string</i>: Content-Type of the object.</li>
-            <li> <code>obj.last_modified</code> <i>time.time</i>: modified time stamp.</li>
-            </ul>
-            </td>
-            </tr>
-               </tbody>
-</table>
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``obj``|_Object_  |object stat info for format described below:  |
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``obj.size``|_int_  |size of the object. |
+|``obj.etag``|_string_|etag of the object.|
+|``obj.content_type``|_string_  | Content-Type of the object.|
+|``obj.last_modified``|_time.time_  |modified time stamp.|
+
+
 
 __Example__
 
@@ -587,8 +534,8 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucket_name``   |*string*   |Name of the bucket.   |
-|``object_name``   |*string*    |Name of the object.   |
+|``bucket_name``   |_string_   |Name of the bucket.   |
+|``object_name``   |_string_    |Name of the object.   |
 
 __Example__
 
@@ -611,8 +558,8 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucket_name``   |*string*   |Name of the bucket.   |
-|``object_name``   |*string*    |Name of the object.   |
+|``bucket_name``   |_string_   |Name of the bucket.   |
+|``object_name``   |_string_   |Name of the object.   |
 
 __Example__
 
@@ -637,9 +584,9 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucket_name``   |*string*   |Name of the bucket.   |
-|``object_name``   |*string*    |Name of the object.   |
-|``expiry``   | *datetime.datetime*    |Expiry in seconds. Default expiry is set to 7 days.    |
+|``bucket_name``   |_string_   |Name of the bucket.   |
+|``object_name``   |_string_    |Name of the object.   |
+|``expiry``   | _datetime.datetime_    |Expiry in seconds. Default expiry is set to 7 days.    |
 
 __Example__
 
@@ -668,9 +615,9 @@ __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucket_name``   |*string*   |Name of the bucket.   |
-|``object_name``   |*string*    |Name of the object.   |
-|``expiry``   | *datetime.datetime*    |Expiry in seconds. Default expiry is set to 7 days.    |
+|``bucket_name``   |_string_  |Name of the bucket.   |
+|``object_name``   |_string_    |Name of the object.   |
+|``expiry``   | _datetime.datetime_    |Expiry in seconds. Default expiry is set to 7 days.    |
 
 __Example__
 
@@ -748,15 +695,4 @@ print(' '.join(curl_cmd))
 - [Minio Golang Client SDK Quickstart Guide](https://docs.minio.io/docs/golang-client-quickstart-guide) 
 - [Minio Java Client SDK Quickstart Guide](https://docs.minio.io/docs/java-client-quickstart-guide) 
 - [Minio JavaScript Client SDK Quickstart Guide](https://docs.minio.io/docs/javascript-client-quickstart-guide)
-
-
-
-
-
-
-
-
-
-
-
 
