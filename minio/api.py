@@ -1287,7 +1287,7 @@ class Minio(object):
                                   content_sha256=sha256_hex)
 
         etag = response.headers['etag']
-        # Strip off quotes from begining and the end.
+        # Strip off quotes from beginning and the end.
         if etag.startswith('"') and etag.endswith('"'):
             etag = etag[len('"'):]
             etag = etag[:-len('"')]
