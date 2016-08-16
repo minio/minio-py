@@ -61,7 +61,7 @@ def parse_multipart_upload_result(data):
     """
     Parser for complete multipart upload response.
 
-    :param data: Respone data for complete multipart upload.
+    :param data: Response data for complete multipart upload.
     :return: :class:`MultipartUploadResult <MultipartUploadResult>`.
     """
     try:
@@ -74,7 +74,7 @@ def parse_multipart_upload_result(data):
         object_name = get_element_text(root, 's3:Key')
         location = get_element_text(root, 's3:Location')
         etag = get_element_text(root, 's3:ETag')
-        # Strip off quotes from begining and the end.
+        # Strip off quotes from beginning and the end.
         if etag.startswith('"') and etag.endswith('"'):
             etag = etag[len('"'):]
             etag = etag[:-len('"')]
@@ -88,7 +88,7 @@ def parse_list_buckets(data):
     """
     Parser for list buckets response.
 
-    :param data: Respone data for list buckets.
+    :param data: Response data for list buckets.
     :return: List of :class:`Bucket <Bucket>`.
     """
     try:
