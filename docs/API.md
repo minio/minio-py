@@ -36,10 +36,10 @@ s3Client = Minio('s3.amazonaws.com',
 |[`list_buckets`](#list_buckets)   | [`put_object`](#put_object)  | [`presigned_put_object`](#presigned_put_object)  |
 | [`bucket_exists`](#bucket_exists)  |[`stat_object`](#stat_object)   |[`presigned_post_policy`](#presigned_post_policy)   |
 |[`remove_bucket`](#remove_bucket)   | [`remove_object`](#remove_object)  |   |
-| [`list_objects`](#list_objects)  | [`remove_incomplete_upload`](#remove_incomplete_upload)  |   | 
+| [`list_objects`](#list_objects)  | [`remove_incomplete_upload`](#remove_incomplete_upload)  |   |
 |[`list_incomplete_uploads`](#list_incomplete_uploads)   |  [`fput_object`](#fput_object) |   |
-| [`get_bucket_policy`](#get_bucket_policy) |[`fget_object`](#fget_object)  |  | 
-| [`set_bucket_policy`](#set_bucket_policy) | [`get_partial_object`](#get_partial_object) |  | 
+| [`get_bucket_policy`](#get_bucket_policy) |[`fget_object`](#fget_object)  |  |
+| [`set_bucket_policy`](#set_bucket_policy) | [`get_partial_object`](#get_partial_object) |  |
 
 ## 1. Constructor
 
@@ -98,7 +98,7 @@ __Parameters__
 
 | Param  | Type  | Description  |
 |---|---|---|
-|`bucket_name`  | _string_  | Name of the bucket. | 
+|`bucket_name`  | _string_  | Name of the bucket. |
 | `location`  |  _string_ | Default value is us-east-1 Region where the bucket is created. Valid values are listed below: |
 | | |us-east-1 |
 | | |us-west-1 |
@@ -108,7 +108,7 @@ __Parameters__
 | | | ap-southeast-1|
 | | | ap-northeast-1|
 | | | ap-southeast-2|
-| | | sa-east-1| 
+| | | sa-east-1|
 
 __Example__
 
@@ -292,16 +292,20 @@ print(policy)
 ```
 
 <a name="set_bucket_policy"></a>
-### set_bucket_policy(policy, bucket_name, prefix)
-Sets policy to a bucket.
+### set_bucket_policy(bucket_name, prefix, policy)
+
+Set a bucket policy for a specified bucket. If `prefix` is not empty,
+the bucket policy will only be assigned to objects that fit the
+given prefix.
 
 __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``Policy``   | _minio.policy.Policy_   |Policy enum. Policy.READ_ONLY,Policy.WRITE_ONLY,Policy.READ_WRITE or Policy.NONE.   |
 |``bucketname``   | _string_  |Name of the bucket.|
 |``prefix``   |_string_ |The prefix of objects to get current policy. |
+|``Policy``   | _minio.policy.Policy_   |Policy enum. Policy.READ_ONLY,Policy.WRITE_ONLY,Policy.READ_WRITE or Policy.NONE.   |
+
 
 __Example__
 
@@ -309,9 +313,9 @@ __Example__
 ```py
 
 # Set policy Policy.READ_ONLY to all object paths in bucket that begin with my-prefixname.
-minioClient.get_bucket_policy(Policy.READ_ONLY,
-                              'mybucket',
-                              'my-prefixname')
+minioClient.set_bucket_policy('mybucket',
+                              'my-prefixname',
+                              Policy.READ_ONLY)
 
 ```
 
@@ -451,7 +455,7 @@ except ResponseError as err:
 
 <a name="fput_object"></a>
 ### fput_object(bucket_name, object_name, file_path, content_type)
-Uploads contents from a file to objectName. 
+Uploads contents from a file to objectName.
 
 __Parameters__
 
@@ -668,7 +672,7 @@ Get the POST form key/value object:
 try:
     signed_form_data = minioClient.presigned_post_policy(post_policy)
 except ResponseError as err:
-    print(err)    
+    print(err)
 
 ```
 
@@ -689,8 +693,7 @@ print(' '.join(curl_cmd))
 ```
 
 ## 5. Explore Further
- 
-- [Minio Golang Client SDK Quickstart Guide](https://docs.minio.io/docs/golang-client-quickstart-guide) 
-- [Minio Java Client SDK Quickstart Guide](https://docs.minio.io/docs/java-client-quickstart-guide) 
-- [Minio JavaScript Client SDK Quickstart Guide](https://docs.minio.io/docs/javascript-client-quickstart-guide)
 
+- [Minio Golang Client SDK Quickstart Guide](https://docs.minio.io/docs/golang-client-quickstart-guide)
+- [Minio Java Client SDK Quickstart Guide](https://docs.minio.io/docs/java-client-quickstart-guide)
+- [Minio JavaScript Client SDK Quickstart Guide](https://docs.minio.io/docs/javascript-client-quickstart-guide)

@@ -29,22 +29,22 @@ client = Minio('s3.amazonaws.com', secure=True,
 try:
     # Set policy Policy.READ_ONLY to bucket 'my-bucketname' which
     # enables 'my-bucketname' readable by everyone.
-    client.set_bucket_policy(Policy.READ_ONLY, 'my-bucketname')
+    client.set_bucket_policy('my-bucketname', '', Policy.READ_ONLY)
 
     # Set policy Policy.READ_WRITE to bucket 'my-bucketname' and
     # prefix 'public-folder/' which enables
     # 'my-bucketname/public-folder/' read/writeable by everyone.
-    client.set_bucket_policy(Policy.READ_WRITE, 'my-bucketname',
-                             'public-folder/')
+    client.set_bucket_policy('my-bucketname', 'public-folder/',
+                             Policy.READ_WRITE)
 
     # Set policy Policy.WRITE_ONLY to bucket 'my-bucketname' and
     # prefix 'incoming' which enables 'my-bucketname/incoming'
     # writeable by everyone.
-    client.set_bucket_policy(Policy.WRITE_ONLY, 'my-bucketname',
-                             'incoming')
+    client.set_bucket_policy('my-bucketname', 'incoming',
+                             Policy.WRITE_ONLY)
 
     # Set policy Policy.NONE to bucket 'my-bucketname' which
     # removes existing policy and set no access to everyone.
-    client.set_bucket_policy(Policy.NONE, 'my-bucketname')
+    client.set_bucket_policy('my-bucketname', '', Policy.NONE)
 except ResponseError as err:
     print(err)

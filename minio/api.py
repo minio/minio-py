@@ -311,7 +311,7 @@ class Minio(object):
                                       bucket_name=bucket_name,
                                       query={"policy": ""},
                                       headers={})
-            policy_dict = json.loads(response.data)
+            policy_dict = json.loads(response.read().decode('utf-8'))
         except ResponseError as e:
             # Ignore 'NoSuchBucketPolicy' error.
             if e.code != 'NoSuchBucketPolicy':
@@ -336,7 +336,7 @@ class Minio(object):
 
         return policy.get_policy(statements, bucket_name, prefix)
 
-    def set_bucket_policy(self, policy_access, bucket_name, prefix=""):
+    def set_bucket_policy(self, bucket_name, prefix, policy_access):
         """
         Set bucket policy of given bucket name and object prefix.
 
@@ -368,9 +368,11 @@ class Minio(object):
             policy_dict['Statement'] = statements
             content = json.dumps(policy_dict)
 
-            headers = {'Content-Length': str(len(content)),
-                       'Content-MD5': encode_to_base64(get_md5(content))}
-            content_sha256_hex = encode_to_hex(get_sha256(content))
+            headers = {
+                'Content-Length': str(len(content)),
+                'Content-MD5': encode_to_base64(get_md5(content.encode('utf-8')))
+            }
+            content_sha256_hex = encode_to_hex(get_sha256(content.encode('utf-8')))
 
             self._url_open("PUT",
                            bucket_name=bucket_name,
