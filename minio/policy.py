@@ -24,6 +24,8 @@ This module implements policy management.
 
 """
 
+from .compat import basestring
+
 import collections
 import fnmatch
 import itertools

@@ -24,6 +24,7 @@ import certifi
 from datetime import datetime, timedelta
 
 from minio import Minio, PostPolicy
+from minio.policy import Policy
 from minio.error import ResponseError
 
 from faker import Factory
@@ -137,6 +138,21 @@ def main():
     # Remove an object.
     print(client.remove_object(bucket_name, object_name))
     print(client.remove_object(bucket_name, object_name+'-f'))
+
+    policy_name = client.get_bucket_policy(bucket_name)
+    if policy_name != Policy.NONE:
+        raise ValueError('Policy name is invalid ' + policy_name)
+
+    # Set read-write policy successfully.
+    client.set_bucket_policy(bucket_name, '', Policy.READ_WRITE)
+
+    # Reset policy to NONE.
+    client.set_bucket_policy(bucket_name, '', Policy.NONE)
+
+    # Validate if the policy is reverted back to NONE.
+    policy_name = client.get_bucket_policy(bucket_name)
+    if policy_name != Policy.NONE:
+        raise ValueError('Policy name is invalid ' + policy_name)
 
     # Remove a bucket. This operation will only work if your bucket is empty.
     print(client.remove_bucket(bucket_name))
