@@ -335,7 +335,7 @@ __Return Value__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``object``   | _io.IOBase_   |Represents object reader.   |
+|``object``   | _urllib3.response.HTTPResponse_   |Represents http streaming reader.   |
 
 __Example__
 
@@ -346,7 +346,7 @@ __Example__
 try:
     data = minioClient.get_object('mybucket', 'myobject')
     with open('my-testfile', 'wb') as file_data:
-        for d in data:
+        for d in data.stream(32*1024):
             file_data.write(d)
 except ResponseError as err:
     print(err)
@@ -370,7 +370,7 @@ __Return Value__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``object``   | _io.IOBase_   |Represents object reader.   |
+|``object``   | _urllib3.response.HTTPResponse_   |Represents http streaming reader.   |
 
 __Example__
 
