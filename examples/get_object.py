@@ -27,7 +27,7 @@ client = Minio('s3.amazonaws.com',
 try:
     data = client.get_object('my-bucketname', 'my-objectname')
     with open('my-testfile', 'wb') as file_data:
-        for d in data:
+        for d in data.stream(32*1024):
             file_data.write(d)
 except ResponseError as err:
     print(err)
