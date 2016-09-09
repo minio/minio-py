@@ -379,6 +379,146 @@ def is_non_empty_string(input_string):
     return True
 
 
+def is_valid_bucket_notification_config(notifications):
+    """
+    Validate the notifications config structure
+
+    :param notifications: Dictionary with specific structure.
+    :return: True if input is a valid bucket notifications structure.
+       Raise :exc:`InvalidArgumentError` otherwise.
+    """
+    # check if notifications is a dict.
+    if not isinstance(notifications, dict):
+        raise TypeError('notifications configuration must be a dictionary')
+
+    if len(notifications) == 0:
+        raise InvalidArgumentError(
+            'notifications configuration may not be empty'
+        )
+
+    VALID_NOTIFICATION_KEYS = set([
+        "TopicConfigurations",
+        "QueueConfigurations",
+        "CloudFunctionConfigurations",
+    ])
+
+    VALID_SERVICE_CONFIG_KEYS = set([
+        'Id',
+        'Arn',
+        'Events',
+        'Filter',
+    ])
+
+    NOTIFICATION_EVENTS = set([
+        's3:ReducedRedundancyLostObject',
+        's3:ObjectCreated:*',
+        's3:ObjectCreated:Put',
+        's3:ObjectCreated:Post',
+        's3:ObjectCreated:Copy',
+        's3:ObjectCreated:CompleteMultipartUpload',
+        's3:ObjectRemoved:*',
+        's3:ObjectRemoved:Delete',
+        's3:ObjectRemoved:DeleteMarkerCreated',
+    ])
+
+    for key, value in notifications.items():
+        # check if key names are valid
+        if key not in VALID_NOTIFICATION_KEYS:
+            raise InvalidArgumentError(
+                ('{} is an invalid key '
+                 'for notifications configuration').format(
+                     key
+                )
+            )
+
+        # check if config values conform
+        # first check if value is a list
+        if not isinstance(value, list):
+            raise InvalidArgumentError(
+                ('The value for key "{}" in the notifications '
+                 'configuration must be a list.').format(key)
+            )
+        for service_config in value:
+            # check type matches
+            if not isinstance(service_config, dict):
+                raise InvalidArgumentError(
+                    ('Each service configuration item for "{}" must be a '
+                     'dictionary').format(key)
+                )
+            # check keys are valid
+            for skey in service_config.keys():
+                if skey not in VALID_SERVICE_CONFIG_KEYS:
+                    raise InvalidArgumentError(
+                        ('{} is an invalid key for a service '
+                         'configuration item').format(
+                             skey
+                         )
+                    )
+            # check for required keys
+            arn = service_config.get('Arn', '')
+            if arn == '':
+                raise InvalidArgumentError(
+                    'Arn key in service config must be present and has to be '
+                    'non-empty string'
+                )
+            events = service_config.get('Events', [])
+            if len(events) < 1:
+                raise InvalidArgumentError(
+                    'At least one event must be specified in a service config'
+                )
+            if not isinstance(events, list):
+                raise InvalidArgumentError(
+                    '"Events" must be a list of strings in a service '
+                    'configuration'
+                )
+            # check if 'Id' key is present, it should be a string
+            if not isinstance(service_config.get('Id', ''), str):
+                raise InvalidArgumentError(
+                    '"Id" key must be a string'
+                )
+            for event in events:
+                if event not in NOTIFICATION_EVENTS:
+                    raise InvalidArgumentError(
+                        '{} is not a valid event. Valid events are: {}'.format(
+                            event, NOTIFICATION_EVENTS
+                        )
+                    )
+            if 'Filter' in service_config:
+                exception_msg = (
+                    '{} - If a Filter key is given, it must be a '
+                    'dictionary, the dictionary must have the '
+                    'key "Key", and its value must be an object, with '
+                    'a key named "FilterRules" which must be a non-empty list.'
+                ).format(
+                    service_config['Filter']
+                )
+                try:
+                    filter_rules = service_config.get('Filter', {}).get(
+                        'Key', {}).get('FilterRules', [])
+                    if not isinstance(filter_rules, list):
+                        raise InvalidArgumentError(exception_msg)
+                    if len(filter_rules) < 1:
+                        raise InvalidArgumentError(exception_msg)
+                except AttributeError:
+                    raise InvalidArgumentError(exception_msg)
+                for filter_rule in filter_rules:
+                    try:
+                        name = filter_rule['Name']
+                        value = filter_rule['Value']
+                    except KeyError:
+                        raise InvalidArgumentError(
+                            ('{} - a FilterRule dictionary must have "Name" '
+                             'and "Value" keys').format(filter_rule)
+                        )
+                    if name not in ['prefix', 'suffix']:
+                        raise InvalidArgumentError(
+                            ('{} - The "Name" key in a filter rule must be '
+                             'either "prefix" or "suffix"').format(name)
+                        )
+
+    return True
+
+
 def encode_object_name(object_name):
     """
     URL encode input object name.

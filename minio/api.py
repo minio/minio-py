@@ -53,12 +53,14 @@ from .parsers import (parse_list_buckets,
                       parse_list_multipart_uploads,
                       parse_new_multipart_upload,
                       parse_location_constraint,
-                      parse_multipart_upload_result)
+                      parse_multipart_upload_result,
+                      parse_get_bucket_notification)
 from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_endpoint,
                       get_sha256, encode_to_base64, get_md5,
                       optimal_part_info, encode_to_hex,
                       is_valid_bucket_name, parts_manager,
+                      is_valid_bucket_notification_config,
                       mkdir_p, dump_http)
 from .helpers import (MAX_MULTIPART_OBJECT_SIZE,
                       MIN_OBJECT_SIZE)
@@ -66,7 +68,8 @@ from .signer import (sign_v4, presign_v4,
                      generate_credential_string,
                      post_presign_signature, _SIGN_V4_ALGORITHM)
 from .xml_marshal import (xml_marshal_bucket_constraint,
-                          xml_marshal_complete_multipart_upload)
+                          xml_marshal_complete_multipart_upload,
+                          xml_marshal_bucket_notifications)
 from .limited_reader import LimitedReader
 from . import policy
 
@@ -380,6 +383,71 @@ class Minio(object):
                            headers={},
                            body=content,
                            content_sha256=content_sha256_hex)
+
+    def get_bucket_notification(self, bucket_name):
+        """
+        Get notifications configured for the given bucket.
+
+        :param bucket_name: Bucket name.
+        """
+        is_valid_bucket_name(bucket_name)
+
+        response = self._url_open(
+            "GET",
+            bucket_name=bucket_name,
+            query={"notification": ""},
+            headers={}
+        )
+        data = response.read().decode('utf-8')
+        return parse_get_bucket_notification(data)
+
+    def set_bucket_notification(self, bucket_name, notifications):
+        """
+        Set the given notifications on the bucket.
+
+        :param bucket_name: Bucket name.
+        :param notifications: Notifications structure
+        """
+        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_notification_config(notifications)
+
+        content = xml_marshal_bucket_notifications(notifications)
+        headers = {
+            'Content-Length': str(len(content)),
+            'Content-MD5': encode_to_base64(get_md5(content))
+        }
+        content_sha256_hex = encode_to_hex(get_sha256(content))
+        self._url_open(
+            'PUT',
+            bucket_name=bucket_name,
+            query={"notification": ""},
+            headers=headers,
+            body=content,
+            content_sha256=content_sha256_hex
+        )
+
+    def remove_all_bucket_notifications(self, bucket_name):
+        """
+        Remove all notifications configured on the bucket.'
+
+        :param bucket_name: Bucket name.
+        """
+        is_valid_bucket_name(bucket_name)
+
+        content_bytes = xml_marshal_bucket_notifications({})
+        headers = {
+            'Content-Length': str(len(content_bytes)),
+            'Content-MD5': encode_to_base64(get_md5(content_bytes))
+        }
+        content_sha256_hex = encode_to_hex(get_sha256(content_bytes))
+        self._url_open(
+            'PUT',
+            bucket_name=bucket_name,
+            query={"notification": ""},
+            headers=headers,
+            body=content_bytes,
+            content_sha256=content_sha256_hex
+        )
 
     def _get_upload_id(self, bucket_name, object_name, content_type):
         """

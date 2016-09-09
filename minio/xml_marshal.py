@@ -34,8 +34,8 @@ _S3_NAMESPACE = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
 def xml_marshal_bucket_constraint(region):
     """
-    Marshal's bucket constraint based on *region*
-.
+    Marshal's bucket constraint based on *region*.
+
     :param region: Region name of a given bucket.
     :return: Marshalled XML data.
     """
@@ -50,7 +50,7 @@ def xml_marshal_bucket_constraint(region):
 def xml_marshal_complete_multipart_upload(uploaded_parts):
     """
     Marshal's complete multipart upload request based on *uploaded_parts*.
-.
+
     :param uploaded_parts: List of all uploaded parts ordered in the
            way they were uploaded.
     :return: Marshalled XML data.
@@ -66,3 +66,134 @@ def xml_marshal_complete_multipart_upload(uploaded_parts):
         s3_xml.ElementTree(root).write(data, encoding=None,
                                        xml_declaration=False)
     return data.getvalue()
+
+def xml_marshal_bucket_notifications(notifications):
+    """
+    Marshals the notifications structure for sending to S3 compatible storage
+
+    :param notifications: Dictionary with following structure:
+
+    {
+        'TopicConfigurations': [
+            {
+                'Id': 'string',
+                'Arn': 'string',
+                'Events': [
+                    's3:ReducedRedundancyLostObject'|'s3:ObjectCreated:*'|'s3:ObjectCreated:Put'|'s3:ObjectCreated:Post'|'s3:ObjectCreated:Copy'|'s3:ObjectCreated:CompleteMultipartUpload'|'s3:ObjectRemoved:*'|'s3:ObjectRemoved:Delete'|'s3:ObjectRemoved:DeleteMarkerCreated',
+                ],
+                'Filter': {
+                    'Key': {
+                        'FilterRules': [
+                            {
+                                'Name': 'prefix'|'suffix',
+                                'Value': 'string'
+                            },
+                        ]
+                    }
+                }
+            },
+        ],
+        'QueueConfigurations': [
+            {
+                'Id': 'string',
+                'Arn': 'string',
+                'Events': [
+                    's3:ReducedRedundancyLostObject'|'s3:ObjectCreated:*'|'s3:ObjectCreated:Put'|'s3:ObjectCreated:Post'|'s3:ObjectCreated:Copy'|'s3:ObjectCreated:CompleteMultipartUpload'|'s3:ObjectRemoved:*'|'s3:ObjectRemoved:Delete'|'s3:ObjectRemoved:DeleteMarkerCreated',
+                ],
+                'Filter': {
+                    'Key': {
+                        'FilterRules': [
+                            {
+                                'Name': 'prefix'|'suffix',
+                                'Value': 'string'
+                            },
+                        ]
+                    }
+                }
+            },
+        ],
+        'CloudFunctionConfigurations': [
+            {
+                'Id': 'string',
+                'Arn': 'string',
+                'Events': [
+                    's3:ReducedRedundancyLostObject'|'s3:ObjectCreated:*'|'s3:ObjectCreated:Put'|'s3:ObjectCreated:Post'|'s3:ObjectCreated:Copy'|'s3:ObjectCreated:CompleteMultipartUpload'|'s3:ObjectRemoved:*'|'s3:ObjectRemoved:Delete'|'s3:ObjectRemoved:DeleteMarkerCreated',
+                ],
+                'Filter': {
+                    'Key': {
+                        'FilterRules': [
+                            {
+                                'Name': 'prefix'|'suffix',
+                                'Value': 'string'
+                            },
+                        ]
+                    }
+                }
+            },
+        ]
+    }
+
+    :return: Marshalled XML data
+    """
+    root = s3_xml.Element('NotificationConfiguration', {'xmlns': _S3_NAMESPACE})
+    _add_notification_config_to_xml(
+        root,
+        'TopicConfiguration',
+        notifications.get('TopicConfigurations', [])
+    )
+    _add_notification_config_to_xml(
+        root,
+        'QueueConfiguration',
+        notifications.get('QueueConfigurations', [])
+    )
+    _add_notification_config_to_xml(
+        root,
+        'CloudFunctionConfiguration',
+        notifications.get('CloudFunctionConfigurations', [])
+    )
+
+    data = io.BytesIO()
+    s3_xml.ElementTree(root).write(data, encoding=None, xml_declaration=False)
+    return data.getvalue()
+
+NOTIFICATIONS_ARN_FIELDNAME_MAP = {
+    'TopicConfiguration': 'Topic',
+    'QueueConfiguration': 'Queue',
+    'CloudFunctionConfiguration': 'CloudFunction',
+}
+
+def _add_notification_config_to_xml(node, element_name, configs):
+    """
+    Internal function that builds the XML sub-structure for a given
+    kind of notification configuration.
+
+    """
+    for config in configs:
+        config_node = s3_xml.SubElement(node, element_name)
+
+        if 'Id' in config:
+            id_node = s3_xml.SubElement(config_node, 'Id')
+            id_node.text = config['Id']
+
+        arn_node = s3_xml.SubElement(
+            config_node,
+            NOTIFICATIONS_ARN_FIELDNAME_MAP[element_name]
+        )
+        arn_node.text = config['Arn']
+
+        for event in config['Events']:
+            event_node = s3_xml.SubElement(config_node, 'Event')
+            event_node.text = event
+
+        filter_rules = config_node.get('Filter', {}).get(
+            'Key', {}).get('FilterRules', [])
+        if filter_rules:
+            filter_node = s3_xml.SubElement(config_node, 'Filter')
+            s3key_node = s3_xml.SubElement(filter_node, 'S3Key')
+            for filter_rule in filter_rules:
+                filter_rule_node = s3_xml.SubElement(s3key_node, 'FilterRule')
+                name_node = s3_xml.SubElement(filter_rule_node, 'Name')
+                name_node.text = filter_rule['Name']
+                value_node = s3_xml.SubElement(filter_rule_node, 'Value')
+                value_node.text = filter_rule['Value']
+    return node
