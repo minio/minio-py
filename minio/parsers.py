@@ -38,6 +38,8 @@ from .error import InvalidXMLError
 from .compat import urldecode
 from .definitions import (Object, Bucket, IncompleteUpload,
                           UploadPart, MultipartUploadResult)
+from .xml_marshal import (NOTIFICATIONS_ARN_FIELDNAME_MAP)
+
 
 if hasattr(cElementTree, 'ParseError'):
     _ETREE_EXCEPTIONS = (ParseError, AttributeError, ValueError, TypeError)
@@ -339,3 +341,72 @@ def _iso8601_to_localized_time(date_string):
     parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
     localized_time = pytz.utc.localize(parsed_date)
     return localized_time
+
+def parse_get_bucket_notification(data):
+    """
+    Parser for a get_bucket_notification response from S3.
+
+    :param data: Body of response from get_bucket_notification.
+    :return: Returns bucket notification configuration
+    """
+    try:
+        root = cElementTree.fromstring(data)
+    except _ETREE_EXCEPTIONS as error:
+        raise InvalidXMLError('"GetBucketNotificationResult" XML is not parsable. '
+                              'Message: {0}'.format(error.message))
+
+    # perhaps we could ignore this condition?
+    if root.tag != '{{{s3}}}NotificationConfiguration'.format(**_S3_NS):
+        raise InvalidXMLError('"GetBucketNotificationresult" XML root is '
+                              'invalid.')
+
+    notifications = _parse_add_notifying_service_config(
+        root, {},
+        'TopicConfigurations', 'TopicConfiguration'
+    )
+    notifications = _parse_add_notifying_service_config(
+        root, notifications,
+        'QueueConfigurations', 'QueueConfiguration'
+    )
+    notifications = _parse_add_notifying_service_config(
+        root, notifications,
+        'CloudFunctionConfigurations', 'CloudFunctionConfiguration'
+    )
+
+    return notifications
+
+def _parse_add_notifying_service_config(data, notifications, service_key,
+                                        service_xml_tag):
+    config = []
+    stag = 's3:{}'.format(service_xml_tag)
+    for service in data.findall(stag, _S3_NS):
+        service_config = {}
+        service_config['Id'] = service.find('s3:Id', _S3_NS).text
+        arn_tag = 's3:{}'.format(
+            NOTIFICATIONS_ARN_FIELDNAME_MAP[service_xml_tag]
+        )
+        service_config['Arn'] = service.find(arn_tag, _S3_NS).text
+        service_config['Events'] = []
+        for event in service.findall('s3:Event', _S3_NS):
+            service_config['Events'].append(event.text)
+        xml_filter_rule = service.find('s3:Filter', _S3_NS)
+        if xml_filter_rule:
+            xml_filter_rules = xml_filter_rule.find(
+                's3:S3Key', _S3_NS).findall('s3:FilterRule', _S3_NS)
+            filter_rules = []
+            for xml_filter_rule in xml_filter_rules:
+                filter_rules.append(
+                    {
+                        'Name': xml_filter_rule.find('s3:Name', _S3_NS),
+                        'Value': xml_filter_rule.find('s3:Value', _S3_NS),
+                    }
+                )
+            service_config['Filter'] = {
+                'Key': {
+                    'FilterRules': filter_rules
+                }
+            }
+        config.append(service_config)
+    if config:
+        notifications[service_key] = config
+    return notifications
