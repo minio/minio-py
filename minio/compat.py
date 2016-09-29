@@ -35,7 +35,7 @@ is_py3 = (_ver[0] == 3)
 if is_py2:
     from urllib import pathname2url as urlencode
     from urllib import url2pathname as urldecode
-    from urlparse import urlsplit
+    from urlparse import urlsplit, parse_qs
 
     builtin_str = str
     bytes = str
@@ -47,7 +47,7 @@ if is_py2:
 elif is_py3:
     from urllib.request import pathname2url as urlencode
     from urllib.request import url2pathname as urldecode
-    from urllib.parse import urlsplit
+    from urllib.parse import urlsplit, parse_qs
 
     builtin_str = str
     str = str

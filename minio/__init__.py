@@ -35,4 +35,5 @@ __copyright__ = 'Copyright 2015, 2016 Minio, Inc.'
 from .api import Minio
 from .error import ResponseError
 from .post_policy import PostPolicy
+from .copy_conditions import CopyConditions
 from .definitions import Bucket, Object

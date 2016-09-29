@@ -602,9 +602,61 @@ except ResponseError as err:
 
 ```
 
+<a name="copy_object"></a>
+### copy_object(bucket_name, object_name, object_source, copy_conditions)
+ Copy a source object on object storage server to a new object.
+
+ NOTE: Maximum object size supported by this API is 5GB.
+
+__Parameters__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``bucket_name``   |_string_   |Name of the bucket for new object.   |
+|``object_name``   |_string_    |Name of the new object.   |
+|``object_source``   |_string_   |Name of the object to be copied. |
+|``copy_conditions`` |_CopyConditions_ | Collection of conditions to be satisfied for the request. |
+
+
+__Example__
+
+All following conditions are allowed and can be combined together.
+
+```py
+import time
+from datetime import datetime
+from minio import CopyConditions
+
+copy_conditions = CopyConditions()
+# Set modified condition, copy object modified since 2014 April.
+t = (2014, 4, 0, 0, 0, 0, 0, 0, 0)
+mod_since = datetime.utcfromtimestamp(time.mktime(t))
+copy_conditions.set_modified_since(mod_since)
+
+# Set unmodified condition, copy object unmodified since 2014 April.
+copy_conditions.set_unmodified_since(mod_since)
+
+# Set matching ETag condition, copy object which matches the following ETag.
+copy_conditions.set_match_etag("31624deb84149d2f8ef9c385918b653a")
+
+# Set matching ETag except condition, copy object which does not match the following ETag.
+copy_conditions.set_match_etag_except("31624deb84149d2f8ef9c385918b653a")
+
+try:
+    copy_result = minioClient.copy_object("mybucket", "myobject",
+                                          "/my-sourcebucketname/my-sourceobjectname",
+                                          copy_conditions)
+    print(copy_result)
+except ResponseError as err:
+    print(err)
+
+```
+
 <a name="put_object"></a>
 ### put_object(bucket_name, object_name, data, length, content_type)
-Uploads an object.
+Add a new object to the object storage server.
+
+NOTE: Maximum object size supported by this API is 5TiB.
 
 __Parameters__
 
@@ -636,7 +688,7 @@ try:
     file_stat = os.stat('my-testfile.csv')
     file_data = open('my-testfile.csv', 'rb')
     minioClient.put_object('mybucket', 'myobject.csv', file_data,
-                      file_stat.st_size, content_type='application/csv')
+                           file_stat.st_size, content_type='application/csv')
 except ResponseError as err:
     print(err)
 

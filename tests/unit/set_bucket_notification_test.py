@@ -130,7 +130,7 @@ class SetBucketNotificationTest(TestCase):
                 'PUT',
                 'https://localhost:9000/my-test-bucket/?notification=',
                 {
-                    'Content-MD5': 'f+TfVp/A4pNnI7S4S+MkFg==',
+                    'Content-Md5': 'f+TfVp/A4pNnI7S4S+MkFg==',
                     'Content-Length': '196',
                     'User-Agent': _DEFAULT_USER_AGENT,
                 },
@@ -305,7 +305,7 @@ class SetBucketNotificationTest(TestCase):
                 'PUT',
                 'https://localhost:9000/my-test-bucket/?notification=',
                 {
-                    'Content-MD5': 'AGCNfbD5OuiyIJFd+r67MA==',
+                    'Content-Md5': 'AGCNfbD5OuiyIJFd+r67MA==',
                     'User-Agent': _DEFAULT_USER_AGENT,
                     'Content-Length': '206',
                 },
@@ -346,7 +346,7 @@ class SetBucketNotificationTest(TestCase):
                 'https://localhost:9000/my-test-bucket/?notification=',
                 {
                     'Content-Length': '206',
-                    'Content-MD5': 'AGCNfbD5OuiyIJFd+r67MA==',
+                    'Content-Md5': 'AGCNfbD5OuiyIJFd+r67MA==',
                     'User-Agent': _DEFAULT_USER_AGENT,
                 },
                 200, content=""

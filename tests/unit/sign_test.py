@@ -43,9 +43,7 @@ class CanonicalRequestTest(TestCase):
         actual_request = generate_canonical_request('PUT',
                                                     url,
                                                     {'X-Amz-Date': 'dateString',
-                                                     '   x-Amz-Content-sha256\t': '\t' +
-                                                     empty_hash +
-                                                     ' '},
+                                                     'X-Amz-Content-Sha256': empty_hash},
                                                     empty_hash)
 
         eq_(expected_request, actual_request)
@@ -64,9 +62,7 @@ class CanonicalRequestTest(TestCase):
         actual_request = generate_canonical_request('PUT',
                                                     url,
                                                     {'X-Amz-Date': 'dateString',
-                                                     '   x-Amz-Content-sha256\t': '\t' +
-                                                     empty_hash +
-                                                     ' '},
+                                                     'X-Amz-Content-Sha256': empty_hash},
                                                     empty_hash)
 
         eq_(expected_request, actual_request)
@@ -99,9 +95,9 @@ class SigningKeyTest(TestCase):
 class AuthorizationHeaderTest(TestCase):
     def test_generate_authentication_header(self):
         expected_authorization_header = 'AWS4-HMAC-SHA256 Credential=public_key/20150620/region/s3/aws4_request, ' \
-                                        'SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=signed_request'
+                                        'SignedHeaders=host;X-Amz-Content-Sha256;X-Amz-Date, Signature=signed_request'
         actual_authorization_header = generate_authorization_header('public_key', dt, 'region',
-                                                                    ['host', 'x-amz-content-sha256', 'x-amz-date'],
+                                                                    ['host', 'X-Amz-Content-Sha256', 'X-Amz-Date'],
                                                                     'signed_request')
         eq_(expected_authorization_header, actual_authorization_header)
 
