@@ -14,22 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-# dummy values, please replace them with original values.
+# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-testfile, my-bucketname and
+# my-objectname are dummy values, please replace them with original values.
+
+import os
 
 from minio import Minio
 from minio.error import ResponseError
 
-client = Minio('s3.amazonaws.com', secure=True,
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+client = Minio('play.minio.io:9000',
+               access_key='Q3AM3UQ867SPQQA43P2F',
+               secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
 
-# Make a new bucket
-try:
-    # Get current policy of bucket 'my-bucketname'.
-    print(client.get_bucket_policy('my-bucketname'))
-
-    # Get current policy of bucket 'my-bucketname' and prefix 'my-prefix'.
-    print(client.get_bucket_policy('my-bucketname', 'my-prefix'))
-except ResponseError as err:
-    print(err)
+# Put a file with default content-type.
+events = client.listen_bucket_notification('my-bucket', 'my-prefix/',
+                                           '.my-suffix',
+                                           ['s3:ObjectCreated:*',
+                                            's3:ObjectRemoved:*'])
+for event in events:
+    print event

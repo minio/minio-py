@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Minio Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2016 Minio, Inc.
+# Minio Python Library for Amazon S3 Compatible Cloud Storage.
+# Copyright (C) 2016 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ from minio import Minio
 from minio.error import ResponseError
 from minio.policy import Policy
 
-client = Minio('s3.amazonaws.com', secure=True,
+client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
