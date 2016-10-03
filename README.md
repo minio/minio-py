@@ -105,6 +105,9 @@ The full API Reference is available here.
 * [`remove_bucket`](https://docs.minio.io/docs/python-client-api-reference#remove_bucket)
 * [`list_objects`](https://docs.minio.io/docs/python-client-api-reference#list_objects)
 * [`list_incomplete_uploads`](https://docs.minio.io/docs/python-client-api-reference#list_incomplete_uploads)
+
+### API Reference: Bucket policy Operations
+
 * [`get_bucket_policy`](https://docs.minio.io/docs/python-client-api-reference#get_bucket_policy)
 * [`set_bucket_policy`](https://docs.minio.io/docs/python-client-api-reference#set_bucket_policy)
 
@@ -118,9 +121,10 @@ The full API Reference is available here.
 * [`get_object`](https://docs.minio.io/docs/python-client-api-reference#get_object)
 * [`put_object`](https://docs.minio.io/docs/python-client-api-reference#put_object)
 * [`stat_object`](https://docs.minio.io/docs/python-client-api-reference#stat_object)
+* [`copy_object`](https://docs.minio.io/docs/python-client-api-reference#copy_object)
+* [`get_partial_object`](https://docs.minio.io/docs/python-client-api-reference#get_partial_object)
 * [`remove_object`](https://docs.minio.io/docs/python-client-api-reference#remove_object)
 * [`remove_incomplete_upload`](https://docs.minio.io/docs/python-client-api-reference#remove_incomplete_upload)
-* [`get_partial_object`](https://docs.minio.io/docs/python-client-api-reference#get_partial_object)
 
 ### API Reference : Presigned Operations
 
@@ -132,13 +136,17 @@ The full API Reference is available here.
 
 #### Full Examples : Bucket Operations
 
-* [list_buckets.py](https://github.com/minio/minio-py/blob/master/examples/list_buckets.py)
-* [list_objects.py](https://github.com/minio/minio-py/blob/master/examples/list_objects.py)
-* [bucket_exists.py](https://github.com/minio/minio-py/blob/master/examples/bucket_exists.py)
 * [make_bucket.py](https://github.com/minio/minio-py/blob/master/examples/make_bucket.py)
+* [list_buckets.py](https://github.com/minio/minio-py/blob/master/examples/list_buckets.py)
+* [bucket_exists.py](https://github.com/minio/minio-py/blob/master/examples/bucket_exists.py)
+* [list_objects.py](https://github.com/minio/minio-py/blob/master/examples/list_objects.py)
 * [remove_bucket.py](https://github.com/minio/minio-py/blob/master/examples/remove_bucket.py)
 * [list_incomplete_uploads.py](https://github.com/minio/minio-py/blob/master/examples/list_incomplete_uploads.py)
-* [remove_incomplete_upload.py](https://github.com/minio/minio-py/blob/master/examples/remove_incomplete_upload.py)
+
+#### Full Examples : Bucket policy Operations
+
+* [set_bucket_policy.py](https://github.com/minio/minio-py/blob/master/examples/set_bucket_policy.py)
+* [get_bucket_policy.py](https://github.com/minio/minio-py/blob/master/examples/get_bucket_policy.py)
 
 #### Full Examples : File Object Operations
 
@@ -147,11 +155,13 @@ The full API Reference is available here.
 
 #### Full Examples : Object Operations
 
-* [put_object.py](https://github.com/minio/minio-py/blob/master/examples/put_object.py)
 * [get_object.py](https://github.com/minio/minio-py/blob/master/examples/get_object.py)
+* [put_object.py](https://github.com/minio/minio-py/blob/master/examples/put_object.py)
+* [stat_object.py](https://github.com/minio/minio-py/blob/master/examples/stat_object.py)
+* [copy_object.py](https://github.com/minio/minio-py/blob/master/examples/copy_object.py)
 * [get_partial_object.py](https://github.com/minio/minio-py/blob/master/examples/get_partial_object.py)
 * [remove_object.py](https://github.com/minio/minio-py/blob/master/examples/remove_object.py)
-* [stat_object.py](https://github.com/minio/minio-py/blob/master/examples/stat_object.py)
+* [remove_incomplete_upload.py](https://github.com/minio/minio-py/blob/master/examples/remove_incomplete_upload.py)
 
 #### Full Examples : Presigned Operations
 
