@@ -23,7 +23,7 @@ import certifi
 
 from datetime import datetime, timedelta
 
-from minio import Minio, PostPolicy
+from minio import Minio, PostPolicy, CopyConditions
 from minio.policy import Policy
 from minio.error import ResponseError
 
@@ -89,8 +89,20 @@ def main():
     # Fput a file
     print(client.fput_object(bucket_name, object_name+'-f', 'testfile'))
 
+    # Copy a file
+    copy_conditions = CopyConditions()
+    print(client.copy_object(bucket_name, object_name+'-copy',
+                             '/'+bucket_name+'/'+object_name+'-f',
+                             copy_conditions))
+
     # Fetch stats on your object.
     print(client.stat_object(bucket_name, object_name))
+
+    # Fetch stats on your object.
+    print(client.stat_object(bucket_name, object_name+'-f'))
+
+    # Fetch stats on your object.
+    print(client.stat_object(bucket_name, object_name+'-copy'))
 
     # Get a full object
     object_data = client.get_object(bucket_name, object_name)
@@ -138,6 +150,7 @@ def main():
     # Remove an object.
     print(client.remove_object(bucket_name, object_name))
     print(client.remove_object(bucket_name, object_name+'-f'))
+    print(client.remove_object(bucket_name, object_name+'-copy'))
 
     policy_name = client.get_bucket_policy(bucket_name)
     if policy_name != Policy.NONE:

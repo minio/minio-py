@@ -96,6 +96,27 @@ class MultipartUploadResult(object):
         return string_format.format(self.bucket_name, self.object_name,
                                     self.location, self.etag)
 
+class CopyObjectResult(object):
+    """
+    A complete copy object operation metadata.
+         :class:`CopyObjectResult <CopyObjectResult>`.
+
+    :param bucket_name: Bucket name.
+    :param object_name: Object name.
+    :param etag: ETag saved on the server computed for object_name.
+    :param last_modified: Object when it was last modified on server.
+    """
+    def __init__(self, bucket_name, object_name, etag, last_modified):
+        self.bucket_name = bucket_name
+        self.object_name = object_name
+        self.etag = etag
+        self.last_modified = last_modified
+
+    def __str__(self):
+        string_format = ('<CopyObjectResult: bucket_name: {0}'
+                         ' object_name: {1} etag: {2} last_modified: {3}>')
+        return string_format.format(self.bucket_name, self.object_name,
+                                    self.etag, self.last_modified)
 
 class IncompleteUpload(object):
     """

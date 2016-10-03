@@ -537,7 +537,7 @@ def get_sha256(content):
     :param content: Input byte array.
     :return: sha256 digest of input byte array.
     """
-    if len(content) == 0:
+    if content is None:
         content = b''
     hasher = hashlib.sha256()
     hasher.update(content)

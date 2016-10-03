@@ -44,12 +44,13 @@ import pytz
 
 # Internal imports
 from . import __title__, __version__
-from .compat import urlsplit, range
+from .compat import urlsplit, range, urlencode
 from .error import ResponseError, InvalidArgumentError, InvalidSizeError
 from .definitions import Object, UploadPart
 from .parsers import (parse_list_buckets,
                       parse_list_objects,
                       parse_list_parts,
+                      parse_copy_object,
                       parse_list_multipart_uploads,
                       parse_new_multipart_upload,
                       parse_location_constraint,
@@ -190,15 +191,15 @@ class Minio(object):
         # Set user agent once before the request.
         headers['User-Agent'] = self._user_agent
 
-        content = ''
+        content = None
         if location and location != 'us-east-1':
             content = xml_marshal_bucket_constraint(location)
             headers['Content-Length'] = str(len(content))
 
         content_sha256_hex = encode_to_hex(get_sha256(content))
-        if content.strip():
+        if content:
             content_md5_base64 = encode_to_base64(get_md5(content))
-            headers['Content-MD5'] = content_md5_base64
+            headers['Content-Md5'] = content_md5_base64
 
         # In case of Amazon S3.  The make bucket issued on already
         # existing bucket would fail with 'AuthorizationMalformed'
@@ -373,7 +374,7 @@ class Minio(object):
 
             headers = {
                 'Content-Length': str(len(content)),
-                'Content-MD5': encode_to_base64(get_md5(content.encode('utf-8')))
+                'Content-Md5': encode_to_base64(get_md5(content.encode('utf-8')))
             }
             content_sha256_hex = encode_to_hex(get_sha256(content.encode('utf-8')))
 
@@ -414,7 +415,7 @@ class Minio(object):
         content = xml_marshal_bucket_notifications(notifications)
         headers = {
             'Content-Length': str(len(content)),
-            'Content-MD5': encode_to_base64(get_md5(content))
+            'Content-Md5': encode_to_base64(get_md5(content))
         }
         content_sha256_hex = encode_to_hex(get_sha256(content))
         self._url_open(
@@ -437,7 +438,7 @@ class Minio(object):
         content_bytes = xml_marshal_bucket_notifications({})
         headers = {
             'Content-Length': str(len(content_bytes)),
-            'Content-MD5': encode_to_base64(get_md5(content_bytes))
+            'Content-Md5': encode_to_base64(get_md5(content_bytes))
         }
         content_sha256_hex = encode_to_hex(get_sha256(content_bytes))
         self._url_open(
@@ -720,6 +721,40 @@ class Minio(object):
                                             object_name,
                                             offset, length)
         return response
+
+    def copy_object(self, bucket_name, object_name, object_source,
+                    conditions=None):
+        """
+        Copy a source object on object storage server to a new object.
+
+        NOTE: Maximum object size supported by this API is 5GB.
+
+        Examples:
+
+        :param bucket_name: Bucket of new object.
+        :param object_name: Name of new object.
+        :param object_source: Source object to be copied.
+        :param conditions: :class:`CopyConditions` object. Collection of
+        supported CopyObject conditions.
+        """
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+        is_non_empty_string(object_source)
+
+        if conditions is None:
+            raise InvalidArgumentErr('Input conditions should be of type '
+                                     ':class: `CopyConditions`.')
+
+        headers = conditions.get()
+        headers['X-Amz-Copy-Source'] = urlencode(object_source)
+
+        method = 'PUT'
+        response = self._url_open(method,
+                                  bucket_name=bucket_name,
+                                  object_name=object_name,
+                                  headers=headers)
+
+        return parse_copy_object(bucket_name, object_name, response.data)
 
     def put_object(self, bucket_name, object_name, data, length,
                    content_type='application/octet-stream'):
@@ -1309,7 +1344,7 @@ class Minio(object):
         headers = {
             'Content-Length': content_size,
             'Content-Type': content_type,
-            'Content-MD5': md5_base64
+            'Content-Md5': md5_base64
         }
 
         response = self._url_open(method, bucket_name=bucket_name,
@@ -1347,7 +1382,7 @@ class Minio(object):
         headers = {
             'Content-Length': content_size,
             'Content-Type': content_type,
-            'Content-MD5': md5_base64
+            'Content-Md5': md5_base64
         }
 
         response = self._url_open(method, bucket_name=bucket_name,
@@ -1524,7 +1559,7 @@ class Minio(object):
 
         headers['Content-Length'] = len(data)
         headers['Content-Type'] = 'application/xml'
-        headers['Content-MD5'] = md5_base64
+        headers['Content-Md5'] = md5_base64
 
         response = self._url_open(method, bucket_name=bucket_name,
                                   object_name=object_name, query=query,

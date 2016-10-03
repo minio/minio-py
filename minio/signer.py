@@ -32,7 +32,7 @@ import binascii
 
 from datetime import datetime
 from .error import InvalidArgumentError
-from .compat import urlsplit, basestring, urlencode
+from .compat import urlsplit, parse_qs, basestring, urlencode
 from .helpers import (ignore_headers, encode_to_hex,
                       get_sha256)
 
@@ -88,7 +88,7 @@ def presign_v4(method, url, access_key, secret_key, region=None,
     parsed_url = urlsplit(url)
     content_hash_hex = 'UNSIGNED-PAYLOAD'
     host = parsed_url.netloc
-    headers['host'] = host
+    headers['Host'] = host
     date = datetime.utcnow()
     iso8601Date = date.strftime("%Y%m%dT%H%M%SZ")
 
@@ -153,9 +153,8 @@ def get_signed_headers(headers):
     headers_to_sign = dict(headers)
     signed_headers = []
     for header in headers:
-        signed_headers.append(header)
-    signed_headers.sort()
-    return signed_headers
+        signed_headers.append(header.lower().strip())
+    return sorted(signed_headers)
 
 
 def sign_v4(method, url, region, headers=None, access_key=None,
@@ -185,16 +184,19 @@ def sign_v4(method, url, region, headers=None, access_key=None,
         region = 'us-east-1'
 
     parsed_url = urlsplit(url)
+    secure = parsed_url.scheme == 'https'
+    if secure:
+        content_sha256 = 'UNSIGNED-PAYLOAD'
     if content_sha256 is None:
         # with no payload, calculate sha256 for 0 length data.
         content_sha256 = encode_to_hex(get_sha256(b''))
 
     host = parsed_url.netloc
-    headers['host'] = host
+    headers['Host'] = host
 
     date = datetime.utcnow()
-    headers['x-amz-date'] = date.strftime("%Y%m%dT%H%M%SZ")
-    headers['x-amz-content-sha256'] = content_sha256.decode('ascii')
+    headers['X-Amz-Date'] = date.strftime("%Y%m%dT%H%M%SZ")
+    headers['X-Amz-Content-Sha256'] = content_sha256.decode('ascii')
 
     headers_to_sign = dict(headers)
 
@@ -202,23 +204,23 @@ def sign_v4(method, url, region, headers=None, access_key=None,
     headers_to_sign = ignore_headers(headers_to_sign)
 
     signed_headers = get_signed_headers(headers_to_sign)
-    canonical_request = generate_canonical_request(method,
-                                                   parsed_url,
-                                                   headers_to_sign,
-                                                   content_sha256.decode('ascii'))
-
+    canonical_req = generate_canonical_request(method,
+                                               parsed_url,
+                                               headers_to_sign,
+                                               content_sha256.decode('ascii'))
     string_to_sign = generate_string_to_sign(date, region,
-                                             canonical_request)
+                                             canonical_req)
     signing_key = generate_signing_key(date, region, secret_key)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
 
-    authorization_header = generate_authorization_header(access_key, date,
+    authorization_header = generate_authorization_header(access_key,
+                                                         date,
                                                          region,
                                                          signed_headers,
                                                          signature)
 
-    headers['authorization'] = authorization_header
+    headers['Authorization'] = authorization_header
     return headers
 
 
@@ -240,7 +242,6 @@ def generate_canonical_request(method, parsed_url, headers, content_sha256):
     for i in range(0, len(split_query)):
         if len(split_query[i]) > 0 and '=' not in split_query[i]:
             split_query[i] += '='
-
     query = '&'.join(split_query)
     lines.append(query)
 
@@ -248,13 +249,15 @@ def generate_canonical_request(method, parsed_url, headers, content_sha256):
     signed_headers = []
     header_lines = []
     for header in headers:
-        value = headers[header]
-        value = str(value).strip()
         header = header.lower().strip()
         signed_headers.append(header)
-        header_lines.append(header.lower().strip() + ':' + str(value))
-    signed_headers.sort()
-    header_lines.sort()
+    signed_headers = sorted(signed_headers)
+
+    for header in signed_headers:
+        value = headers[header.title()]
+        value = str(value).strip()
+        header_lines.append(header + ':' + str(value))
+
     lines = lines + header_lines
     lines.append('')
 

@@ -37,7 +37,8 @@ import pytz
 from .error import InvalidXMLError
 from .compat import urldecode
 from .definitions import (Object, Bucket, IncompleteUpload,
-                          UploadPart, MultipartUploadResult)
+                          UploadPart, MultipartUploadResult,
+                          CopyObjectResult)
 from .xml_marshal import (NOTIFICATIONS_ARN_FIELDNAME_MAP)
 
 
@@ -84,6 +85,34 @@ def parse_multipart_upload_result(data):
         return MultipartUploadResult(bucket_name, object_name, location, etag)
     except _ETREE_EXCEPTIONS as error:
         raise InvalidXMLError('Invalid XML provided for "CompleteMultipartUploadResult" '
+                              'some fields are missing. Message: {0}'.format(error.message))
+
+def parse_copy_object(bucket_name, object_name, data):
+    """
+    Parser for copy object response.
+
+    :param data: Response data for copy object.
+    :return: :class:`CopyObjectResult <CopyObjectResult>`
+    """
+    try:
+        root = cElementTree.fromstring(data)
+    except _ETREE_EXCEPTIONS as error:
+        raise InvalidXMLError('"CopyObjectResult" XML is not parsable. '
+                              'Message: {0}'.format(error.message))
+
+    try:
+        etag = get_element_text(root, 's3:ETag')
+        # Strip off quotes from beginning and the end.
+        if etag.startswith('"') and etag.endswith('"'):
+            etag = etag[len('"'):]
+            etag = etag[:-len('"')]
+
+        last_modified = _iso8601_to_localized_time(
+            get_element_text(root, 's3:LastModified'))
+
+        return CopyObjectResult(bucket_name, object_name, etag, last_modified)
+    except _ETREE_EXCEPTIONS as error:
+        raise InvalidXMLError('Invalid XML provided for "CopyObjectResult" '
                               'some fields are missing. Message: {0}'.format(error.message))
 
 def parse_list_buckets(data):
