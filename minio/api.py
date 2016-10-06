@@ -427,9 +427,13 @@ class Minio(object):
             content_sha256=content_sha256_hex
         )
 
-    def remove_all_bucket_notifications(self, bucket_name):
+    def remove_all_bucket_notification(self, bucket_name):
         """
-        Remove all notifications configured on the bucket.'
+        Removes all bucket notification configs configured
+        previously, this call disable event notifications
+        on a bucket. This operation cannot be undone, to
+        set notifications again you should use
+        ``set_bucket_notification``
 
         :param bucket_name: Bucket name.
         """
@@ -450,10 +454,50 @@ class Minio(object):
             content_sha256=content_sha256_hex
         )
 
+    def listen_bucket_notification(self, bucket_name, prefix, suffix, events):
+        """
+        Yeilds new event notifications on a bucket, caller should iterate
+        to read new notifications.
+
+        NOTE: Notification is retried in case of `SyntaxError` otherwise
+        the function raises an exception.
+
+        :param bucket_name: Bucket name to listen event notifications from.
+        :param prefix: Object key prefix to filter notifications for.
+        :param suffix: Object key suffix to filter notifications for.
+        :param events: Enables notifications for specific event types.
+             of events.
+        """
+        is_valid_bucket_name(bucket_name)
+
+        url_components = urlsplit(self._endpoint_url)
+        if url_components.hostname == 's3.amazonaws.com':
+            raise InvalidArgumentErr('Listening for event notifications on a'
+                                     ' bucket is a Minio specific extension to'
+                                     ' bucket notification API. It is not'
+                                     ' supported by Amazon S3')
+
+        query = {}
+        query['prefix'] = prefix
+        query['suffix'] = suffix
+        query['events'] = events
+        while True:
+            response = self._url_open('GET', bucket_name=bucket_name,
+                                      query=query,
+                                      headers={})
+            try:
+                for line in response.stream():
+                    event = json.loads(line)
+                    if event['Records'] is not None:
+                        yield event
+            except SyntaxError as err:
+                response.close()
+                continue
+
     def _get_upload_id(self, bucket_name, object_name, content_type):
         """
-        Get previously uploaded upload id for object name or initiate a request to
-        fetch a new upload id.
+        Get previously uploaded upload id for object name or initiate a request
+        to fetch a new upload id.
 
         :param bucket_name: Bucket name where the incomplete upload resides.
         :param object_name: Object name for which the upload id is requested for.

@@ -28,14 +28,14 @@ $ python setup.py install
 
 You need four items in order to connect to Minio object storage server.
 
-| Params     | Description |  
-| :------- | :---- |  
-| endpoint | URL to object storage service. |  
-| access_key| Access key is like user ID that uniquely identifies your account.   |   
+| Params     | Description |
+| :------- | :---- |
+| endpoint | URL to object storage service. |
+| access_key| Access key is like user ID that uniquely identifies your account.   |
 | secret_key| Secret key is the password to your account.    |
 |secure|Set this value to 'True' to enable secure (HTTPS) access.|
 
-```python
+```py
 
 from minio import Minio
 from minio.error import ResponseError
@@ -55,7 +55,7 @@ We will use the Minio server running at [https://play.minio.io:9000](https://pla
 
 #### file-uploader.py
 
-```python 
+```py
 
 # Import Minio library.
 from minio import Minio
@@ -78,7 +78,7 @@ else:
                minioClient.fput_object('maylogs', 'pumaserver_debug.log', '/tmp/pumaserver_debug.log')
         except ResponseError as error:
                print(error)
- 
+
 ```
 
 #### Run file-uploader
@@ -94,7 +94,7 @@ $ mc ls play/maylogs/
 
 ## API Reference
 
-The full API Reference is available here. 
+The full API Reference is available here.
 * [Complete API Reference](https://docs.minio.io/docs/python-client-api-reference)
 
 ### API Reference : Bucket Operations
@@ -106,10 +106,17 @@ The full API Reference is available here.
 * [`list_objects`](https://docs.minio.io/docs/python-client-api-reference#list_objects)
 * [`list_incomplete_uploads`](https://docs.minio.io/docs/python-client-api-reference#list_incomplete_uploads)
 
-### API Reference: Bucket policy Operations
+### API Reference : Bucket policy Operations
 
 * [`get_bucket_policy`](https://docs.minio.io/docs/python-client-api-reference#get_bucket_policy)
 * [`set_bucket_policy`](https://docs.minio.io/docs/python-client-api-reference#set_bucket_policy)
+
+### API Reference : Bucket notification Operations
+
+* [`set_bucket_notification`](https://docs.minio.io/docs/python-client-api-reference#set_bucket_notification)
+* [`get_bucket_notification`](https://docs.minio.io/docs/python-client-api-reference#get_bucket_notification)
+* [`remove_all_bucket_notification`](https://docs.minio.io/docs/python-client-api-reference#remove_all_bucket_notification)
+* [`listen_bucket_notification`](https://docs.minio.io/docs/python-client-api-reference#listen_bucket_notification)
 
 ### API Reference : File Object Operations
 
@@ -148,6 +155,18 @@ The full API Reference is available here.
 * [set_bucket_policy.py](https://github.com/minio/minio-py/blob/master/examples/set_bucket_policy.py)
 * [get_bucket_policy.py](https://github.com/minio/minio-py/blob/master/examples/get_bucket_policy.py)
 
+#### Full Examples: Bucket policy Operations
+
+* [set_bucket_policy.py](https://github.com/minio/minio-py/blob/master/examples/set_bucket_policy.py)
+* [get_bucket_policy.py](https://github.com/minio/minio-py/blob/master/examples/get_bucket_policy.py)
+
+#### Full Examples: Bucket notification Operations
+
+* [set_bucket_notification.py](https://github.com/minio/minio-py/blob/master/examples/set_bucket_notification.py)
+* [get_bucket_notification.py](https://github.com/minio/minio-py/blob/master/examples/get_bucket_notification.py)
+* [remove_all_bucket_notification.py](https://github.com/minio/minio-py/blob/master/examples/remove_all_bucket_notification.py)
+* [listen_bucket_notification.py](https://github.com/minio/minio-py/blob/master/examples/listen_bucket_notification.py)
+
 #### Full Examples : File Object Operations
 
 * [fput_object.py](https://github.com/minio/minio-py/blob/master/examples/fput_object.py)
@@ -172,7 +191,7 @@ The full API Reference is available here.
 ## Explore Further
 
 * [Complete Documentation](https://docs.minio.io)
-* [Minio Python SDK API Reference](https://docs.minio.io/docs/python-client-api-reference) 
+* [Minio Python SDK API Reference](https://docs.minio.io/docs/python-client-api-reference)
 
 ## Contribute
 

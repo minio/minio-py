@@ -42,7 +42,7 @@ s3Client = Minio('s3.amazonaws.com',
 | [`set_bucket_policy`](#set_bucket_policy) | [`get_partial_object`](#get_partial_object) |  |
 | [`get_bucket_notification`](#get_bucket_notification) |  |
 | [`set_bucket_notification`](#set_bucket_notification) |  |
-| [`remove_all_bucket_notifications`](#remove_all_bucket_notifications) |  |
+| [`remove_all_bucket_notification`](#remove_all_bucket_notification) |  |
 
 ## 1. Constructor
 
@@ -422,12 +422,13 @@ __Example__
 
 ```py
 
+
 notification = {
     'QueueConfigurations': [
         {
             'Id': '1',
             'Arn': 'arn1',
-            'Events': ['s3:ObjectCreated:PutObject'],
+            'Events': ['s3:ObjectCreated:*'],
             'Filter': {
                 'Key': {
                     'FilterRules': [
@@ -443,7 +444,7 @@ notification = {
     'TopicConfigurations': [
         {
             'Arn': 'arn2',
-            'Events': ['s3:ObjectCreated:PostObject'],
+            'Events': ['s3:ObjectCreated:*'],
             'Filter': {
                 'Key': {
                     'FilterRules': [
@@ -459,7 +460,7 @@ notification = {
     'CloudFunctionConfigurations': [
         {
             'Arn': 'arn3',
-            'Events': ['s3:ObjectCreated:DeleteObject'],
+            'Events': ['s3:ObjectRemoved:*'],
             'Filter': {
                 'Key': {
                     'FilterRules': [
@@ -474,14 +475,15 @@ notification = {
     ]
 }
 
+
 try:
     minioClient.set_bucket_notification('mybucket', notification)
-except ResponseError:
+except ResponseError as err:
     # handle error response from service.
-    pass
-except (ArgumentError, TypeError):
+    print(err)
+except (ArgumentError, TypeError) as err:
     # should happen only during development. Fix the notification argument
-    pass
+    print(err)
 ```
 
 <a name="remove_all_bucket_notifications"></a>
@@ -503,10 +505,21 @@ __Example__
 
 ```py
 
-# Get the notifications configuration for a bucket.
+# Remove all the notifications config for a bucket.
 minioClient.remove_all_bucket_notifications('mybucket')
 
 ```
+
+<a name="listen_bucket_notification"></a>
+### listen_bucket_notification(bucket_name, prefix, suffix, events)
+
+__Parameters__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``bucket_name``   | _string_  |Bucket name to listen event notifications from.|
+|``prefix``  | _string_ |Object key prefix
+
 
 ## 3. Object operations
 <a name="get_object"></a>

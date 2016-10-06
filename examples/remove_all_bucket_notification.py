@@ -20,16 +20,12 @@
 from minio import Minio
 from minio.error import ResponseError
 
-client = Minio('s3.amazonaws.com', secure=True,
+client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-# Make a new bucket
 try:
-    # Get current policy of bucket 'my-bucketname'.
-    print(client.get_bucket_policy('my-bucketname'))
-
-    # Get current policy of bucket 'my-bucketname' and prefix 'my-prefix'.
-    print(client.get_bucket_policy('my-bucketname', 'my-prefix'))
+    # Remove all notification config for a bucket.
+    client.remove_all_bucket_notifications('my-bucketname')
 except ResponseError as err:
     print(err)
