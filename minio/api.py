@@ -785,11 +785,9 @@ class Minio(object):
         is_non_empty_string(object_name)
         is_non_empty_string(object_source)
 
-        if conditions is None:
-            raise InvalidArgumentErr('Input conditions should be of type '
-                                     ':class: `CopyConditions`.')
-
-        headers = conditions.get()
+        headers = {}
+        if conditions:
+            headers = conditions
         headers['X-Amz-Copy-Source'] = urlencode(object_source)
 
         method = 'PUT'
