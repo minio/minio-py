@@ -30,19 +30,17 @@ s3Client = Minio('s3.amazonaws.com',
 
 
 
-|Bucket operations | Object operations| Presigned operations |
-|:---|:---|:---|
-| [`make_bucket`](#make_bucket)  | [`get_object`](#get_object)  | [`presigned_get_object`](#presigned_get_object)  |
-|[`list_buckets`](#list_buckets)   | [`put_object`](#put_object)  | [`presigned_put_object`](#presigned_put_object)  |
-| [`bucket_exists`](#bucket_exists)  |[`stat_object`](#stat_object)   |[`presigned_post_policy`](#presigned_post_policy)   |
-|[`remove_bucket`](#remove_bucket)   | [`remove_object`](#remove_object)  |   |
-| [`list_objects`](#list_objects)  | [`remove_incomplete_upload`](#remove_incomplete_upload)  |   |
-|[`list_incomplete_uploads`](#list_incomplete_uploads)   |  [`fput_object`](#fput_object) |   |
-| [`get_bucket_policy`](#get_bucket_policy) |[`fget_object`](#fget_object)  |  |
-| [`set_bucket_policy`](#set_bucket_policy) | [`get_partial_object`](#get_partial_object) |  |
-| [`get_bucket_notification`](#get_bucket_notification) |  |
-| [`set_bucket_notification`](#set_bucket_notification) |  |
-| [`remove_all_bucket_notification`](#remove_all_bucket_notification) |  |
+|Bucket operations | Object operations| Presigned operations | Bucket policy/notification operations
+|:---|:---|:---|:---|
+| [`make_bucket`](#make_bucket) | [`get_object`](#get_object) | [`presigned_get_object`](#presigned_get_object) | [`get_bucket_policy`](#get_bucket_policy) |
+| [`list_buckets`](#list_buckets) | [`put_object`](#put_object) | [`presigned_put_object`](#presigned_put_object) | [`set_bucket_policy`](#set_bucket_policy) |
+| [`bucket_exists`](#bucket_exists) | [`copy_object`](#copy_object) | [`presigned_post_policy`](#presigned_post_policy) | [`get_bucket_notification`](#get_bucket_notification) |
+| [`remove_bucket`](#remove_bucket) | [`stat_object`](#stat_object) | | [`set_bucket_notification`](#set_bucket_notification) |
+| [`list_objects`](#list_objects) | [`remove_object`](#remove_object) | | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
+| [`list_incomplete_uploads`](#list_incomplete_uploads) | [`remove_incomplete_upload`](#remove_incomplete_upload) | | [`listen_bucket_notification`](#listen_bucket_notification) |
+| | [`fput_object`](#fput_object) | | |
+| | [`fget_object`](#fget_object) | | |
+| | [`get_partial_object`](#get_partial_object) | | |
 
 ## 1. Constructor
 
