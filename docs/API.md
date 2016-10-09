@@ -649,7 +649,7 @@ __Parameters__
 |``bucket_name``   |_string_   |Name of the bucket for new object.   |
 |``object_name``   |_string_    |Name of the new object.   |
 |``object_source``   |_string_   |Name of the object to be copied. |
-|``copy_conditions`` |_CopyConditions_ | Collection of conditions to be satisfied for the request. |
+|``copy_conditions`` |_CopyConditions_ | Collection of conditions to be satisfied for the request (optional, defaults to 'None'). |
 
 
 __Example__

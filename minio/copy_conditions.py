@@ -24,6 +24,7 @@ This module contains :class:`CopyConditions <CopyConditions>` implementation.
 
 """
 
+import collections
 from .helpers import (is_non_empty_string, is_valid_bucket_name)
 
 # CopyCondition explanation:
@@ -35,7 +36,7 @@ from .helpers import (is_non_empty_string, is_valid_bucket_name)
 #      key: "x-amz-copy-if-modified-since",
 #      value: "Tue, 15 Nov 1994 12:45:26 GMT",
 #
-class CopyConditions(object):
+class CopyConditions(collections.MutableMapping):
     """
     A :class:`CopyConditions <CopyConditions>` collection of
        supported CopyObject conditions.
@@ -46,35 +47,45 @@ class CopyConditions(object):
         - x-amz-copy-source-if-modified-since
 
     """
-    def __init__(self):
-        self._copy_conditions = {}
+    def __init__(self, *args, **kwargs):
+        self._store = dict()
+        self.update(dict(*args, **kwargs))  # use the free update to set keys
+
+    def __getitem__(self, key):
+        return self._store[key]
+
+    def __setitem__(self, key, value):
+        self._store[key] = value
+
+    def __delitem__(self, key):
+        del self._store[key]
+
+    def __iter__(self):
+        return iter(self._store)
+
+    def __len__(self):
+        return len(self._store)
 
     def set_match_etag(self, etag):
         """
         """
         is_non_empty_string(etag)
-        self._copy_conditions['X-Amz-Copy-Source-If-Match'] = etag
+        self._store['X-Amz-Copy-Source-If-Match'] = etag
 
     def set_match_etag_except(self, etag):
         """
         """
         is_non_empty_string(etag)
-        self._copy_conditions['X-Amz-Copy-Source-If-None-Match'] = etag
+        self._store['X-Amz-Copy-Source-If-None-Match'] = etag
 
     def set_unmodified_since(self, mod_time):
         """
         """
         time = mod_time.strftime('%a, %d %b %Y %H:%M:%S GMT')
-        self._copy_conditions['X-Amz-Copy-Source-If-Unmodified-Since'] = time
+        self._store['X-Amz-Copy-Source-If-Unmodified-Since'] = time
 
     def set_modified_since(self, mod_time):
         """
         """
         time = mod_time.strftime('%a, %d %b %Y %H:%M:%S GMT')
-        self._copy_conditions['X-Amz-Copy-Source-If-Modified-Since'] = time
-
-    def get(self):
-        """
-        Returns all the set copy conditions.
-        """
-        return self._copy_conditions
+        self._store['X-Amz-Copy-Source-If-Modified-Since'] = time

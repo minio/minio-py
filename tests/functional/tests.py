@@ -90,10 +90,20 @@ def main():
     print(client.fput_object(bucket_name, object_name+'-f', 'testfile'))
 
     # Copy a file
-    copy_conditions = CopyConditions()
     print(client.copy_object(bucket_name, object_name+'-copy',
-                             '/'+bucket_name+'/'+object_name+'-f',
-                             copy_conditions))
+                             '/'+bucket_name+'/'+object_name+'-f'))
+
+    try:
+        copy_conditions = CopyConditions()
+        copy_conditions.set_match_etag('test-etag')
+        print(client.copy_object(bucket_name, object_name+'-copy',
+                                 '/'+bucket_name+'/'+object_name+'-f',
+                                 copy_conditions))
+    except ResponseError as err:
+        if err.code != 'PreconditionFailed':
+            raise
+        if err.message != 'At least one of the pre-conditions you specified did not hold':
+            raise
 
     # Fetch stats on your object.
     print(client.stat_object(bucket_name, object_name))
