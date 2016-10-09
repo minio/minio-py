@@ -511,13 +511,36 @@ minioClient.remove_all_bucket_notifications('mybucket')
 <a name="listen_bucket_notification"></a>
 ### listen_bucket_notification(bucket_name, prefix, suffix, events)
 
+Listen for notifications on a bucket. Additionally one can provide
+filters for prefix, suffix and events. There is no prior set bucket notification
+needed to use this API. This is an Minio extension API where unique identifiers
+are regitered and unregistered by the server automatically based on incoming
+requests.
+
+Yeilds events as they occur, caller has iterate to read these events as
+they occur.
+
 __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
 |``bucket_name``   | _string_  |Bucket name to listen event notifications from.|
-|``prefix``  | _string_ |Object key prefix
+|``prefix`` | _string_ | Object key prefix to filter notifications for. |
+|``suffix`` | _string_  | Object key suffix to filter notifications for. |
+|``events`` | _list_ | Enables notifications for specific event types. |
 
+See [here](../examples/listen_notification.py) for a full example.
+
+```py
+# Put a file with default content-type.
+events = minioClient.listen_bucket_notification('my-bucket', 'my-prefix/',
+                                                '.my-suffix',
+                                                ['s3:ObjectCreated:*',
+                                                 's3:ObjectRemoved:*'])
+for event in events:
+    print event
+
+```
 
 ## 3. Object operations
 <a name="get_object"></a>
