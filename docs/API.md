@@ -110,6 +110,7 @@ __Parameters__
 | | | ap-northeast-1|
 | | | ap-southeast-2|
 | | | sa-east-1|
+| | | cn-north-1|
 
 __Example__
 
