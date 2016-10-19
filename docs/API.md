@@ -699,7 +699,7 @@ __Parameters__
 |:---|:---|:---|
 |``bucket_name``   |_string_   |Name of the bucket.   |
 |``object_name``   |_string_    |Name of the object.   |
-|``data``   |_io.IOBase_   |Any python object implementing io.IOBase. |
+|``data``   |_io.RawIOBase_   |Any python object implementing io.RawIOBase. |
 |``length``   |_int_   |Total length of object.   |
 |``content_type``   |_string_ | Content type of the object. (optional, defaults to 'application/octet-stream').   |
 
