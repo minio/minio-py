@@ -39,6 +39,8 @@ from .helpers import (ignore_headers, encode_to_hex,
 # Signature version '4' algorithm.
 _SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'
 
+# Hardcoded S3 header value for X-Amz-Content-Sha256
+_UNSIGNED_PAYLOAD = b'UNSIGNED-PAYLOAD'
 
 def post_presign_signature(date, region, secret_key, policy_str):
     """
@@ -86,7 +88,7 @@ def presign_v4(method, url, access_key, secret_key, region=None,
         expires = 604800
 
     parsed_url = urlsplit(url)
-    content_hash_hex = 'UNSIGNED-PAYLOAD'
+    content_hash_hex = _UNSIGNED_PAYLOAD
     host = parsed_url.netloc
     headers['Host'] = host
     date = datetime.utcnow()
@@ -186,7 +188,7 @@ def sign_v4(method, url, region, headers=None, access_key=None,
     parsed_url = urlsplit(url)
     secure = parsed_url.scheme == 'https'
     if secure:
-        content_sha256 = 'UNSIGNED-PAYLOAD'
+        content_sha256 = _UNSIGNED_PAYLOAD
     if content_sha256 is None:
         # with no payload, calculate sha256 for 0 length data.
         content_sha256 = encode_to_hex(get_sha256(b''))
