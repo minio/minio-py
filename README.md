@@ -165,7 +165,7 @@ The full API Reference is available here.
 * [set_bucket_notification.py](https://github.com/minio/minio-py/blob/master/examples/set_bucket_notification.py)
 * [get_bucket_notification.py](https://github.com/minio/minio-py/blob/master/examples/get_bucket_notification.py)
 * [remove_all_bucket_notification.py](https://github.com/minio/minio-py/blob/master/examples/remove_all_bucket_notification.py)
-* [listen_bucket_notification.py](https://github.com/minio/minio-py/blob/master/examples/listen_bucket_notification.py)
+* [listen_bucket_notification.py](https://github.com/minio/minio-py/blob/master/examples/listen_notification.py)
 
 #### Full Examples : File Object Operations
 
