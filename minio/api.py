@@ -787,7 +787,8 @@ class Minio(object):
 
         headers = {}
         if conditions:
-            headers = conditions
+            for k in conditions.keys():
+                headers[k] = conditions[k]
         headers['X-Amz-Copy-Source'] = urlencode(object_source)
 
         method = 'PUT'
