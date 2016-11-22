@@ -40,7 +40,7 @@ from .helpers import (ignore_headers, encode_to_hex,
 _SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'
 
 # Hardcoded S3 header value for X-Amz-Content-Sha256
-_UNSIGNED_PAYLOAD = b'UNSIGNED-PAYLOAD'
+_UNSIGNED_PAYLOAD = 'UNSIGNED-PAYLOAD'
 
 def post_presign_signature(date, region, secret_key, policy_str):
     """
@@ -198,7 +198,7 @@ def sign_v4(method, url, region, headers=None, access_key=None,
 
     date = datetime.utcnow()
     headers['X-Amz-Date'] = date.strftime("%Y%m%dT%H%M%SZ")
-    headers['X-Amz-Content-Sha256'] = content_sha256.decode('ascii')
+    headers['X-Amz-Content-Sha256'] = content_sha256
 
     headers_to_sign = dict(headers)
 
@@ -209,7 +209,7 @@ def sign_v4(method, url, region, headers=None, access_key=None,
     canonical_req = generate_canonical_request(method,
                                                parsed_url,
                                                headers_to_sign,
-                                               content_sha256.decode('ascii'))
+                                               content_sha256)
     string_to_sign = generate_string_to_sign(date, region,
                                              canonical_req)
     signing_key = generate_signing_key(date, region, secret_key)
