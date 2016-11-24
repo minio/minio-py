@@ -29,6 +29,11 @@ from xml.etree import cElementTree
 from xml.etree.cElementTree import ParseError
 
 if hasattr(cElementTree, 'ParseError'):
+    ## ParseError seems to not have .message like other
+    ## exceptions. Add dynamically new attribute carrying
+    ## value from message.
+    if not hasattr(ParseError, 'message'):
+        setattr(ParseError, 'message', ParseError.msg)
     _ETREE_EXCEPTIONS = (ParseError, AttributeError, ValueError, TypeError)
 else:
     _ETREE_EXCEPTIONS = (SyntaxError, AttributeError, ValueError, TypeError)
