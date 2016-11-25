@@ -1682,7 +1682,7 @@ class Minio(object):
         if not location:
             return 'us-east-1'
         # location can be 'EU' convert it to meaningful 'eu-west-1'
-        if location is 'EU':
+        if location == 'EU':
             return 'eu-west-1'
         return location
 
