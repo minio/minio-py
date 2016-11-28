@@ -191,7 +191,7 @@ def sign_v4(method, url, region, headers=None, access_key=None,
         content_sha256 = _UNSIGNED_PAYLOAD
     if content_sha256 is None:
         # with no payload, calculate sha256 for 0 length data.
-        content_sha256 = encode_to_hex(get_sha256(b''))
+        content_sha256 = encode_to_hex(get_sha256(b'')).decode('ascii')
 
     host = parsed_url.netloc
     headers['Host'] = host
