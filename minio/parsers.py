@@ -34,7 +34,7 @@ from datetime import datetime
 import pytz
 
 # minio specific.
-from .error import InvalidXMLError
+from .error import (InvalidXMLError, MultiDeleteError)
 from .compat import urldecode
 from .definitions import (Object, Bucket, IncompleteUpload,
                           UploadPart, MultipartUploadResult,
@@ -439,3 +439,30 @@ def _parse_add_notifying_service_config(data, notifications, service_key,
     if config:
         notifications[service_key] = config
     return notifications
+
+def parse_multi_object_delete_response(data):
+    """Parser for Multi-Object Delete API response.
+
+    :param data: XML response body content from service.
+
+    :return: Returns list of error objects for each delete object that
+    had an error.
+
+    """
+    try:
+        root = cElementTree.fromstring(data)
+    except _ETREE_EXCEPTIONS as error:
+        raise InvalidXMLError('"MultiObjectDelete" XML is not parsable. '
+                              'Message: {}'.format(error.message))
+
+    errs_result = []
+    for contents in root:
+        if contents.tag == "Error":
+            key = contents.find('Key').text
+            err_code = contents.find('Code').text
+            err_message = contents.find('Message').text
+            errs_result.append(
+                MultiDeleteError(key, err_code, err_message)
+            )
+
+    return errs_result

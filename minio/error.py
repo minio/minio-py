@@ -117,6 +117,28 @@ class InvalidXMLError(Exception):
         return string_format.format(self.message)
 
 
+class MultiDeleteError(object):
+    """
+    Represents an error raised when trying to delete an object in a
+    Multi-Object Delete API call :class:`MultiDeleteError <MultiDeleteError>`
+
+    :object_name: Object name that had a delete error.
+    :error_code: Error code.
+    :error_message: Error message.
+    """
+    def __init__(self, object_name, err_code, err_message):
+        self.object_name = object_name
+        self.error_code = err_code
+        self.error_message = err_message
+
+    def __str__(self):
+        string_format = '<MultiDeleteError: object_name: {} error_code: {}' \
+                        ' error_message: {}>'
+        return string_format.format(self.object_name,
+                                    self.error_code,
+                                    self.error_message)
+
+
 class ResponseError(Exception):
     """
     ResponseError is raised when an API call doesn't succeed.
