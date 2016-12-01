@@ -36,6 +36,7 @@ import io
 import json
 import os
 import hashlib
+import itertools
 
 # Dependencies
 import urllib3
@@ -44,7 +45,7 @@ import pytz
 
 # Internal imports
 from . import __title__, __version__
-from .compat import urlsplit, range, urlencode
+from .compat import urlsplit, range, urlencode, basestring
 from .error import ResponseError, InvalidArgumentError, InvalidSizeError
 from .definitions import Object, UploadPart
 from .parsers import (parse_list_buckets,
@@ -55,7 +56,8 @@ from .parsers import (parse_list_buckets,
                       parse_new_multipart_upload,
                       parse_location_constraint,
                       parse_multipart_upload_result,
-                      parse_get_bucket_notification)
+                      parse_get_bucket_notification,
+                      parse_multi_object_delete_response)
 from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_endpoint,
                       get_sha256, encode_to_base64, get_md5,
@@ -70,7 +72,8 @@ from .signer import (sign_v4, presign_v4,
                      post_presign_signature, _SIGN_V4_ALGORITHM)
 from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_complete_multipart_upload,
-                          xml_marshal_bucket_notifications)
+                          xml_marshal_bucket_notifications,
+                          xml_marshal_delete_objects)
 from .limited_reader import LimitedReader
 from . import policy
 
@@ -969,6 +972,81 @@ class Minio(object):
         self._url_open(method, bucket_name=bucket_name,
                        object_name=object_name,
                        headers=headers)
+
+    def _process_remove_objects_batch(self, bucket_name, objects_batch):
+        """
+        Requester and response parser for remove_objects
+        """
+        # assemble request content for objects_batch
+        content = xml_marshal_delete_objects(objects_batch)
+
+        # compute headers
+        headers = {
+            'Content-Md5': encode_to_base64(get_md5(content)),
+            'Content-Length': len(content)
+        }
+        query = {"delete": None}
+        content_sha256_hex = encode_to_hex(get_sha256(content)).decode('ascii')
+
+        # send multi-object delete request
+        response = self._url_open(
+            'POST', bucket_name=bucket_name,
+            headers=headers, body=content,
+            query=query, content_sha256=content_sha256_hex,
+        )
+
+        # parse response to find delete errors
+        return parse_multi_object_delete_response(response.data)
+
+    def remove_objects(self, bucket_name, objects_iter):
+        """
+        Removes multiple objects from a bucket.
+
+        :param bucket_name: Bucket from which to remove objects
+
+        :param objects_iter: A list, tuple or iterator that provides
+        objects names to delete.
+
+        :return: An iterator of MultiDeleteError instances for each
+        object that had a delete error.
+
+        """
+        is_valid_bucket_name(bucket_name)
+        if isinstance(objects_iter, basestring):
+            raise TypeError(
+                'objects_iter cannot be `str` or `bytes` instance. It must be '
+                'a list, tuple or iterator of object names'
+            )
+
+        # turn list like objects into an iterator.
+        objects_iter = itertools.chain(objects_iter)
+
+        obj_batch = []
+        exit_loop = False
+        while not exit_loop:
+            try:
+                object_name = next(objects_iter)
+                is_non_empty_string(object_name)
+            except StopIteration:
+                exit_loop = True
+
+            if not exit_loop:
+                obj_batch.append(object_name)
+
+            # if we have 1000 items in the batch, or we have to exit
+            # the loop, we have to make a request to delete objects.
+            if len(obj_batch) == 1000 or (exit_loop and len(obj_batch) > 0):
+                # send request and parse response
+                errs_result = self._process_remove_objects_batch(
+                    bucket_name, obj_batch
+                )
+
+                # return the delete errors.
+                for err_result in errs_result:
+                    yield err_result
+
+                # clear batch for next set of items
+                obj_batch = []
 
     def list_incomplete_uploads(self, bucket_name, prefix=None,
                                 recursive=False):

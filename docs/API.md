@@ -37,7 +37,8 @@ s3Client = Minio('s3.amazonaws.com',
 | [`bucket_exists`](#bucket_exists) | [`copy_object`](#copy_object) | [`presigned_post_policy`](#presigned_post_policy) | [`get_bucket_notification`](#get_bucket_notification) |
 | [`remove_bucket`](#remove_bucket) | [`stat_object`](#stat_object) | | [`set_bucket_notification`](#set_bucket_notification) |
 | [`list_objects`](#list_objects) | [`remove_object`](#remove_object) | | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
-| [`list_incomplete_uploads`](#list_incomplete_uploads) | [`remove_incomplete_upload`](#remove_incomplete_upload) | | [`listen_bucket_notification`](#listen_bucket_notification) |
+| [`list_incomplete_uploads`](#list_incomplete_uploads) | [`remove_objects`](#remove_objects) | | [`listen_bucket_notification`](#listen_bucket_notification) |
+| | [`remove_incomplete_upload`](#remove_incomplete_upload) | | |
 | | [`fput_object`](#fput_object) | | |
 | | [`fget_object`](#fget_object) | | |
 | | [`get_partial_object`](#get_partial_object) | | |
@@ -823,6 +824,58 @@ __Example__
 # Remove an object.
 try:
     minioClient.remove_object('mybucket', 'myobject')
+except ResponseError as err:
+    print(err)
+
+```
+
+<a name="remove_objects"></a>
+### remove_objects(bucket_name, objects_iter)
+Removes multiple objects in a bucket.
+
+__Parameters__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``bucket_name``   | _string_  | Name of the bucket.   |
+|``objects_iter``   | _list_ , _tuple_ or _iterator_ | List-like value containing object-name strings to delete.   |
+
+__Return Value__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``delete_error_iterator`` | _iterator_ of _MultiDeleteError_ instances | Lazy iterator of delete errors described below. |
+
+_NOTE:_
+
+1. The iterator returned above must be evaluated (for e.g. using
+a loop), as the function is lazy and will not evaluate by default.
+
+2. The iterator will contain items only if there are errors when the
+service performs a delete operation on it. Each item contains error
+information for an object that had a delete error.
+
+Each delete error produced by the iterator has the following
+structure:
+
+|Param |Type |Description |
+|:---|:---|:---|
+|``MultiDeleteError.object_name`` | _string_ | Object name that had a delete error. |
+|``MultiDeleteError.error_code`` | _string_ | Error code. |
+|``MultiDeleteError.error_message`` | _string_ | Error message. |
+
+__Example__
+
+
+```py
+
+# Remove multiple objects in a single library call.
+try:
+    objects_to_delete = ['myobject-1', 'myobject-2', 'myobject-3']
+    # force evaluation of the remove_objects() call by iterating over
+    # the returned value.
+    for del_err in minioClient.remove_objects('mybucket', objects_to_delete):
+        print("Deletion Error: {}".format(del_err))
 except ResponseError as err:
     print(err)
 

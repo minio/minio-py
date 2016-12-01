@@ -177,6 +177,28 @@ def main():
     if policy_name != Policy.NONE:
         raise ValueError('Policy name is invalid ' + policy_name)
 
+    # Upload some new objects to prepare for multi-object delete test.
+    print("Prepare for remove_objects() test.")
+    object_names = []
+    for i in range(10):
+        curr_object_name = object_name+"-{}".format(i)
+        print("object-name: {}".format(curr_object_name))
+        print(client.fput_object(
+            bucket_name, curr_object_name, "testfile"))
+        object_names.append(curr_object_name)
+
+    # delete the objects in a single library call.
+    print("Performing remove_objects() test.")
+    del_errs = client.remove_objects(bucket_name, object_names)
+    had_errs = False
+    for del_err in del_errs:
+        had_errs = True
+        print("Err is {}".format(del_err))
+    if had_errs:
+        print("remove_objects() FAILED - it had unexpected errors.")
+    else:
+        print("remove_objects() worked as expected.")
+
     # Remove a bucket. This operation will only work if your bucket is empty.
     print(client.remove_bucket(bucket_name))
     print(client.remove_bucket(bucket_name+'.unique'))

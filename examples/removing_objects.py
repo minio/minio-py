@@ -28,3 +28,13 @@ try:
     client.remove_object('my-bucketname', 'my-objectname')
 except ResponseError as err:
     print(err)
+
+# Remove multiple objects in a single library call.
+try:
+    objects_to_delete = ['myobject-1', 'myobject-2', 'myobject-3']
+    # force evaluation of the remove_objects() call by iterating over
+    # the returned value.
+    for del_err in client.remove_objects('mybucket', objects_to_delete):
+        print("Deletion Error: {}".format(del_err))
+except ResponseError as err:
+    print(err)

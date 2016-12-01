@@ -197,3 +197,29 @@ def _add_notification_config_to_xml(node, element_name, configs):
                 value_node = s3_xml.SubElement(filter_rule_node, 'Value')
                 value_node.text = filter_rule['Value']
     return node
+
+def xml_marshal_delete_objects(object_names):
+    """
+    Marshal Multi-Object Delete request body from object names.
+
+    :param object_names: List of object keys to be deleted.
+    :return: Serialized XML string for multi-object delete request body.
+    """
+    root = s3_xml.Element('Delete')
+
+    # use quiet mode in the request - this causes the S3 Server to
+    # limit its response to only object keys that had errors during
+    # the delete operation.
+    quiet = s3_xml.SubElement(root, 'Quiet')
+    quiet.text = "true"
+
+    # add each object to the request.
+    for object_name in object_names:
+        object_elt = s3_xml.SubElement(root, 'Object')
+        key_elt = s3_xml.SubElement(object_elt, 'Key')
+        key_elt.text = object_name
+
+    # return the marshalled xml.
+    data = io.BytesIO()
+    s3_xml.ElementTree(root).write(data, encoding=None, xml_declaration=False)
+    return data.getvalue()
