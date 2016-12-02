@@ -208,6 +208,60 @@ def parse_list_objects(data, bucket_name):
     return objects, is_truncated, marker
 
 
+def parse_list_objects_v2(data, bucket_name):
+    """
+    Parser for list objects version 2 response.
+
+    :param data: Response data for list objects.
+    :param bucket_name: Response for the bucket.
+    :return: Returns three distinct components:
+       - List of :class:`Object <Object>`
+       - True if list is truncated, False otherwise.
+       - Continuation Token for the next request.
+    """
+    try:
+        root = cElementTree.fromstring(data)
+    except _ETREE_EXCEPTIONS as error:
+        raise InvalidXMLError('"ListObjects" XML is not parsable. '
+                              'Message: {0}'.format(error.message))
+    objects = []
+
+    # IsTruncated is always present in the response.
+    is_truncated = root.find('s3:IsTruncated', _S3_NS).text == 'true'
+
+    # NextContinuationToken may not be present.
+    ct_elt = root.find('s3:NextContinuationToken', _S3_NS)
+    continuation_token = ct_elt.text if ct_elt != None else None
+
+    # Parse each Contents element.
+    for content in root.findall('s3:Contents', _S3_NS):
+        key_elt = content.find('s3:Key', _S3_NS)
+        object_name = urldecode(key_elt.text) if key_elt != None else None
+
+        lmod_elt = content.find('s3:LastModified', _S3_NS)
+        last_modified = (_iso8601_to_localized_time(lmod_elt.text)
+                         if lmod_elt != None else None)
+
+        etag_elt = content.find('s3:ETag', _S3_NS)
+        etag = etag_elt.text.replace('"', '') if etag_elt != None else None
+
+        size_elt = content.find('s3:Size', _S3_NS)
+        size = int(size_elt.text) if size_elt != None else 0
+
+        objects.append(Object(bucket_name, object_name, last_modified, etag,
+                              size))
+
+    # Parse each CommonPrefixes element.
+    for dirs_elt in root.findall('s3:CommonPrefixes', _S3_NS):
+        # AWS docs are not clear if a CommonPrefixes element may have
+        # multiple Prefix elements, so we try to parse more than one.
+        for dir_elt in dirs_elt.findall('s3:Prefix', _S3_NS):
+            object_name = urldecode(dir_elt.text)
+            objects.append(Object(bucket_name, object_name, None, '', 0,
+                                  is_dir=True))
+    return objects, is_truncated, continuation_token
+
+
 def parse_list_multipart_uploads(data, bucket_name):
     """
     Parser for list multipart uploads response.

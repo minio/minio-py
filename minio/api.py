@@ -50,6 +50,7 @@ from .error import ResponseError, InvalidArgumentError, InvalidSizeError
 from .definitions import Object, UploadPart
 from .parsers import (parse_list_buckets,
                       parse_list_objects,
+                      parse_list_objects_v2,
                       parse_list_parts,
                       parse_copy_object,
                       parse_list_multipart_uploads,
@@ -892,16 +893,16 @@ class Minio(object):
         method = 'GET'
 
         # Initialize query parameters.
-        query = {}
-        query['max-keys'] = 1000
+        query = {
+            'max-keys': 1000
+        }
         # Add if prefix present.
         if prefix:
             query['prefix'] = prefix
 
         # Delimited by default.
-        query['delimiter'] = '/'
-        if recursive:
-            del query['delimiter']
+        if not recursive:
+            query['delimiter'] = '/'
 
         marker = ''
         is_truncated = True
@@ -915,6 +916,73 @@ class Minio(object):
                                       headers=headers)
             objects, is_truncated, marker = parse_list_objects(response.data,
                                                                bucket_name=bucket_name)
+            for obj in objects:
+                yield obj
+
+    def list_objects_v2(self, bucket_name, prefix=None, recursive=False):
+        """
+        List objects in the given bucket using the List objects V2 API.
+
+        Examples:
+            objects = minio.list_objects_v2('foo')
+            for current_object in objects:
+                print(current_object)
+            # hello
+            # hello/
+            # hello/
+            # world/
+
+            objects = minio.list_objects_v2('foo', prefix='hello/')
+            for current_object in objects:
+                print(current_object)
+            # hello/world/
+
+            objects = minio.list_objects_v2('foo', recursive=True)
+            for current_object in objects:
+                print(current_object)
+            # hello/world/1
+            # world/world/2
+            # ...
+
+            objects = minio.list_objects_v2('foo', prefix='hello/',
+                                         recursive=True)
+            for current_object in objects:
+                print(current_object)
+            # hello/world/1
+            # hello/world/2
+
+        :param bucket_name: Bucket to list objects from
+        :param prefix: String specifying objects returned must begin with
+        :param recursive: If yes, returns all objects for a specified prefix
+        :return: An iterator of objects in alphabetical order.
+        """
+        is_valid_bucket_name(bucket_name)
+
+        # Initialize query parameters.
+        query = {
+            'list-type': 2
+        }
+        # Add if prefix present.
+        if prefix:
+            query['prefix'] = prefix
+
+        # Delimited by default.
+        if not recursive:
+            query['delimiter'] = '/'
+
+        continuation_token = None
+        is_truncated = True
+        while is_truncated:
+            if continuation_token is not None:
+                query['continuation-token'] = continuation_token
+            response = self._url_open(method='GET',
+                                      bucket_name=bucket_name,
+                                      query=query,
+                                      headers={})
+            objects, is_truncated, continuation_token = parse_list_objects_v2(
+                response.data, bucket_name=bucket_name
+            )
+
             for obj in objects:
                 yield obj
 

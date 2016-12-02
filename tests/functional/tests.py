@@ -125,7 +125,15 @@ def main():
     print(client.fget_object(bucket_name, object_name, 'newfile-f'))
 
     # List all object paths in bucket.
+    print("Listing using ListObjects API")
     objects = client.list_objects(bucket_name, recursive=True)
+    for obj in objects:
+        print(obj.bucket_name, obj.object_name, obj.last_modified, \
+            obj.etag, obj.size, obj.content_type)
+
+    # List all object paths in bucket using V2 API.
+    print("Listing using ListObjectsV2 API")
+    objects = client.list_objects_v2(bucket_name, recursive=True)
     for obj in objects:
         print(obj.bucket_name, obj.object_name, obj.last_modified, \
             obj.etag, obj.size, obj.content_type)

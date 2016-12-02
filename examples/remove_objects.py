@@ -23,12 +23,6 @@ client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-# Remove an object.
-try:
-    client.remove_object('my-bucketname', 'my-objectname')
-except ResponseError as err:
-    print(err)
-
 # Remove multiple objects in a single library call.
 try:
     objects_to_delete = ['myobject-1', 'myobject-2', 'myobject-3']

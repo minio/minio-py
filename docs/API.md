@@ -37,8 +37,8 @@ s3Client = Minio('s3.amazonaws.com',
 | [`bucket_exists`](#bucket_exists) | [`copy_object`](#copy_object) | [`presigned_post_policy`](#presigned_post_policy) | [`get_bucket_notification`](#get_bucket_notification) |
 | [`remove_bucket`](#remove_bucket) | [`stat_object`](#stat_object) | | [`set_bucket_notification`](#set_bucket_notification) |
 | [`list_objects`](#list_objects) | [`remove_object`](#remove_object) | | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
-| [`list_incomplete_uploads`](#list_incomplete_uploads) | [`remove_objects`](#remove_objects) | | [`listen_bucket_notification`](#listen_bucket_notification) |
-| | [`remove_incomplete_upload`](#remove_incomplete_upload) | | |
+| [`list_objects_v2`](#list_objects_v2) | [`remove_objects`](#remove_objects) | | [`listen_bucket_notification`](#listen_bucket_notification) |
+| [`list_incomplete_uploads`](#list_incomplete_uploads) | [`remove_incomplete_upload`](#remove_incomplete_upload) | | |
 | | [`fput_object`](#fput_object) | | |
 | | [`fget_object`](#fget_object) | | |
 | | [`get_partial_object`](#get_partial_object) | | |
@@ -221,6 +221,45 @@ __Example__
 
 # List all object paths in bucket that begin with my-prefixname.
 objects = minioClient.list_objects('mybucket', prefix='my-prefixname',
+                              recursive=True)
+for obj in objects:
+    print(obj.bucket_name, obj.object_name.encode('utf-8'), obj.last_modified,
+          obj.etag, obj.size, obj.content_type)
+```
+
+<a name="list_objects_v2"></a>
+### list_objects_v2(bucket_name, prefix, recursive=False)
+Lists objects in a bucket using the Version 2 API.
+
+__Parameters__
+
+| Param  |Type  | Description  |
+|:---|:---|:---|
+|``bucket_name``   |_string_ | Name of the bucket.  |
+|``objectPrefix``   | _string_ |The prefix of the objects that should be listed. |
+|``recursive``   | _bool_ |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional default is False.   |
+
+__Return Value__
+
+| Param  |Type  | Description  |
+|:---|:---|:---|
+|``object``   |_Object_ | Iterator for all the objects in the bucket, the object is of the format listed below:  |
+
+| Param  |Type  | Description  |
+|:---|:---|:---|
+|``object.object_name``   |_string_ | name of the object.  |
+|``object.size`` |_int_ | size of the object.  |
+|``object.etag``   |_string_ | etag of the object.  |
+|``object.last_modified`` |_datetime.datetime_ | modified time stamp.  |
+
+
+
+__Example__
+
+```py
+
+# List all object paths in bucket that begin with my-prefixname.
+objects = minioClient.list_objects_v2('mybucket', prefix='my-prefixname',
                               recursive=True)
 for obj in objects:
     print(obj.bucket_name, obj.object_name.encode('utf-8'), obj.last_modified,
