@@ -13,26 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-prefixname
+# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-objectname
 # are dummy values, please replace them with original values.
 
 from minio import Minio
+from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-# List all object paths in bucket that begin with my-prefixname.
-objects = client.list_objects('my-bucketname', prefix='my-prefixname',
-                              recursive=True)
-for obj in objects:
-    print(obj.bucket_name, obj.object_name.encode('utf-8'), obj.last_modified,
-          obj.etag, obj.size, obj.content_type)
-
-# List all object paths in bucket that begin with my-prefixname using
-# V2 listing API.
-objects = client.list_objects_v2('my-bucketname', prefix='my-prefixname',
-                              recursive=True)
-for obj in objects:
-    print(obj.bucket_name, obj.object_name.encode('utf-8'), obj.last_modified,
-          obj.etag, obj.size, obj.content_type)
+# Remove an object.
+try:
+    client.remove_object('my-bucketname', 'my-objectname')
+except ResponseError as err:
+    print(err)
