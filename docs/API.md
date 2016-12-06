@@ -957,6 +957,7 @@ __Parameters__
 |``bucket_name``   |_string_   |Name of the bucket.   |
 |``object_name``   |_string_    |Name of the object.   |
 |``expiry``   | _datetime.datetime_    |Expiry in seconds. Default expiry is set to 7 days.    |
+|``response_headers``   | _dictionary_    |Additional headers to include (e.g. `Response-Content-Type` or `Response-Content-Disposition`)     |
 
 __Example__
 
