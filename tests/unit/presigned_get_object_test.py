@@ -22,6 +22,7 @@ from unittest import TestCase
 from minio import Minio
 from minio.error import InvalidArgumentError
 
+
 class PresignedGetObjectTest(TestCase):
     @raises(TypeError)
     def test_object_is_string(self):
@@ -37,3 +38,17 @@ class PresignedGetObjectTest(TestCase):
     def test_expiry_limit(self):
         client = Minio('localhost:9000')
         client.presigned_get_object('hello', 'key', expires=timedelta(days=8))
+
+    def test_can_include_response_headers(self):
+        client = Minio('localhost:9000', 'my_access_key', 'my_secret_key',
+                       secure=True)
+        client._get_bucket_region = mock.Mock(return_value='us-east-1')
+        r = client.presigned_get_object(
+            'mybucket', 'myfile.pdf',
+            response_headers={
+                'Response-Content-Type': 'application/pdf',
+                'Response-Content-Disposition': 'inline;  filename="test.pdf"'
+            })
+        self.assertIn('inline', r)
+        self.assertIn('test.pdf', r)
+        self.assertIn(b'application%2Fpdf', r)

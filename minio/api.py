@@ -1286,7 +1286,8 @@ class Minio(object):
                 return
 
     def presigned_get_object(self, bucket_name, object_name,
-                             expires=timedelta(days=7)):
+                             expires=timedelta(days=7),
+                             response_headers=None):
         """
         Presigns a get object request and provides a url
 
@@ -1313,7 +1314,8 @@ class Minio(object):
 
         return self._presigned_get_partial_object(bucket_name,
                                                   object_name,
-                                                  expires)
+                                                  expires,
+                                                  response_headers=response_headers)
 
     def presigned_put_object(self, bucket_name, object_name,
                              expires=timedelta(days=7)):
@@ -1463,7 +1465,8 @@ class Minio(object):
 
     def _presigned_get_partial_object(self, bucket_name, object_name,
                                       expires=timedelta(days=7),
-                                      offset=0, length=0):
+                                      offset=0, length=0,
+                                      response_headers=None):
         """
         Presigns a get partial object request and provides a url,
         this is a internal function not exposed.
@@ -1491,6 +1494,7 @@ class Minio(object):
                              bucket_name=bucket_name,
                              object_name=object_name,
                              bucket_region=region)
+
         headers = {}
 
         if request_range:
@@ -1502,6 +1506,7 @@ class Minio(object):
                                  self._secret_key,
                                  region=region,
                                  headers=headers,
+                                 response_headers=response_headers,
                                  expires=int(expires.total_seconds()))
         return presign_url
 

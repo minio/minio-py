@@ -60,7 +60,7 @@ def post_presign_signature(date, region, secret_key, policy_str):
 
 
 def presign_v4(method, url, access_key, secret_key, region=None,
-               headers=None, expires=None):
+               headers=None, expires=None, response_headers=None):
     """
     Calculates signature version '4' for regular presigned URLs.
 
@@ -96,6 +96,9 @@ def presign_v4(method, url, access_key, secret_key, region=None,
 
     headers_to_sign = dict(headers)
 
+    if response_headers is not None:
+        headers_to_sign.update(response_headers)
+
     # Remove amazon recommended headers.
     headers_to_sign = ignore_headers(headers)
 
@@ -108,6 +111,9 @@ def presign_v4(method, url, access_key, secret_key, region=None,
     query['X-Amz-Expires'] = expires
     signed_headers = get_signed_headers(headers_to_sign)
     query['X-Amz-SignedHeaders'] = ';'.join(signed_headers)
+
+    if response_headers is not None:
+        query.update(response_headers)
 
     # URL components.
     url_components = [parsed_url.geturl()]
@@ -144,6 +150,7 @@ def presign_v4(method, url, access_key, secret_key, region=None,
                          hashlib.sha256).hexdigest()
     new_parsed_url = urlsplit(new_url + "&X-Amz-Signature="+signature)
     return new_parsed_url.geturl()
+
 
 
 def get_signed_headers(headers):
