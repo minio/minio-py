@@ -51,4 +51,4 @@ class PresignedGetObjectTest(TestCase):
             })
         self.assertIn('inline', r)
         self.assertIn('test.pdf', r)
-        self.assertIn(b'application%2Fpdf', r)
+        self.assertIn('application%2Fpdf', r)
