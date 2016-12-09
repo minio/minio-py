@@ -28,7 +28,7 @@ minio - Minio Python Library for Amazon S3 Compatible Cloud Storage
 
 __title__ = 'minio-py'
 __author__ = 'Minio, Inc.'
-__version__ = '2.0.3'
+__version__ = '2.0.4'
 __license__ = 'Apache 2.0'
 __copyright__ = 'Copyright 2015, 2016 Minio, Inc.'
 
