@@ -10,7 +10,7 @@ This document assumes that you have a working [Python](https://www.python.org/do
 
 ```sh
 
-$ pip install minio
+pip install minio
 
 ```
 
@@ -18,9 +18,9 @@ $ pip install minio
 
 ```sh
 
-$ git clone https://github.com/minio/minio-py
-$ cd minio-py
-$ python setup.py install
+git clone https://github.com/minio/minio-py
+cd minio-py
+python setup.py install
 
 ```
 
@@ -85,9 +85,9 @@ else:
 
 ```bash
 
-$ python file_uploader.py
+python file_uploader.py
 
-$ mc ls play/maylogs/
+mc ls play/maylogs/
 [2016-05-27 16:41:37 PDT]  12MiB pumaserver_debug.log
 
 ```
