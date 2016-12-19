@@ -50,15 +50,99 @@ else:
 _S3_NS = {'s3' : 'http://s3.amazonaws.com/doc/2006-03-01/'}
 
 
-def get_element_text(element, xpath, ns=_S3_NS):
-    """
-    Get element text for a given xpath.
+class S3Element(object):
+    """S3 aware XML parsing class. Wraps a root element name and
+    cElementTree.Element instance. Provides S3 namespace aware parsing
+    functions.
 
-    :param element: Element xml object.
-    :param xpath: XML attribute inside the element.
-    :param ns: Necessary namespace to look for.
     """
-    return element.find(xpath, ns).text
+    def __init__(self, root_name, element):
+        self.root_name = root_name
+        self.element = element
+
+    @classmethod
+    def fromstring(cls, root_name, data):
+        """Initialize S3Element from name and XML string data.
+
+        :param name: Name for XML data. Used in XML errors.
+        :param data: string data to be parsed.
+        :return: Returns an S3Element.
+        """
+        try:
+            return cls(root_name, cElementTree.fromstring(data))
+        except _ETREE_EXCEPTIONS as error:
+            raise InvalidXMLError(
+                '"{}" XML is not parsable. Message: {}'.format(
+                    root_name, error.message
+                )
+            )
+
+    def findall(self, name):
+        """Similar to ElementTree.Element.findall()
+
+        """
+        return [
+            S3Element(self.root_name, elem)
+            for elem in self.element.findall('s3:{}'.format(name), _S3_NS)
+        ]
+
+    def find(self, name):
+        """Similar to ElementTree.Element.find()
+
+        """
+        elt = self.element.find('s3:{}'.format(name), _S3_NS)
+        return S3Element(self.root_name, elt) if elt is not None else None
+
+    def get_child_text(self, name, strict=True):
+        """Extract text of a child element. If strict, and child element is
+        not present, raises InvalidXMLError and otherwise returns
+        None.
+
+        """
+        if strict:
+            try:
+                return self.element.find('s3:{}'.format(name), _S3_NS).text
+            except _ETREE_EXCEPTIONS as error:
+                raise InvalidXMLError(
+                    ('Invalid XML provided for "{}" - erroring tag <{}>. '
+                     'Message: {}').format(self.root_name, name, error.message)
+                )
+        else:
+            return self.element.findtext('s3:{}'.format(name), None, _S3_NS)
+
+    def get_urldecoded_elem_text(self, name, strict=True):
+        """Like self.get_child_text(), but also performs urldecode() on the
+        result.
+
+        """
+        text = self.get_child_text(name, strict)
+        # strictness is already enforced above.
+        return urldecode(text) if text is not None else None
+
+    def get_etag_elem(self):
+        """Fetches an 'ETag' child element suitably processed.
+
+        """
+        return self.get_child_text('ETag').replace('"', '')
+
+    def get_int_elem(self, name):
+        """Fetches an integer type XML child element by name.
+
+        """
+        return int(self.get_child_text(name))
+
+    def get_localized_time_elem(self, name):
+        """Parse a time XML child element.
+
+        """
+        return _iso8601_to_localized_time(self.get_child_text(name))
+
+    def text(self):
+        """Fetch the current node's text
+
+        """
+        return self.element.text
+
 
 def parse_multipart_upload_result(data):
     """
@@ -67,25 +151,14 @@ def parse_multipart_upload_result(data):
     :param data: Response data for complete multipart upload.
     :return: :class:`MultipartUploadResult <MultipartUploadResult>`.
     """
-    try:
-        root = cElementTree.fromstring(data)
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('"CompleteMultipartUploadResult" XML is not parsable. '
-                              'Message: {0}'.format(error.message))
-    try:
-        bucket_name = get_element_text(root, 's3:Bucket')
-        object_name = get_element_text(root, 's3:Key')
-        location = get_element_text(root, 's3:Location')
-        etag = get_element_text(root, 's3:ETag')
-        # Strip off quotes from beginning and the end.
-        if etag.startswith('"') and etag.endswith('"'):
-            etag = etag[len('"'):]
-            etag = etag[:-len('"')]
+    root = S3Element.fromstring('CompleteMultipartUploadResult', data)
 
-        return MultipartUploadResult(bucket_name, object_name, location, etag)
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('Invalid XML provided for "CompleteMultipartUploadResult" '
-                              'some fields are missing. Message: {0}'.format(error.message))
+    return MultipartUploadResult(
+        root.get_child_text('Bucket'),
+        root.get_child_text('Key'),
+        root.get_child_text('Location'),
+        root.get_etag_elem()
+    )
 
 def parse_copy_object(bucket_name, object_name, data):
     """
@@ -94,26 +167,13 @@ def parse_copy_object(bucket_name, object_name, data):
     :param data: Response data for copy object.
     :return: :class:`CopyObjectResult <CopyObjectResult>`
     """
-    try:
-        root = cElementTree.fromstring(data)
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('"CopyObjectResult" XML is not parsable. '
-                              'Message: {0}'.format(error.message))
+    root = S3Element.fromstring('CopyObjectResult', data)
 
-    try:
-        etag = get_element_text(root, 's3:ETag')
-        # Strip off quotes from beginning and the end.
-        if etag.startswith('"') and etag.endswith('"'):
-            etag = etag[len('"'):]
-            etag = etag[:-len('"')]
-
-        last_modified = _iso8601_to_localized_time(
-            get_element_text(root, 's3:LastModified'))
-
-        return CopyObjectResult(bucket_name, object_name, etag, last_modified)
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('Invalid XML provided for "CopyObjectResult" '
-                              'some fields are missing. Message: {0}'.format(error.message))
+    return CopyObjectResult(
+        bucket_name, object_name,
+        root.get_etag_elem(),
+        root.get_localized_time_elem('LastModified')
+    )
 
 def parse_list_buckets(data):
     """
@@ -122,24 +182,36 @@ def parse_list_buckets(data):
     :param data: Response data for list buckets.
     :return: List of :class:`Bucket <Bucket>`.
     """
-    try:
-        root = cElementTree.fromstring(data)
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('"ListBucketsResult" XML is not parsable. '
-                              'Message: {0}'.format(error.message))
+    root = S3Element.fromstring('ListBucketsResult', data)
 
-    bucket_list = []
-    try:
-        for buckets in root.findall('s3:Buckets', _S3_NS):
-            for bucket in buckets:
-                name = get_element_text(bucket, 's3:Name')
-                creation_date = _iso8601_to_localized_time(get_element_text(bucket,
-                                                                            's3:CreationDate'))
-                bucket_list.append(Bucket(name, creation_date))
-            return bucket_list
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('Invalid XML provided for "ListBucketsResult" '
-                              'some fields are missing. Message: {0}'.format(error.message))
+    return [
+        Bucket(bucket.get_child_text('Name'),
+               bucket.get_localized_time_elem('CreationDate'))
+        for buckets in root.findall('Buckets')
+        for bucket in buckets.findall('Bucket')
+    ]
+
+def _parse_objects_from_xml_elts(bucket_name, contents, common_prefixes):
+    """Internal function that extracts objects and common prefixes from
+    list_objects responses.
+    """
+    objects = [
+        Object(bucket_name,
+               content.get_urldecoded_elem_text('Key'),
+               content.get_localized_time_elem('LastModified'),
+               content.get_etag_elem(),
+               content.get_int_elem('Size'))
+        for content in contents
+    ]
+
+    object_dirs = [
+        Object(bucket_name, urldecode(dir_elt.text()), None, '',
+               0, is_dir=True)
+        for dirs_elt in common_prefixes
+        for dir_elt in dirs_elt
+    ]
+
+    return objects, object_dirs
 
 def parse_list_objects(data, bucket_name):
     """
@@ -152,60 +224,21 @@ def parse_list_objects(data, bucket_name):
        - True if list is truncated, False otherwise.
        - Object name marker for the next request.
     """
-    try:
-        root = cElementTree.fromstring(data)
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('"ListObjects" XML is not parsable. '
-                              'Message: {0}'.format(error.message))
-    is_truncated = False
-    objects = []
-    marker = None
-    last_object_name = None
-    for contents in root:
-        if contents.tag == \
-           '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
-            is_truncated = contents.text.lower() == 'true'
-        if contents.tag == \
-           '{http://s3.amazonaws.com/doc/2006-03-01/}NextMarker':
-            if contents.text is not None:
-                marker = urldecode(contents.text)
-        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Contents':
-            object_name = None
-            last_modified = None
-            etag = None
-            size = 0
-            for content in contents:
-                if content.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
-                    object_name = urldecode(content.text)
-                    last_object_name = object_name
-                if content.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
-                    last_modified = _iso8601_to_localized_time(content.text)
-                if content.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
-                    etag = content.text
-                    if etag:
-                        etag = etag.replace('"', '')
-                if content.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
-                    size = int(content.text)
-            objects.append(Object(bucket_name, object_name, last_modified,
-                                  etag, size, content_type=None))
-        if contents.tag == \
-           '{http://s3.amazonaws.com/doc/2006-03-01/}CommonPrefixes':
-            for content in contents:
-                if content.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}Prefix':
-                    object_name = urldecode(content.text)
-                objects.append(Object(bucket_name,
-                                      object_name, None, '', 0,
-                                      content_type=None, is_dir=True))
+    root = S3Element.fromstring('ListObjectResult', data)
+
+    is_truncated = root.get_child_text('IsTruncated').lower() == 'true'
+    # NextMarker element need not be present.
+    marker = root.get_urldecoded_elem_text('NextMarker', strict=False)
+    objects, object_dirs = _parse_objects_from_xml_elts(
+        bucket_name,
+        root.findall('Contents'),
+        root.findall('CommonPrefixes')
+    )
 
     if is_truncated and marker is None:
-        marker = last_object_name
+        marker = objects[-1].object_name
 
-    return objects, is_truncated, marker
+    return objects + object_dirs, is_truncated, marker
 
 
 def parse_list_objects_v2(data, bucket_name):
@@ -219,48 +252,19 @@ def parse_list_objects_v2(data, bucket_name):
        - True if list is truncated, False otherwise.
        - Continuation Token for the next request.
     """
-    try:
-        root = cElementTree.fromstring(data)
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('"ListObjects" XML is not parsable. '
-                              'Message: {0}'.format(error.message))
-    objects = []
+    root = S3Element.fromstring('ListObjectV2Result', data)
 
-    # IsTruncated is always present in the response.
-    is_truncated = root.find('s3:IsTruncated', _S3_NS).text == 'true'
-
+    is_truncated = root.get_child_text('IsTruncated').lower() == 'true'
     # NextContinuationToken may not be present.
-    ct_elt = root.find('s3:NextContinuationToken', _S3_NS)
-    continuation_token = ct_elt.text if ct_elt != None else None
+    continuation_token = root.get_child_text('NextContinuationToken',
+                                             strict=False)
+    objects, object_dirs = _parse_objects_from_xml_elts(
+        bucket_name,
+        root.findall('Contents'),
+        root.findall('CommonPrefixes')
+    )
 
-    # Parse each Contents element.
-    for content in root.findall('s3:Contents', _S3_NS):
-        key_elt = content.find('s3:Key', _S3_NS)
-        object_name = urldecode(key_elt.text) if key_elt != None else None
-
-        lmod_elt = content.find('s3:LastModified', _S3_NS)
-        last_modified = (_iso8601_to_localized_time(lmod_elt.text)
-                         if lmod_elt != None else None)
-
-        etag_elt = content.find('s3:ETag', _S3_NS)
-        etag = etag_elt.text.replace('"', '') if etag_elt != None else None
-
-        size_elt = content.find('s3:Size', _S3_NS)
-        size = int(size_elt.text) if size_elt != None else 0
-
-        objects.append(Object(bucket_name, object_name, last_modified, etag,
-                              size))
-
-    # Parse each CommonPrefixes element.
-    for dirs_elt in root.findall('s3:CommonPrefixes', _S3_NS):
-        # AWS docs are not clear if a CommonPrefixes element may have
-        # multiple Prefix elements, so we try to parse more than one.
-        for dir_elt in dirs_elt.findall('s3:Prefix', _S3_NS):
-            object_name = urldecode(dir_elt.text)
-            objects.append(Object(bucket_name, object_name, None, '', 0,
-                                  is_dir=True))
-    return objects, is_truncated, continuation_token
-
+    return objects + object_dirs, is_truncated, continuation_token
 
 def parse_list_multipart_uploads(data, bucket_name):
     """
@@ -274,44 +278,19 @@ def parse_list_multipart_uploads(data, bucket_name):
        - Object name marker for the next request.
        - Upload id marker for the next request.
     """
-    try:
-        root = cElementTree.fromstring(data)
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('"ListMultipartUploads" XML is not parsable. '
-                              'Message: {0}'.format(error.message))
-    is_truncated = False
-    uploads = []
-    key_marker = None
-    upload_id_marker = None
-    for contents in root:
-        if contents.tag == \
-           '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
-            is_truncated = contents.text.lower() == 'true'
-        if contents.tag == \
-           '{http://s3.amazonaws.com/doc/2006-03-01/}NextKeyMarker':
-            if contents.text is not None:
-                key_marker = urldecode(contents.text)
-        if contents.tag == \
-           '{http://s3.amazonaws.com/doc/2006-03-01/}NextUploadIdMarker':
-            upload_id_marker = contents.text
-        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Upload':
-            object_name = None
-            upload_id = None
-            initiated = None
-            for content in contents:
-                if content.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}Key':
-                    object_name = urldecode(content.text)
-                if content.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}UploadId':
-                    upload_id = content.text
-                if content.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}Initiated':
-                    initiated = _iso8601_to_localized_time(content.text)
-            uploads.append(IncompleteUpload(bucket_name,
-                                            object_name,
-                                            upload_id,
-                                            initiated))
+    root = S3Element.fromstring('ListMultipartUploadsResult', data)
+
+    is_truncated = root.get_child_text('IsTruncated').lower() == 'true'
+    key_marker = root.get_urldecoded_elem_text('NextKeyMarker', strict=False)
+    upload_id_marker = root.get_child_text('NextUploadIdMarker', strict=False)
+    uploads = [
+        IncompleteUpload(bucket_name,
+                         upload.get_urldecoded_elem_text('Key'),
+                         upload.get_child_text('UploadId'),
+                         upload.get_localized_time_elem('Initiated'))
+        for upload in root.findall('Upload')
+    ]
+
     return uploads, is_truncated, key_marker, upload_id_marker
 
 
@@ -330,48 +309,20 @@ def parse_list_parts(data, bucket_name, object_name, upload_id):
        - Next part marker for the next request if the
          list was truncated.
     """
-    try:
-        root = cElementTree.fromstring(data)
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('"ListParts" XML is not parsable. '
-                              'Message: {0}'.format(error.message))
+    root = S3Element.fromstring('ListPartsResult', data)
 
-    is_truncated = False
-    parts = []
-    part_marker = None
-    for contents in root:
-        if contents.tag == \
-           '{http://s3.amazonaws.com/doc/2006-03-01/}IsTruncated':
-            is_truncated = contents.text.lower() == 'true'
-        if contents.tag == \
-           '{http://s3.amazonaws.com/doc/2006-03-01/}NextPartNumberMarker':
-            part_marker = contents.text
-        if contents.tag == '{http://s3.amazonaws.com/doc/2006-03-01/}Part':
-            etag = None
-            size = None
-            part_number = None
-            last_modified = None
-            for content in contents:
-                if content.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}PartNumber':
-                    part_number = int(content.text)
-                if content.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}ETag':
-                    etag = content.text
-                    etag = etag.replace('"', '')
-                if content.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}LastModified':
-                    last_modified = _iso8601_to_localized_time(content.text)
-                if content.tag == \
-                   '{http://s3.amazonaws.com/doc/2006-03-01/}Size':
-                    size = int(content.text)
-            part = UploadPart(bucket_name, object_name,
-                              upload_id, part_number,
-                              etag, last_modified, size)
-            parts.append(part)
+    is_truncated = root.get_child_text('IsTruncated').lower() == 'true'
+    part_marker = root.get_child_text('NextPartNumberMarker', strict=False)
+    parts = [
+        UploadPart(bucket_name, object_name, upload_id,
+                   part.get_int_elem('PartNumber'),
+                   part.get_etag_elem(),
+                   part.get_localized_time_elem('LastModified'),
+                   part.get_int_elem('Size'))
+        for part in root.findall('Part')
+    ]
 
     return parts, is_truncated, part_marker
-
 
 def parse_new_multipart_upload(data):
     """
@@ -380,18 +331,8 @@ def parse_new_multipart_upload(data):
     :param data: Response data for new multipart upload.
     :return: Returns a upload id.
     """
-    try:
-        root = cElementTree.fromstring(data)
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('"NewMultipartUpload" XML is not parsable. '
-                              'Message: {0}'.format(error.message))
-
-    try:
-        upload_id = get_element_text(root, 's3:UploadId')
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('Missing "UploadId" XML attribute from "NewMultipartUpload". '
-                              'Message: {0}'.format(error.message))
-    return upload_id
+    root = S3Element.fromstring('NewMultipartUploadResult', data)
+    return root.get_child_text('UploadId')
 
 def parse_location_constraint(data):
     """
@@ -400,19 +341,8 @@ def parse_location_constraint(data):
     :param data: Response data for get bucket location.
     :return: Returns location of your bucket.
     """
-    try:
-        bucket_location = cElementTree.fromstring(data)
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('"BucketLocationConstraint" XML is not parsable.'
-                              ' Message: {0}'.format(error.message))
-
-    try:
-        location_constraint = bucket_location.text
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('Missing "LocationConstraint" XML attribute from '
-                              '"BucketLocationConstraint". Message: {0}'.format(error.message))
-
-    return location_constraint
+    root = S3Element.fromstring('BucketLocationConstraintResult', data)
+    return root.text()
 
 def _iso8601_to_localized_time(date_string):
     """
@@ -432,16 +362,7 @@ def parse_get_bucket_notification(data):
     :param data: Body of response from get_bucket_notification.
     :return: Returns bucket notification configuration
     """
-    try:
-        root = cElementTree.fromstring(data)
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('"GetBucketNotificationResult" XML is not parsable. '
-                              'Message: {0}'.format(error.message))
-
-    # perhaps we could ignore this condition?
-    if root.tag != '{{{s3}}}NotificationConfiguration'.format(**_S3_NS):
-        raise InvalidXMLError('"GetBucketNotificationresult" XML root is '
-                              'invalid.')
+    root = S3Element.fromstring('GetBucketNotificationResult', data)
 
     notifications = _parse_add_notifying_service_config(
         root, {},
@@ -460,38 +381,38 @@ def parse_get_bucket_notification(data):
 
 def _parse_add_notifying_service_config(data, notifications, service_key,
                                         service_xml_tag):
+
+    arn_elt_name = NOTIFICATIONS_ARN_FIELDNAME_MAP[service_xml_tag]
     config = []
-    stag = 's3:{}'.format(service_xml_tag)
-    for service in data.findall(stag, _S3_NS):
-        service_config = {}
-        service_config['Id'] = service.find('s3:Id', _S3_NS).text
-        arn_tag = 's3:{}'.format(
-            NOTIFICATIONS_ARN_FIELDNAME_MAP[service_xml_tag]
-        )
-        service_config['Arn'] = service.find(arn_tag, _S3_NS).text
-        service_config['Events'] = []
-        for event in service.findall('s3:Event', _S3_NS):
-            service_config['Events'].append(event.text)
-        xml_filter_rule = service.find('s3:Filter', _S3_NS)
-        if xml_filter_rule:
-            xml_filter_rules = xml_filter_rule.find(
-                's3:S3Key', _S3_NS).findall('s3:FilterRule', _S3_NS)
-            filter_rules = []
-            for xml_filter_rule in xml_filter_rules:
-                filter_rules.append(
-                    {
-                        'Name': xml_filter_rule.find('s3:Name', _S3_NS),
-                        'Value': xml_filter_rule.find('s3:Value', _S3_NS),
-                    }
-                )
-            service_config['Filter'] = {
+    for service in data.findall(service_xml_tag):
+        config_item = {}
+        config_item['Id'] = service.get_child_text('Id')
+        config_item['Arn'] = service.get_child_text(arn_elt_name)
+        config_item['Events'] = [
+            event.text() for event in service.findall('Event')
+        ]
+        filter_terms = [
+            {
                 'Key': {
-                    'FilterRules': filter_rules
+                    'FilterRules': [
+                        {
+                            'Name': xml_filter_rule.get_child_text('Name'),
+                            'Value': xml_filter_rule.get_child_text('Value'),
+                        }
+                        for xml_filter_rule in xml_filter_rules.findall(
+                                './S3Key/FilterRule')
+                    ]
                 }
             }
-        config.append(service_config)
-    if config:
+            for xml_filter_rules in service.findall('Filter')
+        ]
+        if len(filter_terms) > 0:
+            config_item['Filter'] = filter_terms
+        config.append(config_item)
+
+    if len(config) > 0:
         notifications[service_key] = config
+
     return notifications
 
 def parse_multi_object_delete_response(data):
@@ -503,20 +424,10 @@ def parse_multi_object_delete_response(data):
     had an error.
 
     """
-    try:
-        root = cElementTree.fromstring(data)
-    except _ETREE_EXCEPTIONS as error:
-        raise InvalidXMLError('"MultiObjectDelete" XML is not parsable. '
-                              'Message: {}'.format(error.message))
-
-    errs_result = []
-    for contents in root:
-        if contents.tag == "Error":
-            key = contents.find('Key').text
-            err_code = contents.find('Code').text
-            err_message = contents.find('Message').text
-            errs_result.append(
-                MultiDeleteError(key, err_code, err_message)
-            )
-
-    return errs_result
+    root = S3Element.fromstring('MultiObjectDeleteResult', data)
+    return [
+        MultiDeleteError(errtag.get_child_text('Key'),
+                         errtag.get_child_text('Code'),
+                         errtag.get_child_text('Message'))
+        for errtag in root.findall('Error')
+    ]
