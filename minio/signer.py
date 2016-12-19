@@ -33,8 +33,7 @@ import binascii
 from datetime import datetime
 from .error import InvalidArgumentError
 from .compat import urlsplit, parse_qs, basestring, urlencode
-from .helpers import (ignore_headers, encode_to_hex,
-                      get_sha256_hexdigest)
+from .helpers import (ignore_headers, get_sha256_hexdigest)
 
 # Signature version '4' algorithm.
 _SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'

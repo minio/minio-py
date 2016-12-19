@@ -24,8 +24,9 @@ This module contains :class:`PostPolicy <PostPolicy>` implementation.
 
 """
 
-from .helpers import (is_non_empty_string, is_valid_bucket_name,
-                      encode_to_base64)
+import base64
+
+from .helpers import (is_non_empty_string, is_valid_bucket_name)
 
 
 # Policy explanation:
@@ -154,7 +155,7 @@ class PostPolicy(object):
         """
         Encode json byte array into base64.
         """
-        return encode_to_base64(self._marshal_json())
+        return base64.b64encode(self._marshal_json())
 
     def is_expiration_set(self):
         """

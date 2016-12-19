@@ -35,7 +35,6 @@ from datetime import datetime, timedelta
 import io
 import json
 import os
-import hashlib
 import itertools
 
 # Dependencies
@@ -61,8 +60,8 @@ from .parsers import (parse_list_buckets,
                       parse_multi_object_delete_response)
 from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_endpoint,
-                      get_sha256_hexdigest, encode_to_base64, get_md5,
-                      optimal_part_info, encode_to_hex,
+                      get_sha256_hexdigest, get_md5_base64digest, Hasher,
+                      optimal_part_info,
                       is_valid_bucket_name, parts_manager,
                       is_valid_bucket_notification_config,
                       mkdir_p, dump_http)
@@ -202,7 +201,7 @@ class Minio(object):
 
         content_sha256_hex = get_sha256_hexdigest(content)
         if content:
-            content_md5_base64 = encode_to_base64(get_md5(content))
+            content_md5_base64 = get_md5_base64digest(content)
             headers['Content-Md5'] = content_md5_base64
 
         # In case of Amazon S3.  The make bucket issued on already
@@ -378,7 +377,7 @@ class Minio(object):
 
             headers = {
                 'Content-Length': str(len(content)),
-                'Content-Md5': encode_to_base64(get_md5(content.encode('utf-8')))
+                'Content-Md5': get_md5_base64digest(content)
             }
             content_sha256_hex = get_sha256_hexdigest(content)
 
@@ -419,7 +418,7 @@ class Minio(object):
         content = xml_marshal_bucket_notifications(notifications)
         headers = {
             'Content-Length': str(len(content)),
-            'Content-Md5': encode_to_base64(get_md5(content))
+            'Content-Md5': get_md5_base64digest(content)
         }
         content_sha256_hex = get_sha256_hexdigest(content)
         self._url_open(
@@ -446,7 +445,7 @@ class Minio(object):
         content_bytes = xml_marshal_bucket_notifications({})
         headers = {
             'Content-Length': str(len(content_bytes)),
-            'Content-Md5': encode_to_base64(get_md5(content_bytes))
+            'Content-Md5': get_md5_base64digest(content_bytes)
         }
         content_sha256_hex = get_sha256_hexdigest(content_bytes)
         self._url_open(
@@ -558,7 +557,7 @@ class Minio(object):
 
         if file_size <= MIN_OBJECT_SIZE:
             data = file_data.read(file_size)
-            md5_base64 = encode_to_base64(get_md5(data))
+            md5_base64 = get_md5_base64digest(data)
             sha256_hex = get_sha256_hexdigest(data)
             return self._do_put_object(bucket_name, object_name,
                                        io.BytesIO(data),
@@ -597,8 +596,8 @@ class Minio(object):
             prev_offset = file_data.seek(0, 1)
 
             # Calculate md5sum and sha256.
-            md5hasher = hashlib.md5()
-            sha256hasher = hashlib.sha256()
+            md5hasher = Hasher.md5()
+            sha256hasher = Hasher.sha256()
             total_read = 0
 
             # Save LimitedReader, read upto current_part_size for
@@ -612,7 +611,7 @@ class Minio(object):
                 sha256hasher.update(current_data)
                 total_read = total_read + len(current_data)
 
-            part_md5_hex = encode_to_hex(md5hasher.digest())
+            part_md5_hex = md5hasher.hexdigest()
             # Verify if current part number has been already
             # uploaded. Verify if the size is same, further verify if
             # we have matching md5sum as well.
@@ -624,9 +623,9 @@ class Minio(object):
                         continue
 
             # Save hexlified sha256.
-            part_sha256_hex = encode_to_hex(sha256hasher.digest())
+            part_sha256_hex = sha256hasher.hexdigest()
             # Save base64 md5sum.
-            part_md5_base64 = encode_to_base64(md5hasher.digest())
+            part_md5_base64 = md5hasher.base64digest()
 
             # Seek back to previous offset position before checksum
             # calculation.
@@ -842,7 +841,7 @@ class Minio(object):
                                            content_type=content_type)
 
         current_data = data.read(length)
-        data_md5_base64 = encode_to_base64(get_md5(current_data))
+        data_md5_base64 = get_md5_base64digest(current_data)
         data_sha256_hex = get_sha256_hexdigest(current_data)
         return self._do_put_object(bucket_name, object_name,
                                    io.BytesIO(current_data),
@@ -1050,7 +1049,7 @@ class Minio(object):
 
         # compute headers
         headers = {
-            'Content-Md5': encode_to_base64(get_md5(content)),
+            'Content-Md5': get_md5_base64digest(content),
             'Content-Length': len(content)
         }
         query = {"delete": None}
@@ -1639,7 +1638,7 @@ class Minio(object):
             if part_number == total_parts_count:
                 current_part_size = last_part_size
             part_metadata = parts_manager(data, current_part_size)
-            md5_hex = encode_to_hex(part_metadata.md5digest)
+            md5_hex = part_metadata.md5hasher.hexdigest()
             # Verify if part number has been already uploaded.
             # Further verify if we have matching md5sum as well.
             if part_number in uploaded_parts:
@@ -1649,8 +1648,8 @@ class Minio(object):
                         total_uploaded += previous_part.size
                         continue
 
-            md5_base64 = encode_to_base64(part_metadata.md5digest)
-            sha256_hex = encode_to_hex(part_metadata.sha256digest)
+            md5_base64 = part_metadata.md5hasher.base64digest()
+            sha256_hex = part_metadata.sha256hasher.hexdigest()
             # Seek back to starting position.
             part_metadata.data.seek(0)
             etag = self._do_put_multipart_object(bucket_name,
@@ -1748,8 +1747,8 @@ class Minio(object):
         headers = {}
 
         data = xml_marshal_complete_multipart_upload(uploaded_parts)
-        md5_base64 = encode_to_base64(get_md5(data))
         sha256_hex = get_sha256_hexdigest(data)
+        md5_base64 = get_md5_base64digest(data)
 
         headers['Content-Length'] = len(data)
         headers['Content-Type'] = 'application/xml'

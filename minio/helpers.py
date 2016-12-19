@@ -27,7 +27,7 @@ from __future__ import absolute_import
 import io
 
 import collections
-import binascii
+import base64
 import hashlib
 import re
 import os
@@ -116,14 +116,14 @@ class PartMetadata(object):
     Parts manager split parts metadata :class:`PartMetadata <PartMetadata>`.
 
     :param data: Part writer object backed by temporary file.
-    :param md5digest: Md5sum digest of the part.
-    :param sha256digest: Sha256sum digest of the part.
+    :param md5hasher: Computed md5sum Hasher interface.
+    :param sha256hasher: Computed sha256sum Hasher interface.
     :param size: Size of the part.
     """
-    def __init__(self, data, md5digest, sha256digest, size):
+    def __init__(self, data, md5hasher, sha256hasher, size):
         self.data = data
-        self.md5digest = md5digest
-        self.sha256digest = sha256digest
+        self.md5hasher = md5hasher
+        self.sha256hasher = sha256hasher
         self.size = size
 
 
@@ -136,8 +136,8 @@ def parts_manager(data, part_size=5*1024*1024):
     :return: Returns :class:`PartMetadata <PartMetadata>`
     """
     tmpdata = io.BytesIO()
-    md5hasher = hashlib.md5()
-    sha256hasher = hashlib.sha256()
+    md5hasher = Hasher.md5()
+    sha256hasher = Hasher.sha256()
     total_read = 0
     while total_read < part_size:
         current_data = data.read(1024)
@@ -148,8 +148,7 @@ def parts_manager(data, part_size=5*1024*1024):
         sha256hasher.update(current_data)
         total_read = total_read + len(current_data)
 
-    return PartMetadata(tmpdata, md5hasher.digest(),
-                        sha256hasher.digest(), total_read)
+    return PartMetadata(tmpdata, md5hasher, sha256hasher, total_read)
 
 
 def ignore_headers(headers_to_sign):
@@ -536,6 +535,39 @@ def encode_object_name(object_name):
     is_non_empty_string(object_name)
     return urlencode(object_name)
 
+class Hasher(object):
+    """Adaptation of hashlib-based hash functions that return
+    unicode-encoded hex- and base64-digest strings.
+
+    """
+    def __init__(self, data, h):
+        if data is None:
+            data = b''
+        if isinstance(data, str):
+            data = data.encode('utf-8')
+        self.h = h(data)
+
+    @classmethod
+    def md5(cls, data=''):
+        return cls(data, hashlib.md5)
+
+    @classmethod
+    def sha256(cls, data=''):
+        return cls(data, hashlib.sha256)
+
+    def update(self, data):
+        if isinstance(data, str):
+            data = data.encode('utf-8')
+        self.h.update(data)
+
+    def hexdigest(self):
+        r = self.h.hexdigest()
+        return r.decode('utf-8') if isinstance(r, bytes) else r
+
+    def base64digest(self):
+        r = base64.b64encode(self.h.digest())
+        return r.decode('utf-8') if isinstance(r, bytes) else r
+
 
 def get_sha256_hexdigest(content):
     """
@@ -547,53 +579,19 @@ def get_sha256_hexdigest(content):
     :return: sha256 digest encoded as hexadecimal `str`.
 
     """
-    if content is None:
-        content = b''
-    if isinstance(content, str):
-        content = content.encode('utf-8')
-    hasher = hashlib.sha256()
-    hasher.update(content)
-    hexdigest = hasher.hexdigest()
-    if isinstance(hexdigest, bytes):
-        # In py 2.x we get bytes returned - so we convert to unicode
-        # string type.
-        return hexdigest.decode('utf-8')
-    else:
-        return hexdigest
+    return Hasher.sha256(content).hexdigest()
 
 
-def get_md5(content):
+def get_md5_base64digest(content):
+    """Calculate md5sum and return digest as base64 encoded string.
+
+    :param content: Input str or bytes. If the type is `str` we encode
+    it to UTF8 and calculate md5sum.
+
+    :return: md5 digest encoded to base64 `str`.
+
     """
-    Calculate md5 digest of input byte array.
-
-    :param content: Input byte array.
-    :return: md5 digest of input byte array.
-    """
-    if len(content) == 0:
-        content = b''
-    hasher = hashlib.md5()
-    hasher.update(content)
-    return hasher.digest()
-
-
-def encode_to_base64(content):
-    """
-    Calculate base64 of input byte array.
-
-    :param content: Input byte array.
-    :return: base64 encoding of input byte array.
-    """
-    return binascii.b2a_base64(content).strip().decode('utf-8')
-
-
-def encode_to_hex(content):
-    """
-    Calculate hex for input byte array.
-
-    :param content: Input byte array.
-    :return: hexlified input byte array.
-    """
-    return binascii.hexlify(content)
+    return Hasher.md5(content).base64digest()
 
 
 def optimal_part_info(length):
