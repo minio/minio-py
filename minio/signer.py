@@ -34,13 +34,13 @@ from datetime import datetime
 from .error import InvalidArgumentError
 from .compat import urlsplit, parse_qs, basestring, urlencode
 from .helpers import (ignore_headers, encode_to_hex,
-                      get_sha256)
+                      get_sha256_hexdigest)
 
 # Signature version '4' algorithm.
 _SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'
 
 # Hardcoded S3 header value for X-Amz-Content-Sha256
-_UNSIGNED_PAYLOAD = 'UNSIGNED-PAYLOAD'
+_UNSIGNED_PAYLOAD = u'UNSIGNED-PAYLOAD'
 
 def post_presign_signature(date, region, secret_key, policy_str):
     """
@@ -198,9 +198,7 @@ def sign_v4(method, url, region, headers=None, access_key=None,
         content_sha256 = _UNSIGNED_PAYLOAD
     if content_sha256 is None:
         # with no payload, calculate sha256 for 0 length data.
-        content_sha256 = encode_to_hex(get_sha256(b'')).decode('ascii')
-    elif isinstance(content_sha256, bytes):
-        content_sha256 = content_sha256.decode('ascii')
+        content_sha256 = get_sha256_hexdigest('')
 
     host = parsed_url.netloc
     headers['Host'] = host
@@ -242,9 +240,8 @@ def generate_canonical_request(method, parsed_url, headers, content_sha256):
     :param method: HTTP method.
     :param parsed_url: Parsed url is input from :func:`urlsplit`
     :param headers: HTTP header dictionary.
-    :param content_sha256: Content sha256 used in canonical request.
+    :param content_sha256: Content sha256 hexdigest string.
     """
-    content_sha256 = str(content_sha256)
     lines = [method, parsed_url.path]
 
     # Parsed query.
@@ -273,7 +270,7 @@ def generate_canonical_request(method, parsed_url, headers, content_sha256):
     lines.append('')
 
     lines.append(';'.join(signed_headers))
-    lines.append(str(content_sha256))
+    lines.append(content_sha256)
     return '\n'.join(lines)
 
 

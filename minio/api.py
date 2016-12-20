@@ -61,7 +61,7 @@ from .parsers import (parse_list_buckets,
                       parse_multi_object_delete_response)
 from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_endpoint,
-                      get_sha256, encode_to_base64, get_md5,
+                      get_sha256_hexdigest, encode_to_base64, get_md5,
                       optimal_part_info, encode_to_hex,
                       is_valid_bucket_name, parts_manager,
                       is_valid_bucket_notification_config,
@@ -200,7 +200,7 @@ class Minio(object):
             content = xml_marshal_bucket_constraint(location)
             headers['Content-Length'] = str(len(content))
 
-        content_sha256_hex = encode_to_hex(get_sha256(content))
+        content_sha256_hex = get_sha256_hexdigest(content)
         if content:
             content_md5_base64 = encode_to_base64(get_md5(content))
             headers['Content-Md5'] = content_md5_base64
@@ -380,7 +380,7 @@ class Minio(object):
                 'Content-Length': str(len(content)),
                 'Content-Md5': encode_to_base64(get_md5(content.encode('utf-8')))
             }
-            content_sha256_hex = encode_to_hex(get_sha256(content.encode('utf-8')))
+            content_sha256_hex = get_sha256_hexdigest(content)
 
             self._url_open("PUT",
                            bucket_name=bucket_name,
@@ -421,7 +421,7 @@ class Minio(object):
             'Content-Length': str(len(content)),
             'Content-Md5': encode_to_base64(get_md5(content))
         }
-        content_sha256_hex = encode_to_hex(get_sha256(content))
+        content_sha256_hex = get_sha256_hexdigest(content)
         self._url_open(
             'PUT',
             bucket_name=bucket_name,
@@ -448,7 +448,7 @@ class Minio(object):
             'Content-Length': str(len(content_bytes)),
             'Content-Md5': encode_to_base64(get_md5(content_bytes))
         }
-        content_sha256_hex = encode_to_hex(get_sha256(content_bytes))
+        content_sha256_hex = get_sha256_hexdigest(content_bytes)
         self._url_open(
             'PUT',
             bucket_name=bucket_name,
@@ -559,7 +559,7 @@ class Minio(object):
         if file_size <= MIN_OBJECT_SIZE:
             data = file_data.read(file_size)
             md5_base64 = encode_to_base64(get_md5(data))
-            sha256_hex = encode_to_hex(get_sha256(data))
+            sha256_hex = get_sha256_hexdigest(data)
             return self._do_put_object(bucket_name, object_name,
                                        io.BytesIO(data),
                                        md5_base64,
@@ -843,7 +843,7 @@ class Minio(object):
 
         current_data = data.read(length)
         data_md5_base64 = encode_to_base64(get_md5(current_data))
-        data_sha256_hex = encode_to_hex(get_sha256(current_data))
+        data_sha256_hex = get_sha256_hexdigest(current_data)
         return self._do_put_object(bucket_name, object_name,
                                    io.BytesIO(current_data),
                                    data_md5_base64,
@@ -1054,7 +1054,7 @@ class Minio(object):
             'Content-Length': len(content)
         }
         query = {"delete": None}
-        content_sha256_hex = encode_to_hex(get_sha256(content)).decode('ascii')
+        content_sha256_hex = get_sha256_hexdigest(content)
 
         # send multi-object delete request
         response = self._url_open(
@@ -1749,7 +1749,7 @@ class Minio(object):
 
         data = xml_marshal_complete_multipart_upload(uploaded_parts)
         md5_base64 = encode_to_base64(get_md5(data))
-        sha256_hex = encode_to_hex(get_sha256(data))
+        sha256_hex = get_sha256_hexdigest(data)
 
         headers['Content-Length'] = len(data)
         headers['Content-Type'] = 'application/xml'

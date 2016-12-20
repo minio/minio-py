@@ -34,7 +34,7 @@ import os
 import errno
 import math
 
-from .compat import urlsplit, urlencode
+from .compat import urlsplit, urlencode, str, bytes, basestring
 from .error import (InvalidBucketError, InvalidEndpointError,
                     InvalidArgumentError)
 
@@ -478,8 +478,8 @@ def is_valid_bucket_notification_config(notifications):
                     '"Events" must be a list of strings in a service '
                     'configuration'
                 )
-            # check if 'Id' key is present, it should be a string
-            if not isinstance(service_config.get('Id', ''), str):
+            # check if 'Id' key is present, it should be string or bytes.
+            if not isinstance(service_config.get('Id', ''), basestring):
                 raise InvalidArgumentError(
                     '"Id" key must be a string'
                 )
@@ -537,18 +537,29 @@ def encode_object_name(object_name):
     return urlencode(object_name)
 
 
-def get_sha256(content):
+def get_sha256_hexdigest(content):
     """
-    Calculate sha256 digest of input byte array.
+    Calculate sha256 hexdigest of content.
 
-    :param content: Input byte array.
-    :return: sha256 digest of input byte array.
+    :param content: Input str or bytes. If the type is `str` we encode
+    it to UTF8 first.
+
+    :return: sha256 digest encoded as hexadecimal `str`.
+
     """
     if content is None:
         content = b''
+    if isinstance(content, str):
+        content = content.encode('utf-8')
     hasher = hashlib.sha256()
     hasher.update(content)
-    return hasher.digest()
+    hexdigest = hasher.hexdigest()
+    if isinstance(hexdigest, bytes):
+        # In py 2.x we get bytes returned - so we convert to unicode
+        # string type.
+        return hexdigest.decode('utf-8')
+    else:
+        return hexdigest
 
 
 def get_md5(content):
