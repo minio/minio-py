@@ -25,8 +25,11 @@ This module contains :class:`PostPolicy <PostPolicy>` implementation.
 """
 
 import base64
+import json
+import datetime
 
 from .helpers import (is_non_empty_string, is_valid_bucket_name)
+from .error import InvalidArgumentError
 
 
 # Policy explanation:
@@ -63,8 +66,7 @@ class PostPolicy(object):
         """
         is_non_empty_string(key)
 
-        policy = ('eq', '$key', key)
-        self.policies.append(policy)
+        self.policies.append(('eq', '$key', key))
         self.form_data['key'] = key
         self.key = key
 
@@ -76,8 +78,7 @@ class PostPolicy(object):
         """
         is_non_empty_string(key_startswith)
 
-        policy = ('starts-with', '$key', key_startswith)
-        self.policies.append(policy)
+        self.policies.append(('starts-with', '$key', key_startswith))
         self.form_data['key'] = key_startswith
 
     def set_bucket_name(self, bucket_name):
@@ -88,8 +89,7 @@ class PostPolicy(object):
         """
         is_valid_bucket_name(bucket_name)
 
-        policy = ('eq', '$bucket', bucket_name)
-        self.policies.append(policy)
+        self.policies.append(('eq', '$bucket', bucket_name))
         self.form_data['bucket'] = bucket_name
         self.bucket_name = bucket_name
 
@@ -99,8 +99,7 @@ class PostPolicy(object):
 
         :param content_type: set content type name.
         """
-        policy = ('eq', '$Content-Type', content_type)
-        self.policies.append(policy)
+        self.policies.append(('eq', '$Content-Type', content_type))
         self.form_data['Content-Type'] = content_type
 
     def set_content_length_range(self, min_length, max_length):
@@ -111,72 +110,52 @@ class PostPolicy(object):
         :param min_length: Minimum length limit for content size.
         :param max_length: Maximum length limit for content size.
         """
-        if min_length > max_length:
-            raise ValueError('minimum limit cannot be larger '
-                             'than maximum limit.')
-        if min_length < 0:
-            raise ValueError('minimum limit cannot be negative.')
-        if max_length < 0:
-            raise ValueError('maximum limit cannot be negative.')
+        err_msg = ('Min-length ({}) must be <= Max-length ({}), '
+                   'and they must be non-negative.').format(
+                       min_length, max_length
+                   )
+        if min_length > max_length or min_length < 0 or max_length < 0:
+            raise ValueError(err_msg)
 
         self._content_length_range = (min_length, max_length)
 
     def _marshal_json(self):
         """
-        Marshal various policies into jsonified byte array.
+        Marshal various policies into json str/bytes.
         """
-        expiration_str = ('"expiration":"' +
-                          self._expiration.strftime("%Y-%m-%dT%H:%M:%S.000Z") +
-                          '"')
-        policies = []
-        for policy in self.policies:
-            policies.append('["' + policy[0] + '","' +
-                            policy[1] + '","' + policy[2] + '"]')
+        policies = self.policies
+        if self._content_length_range:
+            policies.append(['content-length-range'] +
+                            list(self._content_length_range))
 
-        if len(self._content_length_range) == 2:
-            policies.append('["content-length-range", ' +
-                            str(self._content_length_range[0]) +
-                            ', ' + str(self._content_length_range[1]) + ']')
+        policy_stmt = {
+            "expiration": self._expiration.strftime(
+                "%Y-%m-%dT%H:%M:%S.000Z"),
+        }
 
         if len(policies) > 0:
-            policies_str = '"conditions":[' + ','.join(policies) + ']'
+            policy_stmt["conditions"] = policies
 
-        return_str = '{'
-        if len(expiration_str) > 0:
-            return_str = return_str + expiration_str + ','
-
-        if len(policies_str) > 0:
-            return_str = return_str + policies_str
-
-        return_str = return_str + '}'
-        return bytearray(return_str.encode('utf-8'))
+        return json.dumps(policy_stmt)
 
     def base64(self):
         """
-        Encode json byte array into base64.
+        Encode json into base64.
         """
-        return base64.b64encode(self._marshal_json())
+        s = self._marshal_json()
+        s_bytes = s if isinstance(s, bytes) else s.encode('utf-8')
+        b64enc = base64.b64encode(s_bytes)
+        return b64enc.decode('utf-8') if isinstance(b64enc, bytes) else b64enc
 
-    def is_expiration_set(self):
+    def is_valid(self):
         """
-        If *expiration* set returns True, False otherwise.
+        Validate for required parameters.
         """
-        if self._expiration is None:
-            return False
-        return True
+        if not isinstance(self._expiration, datetime.datetime):
+            raise InvalidArgumentError('Expiration datetime must be specified.')
 
-    def is_key_set(self):
-        """
-        If *key* set returns True, False otherwise.
-        """
-        if self.form_data['key'] is None:
-            return False
-        return True
+        if 'key' not in self.form_data:
+            raise InvalidArgumentError('object key must be specified.')
 
-    def is_bucket_set(self):
-        """
-        If *bucket* set returns True, False otherwise.
-        """
-        if self.form_data['bucket'] is None:
-            return False
-        return True
+        if 'bucket' not in self.form_data:
+            raise InvalidArgumentError('bucket name must be specified.')

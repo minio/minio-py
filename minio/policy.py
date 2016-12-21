@@ -24,11 +24,11 @@ This module implements policy management.
 
 """
 
-from .compat import basestring
-
 import collections
 import fnmatch
 import itertools
+
+from .compat import basestring
 
 _AWS_RESOURCE_PREFIX = "arn:aws:s3:::"
 
@@ -46,7 +46,7 @@ _READ_WRITE_OBJECT_ACTIONS = (_READ_ONLY_OBJECT_ACTIONS |
 
 
 # Policy Enums.
-class Policy:
+class Policy(object):
     NONE = "none"
     READ_ONLY = "readonly"
     READ_WRITE = "readwrite"
