@@ -48,7 +48,7 @@ requires = [
 tests_requires = [
     'nose',
     'mock',
-    'fake-factory',
+    'Faker',
 ]
 
 setup(
