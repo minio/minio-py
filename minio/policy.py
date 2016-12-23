@@ -53,8 +53,20 @@ class Policy:
     WRITE_ONLY = "writeonly"
 
 
-# Returns 'Action' value as list always.
+def _get_resource(statement):
+    """
+    Always return resource as a list
+    """
+    resource = statement.get('Resource')
+    if isinstance(resource, basestring):
+        resource = [resource]
+    return resource
+
+
 def _get_action(statement):
+    """
+    Always return action as a list
+    """
     action = statement.get('Action', [])
     if isinstance(action, basestring):
         action = [action]
@@ -119,6 +131,13 @@ def _new_statements(policy, bucket_name, prefix=''):
             _new_object_statement(policy, bucket_name, prefix))
 
 
+def _filter_resources(prefix, resources):
+    """
+    Returns a list of resources, which starts with given prefix
+    """
+    return list(filter(lambda r: r.startswith(prefix), resources))
+
+
 # Returns whether given bucket statements are used by other than given
 # prefix statements.
 def _get_in_use_policy(statements, bucket_name, prefix=''):
@@ -129,10 +148,10 @@ def _get_in_use_policy(statements, bucket_name, prefix=''):
               Policy.WRITE_ONLY: False}
 
     for s in statements:
-        resource = s['Resource']
+        resource = _get_resource(s)
         actions = set(_get_action(s))
         if (resource != object_resource and
-                resource.startswith(resource_prefix)):
+                _filter_resources(resource_prefix, resource)):
             if (not in_use[Policy.READ_ONLY] and
                     actions & _READ_ONLY_OBJECT_ACTIONS):
                 in_use[Policy.READ_ONLY] = True
@@ -278,7 +297,7 @@ def _remove_statements(statements, policy, bucket_name, prefix=''):
     resource_prefix = _AWS_RESOURCE_PREFIX + bucket_name + '/'
     for s in out:
         resource = s['Resource']
-        if (resource.startswith(resource_prefix) and
+        if (resource_startswith(resource_prefix, resource) and
                 resource not in s3_prefix_value):
             skip_bucket_statement = False
             break
