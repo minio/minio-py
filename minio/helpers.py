@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# Minio Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 Minio, Inc.
+# Minio Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# 2015, 2016 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -146,7 +147,7 @@ def parts_manager(data, part_size=5*1024*1024):
         tmpdata.write(current_data)
         md5hasher.update(current_data)
         sha256hasher.update(current_data)
-        total_read = total_read + len(current_data)
+        total_read += len(current_data)
 
     return PartMetadata(tmpdata, md5hasher, sha256hasher, total_read)
 
@@ -213,9 +214,7 @@ AWS_S3_ENDPOINT_MAP = {
 }
 
 def get_s3_endpoint(region):
-    if region in AWS_S3_ENDPOINT_MAP:
-        return AWS_S3_ENDPOINT_MAP[region]
-    return 's3.amazonaws.com'
+    return AWS_S3_ENDPOINT_MAP.get(region, 's3.amazonaws.com')
 
 def get_target_url(endpoint_url, bucket_name=None, object_name=None,
                    bucket_region='us-east-1', query=None):
