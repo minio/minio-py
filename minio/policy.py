@@ -297,7 +297,7 @@ def _remove_statements(statements, policy, bucket_name, prefix=''):
     resource_prefix = _AWS_RESOURCE_PREFIX + bucket_name + '/'
     for s in out:
         resource = s['Resource']
-        if (resource_startswith(resource_prefix, resource) and
+        if (_filter_resources(resource_prefix, resource) and
                 resource not in s3_prefix_value):
             skip_bucket_statement = False
             break
