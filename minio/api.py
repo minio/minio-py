@@ -41,7 +41,6 @@ import itertools
 # Dependencies
 import urllib3
 import certifi
-import pytz
 
 # Internal imports
 from . import __title__, __version__
@@ -372,7 +371,7 @@ class Minio(object):
             self._url_open("PUT",
                            bucket_name=bucket_name,
                            query={"policy": ""},
-                           headers={},
+                           headers=headers,
                            body=content,
                            content_sha256=content_sha256_hex)
 
@@ -463,10 +462,10 @@ class Minio(object):
 
         url_components = urlsplit(self._endpoint_url)
         if url_components.hostname == 's3.amazonaws.com':
-            raise InvalidArgumentErr('Listening for event notifications on a'
-                                     ' bucket is a Minio specific extension to'
-                                     ' bucket notification API. It is not'
-                                     ' supported by Amazon S3')
+            raise InvalidArgumentError(
+                'Listening for event notifications on a  bucket is a Minio '
+                'specific extension to bucket notification API. It is not '
+                'supported by Amazon S3')
 
         query = {
             'prefix': prefix,
@@ -600,11 +599,6 @@ class Minio(object):
                     if previous_part.etag == part_md5_hex:
                         total_uploaded += previous_part.size
                         continue
-
-            # Save hexlified sha256.
-            part_sha256_hex = sha256hasher.hexdigest()
-            # Save base64 md5sum.
-            part_md5_base64 = md5hasher.base64digest()
 
             # Seek back to previous offset position before checksum
             # calculation.

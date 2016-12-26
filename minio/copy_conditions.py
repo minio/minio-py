@@ -25,7 +25,7 @@ This module contains :class:`CopyConditions <CopyConditions>` implementation.
 """
 
 import collections
-from .helpers import (is_non_empty_string, is_valid_bucket_name)
+from .helpers import is_non_empty_string
 
 # CopyCondition explanation:
 # http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectCOPY.html

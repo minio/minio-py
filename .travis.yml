@@ -14,9 +14,10 @@ env:
 - ARCH=i686
 
 install:
-- pip install urllib3 certifi pytz
+- pip install urllib3 certifi pytz pyflakes
 
 script:
+- pyflakes minio/*.py || true
 - python setup.py install
 - python setup.py nosetests
 

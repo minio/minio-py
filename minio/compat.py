@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# Minio Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 Minio, Inc.
+# Minio Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015,2016 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,39 +20,56 @@ pythoncompat
 
 import sys
 
-# -------
-# Pythons
-# -------
-
-# Syntax sugar.
-_ver = sys.version_info
-
 #: Python 2.x?
-is_py2 = (_ver[0] == 2)
+_is_py2 = (sys.version_info[0] == 2)
 
 #: Python 3.x?
-is_py3 = (_ver[0] == 3)
+_is_py3 = (sys.version_info[0] == 3)
 
-if is_py2:
-    from urllib import pathname2url as urlencode
-    from urllib import url2pathname as urldecode
-    from urlparse import urlsplit, parse_qs
+if _is_py2:
+    from urllib import pathname2url
+    urlencode = pathname2url
 
-    builtin_str = str
+    from urllib import url2pathname
+    urldecode = url2pathname
+
+    import urlparse
+    urlsplit = urlparse.urlsplit
+    parse_qs = urlparse.parse_qs
+
+    ## Create missing types.
     bytes = str
-    str = unicode
-    basestring = basestring
-    numeric_types = (int, long, float)
+
+    ## Update better types.
+    builtin_range = range
     range = xrange
-
-elif is_py3:
-    from urllib.request import pathname2url as urlencode
-    from urllib.request import url2pathname as urldecode
-    from urllib.parse import urlsplit, parse_qs
-
     builtin_str = str
-    str = str
-    bytes = bytes
+    str = unicode
+
+    ## Add missing imports
+    basestring = basestring
+elif _is_py3:
+    from urllib.request import pathname2url
+    urlencode = pathname2url
+
+    from urllib.request import url2pathname
+    urldecode = url2pathname
+
+    import urllib.parse
+    urlsplit = urllib.parse.urlsplit
+    parse_qs = urllib.parse.parse_qs
+
+    ## Create types to compat with py2.
+    builtin_range = range
+    builtin_str = str
+
+    ## Create missing types.
     basestring = (str, bytes)
-    numeric_types = (int, float)
+    long = int
+
+    ## Add missing imports
+    bytes = bytes
     range = range
+    str = str
+
+numeric_types = (int, long, float)
