@@ -18,7 +18,7 @@
 # dummy values, please replace them with original values.
 
 from minio import Minio
-from minio.error import ResponseError
+from minio.error import ResponseError, ArgumentError
 
 client = Minio('s3.amazonaws.com', secure=True,
                access_key='YOUR-ACCESSKEYID',
@@ -81,6 +81,6 @@ try:
 except ResponseError as err:
     # handle error response from service.
     print(err)
-except (ArgumentError, TypeError):
+except (ArgumentError, TypeError) as err:
     # should happen only during development. Fix the notification argument
     print(err)

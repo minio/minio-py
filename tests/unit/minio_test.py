@@ -14,12 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import platform
 from unittest import TestCase
 
 from nose.tools import raises, eq_
 
-from minio import Minio, __version__
+from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
 from minio.error import InvalidEndpointError, InvalidBucketError
 from minio.helpers import get_target_url, is_valid_bucket_name
