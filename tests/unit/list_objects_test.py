@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# Minio Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 Minio, Inc.
+# Minio Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015, 2016 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -102,7 +103,7 @@ class ListObjectsTest(TestCase):
 
     @timed(1)
     @mock.patch('urllib3.PoolManager')
-    def test_list_objects_works(self, mock_connection):
+    def test_list_objects_works_well(self, mock_connection):
         mock_data1 = '''<?xml version="1.0"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>

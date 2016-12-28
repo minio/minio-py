@@ -17,10 +17,7 @@
 # Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-testfile, my-bucketname and
 # my-objectname are dummy values, please replace them with original values.
 
-import os
-
 from minio import Minio
-from minio.error import ResponseError
 
 client = Minio('play.minio.io:9000',
                access_key='Q3AM3UQ867SPQQA43P2F',
@@ -32,4 +29,4 @@ events = client.listen_bucket_notification('my-bucket', 'my-prefix/',
                                            ['s3:ObjectCreated:*',
                                             's3:ObjectRemoved:*'])
 for event in events:
-    print event
+    print(event)
