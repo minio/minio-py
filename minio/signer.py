@@ -28,11 +28,10 @@ This module implements all helpers for AWS Signature version '4' support.
 import collections
 import hashlib
 import hmac
-import binascii
 
 from datetime import datetime
 from .error import InvalidArgumentError
-from .compat import urlsplit, parse_qs, basestring, urlencode
+from .compat import urlsplit, urlencode
 from .helpers import (ignore_headers, get_sha256_hexdigest)
 
 # Signature version '4' algorithm.
@@ -158,7 +157,6 @@ def get_signed_headers(headers):
 
     :param headers: input dictionary to be sorted.
     """
-    headers_to_sign = dict(headers)
     signed_headers = []
     for header in headers:
         signed_headers.append(header.lower().strip())
