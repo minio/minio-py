@@ -21,7 +21,7 @@ minio.api
 
 This module implements the API.
 
-:copyright: (c) 2015 by Minio, Inc.
+:copyright: (c) 2015, 2016 by Minio, Inc.
 :license: Apache 2.0, see LICENSE for more details.
 
 """
