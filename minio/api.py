@@ -508,7 +508,8 @@ class Minio(object):
                                                    object_name,
                                                    content_type)
         else:
-            upload_id = max(matching_uploads, key=lambda x: x.initiated)
+            incomplete_upload = max(matching_uploads, key=lambda x: x.initiated)
+            upload_id = incomplete_upload.upload_id
 
         return upload_id
 
