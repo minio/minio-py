@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Minio Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015, 2016 Minio, Inc.
+# (C) 2015, 2016, 2017 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -88,14 +88,14 @@ class UserAgentTests(TestCase):
 
     def test_set_app_info(self):
         client = Minio('localhost')
-        expected_user_agent = _DEFAULT_USER_AGENT + ' hello/2.0.5'
-        client.set_app_info('hello', '2.0.5')
+        expected_user_agent = _DEFAULT_USER_AGENT + ' hello/2.0.6'
+        client.set_app_info('hello', '2.0.6')
         eq_(client._user_agent, expected_user_agent)
 
     @raises(ValueError)
     def test_set_app_info_requires_non_empty_name(self):
         client = Minio('localhost:9000')
-        client.set_app_info('', '2.0.5')
+        client.set_app_info('', '2.0.6')
 
     @raises(ValueError)
     def test_set_app_info_requires_non_empty_version(self):

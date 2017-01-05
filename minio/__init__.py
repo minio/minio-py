@@ -23,15 +23,15 @@ minio - Minio Python Library for Amazon S3 Compatible Cloud Storage
    >>> for bucket in minio.list_buckets():
    ...     print(bucket.name)
 
-:copyright: (c) 2015, 2016 by Minio, Inc.
+:copyright: (c) 2015, 2016, 2017 by Minio, Inc.
 :license: Apache 2.0, see LICENSE for more details.
 """
 
 __title__ = 'minio-py'
 __author__ = 'Minio, Inc.'
-__version__ = '2.0.5'
+__version__ = '2.0.6'
 __license__ = 'Apache 2.0'
-__copyright__ = 'Copyright 2015, 2016 Minio, Inc.'
+__copyright__ = 'Copyright 2015, 2016, 2017 Minio, Inc.'
 
 from .api import Minio
 from .error import ResponseError
