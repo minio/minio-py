@@ -465,6 +465,29 @@ def _get_object_policy(statement):
     return read_only, write_only
 
 
+def _get_permissions(s, resource, object_resource, matched_resource,
+                     bucket_resource, prefix, bucket_common_found,
+                     bucket_read_only, bucket_write_only):
+    if (resource == object_resource or
+            fnmatch.fnmatch(object_resource, resource)):
+        read_only, write_only = _get_object_policy(s)
+        if len(matched_resource) < len(resource):
+            obj_read_only = read_only
+            obj_write_only = write_only
+            matched_resource = resource
+        elif len(matched_resource) == len(resource):
+            obj_read_only = obj_read_only or read_only
+            obj_write_only = obj_write_only or write_only
+            matched_resource = resource
+    elif resource == bucket_resource:
+        common_found, read_only, write_only = _get_bucket_policy(s, prefix)
+        bucket_common_found = bucket_common_found or common_found
+        bucket_read_only = bucket_read_only or read_only
+        bucket_write_only = bucket_write_only or write_only
+    return bucket_common_found, bucket_read_only, bucket_write_only, \
+        obj_read_only, obj_write_only
+
+
 # Returns policy of given bucket name, prefix in given statements.
 def get_policy(statements, bucket_name, prefix=''):
     bucket_resource = _AWS_RESOURCE_PREFIX + bucket_name
@@ -477,23 +500,13 @@ def get_policy(statements, bucket_name, prefix=''):
     obj_read_only = False
     obj_write_only = False
     for s in statements:
-        resource = s['Resource']
-        if (resource == object_resource or
-                fnmatch.fnmatch(object_resource, resource)):
-            read_only, write_only = _get_object_policy(s)
-            if len(matched_resource) < len(resource):
-                obj_read_only = read_only
-                obj_write_only = write_only
-                matched_resource = resource
-            elif len(matched_resource) == len(resource):
-                obj_read_only = obj_read_only or read_only
-                obj_write_only = obj_write_only or write_only
-                matched_resource = resource
-        elif resource == bucket_resource:
-            common_found, read_only, write_only = _get_bucket_policy(s, prefix)
-            bucket_common_found = bucket_common_found or common_found
-            bucket_read_only = bucket_read_only or read_only
-            bucket_write_only = bucket_write_only or write_only
+        resources = _get_resource(s)
+        for resource in resources:
+            bucket_common_found, bucket_read_only, bucket_write_only, \
+                obj_read_only, obj_write_only = _get_permissions(
+                    s, resource, object_resource, matched_resource,
+                    bucket_resource, prefix, bucket_common_found,
+                    bucket_read_only, bucket_write_only)
 
     policy = Policy.NONE
     if bucket_common_found:
