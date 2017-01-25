@@ -126,7 +126,12 @@ class Minio(object):
         self._trace_output_stream = None
         self._http = urllib3.PoolManager(
             cert_reqs='CERT_REQUIRED',
-            ca_certs=certifi.where()
+            ca_certs=certifi.where(),
+            retries=urllib3.Retry(
+                total=5,
+                backoff_factor=0.2,
+                status_forcelist=[500, 502, 503, 504]
+            )
         )
 
     # Set application information.
@@ -1702,6 +1707,10 @@ class Minio(object):
                                       body=None,
                                       headers=headers,
                                       preload_content=False)
+
+        if self._trace_output_stream:
+            dump_http(method, url, headers, response,
+                      self._trace_output_stream)
 
         if response.status != 200:
             response_error = ResponseError(response)
