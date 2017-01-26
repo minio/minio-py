@@ -119,11 +119,11 @@ class S3Element(object):
         # strictness is already enforced above.
         return urldecode(text) if text is not None else None
 
-    def get_etag_elem(self):
+    def get_etag_elem(self, strict=True):
         """Fetches an 'ETag' child element suitably processed.
 
         """
-        return self.get_child_text('ETag').replace('"', '')
+        return self.get_child_text('ETag', strict).replace('"', '')
 
     def get_int_elem(self, name):
         """Fetches an integer type XML child element by name.
@@ -199,7 +199,7 @@ def _parse_objects_from_xml_elts(bucket_name, contents, common_prefixes):
         Object(bucket_name,
                content.get_urldecoded_elem_text('Key'),
                content.get_localized_time_elem('LastModified'),
-               content.get_etag_elem(),
+               content.get_etag_elem(strict=False),
                content.get_int_elem('Size'))
         for content in contents
     ]
