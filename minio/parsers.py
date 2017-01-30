@@ -208,7 +208,7 @@ def _parse_objects_from_xml_elts(bucket_name, contents, common_prefixes):
         Object(bucket_name, urldecode(dir_elt.text()), None, '',
                0, is_dir=True)
         for dirs_elt in common_prefixes
-        for dir_elt in dirs_elt
+        for dir_elt in dirs_elt.findall('Prefix')
     ]
 
     return objects, object_dirs
