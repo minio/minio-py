@@ -50,6 +50,9 @@ class MockResponse(object):
             return iter(bytearray(self.data, 'utf-8'))
         return iter([])
 
+    # dummy release connection call.
+    def release_conn(self):
+        return
 
 class MockConnection(object):
     def __init__(self):
