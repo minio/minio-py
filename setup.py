@@ -40,7 +40,7 @@ packages = [
 ]
 
 requires = [
-    'urllib3',
+    'urllib3>=1.15.1',
     'pytz',
     'certifi<=2015.4.28',
 ]
