@@ -222,8 +222,7 @@ class Minio(object):
 
         response = self._http.urlopen(method, url,
                                       body=content,
-                                      headers=headers,
-                                      preload_content=False)
+                                      headers=headers)
 
         if response.status != 200:
             response_error = ResponseError(response)
@@ -259,8 +258,7 @@ class Minio(object):
 
         response = self._http.urlopen(method, url,
                                       body=None,
-                                      headers=headers,
-                                      preload_content=False)
+                                      headers=headers)
 
         if self._trace_output_stream:
             dump_http(method, url, headers, response,
@@ -685,6 +683,9 @@ class Minio(object):
                 file_part_data.write(data)
                 total_written += len(data)
 
+            # Release the connection from the response at this point.
+            response.release_conn()
+
             # Verify if we wrote data properly.
             if total_written < content_size:
                 msg = 'Data written {0} bytes is smaller than the' \
@@ -705,12 +706,19 @@ class Minio(object):
         """
         Retrieves an object from a bucket.
 
+        This function returns an object that contains an open network
+        connection to enable incremental consumption of the
+        response. To re-use the connection (if desired) on subsequent
+        requests, the user needs to call `release_conn()` on the
+        returned object after processing.
+
         Examples:
             my_object = minio.get_partial_object('foo', 'bar')
 
         :param bucket_name: Bucket to read object from
         :param object_name: Name of object to read
         :return: :class:`urllib3.response.HTTPResponse` object.
+
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -724,6 +732,12 @@ class Minio(object):
 
         Optionally takes an offset and length of data to retrieve.
 
+        This function returns an object that contains an open network
+        connection to enable incremental consumption of the
+        response. To re-use the connection (if desired) on subsequent
+        requests, the user needs to call `release_conn()` on the
+        returned object after processing.
+
         Examples:
             partial_object = minio.get_partial_object('foo', 'bar', 2, 4)
 
@@ -734,6 +748,7 @@ class Minio(object):
         :param length: Optional number of bytes to retrieve.
            Must be an integer.
         :return: :class:`urllib3.response.HTTPResponse` object.
+
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -1353,10 +1368,16 @@ class Minio(object):
     # All private functions below.
     def _get_partial_object(self, bucket_name, object_name,
                             offset=0, length=0):
-        """
-        Retrieves an object from a bucket.
+        """Retrieves an object from a bucket.
 
         Optionally takes an offset and length of data to retrieve.
+
+        It returns a response object whose content is not
+        pre-loaded. This means that the connection associated with the
+        response needs to be released (for efficient re-use) after
+        usage with `response.release_conn()`. Otherwise, the
+        connection will linger until the object is garbage collected,
+        when the connection is simply closed and not re-used.
 
         Examples:
             partial_object = minio.get_partial_object('foo', 'bar', 2, 4)
@@ -1368,6 +1389,7 @@ class Minio(object):
         :param length: Optional number of bytes to retrieve.
            Must be > 0.
         :return: :class:`urllib3.response.HTTPResponse` object.
+
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -1382,7 +1404,8 @@ class Minio(object):
         response = self._url_open('GET',
                                   bucket_name=bucket_name,
                                   object_name=object_name,
-                                  headers=headers)
+                                  headers=headers,
+                                  preload_content=False)
 
         return response
 
@@ -1705,8 +1728,7 @@ class Minio(object):
 
         response = self._http.urlopen(method, url,
                                       body=None,
-                                      headers=headers,
-                                      preload_content=False)
+                                      headers=headers)
 
         if self._trace_output_stream:
             dump_http(method, url, headers, response,
@@ -1726,7 +1748,8 @@ class Minio(object):
         return location
 
     def _url_open(self, method, bucket_name=None, object_name=None,
-                  query=None, body=None, headers=None, content_sha256=None):
+                  query=None, body=None, headers=None, content_sha256=None,
+                  preload_content=True):
         """
         Open a url wrapper around signature version '4'
            and :meth:`urllib3.PoolManager.urlopen`
@@ -1750,7 +1773,7 @@ class Minio(object):
         response = self._http.urlopen(method, url,
                                       body=body,
                                       headers=headers,
-                                      preload_content=False)
+                                      preload_content=preload_content)
 
         if self._trace_output_stream:
             dump_http(method, url, headers, response,
@@ -1764,6 +1787,12 @@ class Minio(object):
 
             # Populate response_error with error response.
             response_error = ResponseError(response)
+
+            # In case we did not preload_content, we need to release
+            # the connection:
+            if not preload_content:
+                response.release_conn()
+
             if method == 'HEAD':
                 raise response_error.head(bucket_name, object_name)
             elif method == 'GET':
