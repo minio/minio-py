@@ -40,9 +40,9 @@ packages = [
 ]
 
 requires = [
-    'urllib3>=1.15.1',
+    'urllib3',
     'pytz',
-    'certifi<=2015.4.28',
+    'certifi',
 ]
 
 tests_requires = [
