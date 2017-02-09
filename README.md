@@ -8,7 +8,7 @@ This document assumes that you have a working [Python](https://www.python.org/do
 
 ## Download from pip
 
-```sh
+```
 
 pip install minio
 
@@ -16,7 +16,7 @@ pip install minio
 
 ## Download from source
 
-```sh
+```
 
 git clone https://github.com/minio/minio-py
 cd minio-py
@@ -83,7 +83,7 @@ else:
 
 #### Run file-uploader
 
-```bash
+```
 
 python file_uploader.py
 
