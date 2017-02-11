@@ -60,8 +60,9 @@ __Parameters__
 |:---|:---|:---|
 | `endpoint`  | _string_  | S3 object storage endpoint.  |
 | `access_key`  | _string_  | Access key for the object storage endpoint. (Optional if you need anonymous access).  |
-|  `secret_key` | _string_  |  Secret key for the object storage endpoint. (Optional if you need anonymous access). |
+| `secret_key` | _string_  |  Secret key for the object storage endpoint. (Optional if you need anonymous access). |
 | `secure`  |_bool_   | Set this value to `True` to enable secure (HTTPS) access. (Optional defaults to `True`).  |
+| `region`  |_string_ | Set this value to override automatic bucket location discovery. (Optional defaults to `None`). |
 
 __Example__
 
