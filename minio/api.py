@@ -100,15 +100,22 @@ class Minio(object):
         client = Minio('play.minio.io:9000')
         client = Minio('s3.amazonaws.com', 'ACCESS_KEY', 'SECRET_KEY')
 
+        # To override auto bucket location discovery.
+        client = Minio('play.minio.io:9000', 'ACCESS_KEY', 'SECRET_KEY',
+                       region='us-east-1')
+
     :param endpoint: Hostname of the cloud storage server.
     :param access_key: Access key to sign self._http.request with.
     :param secret_key: Secret key to sign self._http.request with.
     :param secure: Set this value if wish to make secure requests.
          Default is True.
+    :param region: Set this value to override automatic bucket
+         location discovery.
     :return: :class:`Minio <Minio>` object
     """
     def __init__(self, endpoint, access_key=None,
-                 secret_key=None, secure=True):
+                 secret_key=None, secure=True,
+                 region=None):
         # Validate endpoint.
         is_valid_endpoint(endpoint)
 
@@ -118,6 +125,7 @@ class Minio(object):
             endpoint_url = 'http://' + endpoint
 
         url_components = urlsplit(endpoint_url)
+        self._region = region
         self._region_map = dict()
         self._endpoint_url = url_components.geturl()
         self._access_key = access_key
@@ -192,6 +200,14 @@ class Minio(object):
         :param location: Location to create bucket on
         """
         is_valid_bucket_name(bucket_name)
+
+        ## Region already set in constructor, validate if
+        ## caller requested bucket location is same.
+        if self._region:
+            if self._region != location:
+                raise InvalidArgumentError("Configured region {0}, requested"
+                                           " {1}".format(self._region,
+                                                         location))
 
         method = 'PUT'
         # Set user agent once before the request.
@@ -1695,6 +1711,11 @@ class Minio(object):
         :param bucket_name: Bucket name for which region will be fetched.
         :return: Region of bucket name.
         """
+
+        # Region set in constructor, return right here.
+        if self._region:
+            return self._region
+
         # get bucket location for Amazon S3.
         region = 'us-east-1' # default to US standard.
         if bucket_name in self._region_map:
@@ -1702,6 +1723,8 @@ class Minio(object):
         else:
             region = self._get_bucket_location(bucket_name)
             self._region_map[bucket_name] = region
+
+        # Success.
         return region
 
     def _get_bucket_location(self, bucket_name):
