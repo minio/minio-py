@@ -324,11 +324,18 @@ class Minio(object):
                                       bucket_name=bucket_name,
                                       query={"policy": ""},
                                       headers={})
-            policy_dict = json.loads(response.data.decode('utf-8'))
         except ResponseError as e:
             # Ignore 'NoSuchBucketPolicy' error.
             if e.code != 'NoSuchBucketPolicy':
                 raise
+
+        data = response.data
+        if isinstance(data, bytes) and isinstance(data, str):  # Python 2
+            policy_dict = json.loads(response.data.decode('utf-8'))
+        elif isinstance(data, str):  # Python 3
+            policy_dict = json.loads(data)
+        else:
+            policy_dict = json.loads(str(response.data, 'utf-8'))
 
         return policy_dict
 
