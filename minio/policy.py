@@ -73,12 +73,48 @@ def _get_action(statement):
     return action
 
 
+def _get_bucket_resource(bucket_name):
+    """
+    :param bucket_name: Name of the bucket
+    :type bucket_name: str
+
+    :return: Representation of the bucket with the resource prefix
+    :rtype: str
+    """
+    return _AWS_RESOURCE_PREFIX + bucket_name
+
+
+def _get_resource_prefix(bucket_name):
+    """
+    :param bucket_name: Name of the bucket
+    :type bucket_name: str
+
+    :return: Representation of the bucket with the resource prefix,
+             but with a trailing slash.
+    :rtype: str
+    """
+    return _get_bucket_resource(bucket_name) + '/'
+
+
+def _get_object_resource(bucket_name, prefix):
+    """
+    :param bucket_name: Name of the bucket
+    :type bucket_name: str
+    :param prefix: Name of the prefix
+    :type prefix: str
+
+    :return: Representation of an object in a bucket with the resource prefix.
+    :rtype: str
+    """
+    return _get_resource_prefix(bucket_name) + prefix + '*'
+
+
 # Returns new statements with bucket actions.
 def _new_bucket_statement(policy, bucket_name, prefix=''):
     if policy == Policy.NONE:
         return []
 
-    bucket_resource = _AWS_RESOURCE_PREFIX + bucket_name
+    bucket_resource = _get_bucket_resource(bucket_name)
 
     rv = [{'Action': list(_COMMON_BUCKET_ACTIONS),
            'Effect': 'Allow',
@@ -112,7 +148,7 @@ def _new_object_statement(policy, bucket_name, prefix=''):
     rv = [{'Action': [],
            'Effect': 'Allow',
            'Principal': {'AWS': '*'},
-           'Resource': _AWS_RESOURCE_PREFIX + bucket_name + '/' + prefix + '*',
+           'Resource': _get_object_resource(bucket_name, prefix),
            'Sid': ''}]
     if policy == Policy.READ_ONLY:
         rv[0]['Action'] = list(_READ_ONLY_OBJECT_ACTIONS)
@@ -141,8 +177,8 @@ def _filter_resources(prefix, resources):
 # Returns whether given bucket statements are used by other than given
 # prefix statements.
 def _get_in_use_policy(statements, bucket_name, prefix=''):
-    resource_prefix = _AWS_RESOURCE_PREFIX + bucket_name + '/'
-    object_resource = _AWS_RESOURCE_PREFIX + bucket_name + '/' + prefix + '*'
+    resource_prefix = _get_resource_prefix(bucket_name)
+    object_resource = _get_object_resource(bucket_name, prefix)
 
     in_use = {Policy.READ_ONLY: False,
               Policy.WRITE_ONLY: False}
@@ -250,8 +286,8 @@ def _remove_object_actions(statement, policy):
 # Returns statements containing removed actions/statements for given
 # policy, bucket name and prefix.
 def _remove_statements(statements, policy, bucket_name, prefix=''):
-    bucket_resource = _AWS_RESOURCE_PREFIX + bucket_name
-    object_resource = _AWS_RESOURCE_PREFIX + bucket_name + '/' + prefix + '*'
+    bucket_resource = _get_bucket_resource(bucket_name)
+    object_resource = _get_object_resource(bucket_name, prefix)
     in_use = _get_in_use_policy(statements, bucket_name, prefix)
     out = []
     read_only_bucket_statements = []
@@ -294,7 +330,7 @@ def _remove_statements(statements, policy, bucket_name, prefix=''):
             out.append(s)
 
     skip_bucket_statement = True
-    resource_prefix = _AWS_RESOURCE_PREFIX + bucket_name + '/'
+    resource_prefix = _get_resource_prefix(bucket_name)
     for s in out:
         resource = s['Resource']
         if (_filter_resources(resource_prefix, resource) and
@@ -492,8 +528,8 @@ def _get_permissions(s, resource, object_resource, matched_resource,
 
 # Returns policy of given bucket name, prefix in given statements.
 def get_policy(statements, bucket_name, prefix=''):
-    bucket_resource = _AWS_RESOURCE_PREFIX + bucket_name
-    object_resource = _AWS_RESOURCE_PREFIX + bucket_name + '/' + prefix + '*'
+    bucket_resource = _get_bucket_resource(bucket_name)
+    object_resource = _get_object_resource(bucket_name, prefix)
 
     bucket_common_found = False
     bucket_read_only = False
