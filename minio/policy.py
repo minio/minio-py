@@ -468,6 +468,8 @@ def _get_object_policy(statement):
 def _get_permissions(s, resource, object_resource, matched_resource,
                      bucket_resource, prefix, bucket_common_found,
                      bucket_read_only, bucket_write_only):
+
+    obj_read_only, obj_write_only = False, False
     if (resource == object_resource or
             fnmatch.fnmatch(object_resource, resource)):
         read_only, write_only = _get_object_policy(s)
