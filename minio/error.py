@@ -39,82 +39,60 @@ else:
     _ETREE_EXCEPTIONS = (SyntaxError, AttributeError, ValueError, TypeError)
 
 
-class InvalidEndpointError(Exception):
+class MinioError(Exception):
     """
-    InvalidEndpointError is raised when input endpoint URL is invalid.
+    Base class for all exceptions
 
     :param message: User defined message.
     """
     def __init__(self, message, **kwargs):
-        super(InvalidEndpointError, self).__init__(**kwargs)
+        super(MinioError, self).__init__(**kwargs)
         self.message = message
 
     def __str__(self):
-        string_format = 'InvalidEndpointError: message: {0}'
-        return string_format.format(self.message)
+        return "{name}: message: {message}".format(
+            name=self.__class__.__name__,
+            message=self.message
+        )
 
 
-class InvalidBucketError(Exception):
+class InvalidEndpointError(MinioError):
+    """
+    InvalidEndpointError is raised when input endpoint URL is invalid.
+    """
+    pass
+
+
+class InvalidBucketError(MinioError):
     """
     InvalidBucketError is raised when input bucket name is invalid.
 
     NOTE: Bucket names are validated based on Amazon S3 requirements.
-    :param message: User defined message.
     """
-    def __init__(self, message, **kwargs):
-        super(InvalidBucketError, self).__init__(**kwargs)
-        self.message = message
-
-    def __str__(self):
-        string_format = 'InvalidBucketError: message: {0}'
-        return string_format.format(self.message)
+    pass
 
 
-class InvalidArgumentError(Exception):
+class InvalidArgumentError(MinioError):
     """
     InvalidArgumentError is raised when an unexpected
     argument is received by the callee.
-
-    :param message: User defined message.
     """
-    def __init__(self, message, **kwargs):
-        super(InvalidArgumentError, self).__init__(**kwargs)
-        self.message = message
-
-    def __str__(self):
-        string_format = 'InvalidArgumentError: message: {0}'
-        return string_format.format(self.message)
+    pass
 
 
-class InvalidSizeError(Exception):
+class InvalidSizeError(MinioError):
     """
     InvalidSizeError is raised when an unexpected size mismatch occurs.
-
-    :param message: user defined message.
     """
-    def __init__(self, message, **kwargs):
-        super(InvalidSizeError, self).__init__(**kwargs)
-        self.message = message
-
-    def __str__(self):
-        string_format = 'InvalidSizeError: message: {0}'
-        return string_format.format(self.message)
+    pass
 
 
-class InvalidXMLError(Exception):
+class InvalidXMLError(MinioError):
     """
     InvalidXMLError is raised when an unexpected XML tag or
     a missing tag is found during parsing.
-
-    :param message: User defined message.
     """
-    def __init__(self, message, **kwargs):
-        super(InvalidXMLError, self).__init__(**kwargs)
-        self.message = message
-
-    def __str__(self):
-        string_format = 'InvalidXMLError: message: {0}'
-        return string_format.format(self.message)
+    pass
 
 
 class MultiDeleteError(object):
@@ -139,7 +117,7 @@ class MultiDeleteError(object):
                                     self.error_message)
 
 
-class ResponseError(Exception):
+class ResponseError(MinioError):
     """
     ResponseError is raised when an API call doesn't succeed.
     raises :exc:`ResponseError` accordingly.
@@ -147,12 +125,11 @@ class ResponseError(Exception):
     :param response: Response from http client :class:`urllib3.HTTPResponse`.
     """
     def __init__(self, response, **kwargs):
-        super(ResponseError, self).__init__(**kwargs)
+        super(ResponseError, self).__init__(message='', **kwargs)
         self._response = response
         # Initialize all the ResponseError fields.
         self.method = ''
         self.code = ''
-        self.message = ''
         self.bucket_name = ''
         self.object_name = ''
         # Amz headers
