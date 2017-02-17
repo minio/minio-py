@@ -81,7 +81,7 @@ def _get_bucket_resource(bucket_name):
     :return: Representation of the bucket with the resource prefix
     :rtype: str
     """
-    return _AWS_RESOURCE_PREFIX + bucket_name
+    return [_AWS_RESOURCE_PREFIX + bucket_name]
 
 
 def _get_resource_prefix(bucket_name):
@@ -93,7 +93,7 @@ def _get_resource_prefix(bucket_name):
              but with a trailing slash.
     :rtype: str
     """
-    return _get_bucket_resource(bucket_name) + '/'
+    return _get_bucket_resource(bucket_name)[0] + '/'
 
 
 def _get_object_resource(bucket_name, prefix):
@@ -106,7 +106,7 @@ def _get_object_resource(bucket_name, prefix):
     :return: Representation of an object in a bucket with the resource prefix.
     :rtype: str
     """
-    return _get_resource_prefix(bucket_name) + prefix + '*'
+    return [_get_resource_prefix(bucket_name) + prefix + '*']
 
 
 # Returns new statements with bucket actions.
@@ -293,7 +293,8 @@ def _remove_statements(statements, policy, bucket_name, prefix=''):
     read_only_bucket_statements = []
     s3_prefix_value = []
     for s in statements:
-        if s['Resource'] == bucket_resource:
+        resource = _get_resource(s)
+        if resource == bucket_resource:
             if s.get('Condition'):
                 s = _remove_bucket_actions(s, policy, prefix)
             else:
@@ -306,11 +307,11 @@ def _remove_statements(statements, policy, bucket_name, prefix=''):
                         policy == Policy.READ_WRITE and
                         not in_use[Policy.WRITE_ONLY]):
                     s = _remove_bucket_actions(s, Policy.WRITE_ONLY, prefix)
-        elif s['Resource'] == object_resource:
+        elif resource == object_resource:
             s = _remove_object_actions(s, policy)
 
         if s:
-            if (s['Resource'] == bucket_resource and
+            if (resource == bucket_resource and
                     set(_get_action(s)) & _READ_ONLY_BUCKET_ACTIONS and
                     s.get('Effect') == 'Allow' and
                     s.get('Principal') == {'AWS': '*'}):
@@ -332,7 +333,7 @@ def _remove_statements(statements, policy, bucket_name, prefix=''):
     skip_bucket_statement = True
     resource_prefix = _get_resource_prefix(bucket_name)
     for s in out:
-        resource = s['Resource']
+        resource = _get_resource(s)
         if (_filter_resources(resource_prefix, resource) and
                 resource not in s3_prefix_value):
             skip_bucket_statement = False
@@ -528,8 +529,8 @@ def _get_permissions(s, resource, object_resource, matched_resource,
 
 # Returns policy of given bucket name, prefix in given statements.
 def get_policy(statements, bucket_name, prefix=''):
-    bucket_resource = _get_bucket_resource(bucket_name)
-    object_resource = _get_object_resource(bucket_name, prefix)
+    bucket_resource = _get_bucket_resource(bucket_name)[0]
+    object_resource = _get_object_resource(bucket_name, prefix)[0]
 
     bucket_common_found = False
     bucket_read_only = False

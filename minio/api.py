@@ -328,6 +328,8 @@ class Minio(object):
             # Ignore 'NoSuchBucketPolicy' error.
             if e.code != 'NoSuchBucketPolicy':
                 raise
+            else:
+                return None
 
         data = response.data
         if isinstance(data, bytes) and isinstance(data, str):  # Python 2
@@ -349,6 +351,8 @@ class Minio(object):
         is_valid_bucket_name(bucket_name)
 
         policy_dict = self._get_bucket_policy(bucket_name)
+        if not policy_dict:
+            return policy.Policy.NONE
 
         # Normalize statements.
         statements = []
