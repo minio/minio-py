@@ -321,7 +321,7 @@ def _remove_statements(statements, policy, bucket_name, prefix=''):
                 if isinstance(values, basestring):
                     values = [values]
 
-                s3_prefix_value += [(bucket_resource + '/' + v + '*')
+                s3_prefix_value += [(bucket_resource[0] + '/' + v + '*')
                                     for v in values]
 
                 if s3_prefix_value or not cond_value:

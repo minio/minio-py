@@ -34,9 +34,9 @@ def main():
     Functional testing of minio python library.
     """
     fake = Factory.create()
-    client = Minio('s3.amazonaws.com',
-                   os.getenv('ACCESS_KEY'),
-                   os.getenv('SECRET_KEY'))
+    client = Minio('play.minio.io:9000',
+                   'Q3AM3UQ867SPQQA43P2F',
+                   'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
 
     _http = urllib3.PoolManager(
         cert_reqs='CERT_REQUIRED',
@@ -53,28 +53,32 @@ def main():
     # Make a new bucket.
     bucket_name = 'minio-pytest'
 
-    print(client.make_bucket(bucket_name))
-    print(client.make_bucket(bucket_name+'.unique',
-                             location='us-west-1'))
-
-    ## Check if return codes a valid from server.
-    try:
+    client.make_bucket(bucket_name)
+    if client._endpoint_url.startswith("s3.amazonaws"):
         client.make_bucket(bucket_name+'.unique',
                            location='us-west-1')
-    except ResponseError as err:
-        if str(err.code) in ['BucketAlreadyOwnedByYou', 'BucketAlreadyExists']:
-            pass
-        else:
-            raise
+
+    ## Check if return codes a valid from server.
+    if client._endpoint_url.startswith("s3.amazonaws"):
+        try:
+            client.make_bucket(bucket_name+'.unique',
+                               location='us-west-1')
+        except ResponseError as err:
+            if str(err.code) in ['BucketAlreadyOwnedByYou', 'BucketAlreadyExists']:
+                pass
+            else:
+                raise
+
 
     # Check if bucket was created properly.
-    print(client.bucket_exists(bucket_name))
-    print(client.bucket_exists(bucket_name+'.unique'))
+    client.bucket_exists(bucket_name)
+    if client._endpoint_url.startswith("s3.amazonaws"):
+        client.bucket_exists(bucket_name+'.unique')
 
     # List all buckets.
     buckets = client.list_buckets()
     for bucket in buckets:
-        print(bucket.name, bucket.creation_date)
+        _, _ = bucket.name, bucket.creation_date
 
     with open('testfile', 'wb') as file_data:
         file_data.write(fake.text().encode('utf-8'))
@@ -83,22 +87,23 @@ def main():
     # Put a file
     file_stat = os.stat('testfile')
     with open('testfile', 'rb') as file_data:
-        client.put_object(bucket_name, object_name, file_data, file_stat.st_size)
+        client.put_object(bucket_name, object_name, file_data,
+                          file_stat.st_size)
     file_data.close()
 
     # Fput a file
-    print(client.fput_object(bucket_name, object_name+'-f', 'testfile'))
+    client.fput_object(bucket_name, object_name+'-f', 'testfile')
 
     # Copy a file
-    print(client.copy_object(bucket_name, object_name+'-copy',
-                             '/'+bucket_name+'/'+object_name+'-f'))
+    client.copy_object(bucket_name, object_name+'-copy',
+                       '/'+bucket_name+'/'+object_name+'-f')
 
     try:
         copy_conditions = CopyConditions()
         copy_conditions.set_match_etag('test-etag')
-        print(client.copy_object(bucket_name, object_name+'-copy',
-                                 '/'+bucket_name+'/'+object_name+'-f',
-                                 copy_conditions))
+        client.copy_object(bucket_name, object_name+'-copy',
+                           '/'+bucket_name+'/'+object_name+'-f',
+                           copy_conditions)
     except ResponseError as err:
         if err.code != 'PreconditionFailed':
             raise
@@ -106,13 +111,13 @@ def main():
             raise
 
     # Fetch stats on your object.
-    print(client.stat_object(bucket_name, object_name))
+    client.stat_object(bucket_name, object_name)
 
     # Fetch stats on your object.
-    print(client.stat_object(bucket_name, object_name+'-f'))
+    client.stat_object(bucket_name, object_name+'-f')
 
     # Fetch stats on your object.
-    print(client.stat_object(bucket_name, object_name+'-copy'))
+    client.stat_object(bucket_name, object_name+'-copy')
 
     # Get a full object
     object_data = client.get_object(bucket_name, object_name)
@@ -122,21 +127,25 @@ def main():
     file_data.close()
 
     # Get a full object locally.
-    print(client.fget_object(bucket_name, object_name, 'newfile-f'))
+    client.fget_object(bucket_name, object_name, 'newfile-f')
 
     # List all object paths in bucket.
-    print("Listing using ListObjects API")
+    print("Listing using ListObjects")
     objects = client.list_objects(bucket_name, recursive=True)
     for obj in objects:
-        print(obj.bucket_name, obj.object_name, obj.last_modified, \
-            obj.etag, obj.size, obj.content_type)
+        _, _, _, _, _, _ = obj.bucket_name, obj.object_name, \
+                           obj.last_modified, \
+                           obj.etag, obj.size, \
+                           obj.content_type
 
     # List all object paths in bucket using V2 API.
-    print("Listing using ListObjectsV2 API")
+    print("Listing using ListObjectsV2")
     objects = client.list_objects_v2(bucket_name, recursive=True)
     for obj in objects:
-        print(obj.bucket_name, obj.object_name, obj.last_modified, \
-            obj.etag, obj.size, obj.content_type)
+        _, _, _, _, _, _ = obj.bucket_name, obj.object_name, \
+                           obj.last_modified, \
+                           obj.etag, obj.size, \
+                           obj.content_type
 
     presigned_get_object_url = client.presigned_get_object(bucket_name, object_name)
     response = _http.urlopen('GET', presigned_get_object_url)
@@ -163,19 +172,22 @@ def main():
 
     expires_date = datetime.utcnow()+timedelta(days=10)
     policy.set_expires(expires_date)
-    print(client.presigned_post_policy(policy))
+    client.presigned_post_policy(policy)
 
     # Remove an object.
-    print(client.remove_object(bucket_name, object_name))
-    print(client.remove_object(bucket_name, object_name+'-f'))
-    print(client.remove_object(bucket_name, object_name+'-copy'))
+    client.remove_object(bucket_name, object_name)
+    client.remove_object(bucket_name, object_name+'-f')
+    client.remove_object(bucket_name, object_name+'-copy')
 
     policy_name = client.get_bucket_policy(bucket_name)
     if policy_name != Policy.NONE:
         raise ValueError('Policy name is invalid ' + policy_name)
 
+    # Set read-only policy successfully.
+    client.set_bucket_policy(bucket_name, '1/', Policy.READ_ONLY)
+
     # Set read-write policy successfully.
-    client.set_bucket_policy(bucket_name, '', Policy.READ_WRITE)
+    client.set_bucket_policy(bucket_name, '1/', Policy.READ_WRITE)
 
     # Reset policy to NONE.
     client.set_bucket_policy(bucket_name, '', Policy.NONE)
@@ -190,9 +202,8 @@ def main():
     object_names = []
     for i in range(10):
         curr_object_name = object_name+"-{}".format(i)
-        print("object-name: {}".format(curr_object_name))
-        print(client.fput_object(
-            bucket_name, curr_object_name, "testfile"))
+        # print("object-name: {}".format(curr_object_name))
+        client.fput_object(bucket_name, curr_object_name, "testfile")
         object_names.append(curr_object_name)
 
     # delete the objects in a single library call.
@@ -201,15 +212,18 @@ def main():
     had_errs = False
     for del_err in del_errs:
         had_errs = True
-        print("Err is {}".format(del_err))
+        # print("Err is {}".format(del_err))
     if had_errs:
-        print("remove_objects() FAILED - it had unexpected errors.")
+        print("Removing objects FAILED - it had unexpected errors.")
+        raise
     else:
-        print("remove_objects() worked as expected.")
+        print("Removing objects worked as expected.")
 
     # Remove a bucket. This operation will only work if your bucket is empty.
-    print(client.remove_bucket(bucket_name))
-    print(client.remove_bucket(bucket_name+'.unique'))
+    print("Deleting buckets and finishing tests.")
+    client.remove_bucket(bucket_name)
+    if client._endpoint_url.startswith("s3.amazonaws"):
+        client.remove_bucket(bucket_name+'.unique')
 
     # Remove temporary files.
     os.remove('testfile')
