@@ -215,7 +215,6 @@ __Return Value__
 |``object.last_modified`` |_datetime.datetime_ | modified time stamp.  |
 
 
-
 __Example__
 
 ```py
@@ -665,14 +664,26 @@ __Parameters__
 |``object_name``   |_string_    |Name of the object.   |
 |``file_path``   |_string_ | Path on the local filesystem to which the object data will be written. |
 
-__Example__
+__Return Value__
 
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``obj``|_Object_  |object stat info for format described below:  |
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``obj.size``|_int_  |size of the object. |
+|``obj.etag``|_string_|etag of the object.|
+|``obj.content_type``|_string_  | Content-Type of the object.|
+|``obj.last_modified``|_time.time_  |modified time stamp.|
+
+__Example__
 
 ```py
 
-# Get a full object.
+# Get a full object and prints the original object stat information.
 try:
-    minioClient.fget_object('mybucket', 'myobject', '/tmp/myobject')
+    print(minioClient.fget_object('mybucket', 'myobject', '/tmp/myobject'))
 except ResponseError as err:
     print(err)
 
@@ -744,18 +755,24 @@ __Parameters__
 |``length``   |_int_   |Total length of object.   |
 |``content_type``   |_string_ | Content type of the object. (optional, defaults to 'application/octet-stream').   |
 
+__Return Value__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``etag``|_string_  |Object etag computed by the server.  |
+
 __Example__
 
-The maximum size of a single object is limited to 5TB. put_object transparently uploads objects larger than 5MiB in multiple parts. This allows failed uploads to resume safely by only uploading the missing parts. Uploaded data is carefully verified using MD5SUM signatures.
+The maximum size of a single object is limited to 5TB. put_object transparently uploads objects larger than 5MiB in multiple parts. This allows failed uploads to resume safely by only uploading the missing parts. Uploaded data is carefully verified using MD5SUM.
 
 ```py
 
 import os
-# Put a file with default content-type.
+# Put a file with default content-type, upon success prints the etag identifier computed by server.
 try:
     file_stat = os.stat('my-testfile')
     file_data = open('my-testfile', 'rb')
-    minioClient.put_object('mybucket', 'myobject', file_data, file_stat.st_size)
+    print(minioClient.put_object('mybucket', 'myobject', file_data, file_stat.st_size))
 except ResponseError as err:
     print(err)
 
@@ -783,26 +800,32 @@ __Parameters__
 |``file_path``   |_string_ |Path on the local filesystem to which the object data will be written. |
 |``content_type``   |_string_ | Content type of the object. (optional, defaults to 'application/octet-stream').   |
 
+__Return Value__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``etag``|_string_  |Object etag computed by the server.  |
+
 __Example__
 
-The maximum size of a single object is limited to 5TB. fput_object transparently uploads objects larger than 5MiB in multiple parts. This allows failed uploads to resume safely by only uploading the missing parts. Uploaded data is carefully verified using MD5SUM signatures.
+The maximum size of a single object is limited to 5TB. fput_object transparently uploads objects larger than 5MiB in multiple parts. This allows failed uploads to resume safely by only uploading the missing parts. Uploaded data is carefully verified using MD5SUM.
 
 ```py
 
-# Put an object 'myobject' with contents from '/tmp/otherobject'.
+# Put an object 'myobject' with contents from '/tmp/otherobject', upon success prints the etag identifier computed by server.
 try:
-    minioClient.fput_object('mybucket', 'myobject', '/tmp/otherobject')
+    print(minioClient.fput_object('mybucket', 'myobject', '/tmp/otherobject'))
 except ResponseError as err:
     print(err)
 
 # Put on object 'myobject.csv' with contents from
 # '/tmp/otherobject.csv' as 'application/csv'.
 try:
-    minioClient.fput_object('mybucket', 'myobject.csv',
-                       '/tmp/otherobject.csv', content_type='application/csv')
+    print(minioClient.fput_object('mybucket', 'myobject.csv',
+                             '/tmp/otherobject.csv',
+                             content_type='application/csv'))
 except ResponseError as err:
     print(err)
-
 
 ```
 
@@ -829,7 +852,6 @@ __Return Value__
 |``obj.etag``|_string_|etag of the object.|
 |``obj.content_type``|_string_  | Content-Type of the object.|
 |``obj.last_modified``|_time.time_  |modified time stamp.|
-
 
 
 __Example__

@@ -661,8 +661,12 @@ class Minio(object):
             raise InvalidSizeError(msg)
 
         # Complete all multipart transactions if possible.
-        return self._complete_multipart_upload(bucket_name, object_name,
-                                               upload_id, uploaded_parts)
+        mpart_result = self._complete_multipart_upload(bucket_name,
+                                                       object_name,
+                                                       upload_id,
+                                                       uploaded_parts)
+        # Return etag here.
+        return mpart_result.etag
 
     def fget_object(self, bucket_name, object_name, file_path):
         """
@@ -728,6 +732,9 @@ class Minio(object):
 
         # Rename with destination file.
         os.rename(file_part_path, file_path)
+
+        # Return the stat
+        return stat
 
     def get_object(self, bucket_name, object_name):
         """
@@ -1545,7 +1552,7 @@ class Minio(object):
 
         etag = response.headers.get('etag', '').replace('"', '')
 
-        # Returns here.
+        # Returns etag here.
         return etag
 
     def _stream_put_object(self, bucket_name, object_name,
@@ -1626,8 +1633,12 @@ class Minio(object):
             raise InvalidSizeError(msg)
 
         # Complete all multipart transactions if possible.
-        return self._complete_multipart_upload(bucket_name, object_name,
-                                               upload_id, uploaded_parts)
+        mpart_result =  self._complete_multipart_upload(bucket_name,
+                                                        object_name,
+                                                        upload_id,
+                                                        uploaded_parts)
+        # Return etag here.
+        return mpart_result.etag
 
     def _remove_incomplete_upload(self, bucket_name, object_name, upload_id):
         """
