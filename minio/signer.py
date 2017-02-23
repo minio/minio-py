@@ -32,7 +32,8 @@ import hmac
 from datetime import datetime
 from .error import InvalidArgumentError
 from .compat import urlsplit, urlencode
-from .helpers import (ignore_headers, get_sha256_hexdigest)
+from .helpers import get_sha256_hexdigest
+from .fold_case_dict import FoldCaseDict
 
 # Signature version '4' algorithm.
 _SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'
@@ -92,14 +93,7 @@ def presign_v4(method, url, access_key, secret_key, region=None,
     date = datetime.utcnow()
     iso8601Date = date.strftime("%Y%m%dT%H%M%SZ")
 
-    headers_to_sign = dict(headers)
-
-    if response_headers is not None:
-        headers_to_sign.update(response_headers)
-
-    # Remove amazon recommended headers.
-    headers_to_sign = ignore_headers(headers)
-
+    headers_to_sign = headers
     # Construct queries.
     query = {}
     query['X-Amz-Algorithm'] = _SIGN_V4_ALGORITHM
@@ -140,6 +134,7 @@ def presign_v4(method, url, access_key, secret_key, region=None,
     canonical_request = generate_canonical_request(method,
                                                    new_parsed_url,
                                                    headers_to_sign,
+                                                   signed_headers,
                                                    content_hash_hex)
     string_to_sign = generate_string_to_sign(date, region,
                                              canonical_request)
@@ -184,7 +179,7 @@ def sign_v4(method, url, region, headers=None, access_key=None,
         return headers
 
     if headers is None:
-        headers = {}
+        headers = FoldCaseDict()
 
     if region is None:
         region = 'us-east-1'
@@ -204,15 +199,13 @@ def sign_v4(method, url, region, headers=None, access_key=None,
     headers['X-Amz-Date'] = date.strftime("%Y%m%dT%H%M%SZ")
     headers['X-Amz-Content-Sha256'] = content_sha256
 
-    headers_to_sign = dict(headers)
-
-    # Remove amazon recommended headers.
-    headers_to_sign = ignore_headers(headers_to_sign)
+    headers_to_sign = headers
 
     signed_headers = get_signed_headers(headers_to_sign)
     canonical_req = generate_canonical_request(method,
                                                parsed_url,
                                                headers_to_sign,
+                                               signed_headers,
                                                content_sha256)
     string_to_sign = generate_string_to_sign(date, region,
                                              canonical_req)
@@ -230,7 +223,7 @@ def sign_v4(method, url, region, headers=None, access_key=None,
     return headers
 
 
-def generate_canonical_request(method, parsed_url, headers, content_sha256):
+def generate_canonical_request(method, parsed_url, headers, signed_headers, content_sha256):
     """
     Generate canonical request.
 
@@ -251,13 +244,7 @@ def generate_canonical_request(method, parsed_url, headers, content_sha256):
     lines.append(query)
 
     # Headers added to canonical request.
-    signed_headers = []
     header_lines = []
-    for header in headers:
-        header = header.lower().strip()
-        signed_headers.append(header)
-    signed_headers = sorted(signed_headers)
-
     for header in signed_headers:
         value = headers[header.title()]
         value = str(value).strip()

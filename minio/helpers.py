@@ -151,51 +151,6 @@ def parts_manager(data, part_size=5*1024*1024):
 
     return PartMetadata(tmpdata, md5hasher, sha256hasher, total_read)
 
-
-def ignore_headers(headers_to_sign):
-    """
-    Ignore headers.
-    """
-    # Excerpts from @lsegal -
-    # https://github.com/aws/aws-sdk-js/issues/659#issuecomment-120477258
-    #
-    #  User-Agent:
-    #
-    #      This is ignored from signing because signing this causes problems
-    #      with generating pre-signed URLs (that are executed by other agents)
-    #      or when customers pass requests through proxies, which may modify
-    #      the user-agent.
-    #
-    #  Content-Length:
-    #
-    #      This is ignored from signing because generating a pre-signed URL
-    #      should not provide a content-length constraint, specifically when
-    #      vending a S3 pre-signed PUT URL. The corollary to this is that when
-    #      sending regular requests (non-pre-signed), the signature contains
-    #      a checksum of the body, which implicitly validates the payload
-    #      length (since changing the number of bytes would change the
-    #      checksum) and therefore this header is not valuable in the
-    #      signature.
-    #
-    #  Content-Type:
-    #
-    #      Signing this header causes quite a number of problems in browser
-    #      environments, where browsers like to modify and normalize the
-    #      content-type header in different ways. There is more information
-    #      on this in https://github.com/aws/aws-sdk-js/issues/244. Avoiding
-    #      this field simplifies logic and reduces the possibility of bugs.
-    #
-    #  Authorization:
-    #
-    #      Is skipped for obvious reasons
-    ignored_headers = ['Authorization', 'Content-Length',
-                       'Content-Type', 'User-Agent']
-    for ignored_header in ignored_headers:
-        if ignored_header in headers_to_sign:
-            del headers_to_sign[ignored_header]
-
-    return headers_to_sign
-
 AWS_S3_ENDPOINT_MAP = {
     'us-east-1': 's3.amazonaws.com',
     'us-east-2': 's3-us-east-2.amazonaws.com',

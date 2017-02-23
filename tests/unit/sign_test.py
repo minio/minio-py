@@ -25,6 +25,7 @@ from minio.signer import (generate_canonical_request, generate_string_to_sign,
                           presign_v4)
 from minio.error import InvalidArgumentError
 from minio.compat import urlsplit
+from minio.fold_case_dict import FoldCaseDict
 
 empty_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 dt = datetime(2015, 6, 20, 1, 2, 3, 0, pytz.utc)
@@ -38,12 +39,14 @@ class CanonicalRequestTest(TestCase):
                                   empty_hash, 'x-amz-date:dateString',
                                   '', ';'.join(expected_signed_headers),
                                   empty_hash]
+        headers_to_sign = FoldCaseDict({'X-Amz-Date': 'dateString',
+                                        'X-Amz-Content-Sha256': empty_hash})
 
         expected_request = '\n'.join(expected_request_array)
         actual_request = generate_canonical_request('PUT',
                                                     url,
-                                                    {'X-Amz-Date': 'dateString',
-                                                     'X-Amz-Content-Sha256': empty_hash},
+                                                    headers_to_sign,
+                                                    expected_signed_headers,
                                                     empty_hash)
 
         eq_(expected_request, actual_request)
@@ -59,10 +62,13 @@ class CanonicalRequestTest(TestCase):
 
         expected_request = '\n'.join(expected_request_array)
 
+        headers_to_sign = FoldCaseDict({'X-Amz-Date': 'dateString',
+                                        'X-Amz-Content-Sha256': empty_hash})
+
         actual_request = generate_canonical_request('PUT',
                                                     url,
-                                                    {'X-Amz-Date': 'dateString',
-                                                     'X-Amz-Content-Sha256': empty_hash},
+                                                    headers_to_sign,
+                                                    expected_signed_headers,
                                                     empty_hash)
 
         eq_(expected_request, actual_request)
