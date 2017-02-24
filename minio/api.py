@@ -111,11 +111,15 @@ class Minio(object):
          Default is True.
     :param region: Set this value to override automatic bucket
          location discovery.
+    :param timeout: Set this value to control how long requests
+         are allowed to run before being aborted.
     :return: :class:`Minio <Minio>` object
     """
     def __init__(self, endpoint, access_key=None,
                  secret_key=None, secure=True,
-                 region=None):
+                 region=None,
+                 timeout=None):
+
         # Validate endpoint.
         is_valid_endpoint(endpoint)
 
@@ -124,6 +128,7 @@ class Minio(object):
         if not secure:
             endpoint_url = 'http://' + endpoint
 
+        # Parse url endpoints.
         url_components = urlsplit(endpoint_url)
         self._region = region
         self._region_map = dict()
@@ -132,7 +137,12 @@ class Minio(object):
         self._secret_key = secret_key
         self._user_agent = _DEFAULT_USER_AGENT
         self._trace_output_stream = None
+
+        self._conn_timeout = urllib3.Timeout.DEFAULT_TIMEOUT if not timeout \
+                             else urllib3.Timeout(timeout)
+
         self._http = urllib3.PoolManager(
+            timeout=self._conn_timeout,
             cert_reqs='CERT_REQUIRED',
             ca_certs=certifi.where(),
             retries=urllib3.Retry(
