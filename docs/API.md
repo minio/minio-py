@@ -50,7 +50,7 @@ s3Client = Minio('s3.amazonaws.com',
 
 |   |
 |---|
-| `Minio(endpoint, access_key=None, secret_key=None, secure=True)`  |
+| `Minio(endpoint, access_key=None, secret_key=None, secure=True, region=None, timeout=None)`  |
 | Initializes a new client object.  |
 
 __Parameters__
@@ -63,6 +63,7 @@ __Parameters__
 | `secret_key` | _string_  |  Secret key for the object storage endpoint. (Optional if you need anonymous access). |
 | `secure`  |_bool_   | Set this value to `True` to enable secure (HTTPS) access. (Optional defaults to `True`).  |
 | `region`  |_string_ | Set this value to override automatic bucket location discovery. (Optional defaults to `None`). |
+| `timeout` |_float_ | Set this value to control how long requests are allowed to run before being aborted. (Optional defaults to `None`) |
 
 __Example__
 
