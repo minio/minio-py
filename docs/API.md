@@ -755,6 +755,7 @@ __Parameters__
 |``data``   |_io.RawIOBase_   |Any python object implementing io.RawIOBase. |
 |``length``   |_int_   |Total length of object.   |
 |``content_type``   |_string_ | Content type of the object. (optional, defaults to 'application/octet-stream').   |
+|``metadata``   |_dict_ | Any additional metadata. (optional, defaults to None). |
 
 __Return Value__
 
@@ -799,7 +800,8 @@ __Parameters__
 |``bucket_name``   |_string_  |Name of the bucket.   |
 |``object_name``   |_string_    |Name of the object.   |
 |``file_path``   |_string_ |Path on the local filesystem to which the object data will be written. |
-|``content_type``   |_string_ | Content type of the object. (optional, defaults to 'application/octet-stream').   |
+|``content_type``   |_string_ | Content type of the object. (optional, defaults to 'application/octet-stream'). |
+|``metadata``   |_dict_ | Any additional metadata. (optional, defaults to None). |
 
 __Return Value__
 

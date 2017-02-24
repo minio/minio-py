@@ -76,6 +76,7 @@ from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_delete_objects)
 from .limited_reader import LimitedReader
 from . import policy
+from .fold_case_dict import FoldCaseDict
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
@@ -306,7 +307,7 @@ class Minio(object):
         is_valid_bucket_name(bucket_name)
 
         try:
-            self._url_open('HEAD', bucket_name=bucket_name, headers={})
+            self._url_open('HEAD', bucket_name=bucket_name)
         # If the bucket has not been created yet, Minio will return a "NoSuchBucket" error.
         except ResponseError as e:
             if e.code == 'NoSuchBucket':
@@ -322,7 +323,7 @@ class Minio(object):
         :param bucket_name: Bucket to remove
         """
         is_valid_bucket_name(bucket_name)
-        self._url_open('DELETE', bucket_name=bucket_name, headers={})
+        self._url_open('DELETE', bucket_name=bucket_name)
 
         # Make sure to purge bucket_name from region cache.
         self._delete_bucket_region(bucket_name)
@@ -332,8 +333,7 @@ class Minio(object):
         try:
             response = self._url_open("GET",
                                       bucket_name=bucket_name,
-                                      query={"policy": ""},
-                                      headers={})
+                                      query={"policy": ""})
         except ResponseError as e:
             # Ignore 'NoSuchBucketPolicy' error.
             if e.code != 'NoSuchBucketPolicy':
@@ -396,8 +396,7 @@ class Minio(object):
         if not statements:
             self._url_open("DELETE",
                            bucket_name=bucket_name,
-                           query={"policy": ""},
-                           headers={})
+                           query={"policy": ""})
         else:
             policy_dict['Statement'] = statements
             content = json.dumps(policy_dict)
@@ -427,7 +426,6 @@ class Minio(object):
             "GET",
             bucket_name=bucket_name,
             query={"notification": ""},
-            headers={}
         )
         data = response.read().decode('utf-8')
         return parse_get_bucket_notification(data)
@@ -514,7 +512,7 @@ class Minio(object):
         }
         while True:
             response = self._url_open('GET', bucket_name=bucket_name,
-                                      query=query, headers={})
+                                      query=query)
             try:
                 for line in response.stream():
                     event = json.loads(line)
@@ -524,14 +522,14 @@ class Minio(object):
                 response.close()
                 continue
 
-    def _get_upload_id(self, bucket_name, object_name, content_type):
+    def _get_upload_id(self, bucket_name, object_name, metadata=None):
         """
         Get previously uploaded upload id for object name or initiate a request
         to fetch a new upload id.
 
         :param bucket_name: Bucket name where the incomplete upload resides.
         :param object_name: Object name for which upload id is requested.
-        :param content_type: Content type of the object.
+        :param metadata: Additional metadata headers for new multipart upload.
         """
         recursive = True
         current_uploads = self._list_incomplete_uploads(bucket_name,
@@ -546,7 +544,7 @@ class Minio(object):
         if not len(matching_uploads):
             upload_id = self._new_multipart_upload(bucket_name,
                                                    object_name,
-                                                   content_type)
+                                                   metadata)
         else:
             incomplete_upload = max(matching_uploads, key=lambda x: x.initiated)
             upload_id = incomplete_upload.upload_id
@@ -554,7 +552,8 @@ class Minio(object):
         return upload_id
 
     def fput_object(self, bucket_name, object_name, file_path,
-                    content_type='application/octet-stream'):
+                    content_type='application/octet-stream',
+                    metadata=None):
         """
         Add a new object to the cloud storage server.
 
@@ -565,6 +564,9 @@ class Minio(object):
         :param object_name: Name of the object to read.
         :param file_path: Local file path to be uploaded.
         :param content_type: Content type of the object.
+        :param metadata: Any additional metadata to be uploaded along
+            with your PUT request.
+        :return: etag
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -583,13 +585,19 @@ class Minio(object):
         if file_size <= MIN_OBJECT_SIZE:
             return self._do_put_object(bucket_name, object_name,
                                        file_data.read(file_size),
-                                       content_type=content_type)
+                                       metadata=metadata)
+
+        if not metadata:
+            metadata = {}
+
+        metadata['Content-Type'] = 'application/octet-stream' if \
+                                   not content_type else content_type
 
         # Calculate optimal part info.
         total_parts_count, part_size, last_part_size = optimal_part_info(file_size)
 
         # get upload id.
-        upload_id = self._get_upload_id(bucket_name, object_name, content_type)
+        upload_id = self._get_upload_id(bucket_name, object_name, metadata)
 
         # Initialize variables
         uploaded_parts = {}
@@ -652,7 +660,7 @@ class Minio(object):
             # Initiate multipart put.
             etag = self._do_put_multipart_object(bucket_name, object_name,
                                                  part_metadata,
-                                                 content_type, upload_id,
+                                                 upload_id,
                                                  part_number)
 
             # Save etags.
@@ -833,7 +841,8 @@ class Minio(object):
         return parse_copy_object(bucket_name, object_name, response.data)
 
     def put_object(self, bucket_name, object_name, data, length,
-                   content_type='application/octet-stream'):
+                   content_type='application/octet-stream',
+                   metadata=None):
         """
         Add a new object to the cloud storage server.
 
@@ -854,7 +863,9 @@ class Minio(object):
         :param data: Contents to upload.
         :param length: Total length of object.
         :param content_type: mime type of object as a string.
-        :return: None
+        :param metadata: Any additional metadata to be uploaded along
+            with your PUT request.
+        :return: etag
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -864,11 +875,15 @@ class Minio(object):
         if length > MAX_MULTIPART_OBJECT_SIZE:
             raise InvalidArgumentError('Input content size is bigger '
                                        ' than allowed maximum of 5TiB.')
+        if not metadata:
+            metadata = {}
+
+        metadata['Content-Type'] = 'application/octet-stream' if \
+                                   not content_type else content_type
 
         if length > MIN_OBJECT_SIZE:
             return self._stream_put_object(bucket_name, object_name,
-                                           data, length,
-                                           content_type=content_type)
+                                           data, length, metadata=metadata)
 
         current_data = data.read(length)
         if len(current_data) != length:
@@ -876,8 +891,7 @@ class Minio(object):
                 'Could not read {} bytes from data to upload'.format(length)
             )
         return self._do_put_object(bucket_name, object_name,
-                                   current_data,
-                                   content_type=content_type)
+                                   current_data, metadata=metadata)
 
     def list_objects(self, bucket_name, prefix=None, recursive=False):
         """
@@ -1005,8 +1019,7 @@ class Minio(object):
                 query['continuation-token'] = continuation_token
             response = self._url_open(method='GET',
                                       bucket_name=bucket_name,
-                                      query=query,
-                                      headers={})
+                                      query=query)
             objects, is_truncated, continuation_token = parse_list_objects_v2(
                 response.data, bucket_name=bucket_name
             )
@@ -1026,7 +1039,7 @@ class Minio(object):
         is_non_empty_string(object_name)
 
         response = self._url_open('HEAD', bucket_name=bucket_name,
-                                  object_name=object_name, headers={})
+                                  object_name=object_name)
 
         etag = response.headers.get('etag', '').replace('"', '')
         size = int(response.headers.get('content-length', '0'))
@@ -1052,7 +1065,7 @@ class Minio(object):
         # No reason to store successful response, for errors
         # relevant exceptions are thrown.
         self._url_open('DELETE', bucket_name=bucket_name,
-                       object_name=object_name, headers={})
+                       object_name=object_name)
 
     def _process_remove_objects_batch(self, bucket_name, objects_batch):
         """
@@ -1207,8 +1220,7 @@ class Minio(object):
 
             response = self._url_open('GET',
                                       bucket_name=bucket_name,
-                                      query=query,
-                                      headers={})
+                                      query=query)
             (uploads, is_truncated, key_marker, upload_id_marker) = parse_list_multipart_uploads(response.data,
                                                                                                  bucket_name=bucket_name)
             for upload in uploads:
@@ -1257,8 +1269,7 @@ class Minio(object):
             response = self._url_open('GET',
                                       bucket_name=bucket_name,
                                       object_name=object_name,
-                                      query=query,
-                                      headers={})
+                                      query=query)
 
             parts, is_truncated, part_number_marker = parse_list_parts(
                 response.data,
@@ -1360,7 +1371,6 @@ class Minio(object):
                                  self._access_key,
                                  self._secret_key,
                                  region=region,
-                                 headers={},
                                  expires=int(expires.total_seconds()))
         return presign_url
 
@@ -1494,7 +1504,6 @@ class Minio(object):
         return presign_url
 
     def _do_put_multipart_object(self, bucket_name, object_name, part_metadata,
-                                 content_type='application/octet-stream',
                                  upload_id='', part_number=0):
         """
         Initiate a multipart PUT operation for a part number.
@@ -1502,7 +1511,6 @@ class Minio(object):
         :param bucket_name: Bucket name for the multipart request.
         :param object_name: Object name for the multipart request.
         :param part_metadata: Part-data and metadata for the multipart request.
-        :param content_type: Content type of multipart request.
         :param upload_id: Upload id of the multipart request.
         :param part_number: Part number of the data to be uploaded.
         """
@@ -1514,7 +1522,6 @@ class Minio(object):
 
         headers = {
             'Content-Length': part_metadata.size,
-            'Content-Type': content_type,
             'Content-Md5': part_metadata.md5hasher.base64digest()
         }
 
@@ -1531,14 +1538,15 @@ class Minio(object):
         return response.headers['etag'].replace('"', '')
 
     def _do_put_object(self, bucket_name, object_name, data,
-                       content_type='application/octet-stream'):
+                       metadata=None):
         """
         Initiate a single PUT operation.
 
         :param bucket_name: Bucket name for the put request.
         :param object_name: Object name for the put request.
         :param data: Input data for the put request.
-        :param content_type: Content type of put request.
+        :param metadata: Any additional metadata to be uploaded along
+           with your object.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -1548,11 +1556,12 @@ class Minio(object):
         if not isinstance(data, bytes):
             raise ValueError('Input data must be bytes type')
 
-        headers = {
-            'Content-Length': len(data),
-            'Content-Type': content_type,
-            'Content-Md5': get_md5_base64digest(data)
-        }
+        headers = {}
+        if metadata:
+            headers = metadata
+
+        headers['Content-Length'] = len(data)
+        headers['Content-Md5'] = get_md5_base64digest(data)
 
         response = self._url_open('PUT', bucket_name=bucket_name,
                                   object_name=object_name,
@@ -1567,7 +1576,7 @@ class Minio(object):
 
     def _stream_put_object(self, bucket_name, object_name,
                            data, content_size,
-                           content_type='application/octet-stream'):
+                           metadata=None):
         """
         Streaming multipart upload operation.
 
@@ -1583,7 +1592,7 @@ class Minio(object):
             raise ValueError('Invalid input data does not implement a callable read() method')
 
         # get upload id.
-        upload_id = self._get_upload_id(bucket_name, object_name, content_type)
+        upload_id = self._get_upload_id(bucket_name, object_name, metadata)
 
         # Initialize variables
         total_uploaded = 0
@@ -1623,7 +1632,6 @@ class Minio(object):
             etag = self._do_put_multipart_object(bucket_name,
                                                  object_name,
                                                  part_metadata,
-                                                 content_type,
                                                  upload_id,
                                                  part_number)
             # Save etags.
@@ -1666,13 +1674,13 @@ class Minio(object):
                        headers={})
 
     def _new_multipart_upload(self, bucket_name, object_name,
-                              content_type='application/octet-stream'):
+                              metadata=None):
         """
         Initialize new multipart upload request.
 
         :param bucket_name: Bucket name of the new multipart request.
         :param object_name: Object name of the new multipart request.
-        :param content_type: Content type of the new object.
+        :param metadata: Additional new metadata for the new object.
         :return: Returns an upload id.
         """
         is_valid_bucket_name(bucket_name)
@@ -1681,7 +1689,7 @@ class Minio(object):
         response = self._url_open('POST', bucket_name=bucket_name,
                                   object_name=object_name,
                                   query={'uploads': None},
-                                  headers={'Content-Type': content_type})
+                                  headers=metadata)
 
         return parse_new_multipart_upload(response.data)
 
@@ -1803,14 +1811,20 @@ class Minio(object):
         return location
 
     def _url_open(self, method, bucket_name=None, object_name=None,
-                  query=None, body=None, headers=None, content_sha256=None,
+                  query=None, body=None, headers={}, content_sha256=None,
                   preload_content=True):
         """
         Open a url wrapper around signature version '4'
            and :meth:`urllib3.PoolManager.urlopen`
         """
-        # Set user agent once before the request.
-        headers['User-Agent'] = self._user_agent
+        # HTTP headers are case insensitive filter out
+        # all duplicate headers and pick one.
+        fold_case_headers = FoldCaseDict()
+
+        # Set user agent once before executing the request.
+        fold_case_headers['User-Agent'] = self._user_agent
+        for header in headers:
+            fold_case_headers[header] = headers[header]
 
         # Get bucket region.
         region = self._get_bucket_region(bucket_name)
@@ -1822,7 +1836,7 @@ class Minio(object):
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
-                          headers, self._access_key,
+                          fold_case_headers, self._access_key,
                           self._secret_key, content_sha256)
 
         response = self._http.urlopen(method, url,
@@ -1831,7 +1845,7 @@ class Minio(object):
                                       preload_content=preload_content)
 
         if self._trace_output_stream:
-            dump_http(method, url, headers, response,
+            dump_http(method, url, fold_case_headers, response,
                       self._trace_output_stream)
 
         if response.status != 200 and \

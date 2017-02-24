@@ -54,12 +54,13 @@ def main():
     bucket_name = 'minio-pytest'
 
     client.make_bucket(bucket_name)
-    if client._endpoint_url.startswith("s3.amazonaws"):
+    is_s3 = client._endpoint_url.startswith("s3.amazonaws")
+    if is_s3:
         client.make_bucket(bucket_name+'.unique',
                            location='us-west-1')
 
     ## Check if return codes a valid from server.
-    if client._endpoint_url.startswith("s3.amazonaws"):
+    if is_s3:
         try:
             client.make_bucket(bucket_name+'.unique',
                                location='us-west-1')
@@ -72,7 +73,7 @@ def main():
 
     # Check if bucket was created properly.
     client.bucket_exists(bucket_name)
-    if client._endpoint_url.startswith("s3.amazonaws"):
+    if is_s3:
         client.bucket_exists(bucket_name+'.unique')
 
     # List all buckets.
@@ -93,6 +94,9 @@ def main():
 
     # Fput a file
     client.fput_object(bucket_name, object_name+'-f', 'testfile')
+    if is_s3:
+        client.fput_object(bucket_name, object_name+'-f', 'testfile',
+                           metadata={'x-amz-storage-class': 'STANDARD_IA'})
 
     # Copy a file
     client.copy_object(bucket_name, object_name+'-copy',

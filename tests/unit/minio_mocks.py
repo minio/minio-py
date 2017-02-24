@@ -15,6 +15,7 @@
 # limitations under the License.
 
 from minio.compat import _is_py3
+from minio.fold_case_dict import FoldCaseDict
 
 if _is_py3:
     import http.client as httplib
@@ -28,7 +29,9 @@ class MockResponse(object):
                  content=None):
         self.method = method
         self.url = url
-        self.request_headers = headers
+        self.request_headers = FoldCaseDict()
+        for header in headers:
+            self.request_headers[header] = headers[header]
         self.status = status_code
         self.headers = response_headers
         self.data = content
@@ -42,7 +45,8 @@ class MockResponse(object):
     def mock_verify(self, method, url, headers):
         eq_(self.method, method)
         eq_(self.url, url)
-        eq_(self.request_headers, headers)
+        for header in headers:
+            eq_(self.request_headers[header], headers[header])
 
     # noinspection PyUnusedLocal
     def stream(self, chunk_size=1, decode_unicode=False):
