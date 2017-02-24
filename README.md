@@ -6,6 +6,10 @@ This quickstart guide will show you how to install the client SDK and execute an
 
 This document assumes that you have a working [Python](https://www.python.org/downloads/) setup in place.
 
+## Minimum Requirements
+
+- Python 2.7 or higher
+
 ## Download from pip
 
 ```sh
