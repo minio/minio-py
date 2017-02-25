@@ -24,7 +24,7 @@ This module implements a case insensitive dictionary.
 
 """
 
-class FoldCaseDict():
+class FoldCaseDict(dict):
     def __init__(self, dictionary={}):
         self._data = self.__create(dictionary)
 
@@ -109,3 +109,18 @@ class FoldCaseDict():
 
         for k, v in dictionary.items():
             self[k] = v
+
+    def copy(self):
+        copy_dict = FoldCaseDict()
+        for k, v in self._data.items():
+            copy_dict[k] = v
+        return copy_dict
+
+    def clear(self):
+        self._data = {}
+
+    def pop(self, key):
+        return self._data.pop(key)
+
+    def popitem(self):
+        return self._data.popitem()
