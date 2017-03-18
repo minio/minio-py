@@ -120,7 +120,7 @@ class Minio(object):
                  secret_key=None, secure=True,
                  region=None,
                  timeout=None,
-				 certificate_bundle=certifi.where()):
+		 certificate_bundle=certifi.where()):
 
         # Validate endpoint.
         is_valid_endpoint(endpoint)
