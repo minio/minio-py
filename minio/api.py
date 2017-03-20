@@ -483,7 +483,9 @@ class Minio(object):
             content_sha256=content_sha256_hex
         )
 
-    def listen_bucket_notification(self, bucket_name, prefix, suffix, events):
+    def listen_bucket_notification(self, bucket_name, prefix='', suffix='',
+                                   events=['s3:ObjectCreated:*',
+                                           's3:ObjectRemoved:*']):
         """
         Yeilds new event notifications on a bucket, caller should iterate
         to read new notifications.
@@ -513,7 +515,7 @@ class Minio(object):
         }
         while True:
             response = self._url_open('GET', bucket_name=bucket_name,
-                                      query=query)
+                                      query=query, preload_content=False)
             try:
                 for line in response.stream():
                     event = json.loads(line)
