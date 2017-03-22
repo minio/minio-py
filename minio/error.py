@@ -45,10 +45,9 @@ class MinioError(Exception):
 
     :param message: User defined message.
     """
-    def __init__(self, message, request=None, **kwargs):
+    def __init__(self, message, **kwargs):
         super(MinioError, self).__init__(**kwargs)
         self.message = message
-        self.request = request
 
     def __str__(self):
         return "{name}: message: {message}".format(
