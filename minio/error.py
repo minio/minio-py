@@ -24,7 +24,7 @@ and API specific errors.
 :license: Apache 2.0, see LICENSE for more details.
 
 """
-
+from .known_error import known_errors
 from xml.etree import cElementTree
 from xml.etree.cElementTree import ParseError
 
@@ -116,38 +116,6 @@ class MultiDeleteError(object):
         return string_format.format(self.object_name,
                                     self.error_code,
                                     self.error_message)
-
-class KnownResponseError(MinioError):
-    def __init__(self, response_error, **kwargs):
-        super(KnownResponseError, self).__init__(message=self.message, **kwargs)
-        self.response_error = response_error
-
-class BucketAlreadyExists(KnownResponseError):
-    message = 'The requested bucket name is not available. The ' \
-              'bucket namespace is shared by all users of the system. ' \
-              'Please select a different name and try again.'
-
-class BucketAlreadyOwnedByYouError(KnownResponseError):
-    message = 'Your previous request to create the named bucket ' \
-              'succeeded and you already own it.'
-
-class InvalidBucketNameError(KnownResponseError):
-    message = 'The specified bucket is not valid.'
-
-class InvalidBucketStateError(KnownResponseError):
-    message = 'The request is not valid with the current state of the bucket.'
-
-class NoSuckBucketError(KnownResponseError):
-    message = 'The specified bucket does not exist.'
-
-class TooManyBucketsError(KnownResponseError):
-    message = 'You have attempted to create more buckets than allowed.'
-
-
-known_errors = {
-    'BucketAlreadyExists': BucketAlreadyExists,
-    'BucketAlreadyOwnedByYou': BucketAlreadyOwnedByYouError,
-}
 
 class ResponseError(MinioError):
     """
