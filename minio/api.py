@@ -253,8 +253,7 @@ class Minio(object):
                                       headers=headers)
 
         if response.status != 200:
-            response_error = ResponseError(response)
-            raise response_error.put(bucket_name)
+            raise ResponseError(response, method).get_exception(bucket_name)
 
         self._set_bucket_region(bucket_name, region=location)
 
@@ -293,8 +292,7 @@ class Minio(object):
                       self._trace_output_stream)
 
         if response.status != 200:
-            response_error = ResponseError(response)
-            raise response_error.get()
+            raise ResponseError(response, method).get_exception()
 
         return parse_list_buckets(response.data)
 
@@ -1801,8 +1799,7 @@ class Minio(object):
                       self._trace_output_stream)
 
         if response.status != 200:
-            response_error = ResponseError(response)
-            raise response_error.get(bucket_name)
+            raise ResponseError(response, method).get_exception(bucket_name)
 
         location = parse_location_constraint(response.data)
         # location is empty for 'US standard region'
@@ -1812,6 +1809,14 @@ class Minio(object):
         if location == 'EU':
             return 'eu-west-1'
         return location
+
+    supported_methods = [
+        'GET',
+        'HEAD',
+        'POST',
+        'PUT',
+        'DELETE'
+    ]
 
     def _url_open(self, method, bucket_name=None, object_name=None,
                   query=None, body=None, headers={}, content_sha256=None,
@@ -1858,23 +1863,15 @@ class Minio(object):
             self._delete_bucket_region(bucket_name)
 
             # Populate response_error with error response.
-            response_error = ResponseError(response)
+            response_error = ResponseError(response, method).get_exception()
 
             # In case we did not preload_content, we need to release
             # the connection:
             if not preload_content:
                 response.release_conn()
 
-            if method == 'HEAD':
-                raise response_error.head(bucket_name, object_name)
-            elif method == 'GET':
-                raise response_error.get(bucket_name, object_name)
-            elif method == 'POST':
-                raise response_error.post(bucket_name, object_name)
-            elif method == 'PUT':
-                raise response_error.put(bucket_name, object_name)
-            elif method == 'DELETE':
-                raise response_error.delete(bucket_name, object_name)
+            if method in self.supported_methods:
+                raise response_error
             else:
                 raise ValueError('Unsupported method returned'
                                  ' error: {0}'.format(response.status))
