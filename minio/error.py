@@ -45,15 +45,17 @@ class MinioError(Exception):
 
     :param message: User defined message.
     """
-    def __init__(self, message, **kwargs):
+    def __init__(self, message, request=None, **kwargs):
         super(MinioError, self).__init__(**kwargs)
         self.message = message
+        self.request = request
 
     def __str__(self):
         return "{name}: message: {message}".format(
             name=self.__class__.__name__,
             message=self.message
         )
+
 
 
 class InvalidEndpointError(MinioError):
@@ -116,6 +118,37 @@ class MultiDeleteError(object):
                                     self.error_code,
                                     self.error_message)
 
+class KnownResponseError(MinioError):
+    def __init__(self, response_error, **kwargs):
+        super(KnownResponseError, self).__init__(message=self.message, **kwargs)
+        self.response_error = response_error
+
+class BucketAlreadyExists(KnownResponseError):
+    message = 'The requested bucket name is not available. The ' \
+              'bucket namespace is shared by all users of the system. ' \
+              'Please select a different name and try again.'
+
+class BucketAlreadyOwnedByYouError(KnownResponseError):
+    message = 'Your previous request to create the named bucket ' \
+              'succeeded and you already own it.'
+
+class InvalidBucketNameError(KnownResponseError):
+    message = 'The specified bucket is not valid.'
+
+class InvalidBucketStateError(KnownResponseError):
+    message = 'The request is not valid with the current state of the bucket.'
+
+class NoSuckBucketError(KnownResponseError):
+    message = 'The specified bucket does not exist.'
+
+class TooManyBucketsError(KnownResponseError):
+    message = 'You have attempted to create more buckets than allowed.'
+
+
+known_errors = {
+    'BucketAlreadyExists': BucketAlreadyExists,
+    'BucketAlreadyOwnedByYou': BucketAlreadyOwnedByYouError,
+}
 
 class ResponseError(MinioError):
     """
@@ -124,11 +157,11 @@ class ResponseError(MinioError):
 
     :param response: Response from http client :class:`urllib3.HTTPResponse`.
     """
-    def __init__(self, response, **kwargs):
+    def __init__(self, response, method, **kwargs):
         super(ResponseError, self).__init__(message='', **kwargs)
         self._response = response
+        self.method = method
         # Initialize all the ResponseError fields.
-        self.method = ''
         self.code = ''
         self.bucket_name = ''
         self.object_name = ''
@@ -141,65 +174,9 @@ class ResponseError(MinioError):
         # Additional copy of XML response for future use.
         self._xml = response.data
 
-    def head(self, bucket_name, object_name=None):
-        """
-        Generates :exc:`ResponseError` specific for head request.
-
-        :param bucket_name: Bucket name on which the error occurred.
-        :param object_name: Object name on which the error occurred, optional.
-        """
-        self.method = 'HEAD'
+    def get_exception(self, bucket_name=None, object_name=None):
         self._set_error_response(bucket_name, object_name)
-
-        return self
-
-    def delete(self, bucket_name, object_name=None):
-        """
-        Generates :exc:`ResponseError` specific for delete request.
-
-        :param bucket_name: Bucket name on which the error occurred.
-        :param object_name: Object name on which the error occurred, optional.
-        """
-        self.method = 'DELETE'
-        self._set_error_response(bucket_name, object_name)
-
-        return self
-
-    def get(self, bucket_name=None, object_name=None):
-        """
-        Generates :exc:`ResponseError` specific for get request.
-
-        :param bucket_name: Bucket name on which the error occurred, optional.
-        :param object_name: Object name on which the error occurred, optional.
-        """
-        self.method = 'GET'
-        self._set_error_response(bucket_name, object_name)
-
-        return self
-
-    def put(self, bucket_name, object_name=None):
-        """
-        Generates :exc:`ResponseError` specific for put request.
-
-        :param bucket_name: Bucket name on which the error occurred.
-        :param object_name: Object name on which the error occurred, optional.
-        """
-        self.method = 'PUT'
-        self._set_error_response(bucket_name, object_name)
-
-        return self
-
-    def post(self, bucket_name, object_name=None):
-        """
-        Generates :exc:`ResponseError` specific for post request.
-
-        :param bucket_name: Bucket name on which the error occurred.
-        :param object_name: Object name on which the error occurred, optional.
-        """
-        self.method = 'POST'
-        self._set_error_response(bucket_name, object_name)
-
-        return self
+        return self._process_error_response()
 
     def _set_error_response(self, bucket_name=None, object_name=None):
         """
@@ -309,6 +286,14 @@ class ResponseError(MinioError):
             # This is a new undocumented field, set only if available.
             if 'x-amz-bucket-region' in self._response.headers:
                 self.region = self._response.headers['x-amz-bucket-region']
+
+    def _process_error_response(self):
+        error = known_errors.get(self.code)
+
+        if error:
+            return error(self)
+        else:
+            return self
 
     def __str__(self):
         return ('ResponseError: code: {0}, message: {1},'
