@@ -128,8 +128,9 @@ class ResponseError(MinioError):
 
     :param response: Response from http client :class:`urllib3.HTTPResponse`.
     """
-    def __init__(self, response, method, bucket_name=None, object_name=None, **kwargs):
-        super(ResponseError, self).__init__(message='', **kwargs)
+    def __init__(self, response, method, bucket_name=None,
+                 object_name=None):
+        super(ResponseError, self).__init__(message='')
         # initialize parameter fields
         self._response = response
         self._xml = response.data
@@ -146,7 +147,7 @@ class ResponseError(MinioError):
         self.region = ''
 
         # handle the error
-        self._handle_error_response()
+        self._handle_error_response(bucket_name)
 
     def get_exception(self):
         """
@@ -161,17 +162,17 @@ class ResponseError(MinioError):
         else:
             return self
 
-    def _handle_error_response(self):
+    def _handle_error_response(self, bucket_name=None):
         """
         Sets error response uses xml body if available, otherwise
         relies on HTTP headers.
         """
         if not self._response.data:
-            self._set_error_response_without_body()
+            self._set_error_response_without_body(bucket_name)
         else:
-            self._set_error_response_with_body()
+            self._set_error_response_with_body(bucket_name)
 
-    def _set_error_response_with_body(self):
+    def _set_error_response_with_body(self, bucket_name=None):
         """
         Sets all the error response fields with a valid response body.
            Raises :exc:`ValueError` if invoked on a zero length body.
@@ -204,12 +205,12 @@ class ResponseError(MinioError):
         # Set amz headers.
         self._set_amz_headers()
 
-    def _set_error_response_without_body(self):
+    def _set_error_response_without_body(self, bucket_name=None):
         """
         Sets all the error response fields from response headers.
         """
         if self._response.status == 404:
-            if self.bucket_name:
+            if bucket_name:
                 if self.object_name:
                     self.code = 'NoSuchKey'
                     self.message = self._response.reason
