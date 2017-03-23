@@ -360,7 +360,7 @@ known_errors = {
     'BucketAlreadyExists': BucketAlreadyExists,
     'BucketAlreadyOwnedByYou': BucketAlreadyOwnedByYou,
     'BucketNotEmpty': BucketNotEmpty,
-    'CrecentialNotSupported': CredentialNotSupported,
+    'CredentialNotSupported': CredentialNotSupported,
     'CrossLocationLoggingProhibited': CrossLocationLoggingProhibited,
     'EntityTooSmall': EntityTooSmall,
     'EntityTooLarge': EntityTooLarge,
