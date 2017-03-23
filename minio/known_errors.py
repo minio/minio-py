@@ -1,14 +1,8 @@
 # Author: MrRedAmber (https://github.com/MrRedAmber)
 # Credits:
-# - http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#RESTErrorResponses
+# - http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.htmlRESTErrorResponses
 # - https://github.com/riquito (pointing out my mistakes)
-from .error import MinioError
-
-
-class KnownResponseError(MinioError):
-    def __init__(self, response_error, **kwargs):
-        super(KnownResponseError, self).__init__(message=self.message, **kwargs)
-        self.response_error = response_error
+from .error import KnownResponseError
 
 
 class AccessDenied(KnownResponseError):
