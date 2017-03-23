@@ -116,6 +116,7 @@ class Minio(object):
          are allowed to run before being aborted.
     :return: :class:`Minio <Minio>` object
     """
+
     def __init__(self, endpoint, access_key=None,
                  secret_key=None, secure=True,
                  region=None,
@@ -1859,14 +1860,13 @@ class Minio(object):
             dump_http(method, url, fold_case_headers, response,
                       self._trace_output_stream)
 
-        if response.status != 200 and \
-                        response.status != 204 and response.status != 206:
+        if response.status != 200 and response.status != 204 and response.status != 206:
             # Upon any response error invalidate the region cache
             # proactively for the bucket name.
             self._delete_bucket_region(bucket_name)
 
             # Populate response_error with error response.
-            #response_error = ResponseError(response, method, bucket_name)
+            # response_error = ResponseError(response, method, bucket_name)
 
             # In case we did not preload_content, we need to release
             # the connection:
@@ -1884,7 +1884,8 @@ class Minio(object):
             if method in supported_methods:
                 raise ResponseError(response,
                                     method,
-                                    bucket_name).get_exception()
+                                    bucket_name,
+                                    object_name).get_exception()
             else:
                 raise ValueError('Unsupported method returned'
                                  ' error: {0}'.format(response.status))
