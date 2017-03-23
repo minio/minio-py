@@ -24,9 +24,10 @@ and API specific errors.
 :license: Apache 2.0, see LICENSE for more details.
 
 """
-
 from xml.etree import cElementTree
 from xml.etree.cElementTree import ParseError
+# local imports
+from .known_errors import known_errors
 
 if hasattr(cElementTree, 'ParseError'):
     ## ParseError seems to not have .message like other
@@ -124,11 +125,15 @@ class ResponseError(MinioError):
 
     :param response: Response from http client :class:`urllib3.HTTPResponse`.
     """
-    def __init__(self, response, **kwargs):
+    def __init__(self, response, method, bucket_name=None, object_name=None, **kwargs):
         super(ResponseError, self).__init__(message='', **kwargs)
+        # initialize parameter fields
         self._response = response
-        # Initialize all the ResponseError fields.
-        self.method = ''
+        self._xml = response.data
+        self.method = method
+        self.bucket_name = bucket_name
+        self.object_name = object_name
+        # initialize all ResponseError fields
         self.code = ''
         self.bucket_name = ''
         self.object_name = ''
@@ -136,83 +141,34 @@ class ResponseError(MinioError):
         self.request_id = ''
         self.host_id = ''
         self.region = ''
-        # Ends.
 
-        # Additional copy of XML response for future use.
-        self._xml = response.data
+        # handle the error
+        self._handle_error_response()
 
-    def head(self, bucket_name, object_name=None):
+    def get_exception(self):
         """
-        Generates :exc:`ResponseError` specific for head request.
+        Gets the error exception derived from the initialization of
+        an ErrorResponse object
 
-        :param bucket_name: Bucket name on which the error occurred.
-        :param object_name: Object name on which the error occurred, optional.
+        :return: The derived exception or ResponseError exception
         """
-        self.method = 'HEAD'
-        self._set_error_response(bucket_name, object_name)
+        exception = known_errors.get(self.code)
+        if exception:
+            return exception(self)
+        else:
+            return self
 
-        return self
-
-    def delete(self, bucket_name, object_name=None):
-        """
-        Generates :exc:`ResponseError` specific for delete request.
-
-        :param bucket_name: Bucket name on which the error occurred.
-        :param object_name: Object name on which the error occurred, optional.
-        """
-        self.method = 'DELETE'
-        self._set_error_response(bucket_name, object_name)
-
-        return self
-
-    def get(self, bucket_name=None, object_name=None):
-        """
-        Generates :exc:`ResponseError` specific for get request.
-
-        :param bucket_name: Bucket name on which the error occurred, optional.
-        :param object_name: Object name on which the error occurred, optional.
-        """
-        self.method = 'GET'
-        self._set_error_response(bucket_name, object_name)
-
-        return self
-
-    def put(self, bucket_name, object_name=None):
-        """
-        Generates :exc:`ResponseError` specific for put request.
-
-        :param bucket_name: Bucket name on which the error occurred.
-        :param object_name: Object name on which the error occurred, optional.
-        """
-        self.method = 'PUT'
-        self._set_error_response(bucket_name, object_name)
-
-        return self
-
-    def post(self, bucket_name, object_name=None):
-        """
-        Generates :exc:`ResponseError` specific for post request.
-
-        :param bucket_name: Bucket name on which the error occurred.
-        :param object_name: Object name on which the error occurred, optional.
-        """
-        self.method = 'POST'
-        self._set_error_response(bucket_name, object_name)
-
-        return self
-
-    def _set_error_response(self, bucket_name=None, object_name=None):
+    def _handle_error_response(self):
         """
         Sets error response uses xml body if available, otherwise
         relies on HTTP headers.
         """
         if not self._response.data:
-            self._set_error_response_without_body(bucket_name, object_name)
+            self._set_error_response_without_body()
         else:
-            self._set_error_response_with_body(bucket_name, object_name)
+            self._set_error_response_with_body()
 
-    def _set_error_response_with_body(self, bucket_name=None,
-                                      object_name=None):
+    def _set_error_response_with_body(self):
         """
         Sets all the error response fields with a valid response body.
            Raises :exc:`ValueError` if invoked on a zero length body.
@@ -222,9 +178,6 @@ class ResponseError(MinioError):
         :param object_name: Option object name resource at which error
            occurred.
         """
-        self.bucket_name = bucket_name
-        self.object_name = object_name
-
         if len(self._response.data) == 0:
             raise ValueError('response data has no body.')
         try:
@@ -248,22 +201,13 @@ class ResponseError(MinioError):
         # Set amz headers.
         self._set_amz_headers()
 
-    def _set_error_response_without_body(self, bucket_name=None,
-                                         object_name=None):
+    def _set_error_response_without_body(self):
         """
         Sets all the error response fields from response headers.
-
-        :param bucket_name: Optional bucket name resource at which error
-           occurred.
-        :param object_name: Option object name resource at which error
-           occurred.
         """
-        self.bucket_name = bucket_name
-        self.object_name = object_name
-
         if self._response.status == 404:
-            if bucket_name:
-                if object_name:
+            if self.bucket_name:
+                if self.object_name:
                     self.code = 'NoSuchKey'
                     self.message = self._response.reason
                 else:
