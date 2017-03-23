@@ -26,8 +26,6 @@ and API specific errors.
 """
 from xml.etree import cElementTree
 from xml.etree.cElementTree import ParseError
-# local imports
-from .known_errors import known_errors
 
 if hasattr(cElementTree, 'ParseError'):
     ## ParseError seems to not have .message like other
@@ -56,6 +54,10 @@ class MinioError(Exception):
             message=self.message
         )
 
+class KnownResponseError(MinioError):
+    def __init__(self, response_error, **kwargs):
+        super(KnownResponseError, self).__init__(message=self.message, **kwargs)
+        self.response_error = response_error
 
 class InvalidEndpointError(MinioError):
     """
@@ -117,6 +119,7 @@ class MultiDeleteError(object):
                                     self.error_code,
                                     self.error_message)
 
+from .known_errors import known_errors
 
 class ResponseError(MinioError):
     """
