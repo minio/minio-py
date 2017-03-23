@@ -25,7 +25,8 @@ from datetime import datetime, timedelta
 
 from minio import Minio, PostPolicy, CopyConditions
 from minio.policy import Policy
-from minio.error import ResponseError
+from minio.error import (ResponseError, PreconditionFailed,
+                         BucketAlreadyOwnedByYou, BucketAlreadyExists)
 
 from faker import Factory
 
@@ -54,6 +55,7 @@ def main():
     bucket_name = 'minio-pytest'
 
     client.make_bucket(bucket_name)
+
     is_s3 = client._endpoint_url.startswith("s3.amazonaws")
     if is_s3:
         client.make_bucket(bucket_name+'.unique',
@@ -64,12 +66,12 @@ def main():
         try:
             client.make_bucket(bucket_name+'.unique',
                                location='us-west-1')
+        except BucketAlreadyOwnedByYou as err:
+            pass
+        except BucketAlreadyExists as err:
+            pass
         except ResponseError as err:
-            if str(err.code) in ['BucketAlreadyOwnedByYou', 'BucketAlreadyExists']:
-                pass
-            else:
-                raise
-
+            raise
 
     # Check if bucket was created properly.
     client.bucket_exists(bucket_name)
@@ -108,10 +110,8 @@ def main():
         client.copy_object(bucket_name, object_name+'-copy',
                            '/'+bucket_name+'/'+object_name+'-f',
                            copy_conditions)
-    except ResponseError as err:
-        if err.code != 'PreconditionFailed':
-            raise
-        if err.message != 'At least one of the pre-conditions you specified did not hold':
+    except PreconditionFailed as err:
+        if err.message != 'At least one of the preconditions you specified did not hold.':
             raise
 
     # Fetch stats on your object.
@@ -154,16 +154,20 @@ def main():
     presigned_get_object_url = client.presigned_get_object(bucket_name, object_name)
     response = _http.urlopen('GET', presigned_get_object_url)
     if response.status != 200:
-        response_error = ResponseError(response)
-        raise response_error.get(bucket_name, object_name)
+        raise ResponseError(response,
+                            'GET',
+                            bucket_name,
+                            object_name).get_exception()
 
     presigned_put_object_url = client.presigned_put_object(bucket_name, object_name)
     value = fake.text().encode('utf-8')
     data = io.BytesIO(value).getvalue()
     response = _http.urlopen('PUT', presigned_put_object_url, body=data)
     if response.status != 200:
-        response_error = ResponseError(response)
-        raise response_error.put(bucket_name, object_name)
+        raise ResponseError(response,
+                            'PUT',
+                            bucket_name,
+                            object_name).get_exception()
 
     object_data = client.get_object(bucket_name, object_name)
     if object_data.read() != value:

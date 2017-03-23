@@ -45,7 +45,8 @@ import certifi
 # Internal imports
 from . import __title__, __version__
 from .compat import urlsplit, range, urlencode, basestring
-from .error import ResponseError, InvalidArgumentError, InvalidSizeError
+from .error import (KnownResponseError, ResponseError, NoSuchBucket,
+                    InvalidArgumentError, InvalidSizeError, NoSuchBucketPolicy)
 from .definitions import Object, UploadPart
 from .parsers import (parse_list_buckets,
                       parse_list_objects,
@@ -116,11 +117,12 @@ class Minio(object):
          are allowed to run before being aborted.
     :return: :class:`Minio <Minio>` object
     """
+
     def __init__(self, endpoint, access_key=None,
                  secret_key=None, secure=True,
                  region=None,
                  timeout=None,
-		 certificate_bundle=certifi.where()):
+                 certificate_bundle=certifi.where()):
 
         # Validate endpoint.
         is_valid_endpoint(endpoint)
@@ -253,8 +255,7 @@ class Minio(object):
                                       headers=headers)
 
         if response.status != 200:
-            response_error = ResponseError(response)
-            raise response_error.put(bucket_name)
+            raise ResponseError(response, method, bucket_name).get_exception()
 
         self._set_bucket_region(bucket_name, region=location)
 
@@ -293,8 +294,7 @@ class Minio(object):
                       self._trace_output_stream)
 
         if response.status != 200:
-            response_error = ResponseError(response)
-            raise response_error.get()
+            raise ResponseError(response, method).get_exception()
 
         return parse_list_buckets(response.data)
 
@@ -310,11 +310,10 @@ class Minio(object):
         try:
             self._url_open('HEAD', bucket_name=bucket_name)
         # If the bucket has not been created yet, Minio will return a "NoSuchBucket" error.
+        except NoSuchBucket as e:
+            return False
         except ResponseError as e:
-            if e.code == 'NoSuchBucket':
-                return False
             raise
-
         return True
 
     def remove_bucket(self, bucket_name):
@@ -335,12 +334,10 @@ class Minio(object):
             response = self._url_open("GET",
                                       bucket_name=bucket_name,
                                       query={"policy": ""})
+        except NoSuchBucketPolicy as e:
+            return None
         except ResponseError as e:
-            # Ignore 'NoSuchBucketPolicy' error.
-            if e.code != 'NoSuchBucketPolicy':
-                raise
-            else:
-                return None
+            raise
 
         data = response.data
         if isinstance(data, bytes) and isinstance(data, str):  # Python 2
@@ -367,7 +364,7 @@ class Minio(object):
 
         # Normalize statements.
         statements = []
-        policy.append_statements(statements, policy_dict.get('Statement', []))
+        policy._append_statements(statements, policy_dict.get('Statement', []))
 
         return policy.get_policy(statements, bucket_name, prefix)
 
@@ -390,7 +387,7 @@ class Minio(object):
 
         # Normalize statements.
         statements = []
-        policy.append_statements(statements, policy_dict['Statement'])
+        policy._append_statements(statements, policy_dict['Statement'])
 
         statements = policy.set_policy(statements, policy_access,
                                        bucket_name, prefix)
@@ -595,10 +592,11 @@ class Minio(object):
             metadata = {}
 
         metadata['Content-Type'] = 'application/octet-stream' if \
-                                   not content_type else content_type
+            not content_type else content_type
 
         # Calculate optimal part info.
-        total_parts_count, part_size, last_part_size = optimal_part_info(file_size)
+        total_parts_count, part_size, last_part_size = optimal_part_info(
+            file_size)
 
         # get upload id.
         upload_id = self._get_upload_id(bucket_name, object_name, metadata)
@@ -635,7 +633,7 @@ class Minio(object):
             # md5sum and sha256 calculation.
             part = LimitedReader(file_data, current_part_size)
             while total_read < current_part_size:
-                current_data = part.read() # Read in 64k chunks.
+                current_data = part.read()  # Read in 64k chunks.
                 if not current_data or len(current_data) == 0:
                     break
                 md5hasher.update(current_data)
@@ -732,7 +730,7 @@ class Minio(object):
 
             # Save total_written.
             total_written = 0
-            for data in response.stream(amt=1024*1024):
+            for data in response.stream(amt=1024 * 1024):
                 file_part_data.write(data)
                 total_written += len(data)
 
@@ -874,7 +872,8 @@ class Minio(object):
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
         if not callable(getattr(data, 'read')):
-            raise ValueError('Invalid input data does not implement a callable read() method')
+            raise ValueError(
+                'Invalid input data does not implement a callable read() method')
 
         if length > MAX_MULTIPART_OBJECT_SIZE:
             raise InvalidArgumentError('Input content size is bigger '
@@ -883,7 +882,7 @@ class Minio(object):
             metadata = {}
 
         metadata['Content-Type'] = 'application/octet-stream' if \
-                                   not content_type else content_type
+            not content_type else content_type
 
         if length > MIN_OBJECT_SIZE:
             return self._stream_put_object(bucket_name, object_name,
@@ -1192,7 +1191,8 @@ class Minio(object):
 
         return self._list_incomplete_uploads(bucket_name, prefix, recursive)
 
-    def _list_incomplete_uploads(self, bucket_name, prefix=None, recursive=False, is_aggregate_size=True):
+    def _list_incomplete_uploads(self, bucket_name, prefix=None,
+                                 recursive=False, is_aggregate_size=True):
         """
         List incomplete uploads list all previously uploaded incomplete multipart objects.
 
@@ -1225,16 +1225,19 @@ class Minio(object):
             response = self._url_open('GET',
                                       bucket_name=bucket_name,
                                       query=query)
-            (uploads, is_truncated, key_marker, upload_id_marker) = parse_list_multipart_uploads(response.data,
-                                                                                                 bucket_name=bucket_name)
+            (uploads, is_truncated, key_marker,
+             upload_id_marker) = parse_list_multipart_uploads(response.data,
+                                                              bucket_name=bucket_name)
             for upload in uploads:
                 if is_aggregate_size:
-                    upload.size = self._get_total_multipart_upload_size(upload.bucket_name,
-                                                                        upload.object_name,
-                                                                        upload.upload_id)
+                    upload.size = self._get_total_multipart_upload_size(
+                        upload.bucket_name,
+                        upload.object_name,
+                        upload.upload_id)
                 yield upload
 
-    def _get_total_multipart_upload_size(self, bucket_name, object_name, upload_id):
+    def _get_total_multipart_upload_size(self, bucket_name, object_name,
+                                         upload_id):
         """
         Get total multipart upload size.
 
@@ -1360,7 +1363,7 @@ class Minio(object):
         is_non_empty_string(object_name)
 
         if expires.total_seconds() < 1 or \
-           expires.total_seconds() > _SEVEN_DAYS_SECONDS:
+                        expires.total_seconds() > _SEVEN_DAYS_SECONDS:
             raise InvalidArgumentError('Expires param valid values'
                                        ' are between 1 secs to'
                                        ' {0} secs'.format(_SEVEN_DAYS_SECONDS))
@@ -1404,8 +1407,10 @@ class Minio(object):
                                                        date, region)
 
         post_policy.policies.append(('eq', '$x-amz-date', iso8601_date))
-        post_policy.policies.append(('eq', '$x-amz-algorithm', _SIGN_V4_ALGORITHM))
-        post_policy.policies.append(('eq', '$x-amz-credential', credential_string))
+        post_policy.policies.append(
+            ('eq', '$x-amz-algorithm', _SIGN_V4_ALGORITHM))
+        post_policy.policies.append(
+            ('eq', '$x-amz-credential', credential_string))
 
         post_policy_base64 = post_policy.base64()
         signature = post_presign_signature(date, region,
@@ -1522,7 +1527,8 @@ class Minio(object):
         is_non_empty_string(object_name)
         data = part_metadata.data
         if not callable(getattr(data, 'read')):
-            raise ValueError('Invalid input data does not implement a callable read() method')
+            raise ValueError(
+                'Invalid input data does not implement a callable read() method')
 
         headers = {
             'Content-Length': part_metadata.size,
@@ -1593,7 +1599,8 @@ class Minio(object):
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
         if not callable(getattr(data, 'read')):
-            raise ValueError('Invalid input data does not implement a callable read() method')
+            raise ValueError(
+                'Invalid input data does not implement a callable read() method')
 
         # get upload id.
         upload_id = self._get_upload_id(bucket_name, object_name, metadata)
@@ -1602,7 +1609,8 @@ class Minio(object):
         total_uploaded = 0
 
         # Calculate optimal part info.
-        total_parts_count, part_size, last_part_size = optimal_part_info(content_size)
+        total_parts_count, part_size, last_part_size = optimal_part_info(
+            content_size)
 
         # Iter over the uploaded parts.
         parts_iter = self._list_object_parts(bucket_name,
@@ -1610,7 +1618,7 @@ class Minio(object):
                                              upload_id)
 
         # save uploaded parts for verification.
-        uploaded_parts = { part.part_number: part for part in parts_iter }
+        uploaded_parts = {part.part_number: part for part in parts_iter}
 
         # Generate new parts and upload <= current_part_size until
         # part_number reaches total_parts_count calculated for the
@@ -1655,10 +1663,10 @@ class Minio(object):
             raise InvalidSizeError(msg)
 
         # Complete all multipart transactions if possible.
-        mpart_result =  self._complete_multipart_upload(bucket_name,
-                                                        object_name,
-                                                        upload_id,
-                                                        uploaded_parts)
+        mpart_result = self._complete_multipart_upload(bucket_name,
+                                                       object_name,
+                                                       upload_id,
+                                                       uploaded_parts)
         # Return etag here.
         return mpart_result.etag
 
@@ -1761,7 +1769,7 @@ class Minio(object):
             return self._region
 
         # get bucket location for Amazon S3.
-        region = 'us-east-1' # default to US standard.
+        region = 'us-east-1'  # default to US standard.
         if bucket_name in self._region_map:
             region = self._region_map[bucket_name]
         else:
@@ -1802,8 +1810,7 @@ class Minio(object):
                       self._trace_output_stream)
 
         if response.status != 200:
-            response_error = ResponseError(response)
-            raise response_error.get(bucket_name)
+            raise ResponseError(response, method, bucket_name).get_exception()
 
         location = parse_location_constraint(response.data)
         # location is empty for 'US standard region'
@@ -1852,30 +1859,30 @@ class Minio(object):
             dump_http(method, url, fold_case_headers, response,
                       self._trace_output_stream)
 
-        if response.status != 200 and \
-           response.status != 204 and response.status != 206:
+        if response.status != 200 and response.status != 204 \
+           and response.status != 206:
             # Upon any response error invalidate the region cache
             # proactively for the bucket name.
             self._delete_bucket_region(bucket_name)
-
-            # Populate response_error with error response.
-            response_error = ResponseError(response)
 
             # In case we did not preload_content, we need to release
             # the connection:
             if not preload_content:
                 response.release_conn()
 
-            if method == 'HEAD':
-                raise response_error.head(bucket_name, object_name)
-            elif method == 'GET':
-                raise response_error.get(bucket_name, object_name)
-            elif method == 'POST':
-                raise response_error.post(bucket_name, object_name)
-            elif method == 'PUT':
-                raise response_error.put(bucket_name, object_name)
-            elif method == 'DELETE':
-                raise response_error.delete(bucket_name, object_name)
+            supported_methods = [
+                'HEAD',
+                'GET',
+                'POST',
+                'PUT',
+                'DELETE'
+            ]
+
+            if method in supported_methods:
+                raise ResponseError(response,
+                                    method,
+                                    bucket_name,
+                                    object_name).get_exception()
             else:
                 raise ValueError('Unsupported method returned'
                                  ' error: {0}'.format(response.status))

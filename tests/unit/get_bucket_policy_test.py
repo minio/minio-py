@@ -22,7 +22,7 @@ from nose.tools import eq_, raises
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
 from minio.policy import Policy
-from minio.error import ResponseError
+from minio.error import NoSuchBucket
 from tests.unit.minio_mocks import (
     MockConnection,
     MockResponse
@@ -31,7 +31,7 @@ from tests.unit.minio_mocks import (
 
 class GetBucketPolicyTest(TestCase):
     @mock.patch('urllib3.PoolManager')
-    @raises(ResponseError)
+    @raises(NoSuchBucket)
     def test_get_policy_for_non_existent_bucket(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server

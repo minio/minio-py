@@ -425,7 +425,7 @@ def _append_statement(statements, statement):
 
 
 # Appends two statement lists.
-def append_statements(statements, append_statements):
+def _append_statements(statements, append_statements):
     for s in append_statements:
         _append_statement(statements, s)
 
@@ -566,6 +566,6 @@ def set_policy(statements, policy, bucket_name, prefix=''):
     out = _remove_statements(statements, Policy.READ_WRITE,
                              bucket_name, prefix)
     ns = _new_statements(policy, bucket_name, prefix)
-    append_statements(out, ns)
+    _append_statements(out, ns)
 
     return out

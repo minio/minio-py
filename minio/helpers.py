@@ -384,36 +384,31 @@ def is_valid_bucket_notification_config(notifications):
     for key, value in notifications.items():
         # check if key names are valid
         if key not in VALID_NOTIFICATION_KEYS:
-            raise InvalidArgumentError(
-                ('{} is an invalid key '
-                 'for notifications configuration').format(
-                     key
-                )
-            )
+            raise InvalidArgumentError((
+                '{} is an invalid key '
+                'for notifications configuration').format(key))
 
         # check if config values conform
         # first check if value is a list
         if not isinstance(value, list):
-            raise InvalidArgumentError(
-                ('The value for key "{}" in the notifications '
-                 'configuration must be a list.').format(key)
-            )
+            raise InvalidArgumentError((
+                'The value for key "{}" in the notifications '
+                'configuration must be a list.').format(key))
+
         for service_config in value:
             # check type matches
             if not isinstance(service_config, dict):
-                raise InvalidArgumentError(
-                    ('Each service configuration item for "{}" must be a '
-                     'dictionary').format(key)
-                )
+                raise InvalidArgumentError((
+                    'Each service configuration item for "{}" must be a '
+                    'dictionary').format(key))
+
             # check keys are valid
             for skey in service_config.keys():
                 if skey not in VALID_SERVICE_CONFIG_KEYS:
-                    raise InvalidArgumentError(
-                        ('{} is an invalid key for a service '
-                         'configuration item').format(
-                             skey
-                         )
-                    )
+                    raise InvalidArgumentError((
+                        '{} is an invalid key for a service '
+                        'configuration item').format(skey))
+
             # check for required keys
             arn = service_config.get('Arn', '')
             if arn == '':
@@ -427,22 +422,19 @@ def is_valid_bucket_notification_config(notifications):
                     'At least one event must be specified in a service config'
                 )
             if not isinstance(events, list):
-                raise InvalidArgumentError(
-                    '"Events" must be a list of strings in a service '
-                    'configuration'
-                )
+                raise InvalidArgumentError('"Events" must be a list of strings '
+                                           'in a service configuration')
+
             # check if 'Id' key is present, it should be string or bytes.
             if not isinstance(service_config.get('Id', ''), basestring):
-                raise InvalidArgumentError(
-                    '"Id" key must be a string'
-                )
+                raise InvalidArgumentError('"Id" key must be a string')
+
             for event in events:
                 if event not in NOTIFICATION_EVENTS:
                     raise InvalidArgumentError(
-                        '{} is not a valid event. Valid events are: {}'.format(
-                            event, NOTIFICATION_EVENTS
-                        )
-                    )
+                        '{} is not a valid event. Valid '
+                        'events are: {}'.format(event, NOTIFICATION_EVENTS))
+
             if 'Filter' in service_config:
                 exception_msg = (
                     '{} - If a Filter key is given, it must be a '
@@ -466,15 +458,14 @@ def is_valid_bucket_notification_config(notifications):
                         name = filter_rule['Name']
                         value = filter_rule['Value']
                     except KeyError:
-                        raise InvalidArgumentError(
-                            ('{} - a FilterRule dictionary must have "Name" '
-                             'and "Value" keys').format(filter_rule)
-                        )
+                        raise InvalidArgumentError((
+                            '{} - a FilterRule dictionary must have "Name" '
+                             'and "Value" keys').format(filter_rule))
+
                     if name not in ['prefix', 'suffix']:
-                        raise InvalidArgumentError(
-                            ('{} - The "Name" key in a filter rule must be '
-                             'either "prefix" or "suffix"').format(name)
-                        )
+                        raise InvalidArgumentError((
+                            '{} - The "Name" key in a filter rule must be '
+                             'either "prefix" or "suffix"').format(name))
 
     return True
 
