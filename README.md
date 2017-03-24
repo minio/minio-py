@@ -13,19 +13,15 @@ This document assumes that you have a working [Python](https://www.python.org/do
 ## Download from pip
 
 ```sh
-
 pip install minio
-
 ```
 
 ## Download from source
 
 ```sh
-
 git clone https://github.com/minio/minio-py
 cd minio-py
 python setup.py install
-
 ```
 
 ## Initialize Minio Client
@@ -40,7 +36,6 @@ You need four items in order to connect to Minio object storage server.
 |secure|Set this value to 'True' to enable secure (HTTPS) access.|
 
 ```py
-
 from minio import Minio
 from minio.error import ResponseError
 
@@ -48,7 +43,6 @@ minioClient = Minio('play.minio.io:9000',
                   access_key='Q3AM3UQ867SPQQA43P2F',
                   secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
                   secure=True)
-
 ```
 
 
@@ -60,7 +54,6 @@ We will use the Minio server running at [https://play.minio.io:9000](https://pla
 #### file-uploader.py
 
 ```py
-
 # Import Minio library.
 from minio import Minio
 from minio.error import ResponseError
@@ -82,18 +75,15 @@ else:
                minioClient.fput_object('maylogs', 'pumaserver_debug.log', '/tmp/pumaserver_debug.log')
         except ResponseError as error:
                print(error)
-
 ```
 
 #### Run file-uploader
 
 ```bash
-
 python file_uploader.py
 
 mc ls play/maylogs/
 [2016-05-27 16:41:37 PDT]  12MiB pumaserver_debug.log
-
 ```
 
 ## API Reference
