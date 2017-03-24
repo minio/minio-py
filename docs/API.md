@@ -5,7 +5,6 @@
 ## Minio
 
 ```py
-
 from minio import Minio
 from minio.error import ResponseError
 
@@ -18,7 +17,6 @@ minioClient = Minio('play.minio.io:9000',
 ## AWS S3
 
 ```py
-
 from minio import Minio
 from minio.error import ResponseError
 
@@ -70,7 +68,6 @@ __Example__
 ### Minio
 
 ```py
-
 from minio import Minio
 from minio.error import ResponseError
 
@@ -82,14 +79,12 @@ minioClient = Minio('play.minio.io:9000',
 ### AWS S3
 
 ```py
-
 from minio import Minio
 from minio.error import ResponseError
 
 s3Client = Minio('s3.amazonaws.com',
                  access_key='ACCESS_KEY',
                  secret_key='SECRET_KEY')
-
 ```
 
 ## 2. Bucket operations
@@ -118,12 +113,10 @@ __Parameters__
 __Example__
 
 ```py
-
 try:
     minioClient.make_bucket("mybucket", location="us-east-1")
 except ResponseError as err:
     print(err)
-
 ```
 
 <a name="list_buckets"></a>
@@ -141,11 +134,9 @@ __Parameters__
 __Example__
 
 ```py
-
 buckets = minioClient.list_buckets()
 for bucket in buckets:
     print(bucket.name, bucket.creation_date)
-
 ```
 
 <a name="bucket_exists"></a>
@@ -161,12 +152,10 @@ __Parameters__
 __Example__
 
 ```py
-
 try:
     print(minioClient.bucket_exists("mybucket"))
 except ResponseError as err:
     print(err)
-
 ```
 
 <a name="remove_bucket"></a>
@@ -182,12 +171,10 @@ __Parameters__
 __Example__
 
 ```py
-
 try:
     minioClient.remove_bucket("mybucket")
 except ResponseError as err:
     print(err)
-
 ```
 
 <a name="list_objects"></a>
@@ -219,7 +206,6 @@ __Return Value__
 __Example__
 
 ```py
-
 # List all object paths in bucket that begin with my-prefixname.
 objects = minioClient.list_objects('mybucket', prefix='my-prefixname',
                               recursive=True)
@@ -258,7 +244,6 @@ __Return Value__
 __Example__
 
 ```py
-
 # List all object paths in bucket that begin with my-prefixname.
 objects = minioClient.list_objects_v2('mybucket', prefix='my-prefixname',
                               recursive=True)
@@ -295,14 +280,12 @@ __Example__
 
 
 ```py
-
 # List all object paths in bucket that begin with my-prefixname.
 uploads = minioClient.list_incomplete_uploads('mybucket',
                                          prefix='my-prefixname',
                                          recursive=True)
 for obj in uploads:
     print(obj.bucket_name, obj.object_name, obj.upload_id, obj.size)
-
 ```
 
 <a name="get_bucket_policy"></a>
@@ -326,12 +309,10 @@ __Example__
 
 
 ```py
-
 # Get current policy of all object paths in bucket that begin with my-prefixname.
 policy = minioClient.get_bucket_policy('mybucket',
                                        'my-prefixname')
 print(policy)
-
 ```
 
 <a name="set_bucket_policy"></a>
@@ -354,12 +335,10 @@ __Example__
 
 
 ```py
-
 # Set policy Policy.READ_ONLY to all object paths in bucket that begin with my-prefixname.
 minioClient.set_bucket_policy('mybucket',
                               'my-prefixname',
                               Policy.READ_ONLY)
-
 ```
 
 <a name="get_bucket_notification"></a>
@@ -383,12 +362,10 @@ __Example__
 
 
 ```py
-
 # Get the notifications configuration for a bucket.
 notification = minioClient.get_bucket_notification('mybucket')
 # If no notification is present on the bucket:
 # notification == {}
-
 ```
 
 <a name="set_bucket_notification"></a>
@@ -461,8 +438,6 @@ __Example__
 
 
 ```py
-
-
 notification = {
     'QueueConfigurations': [
         {
@@ -544,10 +519,8 @@ __Example__
 
 
 ```py
-
 # Remove all the notifications config for a bucket.
 minioClient.remove_all_bucket_notifications('mybucket')
-
 ```
 
 <a name="listen_bucket_notification"></a>
@@ -581,7 +554,6 @@ events = minioClient.listen_bucket_notification('my-bucket', 'my-prefix/',
                                                  's3:ObjectRemoved:*'])
 for event in events:
     print event
-
 ```
 
 ## 3. Object operations
@@ -606,7 +578,6 @@ __Example__
 
 
 ```py
-
 # Get a full object.
 try:
     data = minioClient.get_object('mybucket', 'myobject')
@@ -615,7 +586,6 @@ try:
             file_data.write(d)
 except ResponseError as err:
     print(err)
-
 ```
 
 <a name="get_partial_object"></a>
@@ -640,7 +610,6 @@ __Return Value__
 __Example__
 
 ```py
-
 # Offset the download by 2 bytes and retrieve a total of 4 bytes.
 try:
     data = minioClient.get_partial_object('mybucket', 'myobject', 2, 4)
@@ -649,7 +618,6 @@ try:
             file_data.write(d)
 except ResponseError as err:
     print(err)
-
 ```
 
 <a name="fget_object"></a>
@@ -681,13 +649,11 @@ __Return Value__
 __Example__
 
 ```py
-
 # Get a full object and prints the original object stat information.
 try:
     print(minioClient.fget_object('mybucket', 'myobject', '/tmp/myobject'))
 except ResponseError as err:
     print(err)
-
 ```
 
 <a name="copy_object"></a>
@@ -737,7 +703,6 @@ try:
     print(copy_result)
 except ResponseError as err:
     print(err)
-
 ```
 
 <a name="put_object"></a>
@@ -768,7 +733,6 @@ __Example__
 The maximum size of a single object is limited to 5TB. put_object transparently uploads objects larger than 5MiB in multiple parts. This allows failed uploads to resume safely by only uploading the missing parts. Uploaded data is carefully verified using MD5SUM.
 
 ```py
-
 import os
 # Put a file with default content-type, upon success prints the etag identifier computed by server.
 try:
@@ -786,7 +750,6 @@ try:
                            file_stat.st_size, content_type='application/csv')
 except ResponseError as err:
     print(err)
-
 ```
 
 <a name="fput_object"></a>
@@ -814,7 +777,6 @@ __Example__
 The maximum size of a single object is limited to 5TB. fput_object transparently uploads objects larger than 5MiB in multiple parts. This allows failed uploads to resume safely by only uploading the missing parts. Uploaded data is carefully verified using MD5SUM.
 
 ```py
-
 # Put an object 'myobject' with contents from '/tmp/otherobject', upon success prints the etag identifier computed by server.
 try:
     print(minioClient.fput_object('mybucket', 'myobject', '/tmp/otherobject'))
@@ -829,7 +791,6 @@ try:
                              content_type='application/csv'))
 except ResponseError as err:
     print(err)
-
 ```
 
 <a name="stat_object"></a>
@@ -861,13 +822,11 @@ __Example__
 
 
 ```py
-
 # Fetch stats on your object.
 try:
     print(minioClient.stat_object('mybucket', 'myobject'))
 except ResponseError as err:
     print(err)
-
 ```
 
 <a name="remove_object"></a>
@@ -885,13 +844,11 @@ __Example__
 
 
 ```py
-
 # Remove an object.
 try:
     minioClient.remove_object('mybucket', 'myobject')
 except ResponseError as err:
     print(err)
-
 ```
 
 <a name="remove_objects"></a>
@@ -933,7 +890,6 @@ __Example__
 
 
 ```py
-
 # Remove multiple objects in a single library call.
 try:
     objects_to_delete = ['myobject-1', 'myobject-2', 'myobject-3']
@@ -943,7 +899,6 @@ try:
         print("Deletion Error: {}".format(del_err))
 except ResponseError as err:
     print(err)
-
 ```
 
 <a name="remove_incomplete_upload"></a>
@@ -961,13 +916,11 @@ __Example__
 
 
 ```py
-
 # Remove an partially uploaded object.
 try:
     minioClient.remove_incomplete_upload('mybucket', 'myobject')
 except ResponseError as err:
     print(err)
-
 ```
 
 ## 4. Presigned operations
@@ -989,7 +942,6 @@ __Example__
 
 
 ```py
-
 from datetime import timedelta
 
 # presigned get object URL for object name, expires in 2 days.
@@ -998,7 +950,6 @@ try:
 # Response error is still possible since internally presigned does get bucket location.
 except ResponseError as err:
     print(err)
-
 ```
 
 <a name="presigned_put_object"></a>
@@ -1019,7 +970,6 @@ __Parameters__
 __Example__
 
 ```py
-
 from datetime import timedelta
 
 # presigned Put object URL for an object name, expires in 3 days.
@@ -1031,7 +981,6 @@ try:
 # bucket location.
 except ResponseError as err:
     print(err)
-
 ```
 
 <a name="presigned_post_policy"></a>
@@ -1041,7 +990,6 @@ Allows setting policy conditions to a presigned URL for POST operations. Policie
 Create policy:
 
 ```py
-
 from datetime import datetime, timedelta
 
 from minio import PostPolicy
@@ -1063,19 +1011,16 @@ post_policy.set_expires(expires_date)
 Get the POST form key/value object:
 
 ```py
-
 try:
     signed_form_data = minioClient.presigned_post_policy(post_policy)
 except ResponseError as err:
     print(err)
-
 ```
 
 POST your content from the command line using `curl`:
 
 
 ```py
-
 curl_str = 'curl -X POST {0}'.format(signed_form_data[0])
 curl_cmd = [curl_str]
 for field in signed_form_data[1]:
@@ -1084,7 +1029,6 @@ for field in signed_form_data[1]:
 # print curl command to upload files.
 curl_cmd.append('-F file=@<FILE>')
 print(' '.join(curl_cmd))
-
 ```
 
 ## 5. Explore Further
