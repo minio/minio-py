@@ -485,7 +485,8 @@ class Minio(object):
 
     def listen_bucket_notification(self, bucket_name, prefix='', suffix='',
                                    events=['s3:ObjectCreated:*',
-                                           's3:ObjectRemoved:*']):
+                                           's3:ObjectRemoved:*',
+                                           's3:ObjectAccessed:*']):
         """
         Yeilds new event notifications on a bucket, caller should iterate
         to read new notifications.
@@ -504,7 +505,7 @@ class Minio(object):
         url_components = urlsplit(self._endpoint_url)
         if url_components.hostname == 's3.amazonaws.com':
             raise InvalidArgumentError(
-                'Listening for event notifications on a  bucket is a Minio '
+                'Listening for event notifications on a bucket is a Minio '
                 'specific extension to bucket notification API. It is not '
                 'supported by Amazon S3')
 
@@ -1082,7 +1083,7 @@ class Minio(object):
             'Content-Md5': get_md5_base64digest(content),
             'Content-Length': len(content)
         }
-        query = {"delete": None}
+        query = {'delete': ''}
         content_sha256_hex = get_sha256_hexdigest(content)
 
         # send multi-object delete request
@@ -1778,7 +1779,7 @@ class Minio(object):
         :return: location of bucket name is returned.
         """
         method = 'GET'
-        url = self._endpoint_url + '/' + bucket_name + '?location'
+        url = self._endpoint_url + '/' + bucket_name + '?location='
         headers = {}
         # default for all requests.
         region = 'us-east-1'

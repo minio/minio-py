@@ -207,6 +207,7 @@ def sign_v4(method, url, region, headers=None, access_key=None,
                                                headers_to_sign,
                                                signed_headers,
                                                content_sha256)
+
     string_to_sign = generate_string_to_sign(date, region,
                                              canonical_req)
     signing_key = generate_signing_key(date, region, secret_key)
@@ -232,16 +233,7 @@ def generate_canonical_request(method, parsed_url, headers, signed_headers, cont
     :param headers: HTTP header dictionary.
     :param content_sha256: Content sha256 hexdigest string.
     """
-    lines = [method, parsed_url.path]
-
-    # Parsed query.
-    split_query = parsed_url.query.split('&')
-    split_query.sort()
-    for i in range(0, len(split_query)):
-        if len(split_query[i]) > 0 and '=' not in split_query[i]:
-            split_query[i] += '='
-    query = '&'.join(split_query)
-    lines.append(query)
+    lines = [method, parsed_url.path, parsed_url.query]
 
     # Headers added to canonical request.
     header_lines = []

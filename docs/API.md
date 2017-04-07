@@ -240,7 +240,6 @@ __Return Value__
 |``object.last_modified`` |_datetime.datetime_ | modified time stamp.  |
 
 
-
 __Example__
 
 ```py
@@ -544,14 +543,15 @@ __Parameters__
 |``suffix`` | _string_  | Object key suffix to filter notifications for. |
 |``events`` | _list_ | Enables notifications for specific event types. |
 
-See [here](../examples/listen_notification.py) for a full example.
+See [here](https://raw.githubusercontent.com/minio/minio-py/master/examples/listen_notification.py) for a full example.
 
 ```py
 # Put a file with default content-type.
 events = minioClient.listen_bucket_notification('my-bucket', 'my-prefix/',
                                                 '.my-suffix',
                                                 ['s3:ObjectCreated:*',
-                                                 's3:ObjectRemoved:*'])
+                                                 's3:ObjectRemoved:*',
+                                                 's3:ObjectAccessed:*'])
 for event in events:
     print event
 ```

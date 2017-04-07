@@ -27,6 +27,7 @@ client = Minio('play.minio.io:9000',
 events = client.listen_bucket_notification('my-bucket', 'my-prefix/',
                                            '.my-suffix',
                                            ['s3:ObjectCreated:*',
-                                            's3:ObjectRemoved:*'])
+                                            's3:ObjectRemoved:*',
+                                            's3:ObjectAccessed:*'])
 for event in events:
     print(event)

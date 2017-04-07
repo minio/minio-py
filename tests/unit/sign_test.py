@@ -54,7 +54,7 @@ class CanonicalRequestTest(TestCase):
     def test_request_with_query(self):
         url = urlsplit('http://localhost:9000/hello?c=d&e=f&a=b')
         expected_signed_headers = ['x-amz-content-sha256', 'x-amz-date']
-        expected_request_array = ['PUT', '/hello', 'a=b&c=d&e=f',
+        expected_request_array = ['PUT', '/hello', 'c=d&e=f&a=b',
                                   'x-amz-content-sha256:' + empty_hash,
                                   'x-amz-date:dateString',
                                   '', ';'.join(expected_signed_headers),
