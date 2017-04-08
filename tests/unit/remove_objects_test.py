@@ -56,7 +56,7 @@ class RemoveObjectsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('POST',
-                         'https://localhost:9000/hello/?delete',
+                         'https://localhost:9000/hello/?delete=',
                          {'Content-Length': 95,
                           'User-Agent': _DEFAULT_USER_AGENT,
                           'Content-Md5': u'5Tg5SmU9Or43L4+iIyfPrQ=='}, 200,
@@ -72,7 +72,7 @@ class RemoveObjectsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('POST',
-                         'https://localhost:9000/hello/?delete',
+                         'https://localhost:9000/hello/?delete=',
                          {'Content-Length': 95,
                           'User-Agent': _DEFAULT_USER_AGENT,
                           'Content-Md5': u'5Tg5SmU9Or43L4+iIyfPrQ=='}, 200,
@@ -88,7 +88,7 @@ class RemoveObjectsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('POST',
-                         'https://localhost:9000/hello/?delete',
+                         'https://localhost:9000/hello/?delete=',
                          {'Content-Length': 95,
                           'User-Agent': _DEFAULT_USER_AGENT,
                           'Content-Md5': u'5Tg5SmU9Or43L4+iIyfPrQ=='}, 200,
