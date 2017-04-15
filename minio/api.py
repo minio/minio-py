@@ -1205,7 +1205,7 @@ class Minio(object):
 
         # Initialize query parameters.
         query = {
-            'uploads': None,
+            'uploads': '',
             'max-uploads': 1000
         }
 
@@ -1700,7 +1700,7 @@ class Minio(object):
 
         response = self._url_open('POST', bucket_name=bucket_name,
                                   object_name=object_name,
-                                  query={'uploads': None},
+                                  query={'uploads': ''},
                                   headers=metadata)
 
         return parse_new_multipart_upload(response.data)

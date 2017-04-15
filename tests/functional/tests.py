@@ -94,10 +94,21 @@ def main():
                           file_stat.st_size)
     file_data.close()
 
+    with open('largefile', 'wb') as file_data:
+        for i in range(0, 104857):
+            file_data.write(fake.text().encode('utf-8'))
+    file_data.close()
+
     # Fput a file
     client.fput_object(bucket_name, object_name+'-f', 'testfile')
     if is_s3:
         client.fput_object(bucket_name, object_name+'-f', 'testfile',
+                           metadata={'x-amz-storage-class': 'STANDARD_IA'})
+
+    # Fput a large file.
+    client.fput_object(bucket_name, object_name+'-large', 'largefile')
+    if is_s3:
+        client.fput_object(bucket_name, object_name+'-large', 'largefile',
                            metadata={'x-amz-storage-class': 'STANDARD_IA'})
 
     # Copy a file
@@ -119,6 +130,9 @@ def main():
 
     # Fetch stats on your object.
     client.stat_object(bucket_name, object_name+'-f')
+
+    # Fetch stats on your large object.
+    client.stat_object(bucket_name, object_name+'-large')
 
     # Fetch stats on your object.
     client.stat_object(bucket_name, object_name+'-copy')
@@ -182,9 +196,10 @@ def main():
     policy.set_expires(expires_date)
     client.presigned_post_policy(policy)
 
-    # Remove an object.
+    # Remove all objects.
     client.remove_object(bucket_name, object_name)
     client.remove_object(bucket_name, object_name+'-f')
+    client.remove_object(bucket_name, object_name+'-large')
     client.remove_object(bucket_name, object_name+'-copy')
 
     policy_name = client.get_bucket_policy(bucket_name)
@@ -220,7 +235,7 @@ def main():
     had_errs = False
     for del_err in del_errs:
         had_errs = True
-        # print("Err is {}".format(del_err))
+        print("Remove objects err is {}".format(del_err))
     if had_errs:
         print("Removing objects FAILED - it had unexpected errors.")
         raise
@@ -237,6 +252,7 @@ def main():
     os.remove('testfile')
     os.remove('newfile')
     os.remove('newfile-f')
+    os.remove('largefile')
 
 if __name__ == "__main__":
     # Execute only if run as a script
