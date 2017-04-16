@@ -147,6 +147,17 @@ def main():
     # Get a full object locally.
     client.fget_object(bucket_name, object_name, 'newfile-f')
 
+    client.fput_object(bucket_name, object_name+'-f', 'testfile',
+                       metadata={'x-amz-meta-testing': 'value'})
+
+    stat = client.fget_object(bucket_name, object_name+'-f', 'newfile-f-custom')
+    if not stat.metadata.has_key('X-Amz-Meta-Testing'):
+        raise ValueError('Metadata key \'x-amz-meta-testing\' not found')
+    value = stat.metadata['X-Amz-Meta-Testing']
+    if value != 'value':
+        raise ValueError('Metadata key has unexpected'
+                         ' value {0}'.format(value))
+
     # List all object paths in bucket.
     print("Listing using ListObjects")
     objects = client.list_objects(bucket_name, recursive=True)
@@ -253,6 +264,7 @@ def main():
     os.remove('newfile')
     os.remove('newfile-f')
     os.remove('largefile')
+    os.remove('newfile-f-custom')
 
 if __name__ == "__main__":
     # Execute only if run as a script

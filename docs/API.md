@@ -645,6 +645,7 @@ __Return Value__
 |``obj.etag``|_string_|etag of the object.|
 |``obj.content_type``|_string_  | Content-Type of the object.|
 |``obj.last_modified``|_time.time_  |modified time stamp.|
+|``obj.metadata`` |_dict_ | Contains any additional metadata on the object. |
 
 __Example__
 
@@ -816,6 +817,7 @@ __Return Value__
 |``obj.etag``|_string_|etag of the object.|
 |``obj.content_type``|_string_  | Content-Type of the object.|
 |``obj.last_modified``|_time.time_  |modified time stamp.|
+|``obj.metadata`` |_dict_ | Contains any additional metadata on the object. |
 
 
 __Example__

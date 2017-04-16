@@ -51,9 +51,10 @@ class Object(object):
     :param size: Size of the object on server.
     :param content_type: Optional parameter indicating content type.
     :param is_dir: Optional parameter differentiating object prefixes.
+    :param metadata: Optional parameter contains all the custom metadata.
     """
     def __init__(self, bucket_name, object_name, last_modified, etag, size,
-                 content_type=None, is_dir=False):
+                 content_type=None, is_dir=False, metadata=None):
         self.bucket_name = bucket_name
         self.object_name = object_name
         self.last_modified = last_modified
@@ -61,18 +62,19 @@ class Object(object):
         self.size = size
         self.content_type = content_type
         self.is_dir = is_dir
+        self.metadata = metadata
 
     def __str__(self):
         string_format = '<Object: bucket_name: {0} object_name: {1}' \
                         ' last_modified: {2} etag: {3} size: {4}' \
-                        ' content_type: {5}, is_dir: {6}>'
+                        ' content_type: {5}, is_dir: {6}, metadata: {7}>'
         return string_format.format(self.bucket_name,
                                     self.object_name.encode('utf-8'),
                                     self.last_modified,
                                     self.etag, self.size,
                                     self.content_type,
-                                    self.is_dir)
-
+                                    self.is_dir,
+                                    self.metadata)
 
 class MultipartUploadResult(object):
     """
