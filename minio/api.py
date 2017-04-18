@@ -1048,11 +1048,26 @@ class Minio(object):
         size = int(response.headers.get('content-length', '0'))
         content_type = response.headers.get('content-type', '')
         last_modified = response.headers.get('last-modified')
+
+        ## Supported headers for object.
+        supported_headers = [
+            'cache-control',
+            'content-encoding',
+            'content-disposition',
+            ## Add more supported headers here.
+        ]
+
+        ## Capture only custom metadata.
+        custom_metadata = dict()
+        for k in response.headers:
+            if k in supported_headers or k.lower().startswith('x-amz-meta-'):
+                custom_metadata[k] = response.headers.get(k)
+
         if last_modified:
             http_time_format = "%a, %d %b %Y %H:%M:%S GMT"
             last_modified = mktime(strptime(last_modified, http_time_format))
-        return Object(bucket_name, object_name, content_type=content_type,
-                      last_modified=last_modified, etag=etag, size=size)
+        return Object(bucket_name, object_name, last_modified, etag, size,
+                      content_type=content_type, metadata=custom_metadata)
 
     def remove_object(self, bucket_name, object_name):
         """
