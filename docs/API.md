@@ -128,7 +128,7 @@ __Parameters__
 |Return   |Type   |Description   |
 |:---|:---|:---|
 |``bucketList``   |_function_ |List of all buckets. |
-|``bucket_name``   |_string_  |Bucket name. |
+|``bucket.name``   |_string_  |Bucket name. |
 |``bucket.creation_date`` |_time_   |Time: date when bucket was created. |
 
 __Example__
