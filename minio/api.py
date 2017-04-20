@@ -30,6 +30,7 @@ This module implements the API.
 from __future__ import absolute_import
 import platform
 
+
 from time import mktime, strptime
 from datetime import datetime, timedelta
 
@@ -68,6 +69,7 @@ from .helpers import (get_target_url, is_non_empty_string,
                       mkdir_p, dump_http)
 from .helpers import (MAX_MULTIPART_OBJECT_SIZE,
                       MIN_OBJECT_SIZE)
+from .credentials import static_credentials
 from .signer import (sign_v4, presign_v4,
                      generate_credential_string,
                      post_presign_signature, _SIGN_V4_ALGORITHM)
@@ -92,7 +94,6 @@ _DEFAULT_USER_AGENT = 'Minio {0} {1}'.format(
                      __version__))
 
 _SEVEN_DAYS_SECONDS = 604800  # 7days
-
 
 class Minio(object):
     """
@@ -119,7 +120,7 @@ class Minio(object):
     """
 
     def __init__(self, endpoint, access_key=None,
-                 secret_key=None, secure=True,
+                 secret_key=None, credentials=None, secure=True,
                  region=None,
                  timeout=None,
                  certificate_bundle=certifi.where()):
@@ -137,10 +138,12 @@ class Minio(object):
         self._region = region
         self._region_map = dict()
         self._endpoint_url = url_components.geturl()
-        self._access_key = access_key
-        self._secret_key = secret_key
         self._user_agent = _DEFAULT_USER_AGENT
         self._trace_output_stream = None
+        if credentials is not None:
+            self._credentials = credentials
+        else:
+            self._credentials = static_credentials(access_key, secret_key) 
 
         self._conn_timeout = urllib3.Timeout.DEFAULT_TIMEOUT if not timeout \
                              else urllib3.Timeout(timeout)
@@ -247,8 +250,7 @@ class Minio(object):
 
         # Get signature headers if any.
         headers = sign_v4(method, url, 'us-east-1',
-                          headers, self._access_key,
-                          self._secret_key, content_sha256_hex)
+                          headers, self._credentials, content_sha256_hex)
 
         response = self._http.urlopen(method, url,
                                       body=content,
@@ -282,8 +284,7 @@ class Minio(object):
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
-                          headers, self._access_key,
-                          self._secret_key, None)
+                          headers, self._credentials, None)
 
         response = self._http.urlopen(method, url,
                                       body=None,
@@ -1390,8 +1391,7 @@ class Minio(object):
                              bucket_region=region)
 
         presign_url = presign_v4('PUT', url,
-                                 self._access_key,
-                                 self._secret_key,
+                                 self._credentials,
                                  region=region,
                                  expires=int(expires.total_seconds()))
         return presign_url
@@ -1418,7 +1418,7 @@ class Minio(object):
         date = datetime.utcnow()
         iso8601_date = date.strftime("%Y%m%dT%H%M%SZ")
         region = self._get_bucket_region(post_policy.form_data['bucket'])
-        credential_string = generate_credential_string(self._access_key,
+        credential_string = generate_credential_string(self._credentials.get().access_key,
                                                        date, region)
 
         post_policy.policies.append(('eq', '$x-amz-date', iso8601_date))
@@ -1429,7 +1429,7 @@ class Minio(object):
 
         post_policy_base64 = post_policy.base64()
         signature = post_presign_signature(date, region,
-                                           self._secret_key,
+                                           self._credentials.secret_key(),
                                            post_policy_base64)
         post_policy.form_data.update({
             'policy': post_policy_base64,
@@ -1519,8 +1519,7 @@ class Minio(object):
             headers['Range'] = 'bytes=' + request_range
 
         presign_url = presign_v4('GET', url,
-                                 self._access_key,
-                                 self._secret_key,
+                                 self._credentials,
                                  region=region,
                                  headers=headers,
                                  response_headers=response_headers,
@@ -1808,13 +1807,12 @@ class Minio(object):
         region = 'us-east-1'
 
         # For anonymous requests no need to get bucket location.
-        if self._access_key is None or self._secret_key is None:
+        if self._credentials.get().access_key is None or self._credentials.secret_key() is None:
             return 'us-east-1'
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
-                          headers, self._access_key,
-                          self._secret_key, None)
+                          headers, self._credentials, None)
 
         response = self._http.urlopen(method, url,
                                       body=None,
@@ -1862,8 +1860,7 @@ class Minio(object):
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
-                          fold_case_headers, self._access_key,
-                          self._secret_key, content_sha256)
+                          fold_case_headers, self._credentials, content_sha256)
 
         response = self._http.urlopen(method, url,
                                       body=body,

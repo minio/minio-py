@@ -16,11 +16,13 @@
 # Note: YOUR-ACCESSKEYID and YOUR-SECRETACCESSKEY are
 # dummy values, please replace them with original values.
 
-from minio import Minio
+import sys
+sys.path.append('/home/vadmeste/work/python/minio-py/')
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+from minio import Minio
+from minio.credentials import iam_aws_credentials 
+
+client = Minio('localhost:9000', credentials=iam_aws_credentials(role_name="RoleName"), secure=False)
 
 buckets = client.list_buckets()
 
