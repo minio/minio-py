@@ -539,6 +539,9 @@ def get_policy(statements, bucket_name, prefix=""):
 
     return found_policy
 
+READ_WRITE_LENGTH = 5
+WRITE_ONLY_LENGTH = 4
+READ_ONLY_LENGTH = 1
 # Returns a list containing policies and their respective prefix name
 def list_policy(statements, bucket_name, prefix=""):
     policies = []
@@ -556,14 +559,13 @@ def list_policy(statements, bucket_name, prefix=""):
                 action_length = len(statement.get("Action"))
                 policy = Policy.NONE
 
-                # 5 = READ WRITE
-                # 4 = WRITE ONLY
-                # 1 = READ ONLY
-                if action_length == 5:
+                if action_length == READ_WRITE_LENGTH:
                     policy = Policy.READ_WRITE
-                elif action_length == 4:
+
+                elif action_length == WRITE_ONLY_LENGTH:
                     policy = Policy.WRITE_ONLY
-                elif action_length == 1:
+
+                elif action_length == READ_ONLY_LENGTH:
                     policy = Policy.READ_ONLY
 
                 # add to policy list
