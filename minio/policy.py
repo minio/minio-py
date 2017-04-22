@@ -27,7 +27,6 @@ This module implements policy management.
 import collections
 import fnmatch
 import itertools
-import json
 
 from .compat import basestring
 
