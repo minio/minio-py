@@ -27,6 +27,7 @@ This module implements policy management.
 import collections
 import fnmatch
 import itertools
+import json
 
 from .compat import basestring
 
@@ -528,36 +529,48 @@ def _get_permissions(s, resource, object_resource, matched_resource,
 
 
 # Returns policy of given bucket name, prefix in given statements.
-def get_policy(statements, bucket_name, prefix=''):
-    bucket_resource = _get_bucket_resource(bucket_name)[0]
-    object_resource = _get_object_resource(bucket_name, prefix)[0]
+def get_policy(statements, bucket_name, prefix=""):
+    policies = list_policy(statements, bucket_name)
+    found_policy = Policy.NONE
 
-    bucket_common_found = False
-    bucket_read_only = False
-    bucket_write_only = False
-    matched_resource = ''
-    obj_read_only = False
-    obj_write_only = False
-    for s in statements:
-        resources = _get_resource(s)
-        for resource in resources:
-            bucket_common_found, bucket_read_only, bucket_write_only, \
-                obj_read_only, obj_write_only = _get_permissions(
-                    s, resource, object_resource, matched_resource,
-                    bucket_resource, prefix, bucket_common_found,
-                    bucket_read_only, bucket_write_only)
+    # find exact match using prefix
+    for policy in policies:
+        if policy.get("prefix") == prefix:
+            found_policy = policy.get("policy")
 
-    policy = Policy.NONE
-    if bucket_common_found:
-        if (bucket_read_only and bucket_write_only and
-                obj_read_only and obj_write_only):
-            policy = Policy.READ_WRITE
-        elif bucket_read_only and obj_read_only:
-            policy = Policy.READ_ONLY
-        elif bucket_write_only and obj_write_only:
-            policy = Policy.WRITE_ONLY
+    return found_policy
 
-    return policy
+# Returns a list containing policies and their respective prefix name
+def list_policy(statements, bucket_name, prefix=""):
+    policies = []
+    for statement in statements:
+        # get resource from statement
+        res = statement.get("Resource")[0]
+        res_name =  res.strip(_AWS_RESOURCE_PREFIX).strip(bucket_name)
+
+        # if valid resource
+        if res_name != "":
+            res_name  = res_name.replace("/", "", 1).replace("*", "", 1)
+
+            # if prefix matches or no prefix specified
+            if res_name.startswith(prefix) or prefix == "":
+                action_length = len(statement.get("Action"))
+                policy = Policy.NONE
+
+                # 5 = READ WRITE
+                # 4 = WRITE ONLY
+                # 1 = READ ONLY
+                if action_length == 5:
+                    policy = Policy.READ_WRITE
+                elif action_length == 4:
+                    policy = Policy.WRITE_ONLY
+                elif action_length == 1:
+                    policy = Policy.READ_ONLY
+
+                # add to policy list
+                policies.append(dict(prefix=res_name, policy=policy))
+
+    return policies
 
 
 # Returns new statements containing policy of given bucket name and

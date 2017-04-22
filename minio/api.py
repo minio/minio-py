@@ -368,6 +368,25 @@ class Minio(object):
 
         return policy.get_policy(statements, bucket_name, prefix)
 
+    def list_bucket_policies(self, bucket_name, prefix=""):
+        """
+        List bucket policies of given bucket name.
+
+        :param bucket_name: Bucket name.
+        :param prefix: Object prefix.
+        """
+        is_valid_bucket_name(bucket_name)
+
+        policy_dict = self._get_bucket_policy(bucket_name)
+        if not policy_dict:
+            return policy.Policy.NONE
+
+        # Normalize statements.
+        statements = []
+        policy._append_statements(statements, policy_dict.get('Statement', []))
+
+        return policy.list_policy(statements, bucket_name, prefix)
+
     def set_bucket_policy(self, bucket_name, prefix, policy_access):
         """
         Set bucket policy of given bucket name and object prefix.
