@@ -537,42 +537,48 @@ def get_policy(statements, bucket_name, prefix=""):
 
     return found_policy
 
-READ_WRITE_LENGTH = 5
-WRITE_ONLY_LENGTH = 4
-READ_ONLY_LENGTH = 1
-# Returns a list containing policies and their respective prefix name
+PERMISSIONS = [
+    "s3:GetObject",
+    "s3:AbortMultipartUpload",
+    "s3:DeleteObject",
+    "s3:ListMultipartUploadParts",
+    "s3:PutObject"
+]
+
+READ_WRITE = 5
+WRITE_ONLY = 4
+READ_ONLY = 1
+# Returns a dictionary containing policies and their respective prefix name
 def list_policy(statements, bucket_name, prefix=""):
     policies = {}
     for statement in statements:
         # get resource from statement
-        res = statement.get("Resource")[0]
-        res_name = res.strip(_AWS_RESOURCE_PREFIX).strip(bucket_name)
+        resources = statement.get("Resource")
+        for res in resources:
+            trimmed_res = res.strip(_AWS_RESOURCE_PREFIX).strip(bucket_name)
+            trimmed_res = trimmed_res.replace("/", "", 1).replace("*", "", 1)
 
-        # if valid resource
-        if res_name != "":
-            res_name = res_name.replace("/", "", 1).replace("*", "", 1)
+            if trimmed_res != "":
+                if trimmed_res.startswith(prefix) or prefix == "":
+                    policy = Policy.NONE
+                    permissions_found = 0
 
-            # if prefix matches or no prefix specified
-            if res_name.startswith(prefix) or prefix == "":
-                action_length = len(statement.get("Action"))
-                policy = Policy.NONE
+                    for permission in statement.get("Action"):
+                        if permission in PERMISSIONS:
+                            permissions_found += 1
 
-                if action_length == READ_WRITE_LENGTH:
-                    policy = Policy.READ_WRITE
+                    if permissions_found == READ_WRITE:
+                        policy = Policy.READ_WRITE
+                    elif permissions_found == WRITE_ONLY:
+                        policy = Policy.WRITE_ONLY
+                    elif permissions_found == READ_ONLY:
+                        policy = Policy.READ_ONLY
 
-                elif action_length == WRITE_ONLY_LENGTH:
-                    policy = Policy.WRITE_ONLY
-
-                elif action_length == READ_ONLY_LENGTH:
-                    policy = Policy.READ_ONLY
-
-                # add to policy list
-                policies.update({
-                    res_name: policy
-                })
+                    policies.update({
+                        trimmed_res: policy
+                    })
 
     return policies
-
 
 # Returns new statements containing policy of given bucket name and
 # prefix are appended.
