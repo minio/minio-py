@@ -530,12 +530,10 @@ def _get_permissions(s, resource, object_resource, matched_resource,
 # Returns policy of given bucket name, prefix in given statements.
 def get_policy(statements, bucket_name, prefix=""):
     policies = list_policy(statements, bucket_name)
-    found_policy = Policy.NONE
+    found_policy = policies.get(prefix)
 
-    # find exact match using prefix
-    for policy in policies:
-        if policy.get("prefix") == prefix:
-            found_policy = policy.get("policy")
+    if found_policy is None:
+        return Policy.NONE
 
     return found_policy
 
@@ -544,15 +542,15 @@ WRITE_ONLY_LENGTH = 4
 READ_ONLY_LENGTH = 1
 # Returns a list containing policies and their respective prefix name
 def list_policy(statements, bucket_name, prefix=""):
-    policies = []
+    policies = {}
     for statement in statements:
         # get resource from statement
         res = statement.get("Resource")[0]
-        res_name =  res.strip(_AWS_RESOURCE_PREFIX).strip(bucket_name)
+        res_name = res.strip(_AWS_RESOURCE_PREFIX).strip(bucket_name)
 
         # if valid resource
         if res_name != "":
-            res_name  = res_name.replace("/", "", 1).replace("*", "", 1)
+            res_name = res_name.replace("/", "", 1).replace("*", "", 1)
 
             # if prefix matches or no prefix specified
             if res_name.startswith(prefix) or prefix == "":
@@ -569,7 +567,9 @@ def list_policy(statements, bucket_name, prefix=""):
                     policy = Policy.READ_ONLY
 
                 # add to policy list
-                policies.append(dict(prefix=res_name, policy=policy))
+                policies.update({
+                    res_name: policy
+                })
 
     return policies
 
