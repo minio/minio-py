@@ -537,17 +537,6 @@ def get_policy(statements, bucket_name, prefix=""):
 
     return found_policy
 
-PERMISSIONS = [
-    "s3:GetObject",
-    "s3:AbortMultipartUpload",
-    "s3:DeleteObject",
-    "s3:ListMultipartUploadParts",
-    "s3:PutObject"
-]
-
-READ_WRITE = 5
-WRITE_ONLY = 4
-READ_ONLY = 1
 # Returns a dictionary containing policies and their respective prefix name
 def list_policy(statements, bucket_name, prefix=""):
     policies = {}
@@ -561,17 +550,22 @@ def list_policy(statements, bucket_name, prefix=""):
             if trimmed_res != "":
                 if trimmed_res.startswith(prefix) or prefix == "":
                     policy = Policy.NONE
-                    permissions_found = 0
+                    permissions = statement.get("Action")
 
-                    for permission in statement.get("Action"):
-                        if permission in PERMISSIONS:
-                            permissions_found += 1
-
-                    if permissions_found == READ_WRITE:
+                    if "s3:GetObject" in permissions and \
+                       "s3:DeleteObject" in permissions and \
+                       "s3:PutObject" in permissions and \
+                       "s3:AbortMultipartUpload" in permissions and \
+                       "s3:ListMultipartUploadParts" in permissions:
                         policy = Policy.READ_WRITE
-                    elif permissions_found == WRITE_ONLY:
+
+                    elif "s3:DeleteObject" in permissions and \
+                         "s3:PutObject" in permissions and \
+                         "s3:AbortMultipartUpload" in permissions and \
+                         "s3:ListMultipartUploadParts" in permissions:
                         policy = Policy.WRITE_ONLY
-                    elif permissions_found == READ_ONLY:
+
+                    elif "s3:GetObject" in permissions:
                         policy = Policy.READ_ONLY
 
                     policies.update({
