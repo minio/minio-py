@@ -528,10 +528,10 @@ minioClient.remove_all_bucket_notifications('mybucket')
 Listen for notifications on a bucket. Additionally one can provide
 filters for prefix, suffix and events. There is no prior set bucket notification
 needed to use this API. This is an Minio extension API where unique identifiers
-are regitered and unregistered by the server automatically based on incoming
+are registered and unregistered by the server automatically based on incoming
 requests.
 
-Yeilds events as they occur, caller has iterate to read these events as
+Yields events as they occur, caller has to iterate to read these events as
 they occur.
 
 __Parameters__
