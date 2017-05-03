@@ -133,8 +133,6 @@ class ResponseError(MinioError):
         self.object_name = object_name
         # initialize all ResponseError fields
         self.code = ''
-        self.bucket_name = ''
-        self.object_name = ''
         # Amz headers
         self.request_id = ''
         self.host_id = ''
