@@ -45,8 +45,8 @@ try:
     for field in signed_form_data:
         curl_cmd.append('-F {0}={1}'.format(field, signed_form_data[field]))
 
-        # print curl command to upload files.
-        curl_cmd.append('-F file=@<FILE>')
-        print(' '.join(curl_cmd))
+    # print curl command to upload files.
+    curl_cmd.append('-F file=@<FILE>')
+    print(' '.join(curl_cmd))
 except ResponseError as err:
     print(err)
