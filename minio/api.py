@@ -724,9 +724,8 @@ class Minio(object):
 
             # Get partial object.
             response = self._get_partial_object(bucket_name, object_name,
-                                                metadata=metadata,
                                                 offset=file_statinfo.st_size,
-                                                length=0)
+                                                length=0, metadata=metadata)
 
             # Save content_size to verify if we wrote more data.
             content_size = int(response.headers['content-length'])
@@ -786,7 +785,7 @@ class Minio(object):
                                         object_name,
                                         metadata)
 
-    def get_partial_object(self, bucket_name, object_name, metadata=None, offset=0, length=0):
+    def get_partial_object(self, bucket_name, object_name, offset=0, length=0, metadata=None):
         """
         Retrieves an object from a bucket.
 
