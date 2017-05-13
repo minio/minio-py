@@ -698,8 +698,7 @@ class Minio(object):
         :param bucket_name: Bucket to read object from.
         :param object_name: Name of the object to read.
         :param file_path: Local file path to save the object.
-        :param metadata: Any additional metadata to be uploaded along
-            with your GET request.
+        :param metadata: Any additional metadata to be added to GET request's headers.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -773,8 +772,7 @@ class Minio(object):
 
         :param bucket_name: Bucket to read object from
         :param object_name: Name of object to read
-        :param metadata: Any additional metadata to be uploaded along
-            with your GET request.
+        :param metadata: Any additional metadata to be added to GET request's headers.
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
@@ -802,12 +800,11 @@ class Minio(object):
 
         :param bucket_name: Bucket to retrieve object from
         :param object_name: Name of object to retrieve
-        :param metadata: Any additional metadata to be uploaded along
-            with your GET request.
         :param offset: Optional offset to retrieve bytes from.
            Must be >= 0.
         :param length: Optional number of bytes to retrieve.
            Must be an integer.
+        :param metadata: Any additional metadata to be added to GET request's headers.
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
