@@ -587,21 +587,6 @@ try:
             file_data.write(d)
 except ResponseError as err:
     print(err)
-    
-# Use metadata to provide additional headers and get object which is encrypted with
-# Server Side Encryption with Customer key (SSE-C) on S3
-import base64
-import hashlib
-
-encryption_key = base64.b64encode(ENCRYPT_KEY_32B_LONG).decode()
-encryption_key_md5 = base64.b64encode(hashlib.md5(ENCRYPT_KEY_32B_LONG).digest()).decode()
-object_key = 'encrypted_file.txt'
-
-obj = minio.get_object(S3_BUCKET, object_key, metadata={
-        'x-amz-server-side-encryption-customer-algorithm': 'AES256',
-        'x-amz-server-side-encryption-customer-key': encryption_key,
-        'x-amz-server-side-encryption-customer-key-MD5': encryption_key_md5
-})
 ```
 
 <a name="get_partial_object"></a>
