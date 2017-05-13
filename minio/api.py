@@ -783,7 +783,7 @@ class Minio(object):
 
         return self._get_partial_object(bucket_name,
                                         object_name,
-                                        metadata)
+                                        metadata=metadata)
 
     def get_partial_object(self, bucket_name, object_name, offset=0, length=0, metadata=None):
         """
@@ -1453,7 +1453,7 @@ class Minio(object):
 
     # All private functions below.
     def _get_partial_object(self, bucket_name, object_name,
-                            offset=0, length=0, metadata=None,):
+                            offset=0, length=0, metadata=None):
         """Retrieves an object from a bucket.
 
         Optionally takes an offset and length of data to retrieve.
