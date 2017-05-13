@@ -688,7 +688,7 @@ class Minio(object):
         # Return etag here.
         return mpart_result.etag
 
-    def fget_object(self, bucket_name, object_name, file_path):
+    def fget_object(self, bucket_name, object_name, file_path, metadata=None):
         """
         Retrieves an object from a bucket and writes at file_path.
 
@@ -698,6 +698,8 @@ class Minio(object):
         :param bucket_name: Bucket to read object from.
         :param object_name: Name of the object to read.
         :param file_path: Local file path to save the object.
+        :param metadata: Any additional metadata to be uploaded along
+            with your GET request.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -722,6 +724,7 @@ class Minio(object):
 
             # Get partial object.
             response = self._get_partial_object(bucket_name, object_name,
+                                                metadata=metadata,
                                                 offset=file_statinfo.st_size,
                                                 length=0)
 
@@ -756,7 +759,7 @@ class Minio(object):
         # Return the stat
         return stat
 
-    def get_object(self, bucket_name, object_name):
+    def get_object(self, bucket_name, object_name, metadata=None):
         """
         Retrieves an object from a bucket.
 
@@ -771,6 +774,8 @@ class Minio(object):
 
         :param bucket_name: Bucket to read object from
         :param object_name: Name of object to read
+        :param metadata: Any additional metadata to be uploaded along
+            with your GET request.
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
@@ -778,9 +783,10 @@ class Minio(object):
         is_non_empty_string(object_name)
 
         return self._get_partial_object(bucket_name,
-                                        object_name)
+                                        object_name,
+                                        metadata)
 
-    def get_partial_object(self, bucket_name, object_name, offset=0, length=0):
+    def get_partial_object(self, bucket_name, object_name, metadata=None, offset=0, length=0):
         """
         Retrieves an object from a bucket.
 
@@ -797,6 +803,8 @@ class Minio(object):
 
         :param bucket_name: Bucket to retrieve object from
         :param object_name: Name of object to retrieve
+        :param metadata: Any additional metadata to be uploaded along
+            with your GET request.
         :param offset: Optional offset to retrieve bytes from.
            Must be >= 0.
         :param length: Optional number of bytes to retrieve.
@@ -809,7 +817,8 @@ class Minio(object):
 
         return self._get_partial_object(bucket_name,
                                         object_name,
-                                        offset, length)
+                                        offset, length,
+                                        metadata=metadata)
 
     def copy_object(self, bucket_name, object_name, object_source,
                     conditions=None):
@@ -1445,7 +1454,7 @@ class Minio(object):
 
     # All private functions below.
     def _get_partial_object(self, bucket_name, object_name,
-                            offset=0, length=0):
+                            offset=0, length=0, metadata=None,):
         """Retrieves an object from a bucket.
 
         Optionally takes an offset and length of data to retrieve.
@@ -1466,6 +1475,8 @@ class Minio(object):
            Must be >= 0.
         :param length: Optional number of bytes to retrieve.
            Must be > 0.
+        :param metadata: Any additional metadata to be uploaded along
+            with request.
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
@@ -1473,6 +1484,9 @@ class Minio(object):
         is_non_empty_string(object_name)
 
         headers = {}
+        if metadata:
+            headers = metadata
+
         if offset != 0 or length != 0:
             request_range = '{}-{}'.format(
                 offset, "" if length == 0 else offset + length - 1
