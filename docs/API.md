@@ -567,7 +567,7 @@ __Parameters__
 |:---|:---|:---|
 |``bucket_name``   |_string_   |Name of the bucket.   |
 |``object_name``   |_string_   |Name of the object.   |
-|``metadata``      |_dict_   |Any additional metadata. (optional, defaults to None).   |
+|``request_headers`` |_dict_   |Any additional headers (optional, defaults to None).   |
 
 __Return Value__
 
@@ -601,7 +601,7 @@ __Parameters__
 |``object_name``   |_string_  |Name of the object.   |
 |``offset``   |_int_ |``offset`` of the object from where the stream will start.   |
 |``length``   |_int_ |``length`` of the object that will be read in the stream (optional, if not specified we read the rest of the file from the offset).   |
-|``metadata``      |_dict_   |Any additional metadata. (optional, defaults to None).   |
+|``request_headers`` |_dict_   |Any additional headers (optional, defaults to None).   |
 
 __Return Value__
 
@@ -633,8 +633,8 @@ __Parameters__
 |:---|:---|:---|
 |``bucket_name``   |_string_   |Name of the bucket.   |
 |``object_name``   |_string_    |Name of the object.   |
-|``metadata``   |_dict_ | Any additional metadata. (optional, defaults to None). |
 |``file_path``   |_dict_ | Path on the local filesystem to which the object data will be written. |
+|``request_headers`` |_dict_   |Any additional headers (optional, defaults to None).   |
 
 __Return Value__
 

@@ -688,7 +688,7 @@ class Minio(object):
         # Return etag here.
         return mpart_result.etag
 
-    def fget_object(self, bucket_name, object_name, file_path, metadata=None):
+    def fget_object(self, bucket_name, object_name, file_path, request_headers=None):
         """
         Retrieves an object from a bucket and writes at file_path.
 
@@ -698,7 +698,7 @@ class Minio(object):
         :param bucket_name: Bucket to read object from.
         :param object_name: Name of the object to read.
         :param file_path: Local file path to save the object.
-        :param metadata: Any additional metadata to be added to GET request's headers.
+        :param request_headers: Any additional headers to be added with GET request.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -724,7 +724,8 @@ class Minio(object):
             # Get partial object.
             response = self._get_partial_object(bucket_name, object_name,
                                                 offset=file_statinfo.st_size,
-                                                length=0, metadata=metadata)
+                                                length=0,
+                                                request_headers=request_headers)
 
             # Save content_size to verify if we wrote more data.
             content_size = int(response.headers['content-length'])
@@ -757,7 +758,7 @@ class Minio(object):
         # Return the stat
         return stat
 
-    def get_object(self, bucket_name, object_name, metadata=None):
+    def get_object(self, bucket_name, object_name, request_headers=None):
         """
         Retrieves an object from a bucket.
 
@@ -772,7 +773,7 @@ class Minio(object):
 
         :param bucket_name: Bucket to read object from
         :param object_name: Name of object to read
-        :param metadata: Any additional metadata to be added to GET request's headers.
+        :param request_headers: Any additional headers to be added with GET request.
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
@@ -781,9 +782,9 @@ class Minio(object):
 
         return self._get_partial_object(bucket_name,
                                         object_name,
-                                        metadata=metadata)
+                                        request_headers=request_headers)
 
-    def get_partial_object(self, bucket_name, object_name, offset=0, length=0, metadata=None):
+    def get_partial_object(self, bucket_name, object_name, offset=0, length=0, request_headers=None):
         """
         Retrieves an object from a bucket.
 
@@ -804,7 +805,7 @@ class Minio(object):
            Must be >= 0.
         :param length: Optional number of bytes to retrieve.
            Must be an integer.
-        :param metadata: Any additional metadata to be added to GET request's headers.
+        :param request_headers: Any additional headers to be added with GET request.
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
@@ -814,7 +815,7 @@ class Minio(object):
         return self._get_partial_object(bucket_name,
                                         object_name,
                                         offset, length,
-                                        metadata=metadata)
+                                        request_headers=request_headers)
 
     def copy_object(self, bucket_name, object_name, object_source,
                     conditions=None):
@@ -1450,7 +1451,7 @@ class Minio(object):
 
     # All private functions below.
     def _get_partial_object(self, bucket_name, object_name,
-                            offset=0, length=0, metadata=None):
+                            offset=0, length=0, request_headers=None):
         """Retrieves an object from a bucket.
 
         Optionally takes an offset and length of data to retrieve.
@@ -1471,7 +1472,7 @@ class Minio(object):
            Must be >= 0.
         :param length: Optional number of bytes to retrieve.
            Must be > 0.
-        :param metadata: Any additional metadata to be uploaded along
+        :param request_headers: Any additional metadata to be uploaded along
             with request.
         :return: :class:`urllib3.response.HTTPResponse` object.
 
@@ -1480,8 +1481,8 @@ class Minio(object):
         is_non_empty_string(object_name)
 
         headers = {}
-        if metadata:
-            headers = metadata
+        if request_headers:
+            headers = request_headers
 
         if offset != 0 or length != 0:
             request_range = '{}-{}'.format(

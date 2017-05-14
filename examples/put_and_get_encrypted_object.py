@@ -29,7 +29,7 @@ def main():
                      })
 
     # Get decrypted object with same headers
-    obj = minio.get_object(STORAGE_BUCKET, 'test_crypt1.txt', metadata={
+    obj = minio.get_object(STORAGE_BUCKET, 'test_crypt1.txt', request_headers={
         'x-amz-server-side-encryption-customer-algorithm': 'AES256',
         'x-amz-server-side-encryption-customer-key': encryption_key,
         'x-amz-server-side-encryption-customer-key-MD5': encryption_key_md5

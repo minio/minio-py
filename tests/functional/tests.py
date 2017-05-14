@@ -139,7 +139,7 @@ def main():
 
     # Get a full object
     object_data = client.get_object(bucket_name, object_name,
-                                    metadata={'x-amz-meta-testing': 'value'})
+                                    request_headers={'x-amz-meta-testing': 'value'})
     with open('newfile', 'wb') as file_data:
         for data in object_data:
             file_data.write(data)
@@ -147,7 +147,7 @@ def main():
 
     # Get a full object locally.
     client.fget_object(bucket_name, object_name, 'newfile-f',
-                       metadata={'x-amz-meta-testing': 'value'})
+                       request_headers={'x-amz-meta-testing': 'value'})
 
     client.fput_object(bucket_name, object_name+'-f', 'testfile',
                        metadata={'x-amz-meta-testing': 'value'})
