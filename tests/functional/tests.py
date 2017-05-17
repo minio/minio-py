@@ -83,32 +83,39 @@ def main():
     for bucket in buckets:
         _, _ = bucket.name, bucket.creation_date
 
-    with open('testfile', 'wb') as file_data:
+    testfile = 'test العربية file'
+    largefile = 'large भारतीय file'
+    newfile = 'newfile جديد'
+    newfile_f = 'newfile-f 新'
+    newfile_f_custom = 'newfile-f-custom'
+
+
+    with open(testfile, 'wb') as file_data:
         file_data.write(fake.text().encode('utf-8'))
     file_data.close()
 
     # Put a file
-    file_stat = os.stat('testfile')
-    with open('testfile', 'rb') as file_data:
+    file_stat = os.stat(testfile)
+    with open(testfile, 'rb') as file_data:
         client.put_object(bucket_name, object_name, file_data,
                           file_stat.st_size)
     file_data.close()
 
-    with open('largefile', 'wb') as file_data:
+    with open(largefile, 'wb') as file_data:
         for i in range(0, 104857):
             file_data.write(fake.text().encode('utf-8'))
     file_data.close()
 
     # Fput a file
-    client.fput_object(bucket_name, object_name+'-f', 'testfile')
+    client.fput_object(bucket_name, object_name+'-f', testfile)
     if is_s3:
-        client.fput_object(bucket_name, object_name+'-f', 'testfile',
+        client.fput_object(bucket_name, object_name+'-f', testfile,
                            metadata={'x-amz-storage-class': 'STANDARD_IA'})
 
     # Fput a large file.
-    client.fput_object(bucket_name, object_name+'-large', 'largefile')
+    client.fput_object(bucket_name, object_name+'-large', largefile)
     if is_s3:
-        client.fput_object(bucket_name, object_name+'-large', 'largefile',
+        client.fput_object(bucket_name, object_name+'-large', largefile,
                            metadata={'x-amz-storage-class': 'STANDARD_IA'})
 
     # Copy a file
@@ -140,19 +147,19 @@ def main():
     # Get a full object
     object_data = client.get_object(bucket_name, object_name,
                                     request_headers={'x-amz-meta-testing': 'value'})
-    with open('newfile', 'wb') as file_data:
+    with open(newfile, 'wb') as file_data:
         for data in object_data:
             file_data.write(data)
     file_data.close()
 
     # Get a full object locally.
-    client.fget_object(bucket_name, object_name, 'newfile-f',
+    client.fget_object(bucket_name, object_name, newfile_f,
                        request_headers={'x-amz-meta-testing': 'value'})
 
-    client.fput_object(bucket_name, object_name+'-f', 'testfile',
+    client.fput_object(bucket_name, object_name+'-f', testfile,
                        metadata={'x-amz-meta-testing': 'value'})
 
-    stat = client.fget_object(bucket_name, object_name+'-f', 'newfile-f-custom')
+    stat = client.fget_object(bucket_name, object_name+'-f', newfile_f_custom)
     if not stat.metadata.has_key('X-Amz-Meta-Testing'):
         raise ValueError('Metadata key \'x-amz-meta-testing\' not found')
     value = stat.metadata['X-Amz-Meta-Testing']
@@ -239,7 +246,7 @@ def main():
     for i in range(10):
         curr_object_name = object_name+"-{}".format(i)
         # print("object-name: {}".format(curr_object_name))
-        client.fput_object(bucket_name, curr_object_name, "testfile")
+        client.fput_object(bucket_name, curr_object_name, testfile)
         object_names.append(curr_object_name)
 
     # delete the objects in a single library call.
@@ -262,11 +269,11 @@ def main():
         client.remove_bucket(bucket_name+'.unique')
 
     # Remove temporary files.
-    os.remove('testfile')
-    os.remove('newfile')
-    os.remove('newfile-f')
-    os.remove('largefile')
-    os.remove('newfile-f-custom')
+    os.remove(testfile)
+    os.remove(largefile)
+    os.remove(newfile)
+    os.remove(newfile_f)
+    os.remove(newfile_f_custom)
 
 if __name__ == "__main__":
     # Execute only if run as a script
