@@ -190,10 +190,16 @@ def get_target_url(endpoint_url, bucket_name=None, object_name=None,
     parsed_url = urlsplit(endpoint_url)
 
     # Get new host, scheme.
+    scheme = parsed_url.scheme
     host = parsed_url.netloc
+
+    # Strip 80/443 ports since curl & browsers do not
+    # send them in Host header.
+    if parsed_url.port == 80 or parsed_url.port == 443:
+        host = parsed_url.hostname
+
     if 's3.amazonaws.com' in host:
         host = get_s3_endpoint(bucket_region)
-    scheme = parsed_url.scheme
 
     url = scheme + '://' + host
     if bucket_name:
