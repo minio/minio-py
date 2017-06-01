@@ -122,7 +122,8 @@ class Minio(object):
                  secret_key=None, secure=True,
                  region=None,
                  timeout=None,
-                 certificate_bundle=certifi.where()):
+                 certificate_bundle=certifi.where(),
+                 num_pools=10):
 
         # Validate endpoint.
         is_valid_endpoint(endpoint)
@@ -146,6 +147,7 @@ class Minio(object):
                              else urllib3.Timeout(timeout)
 
         self._http = urllib3.PoolManager(
+            num_pools=num_pools,
             timeout=self._conn_timeout,
             cert_reqs='CERT_REQUIRED',
             ca_certs=certificate_bundle,
