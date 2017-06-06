@@ -45,7 +45,8 @@ import certifi
 
 # Internal imports
 from . import __title__, __version__
-from .compat import urlsplit, range, urlencode, basestring
+from .compat import (urlsplit, queryencode,
+                     range, basestring)
 from .error import (KnownResponseError, ResponseError, NoSuchBucket,
                     InvalidArgumentError, InvalidSizeError, NoSuchBucketPolicy)
 from .definitions import Object, UploadPart
@@ -841,7 +842,7 @@ class Minio(object):
         if conditions:
             headers = {k: v for k, v in conditions.items()}
 
-        headers['X-Amz-Copy-Source'] = urlencode(object_source)
+        headers['X-Amz-Copy-Source'] = queryencode(object_source)
         response = self._url_open('PUT',
                                   bucket_name=bucket_name,
                                   object_name=object_name,
@@ -946,8 +947,9 @@ class Minio(object):
 
         # Initialize query parameters.
         query = {
-            'max-keys': 1000
+            'max-keys': '1000'
         }
+
         # Add if prefix present.
         if prefix:
             query['prefix'] = prefix
@@ -1012,7 +1014,7 @@ class Minio(object):
 
         # Initialize query parameters.
         query = {
-            'list-type': 2
+            'list-type': '2'
         }
         # Add if prefix present.
         if prefix:
@@ -1228,7 +1230,7 @@ class Minio(object):
         # Initialize query parameters.
         query = {
             'uploads': '',
-            'max-uploads': 1000
+            'max-uploads': '1000'
         }
 
         if prefix:
@@ -1286,14 +1288,14 @@ class Minio(object):
 
         query = {
             'uploadId': upload_id,
-            'max-parts': 1000
+            'max-parts': '1000'
         }
 
         is_truncated = True
         part_number_marker = None
         while is_truncated:
             if part_number_marker:
-                query['part-number-marker'] = part_number_marker
+                query['part-number-marker'] = str(part_number_marker)
 
             response = self._url_open('GET',
                                       bucket_name=bucket_name,
@@ -1558,7 +1560,8 @@ class Minio(object):
                 'Invalid input data does not implement a callable read() method')
 
         # Convert hex representation of md5 content to base64
-        md5content_b64 = codecs.encode(codecs.decode(part_metadata.md5_hex, 'hex'), 'base64').strip()
+        md5content_b64 = codecs.encode(codecs.decode(
+            part_metadata.md5_hex, 'hex_codec'), 'base64_codec').strip()
 
         headers = {
             'Content-Length': part_metadata.size,
@@ -1569,7 +1572,7 @@ class Minio(object):
             'PUT', bucket_name=bucket_name,
             object_name=object_name,
             query={'uploadId': upload_id,
-                   'partNumber': part_number},
+                   'partNumber': str(part_number)},
             headers=headers,
             body=data,
             content_sha256=part_metadata.sha256_hex

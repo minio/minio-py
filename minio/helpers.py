@@ -35,7 +35,8 @@ import os
 import errno
 import math
 
-from .compat import urlsplit, urlencode, str, bytes, basestring
+from .compat import (urlsplit, urlencode, queryencode,
+                     str, bytes, basestring)
 from .error import (InvalidBucketError, InvalidEndpointError,
                     InvalidArgumentError)
 
@@ -226,13 +227,15 @@ def get_target_url(endpoint_url, bucket_name=None, object_name=None,
             if ordered_query[component_key] is not None:
                 if isinstance(ordered_query[component_key], list):
                     for value in ordered_query[component_key]:
-                        encoded_query = urlencode(
-                            str(value)).replace('/', '%2F')
-                        query_components.append(component_key+'='+encoded_query)
+                        query_components.append(component_key+'='+
+                                                queryencode(value))
                 else:
-                    encoded_query = urlencode(
-                        str(ordered_query[component_key])).replace('/', '%2F')
-                    query_components.append(component_key+'='+encoded_query)
+                    query_components.append(
+                        component_key+'='+
+                        queryencode(
+                            ordered_query[component_key]
+                        )
+                    )
             else:
                 query_components.append(component_key)
 

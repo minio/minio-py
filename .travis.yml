@@ -14,12 +14,13 @@ env:
 - ARCH=i686
 
 install:
-- pip install urllib3 certifi pytz pyflakes
+- pip install urllib3 certifi pytz pyflakes faker
 
 script:
 - pyflakes minio/*.py || true
 - python setup.py install
 - python setup.py nosetests
+- python tests/functional/tests.py
 
 notifications:
   slack:

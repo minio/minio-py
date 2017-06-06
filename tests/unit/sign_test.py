@@ -24,7 +24,7 @@ from minio.signer import (generate_canonical_request, generate_string_to_sign,
                           generate_signing_key, generate_authorization_header,
                           presign_v4)
 from minio.error import InvalidArgumentError
-from minio.compat import urlsplit
+from minio.compat import urlsplit, urlencode, queryencode
 from minio.fold_case_dict import FoldCaseDict
 
 empty_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
@@ -115,3 +115,22 @@ class PresignURLTest(TestCase):
     @raises(InvalidArgumentError)
     def test_presigned_invalid_expires(self):
         presign_v4('GET', 'http://localhost:9000/hello', None, None, region=None, headers={}, expires=0)
+
+class UnicodeEncodeTest(TestCase):
+    def test_unicode_urlencode(self):
+        eq_(urlencode('/test/123/汉字'), '/test/123/%E6%B1%89%E5%AD%97')
+
+    def test_unicode_queryencode(self):
+        eq_(queryencode('/test/123/汉字'), '%2Ftest%2F123%2F%E6%B1%89%E5%AD%97')
+
+    def test_unicode_urlencode_u(self):
+        eq_(urlencode(u'/test/123/汉字'), '/test/123/%E6%B1%89%E5%AD%97')
+
+    def test_unicode_queryencode_u(self):
+        eq_(queryencode(u'/test/123/汉字'), '%2Ftest%2F123%2F%E6%B1%89%E5%AD%97')
+
+    def test_unicode_urlencode_b(self):
+        eq_(urlencode(b'/test/123/\xe6\xb1\x89\xe5\xad\x97'), '/test/123/%E6%B1%89%E5%AD%97')
+
+    def test_unicode_queryencode_b(self):
+        eq_(queryencode(b'/test/123/\xe6\xb1\x89\xe5\xad\x97'), '%2Ftest%2F123%2F%E6%B1%89%E5%AD%97')

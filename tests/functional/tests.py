@@ -50,10 +50,6 @@ def main():
 
     # Enable trace
     # client.trace_on(sys.stderr)
-
-    # Make a new bucket.
-    bucket_name = 'minio-pytest'
-
     client.make_bucket(bucket_name)
 
     is_s3 = client._endpoint_url.startswith("s3.amazonaws")
