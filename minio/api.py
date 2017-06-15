@@ -37,6 +37,7 @@ import io
 import json
 import os
 import itertools
+import codecs
 
 # Dependencies
 import urllib3
@@ -657,7 +658,7 @@ class Minio(object):
 
             # Create the LimitedReader again for the http reader.
             part = LimitedReader(file_data, current_part_size)
-            part_metadata = PartMetadata(part, md5hasher, sha256hasher,
+            part_metadata = PartMetadata(part, md5hasher.hexdigest(), sha256hasher.hexdigest(),
                                          current_part_size)
             # Initiate multipart put.
             etag = self._do_put_multipart_object(bucket_name, object_name,
@@ -1556,9 +1557,12 @@ class Minio(object):
             raise ValueError(
                 'Invalid input data does not implement a callable read() method')
 
+        # Convert hex representation of md5 content to base64
+        md5content_b64 = codecs.encode(codecs.decode(part_metadata.md5_hex, 'hex'), 'base64').strip()
+
         headers = {
             'Content-Length': part_metadata.size,
-            'Content-Md5': part_metadata.md5hasher.base64digest()
+            'Content-Md5': md5content_b64.decode()
         }
 
         response = self._url_open(
@@ -1568,7 +1572,7 @@ class Minio(object):
                    'partNumber': part_number},
             headers=headers,
             body=data,
-            content_sha256=part_metadata.sha256hasher.hexdigest()
+            content_sha256=part_metadata.sha256_hex
         )
 
         return response.headers['etag'].replace('"', '')

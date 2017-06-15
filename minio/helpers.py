@@ -117,14 +117,14 @@ class PartMetadata(object):
     Parts manager split parts metadata :class:`PartMetadata <PartMetadata>`.
 
     :param data: Part writer object backed by temporary file.
-    :param md5hasher: Computed md5sum Hasher interface.
-    :param sha256hasher: Computed sha256sum Hasher interface.
+    :param md5_hex: Md5 hash in hex format.
+    :param sha256_hex: Sha256 hash in hex format.
     :param size: Size of the part.
     """
-    def __init__(self, data, md5hasher, sha256hasher, size):
+    def __init__(self, data, md5_hex, sha256_hex, size):
         self.data = data
-        self.md5hasher = md5hasher
-        self.sha256hasher = sha256hasher
+        self.md5_hex = md5_hex
+        self.sha256_hex = sha256_hex
         self.size = size
 
 
@@ -149,7 +149,7 @@ def parts_manager(data, part_size=5*1024*1024):
         sha256hasher.update(current_data)
         total_read += len(current_data)
 
-    return PartMetadata(tmpdata, md5hasher, sha256hasher, total_read)
+    return PartMetadata(tmpdata, md5hasher.hexdigest(), sha256hasher.hexdigest(), total_read)
 
 AWS_S3_ENDPOINT_MAP = {
     'us-east-1': 's3.amazonaws.com',
