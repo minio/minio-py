@@ -160,7 +160,7 @@ def main():
                        metadata={'x-amz-meta-testing': 'value'})
 
     stat = client.fget_object(bucket_name, object_name+'-f', newfile_f_custom)
-    if not stat.metadata.has_key('X-Amz-Meta-Testing'):
+    if 'X-Amz-Meta-Testing' not in stat.metadata:
         raise ValueError('Metadata key \'x-amz-meta-testing\' not found')
     value = stat.metadata['X-Amz-Meta-Testing']
     if value != 'value':
