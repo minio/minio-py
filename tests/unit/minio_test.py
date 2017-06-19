@@ -19,6 +19,7 @@ from unittest import TestCase
 from nose.tools import raises, eq_
 
 from minio import Minio
+from minio import __version__ as minio_version
 from minio.api import _DEFAULT_USER_AGENT
 from minio.error import InvalidEndpointError, InvalidBucketError
 from minio.helpers import get_target_url, is_valid_bucket_name
@@ -88,14 +89,14 @@ class UserAgentTests(TestCase):
 
     def test_set_app_info(self):
         client = Minio('localhost')
-        expected_user_agent = _DEFAULT_USER_AGENT + ' hello/2.2.2'
-        client.set_app_info('hello', '2.2.2')
+        expected_user_agent = _DEFAULT_USER_AGENT + ' hello/' + minio_version
+        client.set_app_info('hello', minio_version)
         eq_(client._user_agent, expected_user_agent)
 
     @raises(ValueError)
     def test_set_app_info_requires_non_empty_name(self):
         client = Minio('localhost:9000')
-        client.set_app_info('', '2.2.2')
+        client.set_app_info('', minio_version)
 
     @raises(ValueError)
     def test_set_app_info_requires_non_empty_version(self):
