@@ -1662,7 +1662,7 @@ class Minio(object):
                                  else last_part_size)
 
             part_metadata = parts_manager(data, current_part_size)
-            md5_hex = part_metadata.md5hasher.hexdigest()
+            md5_hex = part_metadata.md5_hex
 
             # Verify if part number has been already uploaded.
             # Further verify if we have matching md5sum as well.
