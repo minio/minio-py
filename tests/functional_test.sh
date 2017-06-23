@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-#!/usr/bin/expect -f
 #
-#  Minio Cloud Storage, (C) 2017 Minio, Inc.
+# Minio Python Library for Amazon S3 Compatible Cloud Storage, (C) 2017 Minio, Inc.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -33,7 +32,7 @@ build() {
 run() {
     echo "running..."
     if [[ $py2flag = 1 ]]; then
-	    python ./functional/tests.py 
+	python ./functional/tests.py 
     else
         python3 ./functional/tests.py
     fi 
