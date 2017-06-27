@@ -59,5 +59,6 @@ main () {
 }
 
 # invoke the script
-
+# Move to the directory which contains this script and invoke it
+cd $(dirname $(realpath $0)) ; \
 main "$@"
