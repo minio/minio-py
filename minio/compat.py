@@ -34,6 +34,9 @@ _is_py2 = (sys.version_info[0] == 2)
 _is_py3 = (sys.version_info[0] == 3)
 
 if _is_py2:
+    from Queue import Queue
+    queue = Queue
+
     from urllib import quote
     _urlencode = quote
 
@@ -56,6 +59,9 @@ if _is_py2:
     ## Add missing imports
     basestring = basestring
 elif _is_py3:
+    from queue import Queue
+    queue = Queue
+
     from urllib.request import quote
     _urlencode = quote
 
