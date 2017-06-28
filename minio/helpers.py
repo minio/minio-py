@@ -43,7 +43,7 @@ from .error import (InvalidBucketError, InvalidEndpointError,
 # Constants
 MAX_MULTIPART_COUNT = 10000 # 10000 parts
 MAX_MULTIPART_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
-MIN_OBJECT_SIZE = 5 * 1024 * 1024  # 5MiB
+MIN_PART_SIZE = 5 * 1024 * 1024  # 5MiB
 
 _VALID_BUCKETNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\\.\\-]+[a-z0-9]$')
 _ALLOWED_HOSTNAME_REGEX = re.compile(
@@ -129,7 +129,7 @@ class PartMetadata(object):
         self.size = size
 
 
-def parts_manager(data, part_size=5*1024*1024):
+def parts_manager(data, part_size=MIN_PART_SIZE):
     """
     Reads data and provides temporary files of a given size.
 
@@ -565,8 +565,8 @@ def optimal_part_info(length):
     # Use floats for part size for all calculations to avoid
     # overflows during float64 to int64 conversions.
     part_size_float = math.ceil(length/MAX_MULTIPART_COUNT)
-    part_size_float = (math.ceil(part_size_float/MIN_OBJECT_SIZE)
-                       * MIN_OBJECT_SIZE)
+    part_size_float = (math.ceil(part_size_float/MIN_PART_SIZE)
+                       * MIN_PART_SIZE)
     # Total parts count.
     total_parts_count = int(math.ceil(length/part_size_float))
     # Part size.
