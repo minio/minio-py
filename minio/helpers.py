@@ -35,7 +35,8 @@ import os
 import errno
 import math
 
-from .compat import urlsplit, urlencode, str, bytes, basestring
+from .compat import (urlsplit, urlencode, queryencode,
+                     str, bytes, basestring)
 from .error import (InvalidBucketError, InvalidEndpointError,
                     InvalidArgumentError)
 
@@ -117,14 +118,14 @@ class PartMetadata(object):
     Parts manager split parts metadata :class:`PartMetadata <PartMetadata>`.
 
     :param data: Part writer object backed by temporary file.
-    :param md5hasher: Computed md5sum Hasher interface.
-    :param sha256hasher: Computed sha256sum Hasher interface.
+    :param md5_hex: Md5 hash in hex format.
+    :param sha256_hex: Sha256 hash in hex format.
     :param size: Size of the part.
     """
-    def __init__(self, data, md5hasher, sha256hasher, size):
+    def __init__(self, data, md5_hex, sha256_hex, size):
         self.data = data
-        self.md5hasher = md5hasher
-        self.sha256hasher = sha256hasher
+        self.md5_hex = md5_hex
+        self.sha256_hex = sha256_hex
         self.size = size
 
 
@@ -149,7 +150,7 @@ def parts_manager(data, part_size=5*1024*1024):
         sha256hasher.update(current_data)
         total_read += len(current_data)
 
-    return PartMetadata(tmpdata, md5hasher, sha256hasher, total_read)
+    return PartMetadata(tmpdata, md5hasher.hexdigest(), sha256hasher.hexdigest(), total_read)
 
 AWS_S3_ENDPOINT_MAP = {
     'us-east-1': 's3.amazonaws.com',
@@ -190,10 +191,16 @@ def get_target_url(endpoint_url, bucket_name=None, object_name=None,
     parsed_url = urlsplit(endpoint_url)
 
     # Get new host, scheme.
+    scheme = parsed_url.scheme
     host = parsed_url.netloc
+
+    # Strip 80/443 ports since curl & browsers do not
+    # send them in Host header.
+    if parsed_url.port == 80 or parsed_url.port == 443:
+        host = parsed_url.hostname
+
     if 's3.amazonaws.com' in host:
         host = get_s3_endpoint(bucket_region)
-    scheme = parsed_url.scheme
 
     url = scheme + '://' + host
     if bucket_name:
@@ -220,13 +227,15 @@ def get_target_url(endpoint_url, bucket_name=None, object_name=None,
             if ordered_query[component_key] is not None:
                 if isinstance(ordered_query[component_key], list):
                     for value in ordered_query[component_key]:
-                        encoded_query = urlencode(
-                            str(value)).replace('/', '%2F')
-                        query_components.append(component_key+'='+encoded_query)
+                        query_components.append(component_key+'='+
+                                                queryencode(value))
                 else:
-                    encoded_query = urlencode(
-                        str(ordered_query[component_key])).replace('/', '%2F')
-                    query_components.append(component_key+'='+encoded_query)
+                    query_components.append(
+                        component_key+'='+
+                        queryencode(
+                            ordered_query[component_key]
+                        )
+                    )
             else:
                 query_components.append(component_key)
 

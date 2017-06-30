@@ -31,7 +31,7 @@ import hmac
 
 from datetime import datetime
 from .error import InvalidArgumentError
-from .compat import urlsplit, urlencode
+from .compat import urlsplit, queryencode
 from .helpers import get_sha256_hexdigest
 from .fold_case_dict import FoldCaseDict
 
@@ -84,7 +84,7 @@ def presign_v4(method, url, access_key, secret_key, region=None,
         headers = {}
 
     if expires is None:
-        expires = 604800
+        expires = '604800'
 
     parsed_url = urlsplit(url)
     content_hash_hex = _UNSIGNED_PAYLOAD
@@ -100,7 +100,7 @@ def presign_v4(method, url, access_key, secret_key, region=None,
     query['X-Amz-Credential'] = generate_credential_string(access_key,
                                                            date, region)
     query['X-Amz-Date'] = iso8601Date
-    query['X-Amz-Expires'] = expires
+    query['X-Amz-Expires'] = str(expires)
     signed_headers = get_signed_headers(headers_to_sign)
     query['X-Amz-SignedHeaders'] = ';'.join(signed_headers)
 
@@ -117,10 +117,8 @@ def presign_v4(method, url, access_key, secret_key, region=None,
             if ordered_query[component_key] is not None:
                 single_component.append('=')
                 single_component.append(
-                    urlencode(
-                        str(ordered_query[component_key])
-                    ).replace('/',
-                              '%2F'))
+                    queryencode(ordered_query[component_key])
+                )
             query_components.append(''.join(single_component))
 
         query_string = '&'.join(query_components)

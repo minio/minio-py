@@ -37,6 +37,7 @@ import io
 import json
 import os
 import itertools
+import codecs
 
 # Dependencies
 import urllib3
@@ -44,7 +45,8 @@ import certifi
 
 # Internal imports
 from . import __title__, __version__
-from .compat import urlsplit, range, urlencode, basestring
+from .compat import (urlsplit, queryencode,
+                     range, basestring)
 from .error import (KnownResponseError, ResponseError, NoSuchBucket,
                     InvalidArgumentError, InvalidSizeError, NoSuchBucketPolicy)
 from .definitions import Object, UploadPart
@@ -523,35 +525,6 @@ class Minio(object):
                 response.close()
                 continue
 
-    def _get_upload_id(self, bucket_name, object_name, metadata=None):
-        """
-        Get previously uploaded upload id for object name or initiate a request
-        to fetch a new upload id.
-
-        :param bucket_name: Bucket name where the incomplete upload resides.
-        :param object_name: Object name for which upload id is requested.
-        :param metadata: Additional metadata headers for new multipart upload.
-        """
-        recursive = True
-        current_uploads = self._list_incomplete_uploads(bucket_name,
-                                                        object_name,
-                                                        recursive,
-                                                        is_aggregate_size=False)
-        matching_uploads = [upload
-                            for upload in current_uploads
-                            if object_name == upload.object_name]
-
-        # If no matching uploads its a new multipart upload.
-        if not len(matching_uploads):
-            upload_id = self._new_multipart_upload(bucket_name,
-                                                   object_name,
-                                                   metadata)
-        else:
-            incomplete_upload = max(matching_uploads, key=lambda x: x.initiated)
-            upload_id = incomplete_upload.upload_id
-
-        return upload_id
-
     def fput_object(self, bucket_name, object_name, file_path,
                     content_type='application/octet-stream',
                     metadata=None):
@@ -569,124 +542,13 @@ class Minio(object):
             with your PUT request.
         :return: etag
         """
-        is_valid_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
-        is_non_empty_string(file_path)
-
-        # save file_size.
-        file_size = os.stat(file_path).st_size
-
-        if file_size > MAX_MULTIPART_OBJECT_SIZE:
-            raise InvalidArgumentError('Input content size is bigger '
-                                       ' than allowed maximum of 5TiB.')
 
         # Open file in 'read' mode.
         file_data = io.open(file_path, mode='rb')
+        file_size = os.stat(file_path).st_size
 
-        if file_size <= MIN_OBJECT_SIZE:
-            return self._do_put_object(bucket_name, object_name,
-                                       file_data.read(file_size),
-                                       metadata=metadata)
-
-        if not metadata:
-            metadata = {}
-
-        metadata['Content-Type'] = 'application/octet-stream' if \
-            not content_type else content_type
-
-        # Calculate optimal part info.
-        total_parts_count, part_size, last_part_size = optimal_part_info(
-            file_size)
-
-        # get upload id.
-        upload_id = self._get_upload_id(bucket_name, object_name, metadata)
-
-        # Initialize variables
-        uploaded_parts = {}
-        total_uploaded = 0
-
-        # Iter over the uploaded parts.
-        parts_iter = self._list_object_parts(bucket_name,
-                                             object_name,
-                                             upload_id)
-
-        for part in parts_iter:
-            # Save uploaded parts for future verification.
-            uploaded_parts[part.part_number] = part
-
-        # Always start with first part number.
-        for part_number in range(1, total_parts_count + 1):
-            # Save the current part size that needs to be uploaded.
-            current_part_size = part_size
-            if part_number == total_parts_count:
-                current_part_size = last_part_size
-
-            # Save current offset as previous offset.
-            prev_offset = file_data.seek(0, 1)
-
-            # Calculate md5sum and sha256.
-            md5hasher = Hasher.md5()
-            sha256hasher = Hasher.sha256()
-            total_read = 0
-
-            # Save LimitedReader, read upto current_part_size for
-            # md5sum and sha256 calculation.
-            part = LimitedReader(file_data, current_part_size)
-            while total_read < current_part_size:
-                current_data = part.read()  # Read in 64k chunks.
-                if not current_data or len(current_data) == 0:
-                    break
-                md5hasher.update(current_data)
-                sha256hasher.update(current_data)
-                total_read += len(current_data)
-
-            part_md5_hex = md5hasher.hexdigest()
-            # Verify if current part number has been already
-            # uploaded. Verify if the size is same, further verify if
-            # we have matching md5sum as well.
-            if part_number in uploaded_parts:
-                previous_part = uploaded_parts[part_number]
-                if previous_part.size == current_part_size:
-                    if previous_part.etag == part_md5_hex:
-                        total_uploaded += previous_part.size
-                        continue
-
-            # Seek back to previous offset position before checksum
-            # calculation.
-            file_data.seek(prev_offset, 0)
-
-            # Create the LimitedReader again for the http reader.
-            part = LimitedReader(file_data, current_part_size)
-            part_metadata = PartMetadata(part, md5hasher, sha256hasher,
-                                         current_part_size)
-            # Initiate multipart put.
-            etag = self._do_put_multipart_object(bucket_name, object_name,
-                                                 part_metadata,
-                                                 upload_id,
-                                                 part_number)
-
-            # Save etags.
-            uploaded_parts[part_number] = UploadPart(bucket_name,
-                                                     object_name,
-                                                     upload_id,
-                                                     part_number,
-                                                     etag, None,
-                                                     total_read)
-            # Total uploaded.
-            total_uploaded += total_read
-
-        if total_uploaded != file_size:
-            msg = 'Data uploaded {0} is not equal input size ' \
-                  '{1}'.format(total_uploaded, file_size)
-            raise InvalidSizeError(msg)
-
-        # Complete all multipart transactions if possible.
-        mpart_result = self._complete_multipart_upload(bucket_name,
-                                                       object_name,
-                                                       upload_id,
-                                                       uploaded_parts)
-        # Return etag here.
-        return mpart_result.etag
+        return self.put_object(bucket_name, object_name, file_data, file_size,
+                content_type, metadata)
 
     def fget_object(self, bucket_name, object_name, file_path, request_headers=None):
         """
@@ -840,7 +702,7 @@ class Minio(object):
         if conditions:
             headers = {k: v for k, v in conditions.items()}
 
-        headers['X-Amz-Copy-Source'] = urlencode(object_source)
+        headers['X-Amz-Copy-Source'] = queryencode(object_source)
         response = self._url_open('PUT',
                                   bucket_name=bucket_name,
                                   object_name=object_name,
@@ -945,8 +807,9 @@ class Minio(object):
 
         # Initialize query parameters.
         query = {
-            'max-keys': 1000
+            'max-keys': '1000'
         }
+
         # Add if prefix present.
         if prefix:
             query['prefix'] = prefix
@@ -1011,7 +874,7 @@ class Minio(object):
 
         # Initialize query parameters.
         query = {
-            'list-type': 2
+            'list-type': '2'
         }
         # Add if prefix present.
         if prefix:
@@ -1227,7 +1090,7 @@ class Minio(object):
         # Initialize query parameters.
         query = {
             'uploads': '',
-            'max-uploads': 1000
+            'max-uploads': '1000'
         }
 
         if prefix:
@@ -1285,14 +1148,14 @@ class Minio(object):
 
         query = {
             'uploadId': upload_id,
-            'max-parts': 1000
+            'max-parts': '1000'
         }
 
         is_truncated = True
         part_number_marker = None
         while is_truncated:
             if part_number_marker:
-                query['part-number-marker'] = part_number_marker
+                query['part-number-marker'] = str(part_number_marker)
 
             response = self._url_open('GET',
                                       bucket_name=bucket_name,
@@ -1556,19 +1419,23 @@ class Minio(object):
             raise ValueError(
                 'Invalid input data does not implement a callable read() method')
 
+        # Convert hex representation of md5 content to base64
+        md5content_b64 = codecs.encode(codecs.decode(
+            part_metadata.md5_hex, 'hex_codec'), 'base64_codec').strip()
+
         headers = {
             'Content-Length': part_metadata.size,
-            'Content-Md5': part_metadata.md5hasher.base64digest()
+            'Content-Md5': md5content_b64.decode()
         }
 
         response = self._url_open(
             'PUT', bucket_name=bucket_name,
             object_name=object_name,
             query={'uploadId': upload_id,
-                   'partNumber': part_number},
+                   'partNumber': str(part_number)},
             headers=headers,
             body=data,
-            content_sha256=part_metadata.sha256hasher.hexdigest()
+            content_sha256=part_metadata.sha256_hex
         )
 
         return response.headers['etag'].replace('"', '')
@@ -1629,22 +1496,15 @@ class Minio(object):
                 'Invalid input data does not implement a callable read() method')
 
         # get upload id.
-        upload_id = self._get_upload_id(bucket_name, object_name, metadata)
+        upload_id = self._new_multipart_upload(bucket_name, object_name, metadata)
 
         # Initialize variables
         total_uploaded = 0
+        uploaded_parts = {}
 
         # Calculate optimal part info.
         total_parts_count, part_size, last_part_size = optimal_part_info(
             content_size)
-
-        # Iter over the uploaded parts.
-        parts_iter = self._list_object_parts(bucket_name,
-                                             object_name,
-                                             upload_id)
-
-        # save uploaded parts for verification.
-        uploaded_parts = {part.part_number: part for part in parts_iter}
 
         # Generate new parts and upload <= current_part_size until
         # part_number reaches total_parts_count calculated for the
@@ -1655,15 +1515,6 @@ class Minio(object):
                                  else last_part_size)
 
             part_metadata = parts_manager(data, current_part_size)
-            md5_hex = part_metadata.md5hasher.hexdigest()
-
-            # Verify if part number has been already uploaded.
-            # Further verify if we have matching md5sum as well.
-            previous_part = uploaded_parts.get(part_number, None)
-            if (previous_part and previous_part.size == current_part_size and
-                previous_part.etag == md5_hex):
-                total_uploaded += previous_part.size
-                continue
 
             # Seek back to starting position.
             part_metadata.data.seek(0)

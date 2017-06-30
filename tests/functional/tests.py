@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Minio Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015, 2016 Minio, Inc.
+# (C) 2015, 2016, 2017 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,10 @@ import io
 import uuid
 import urllib3
 import certifi
+import random
+
+from random import choice
+from string import ascii_lowercase
 
 from datetime import datetime, timedelta
 
@@ -28,13 +32,25 @@ from minio.policy import Policy
 from minio.error import (ResponseError, PreconditionFailed,
                          BucketAlreadyOwnedByYou, BucketAlreadyExists)
 
-from faker import Factory
+class random_data:
+    """
+    random_data quickly generates pseudo random data by chunks of 1024
+    """
+    def __init__(self, choices_list, randomness_level):
+        self.block = 1024
+        self.seed = []
+        for i in range(randomness_level):
+            self.seed.append(''.join([choice(choices_list) for _ in range(self.block)]))
+
+    def gen(self, nr_bytes):
+        if nr_bytes % self.block is not 0:
+            raise ValueError('Passed number of bytes should be multiple of ' + self.block)
+        return ''.join([choice(self.seed) for _ in range(int(nr_bytes/self.block))])
 
 def main():
     """
     Functional testing of minio python library.
     """
-    fake = Factory.create()
     client = Minio('play.minio.io:9000',
                    'Q3AM3UQ867SPQQA43P2F',
                    'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
@@ -50,10 +66,6 @@ def main():
 
     # Enable trace
     # client.trace_on(sys.stderr)
-
-    # Make a new bucket.
-    bucket_name = 'minio-pytest'
-
     client.make_bucket(bucket_name)
 
     is_s3 = client._endpoint_url.startswith("s3.amazonaws")
@@ -83,32 +95,48 @@ def main():
     for bucket in buckets:
         _, _ = bucket.name, bucket.creation_date
 
-    with open('testfile', 'wb') as file_data:
-        file_data.write(fake.text().encode('utf-8'))
-    file_data.close()
+    testfile = 'test العربية file'
+    largefile = 'large भारतीय file'
+    newfile = 'newfile جديد'
+    newfile_f = 'newfile-f 新'
+    newfile_f_custom = 'newfile-f-custom'
+
+    r = random_data(ascii_lowercase, 5)
+
+    # Create a test file
+    with open(testfile, 'wb') as file_data:
+        # Create a 1mb of random data
+        random_1mb = r.gen(1024*1024)
+        file_data.write(random_1mb.encode())
+
+    # Create a large file
+    with open(largefile, 'wb') as file_data:
+        # Create a 16mb of random data
+        random_16mb = r.gen(1024*1024*16)
+        file_data.write(random_16mb.encode())
 
     # Put a file
-    file_stat = os.stat('testfile')
-    with open('testfile', 'rb') as file_data:
+    file_stat = os.stat(testfile)
+    with open(testfile, 'rb') as file_data:
         client.put_object(bucket_name, object_name, file_data,
                           file_stat.st_size)
-    file_data.close()
 
-    with open('largefile', 'wb') as file_data:
-        for i in range(0, 104857):
-            file_data.write(fake.text().encode('utf-8'))
-    file_data.close()
+    # Put a large file
+    file_stat = os.stat(largefile)
+    with open(largefile, 'rb') as file_data:
+        client.put_object(bucket_name, object_name, file_data,
+                          file_stat.st_size)
 
     # Fput a file
-    client.fput_object(bucket_name, object_name+'-f', 'testfile')
+    client.fput_object(bucket_name, object_name+'-f', testfile)
     if is_s3:
-        client.fput_object(bucket_name, object_name+'-f', 'testfile',
+        client.fput_object(bucket_name, object_name+'-f', testfile,
                            metadata={'x-amz-storage-class': 'STANDARD_IA'})
 
     # Fput a large file.
-    client.fput_object(bucket_name, object_name+'-large', 'largefile')
+    client.fput_object(bucket_name, object_name+'-large', largefile)
     if is_s3:
-        client.fput_object(bucket_name, object_name+'-large', 'largefile',
+        client.fput_object(bucket_name, object_name+'-large', largefile,
                            metadata={'x-amz-storage-class': 'STANDARD_IA'})
 
     # Copy a file
@@ -140,20 +168,19 @@ def main():
     # Get a full object
     object_data = client.get_object(bucket_name, object_name,
                                     request_headers={'x-amz-meta-testing': 'value'})
-    with open('newfile', 'wb') as file_data:
+    with open(newfile, 'wb') as file_data:
         for data in object_data:
             file_data.write(data)
-    file_data.close()
 
     # Get a full object locally.
-    client.fget_object(bucket_name, object_name, 'newfile-f',
+    client.fget_object(bucket_name, object_name, newfile_f,
                        request_headers={'x-amz-meta-testing': 'value'})
 
-    client.fput_object(bucket_name, object_name+'-f', 'testfile',
+    client.fput_object(bucket_name, object_name+'-f', testfile,
                        metadata={'x-amz-meta-testing': 'value'})
 
-    stat = client.fget_object(bucket_name, object_name+'-f', 'newfile-f-custom')
-    if not stat.metadata.has_key('X-Amz-Meta-Testing'):
+    stat = client.fget_object(bucket_name, object_name+'-f', newfile_f_custom)
+    if 'X-Amz-Meta-Testing' not in stat.metadata:
         raise ValueError('Metadata key \'x-amz-meta-testing\' not found')
     value = stat.metadata['X-Amz-Meta-Testing']
     if value != 'value':
@@ -187,7 +214,7 @@ def main():
                             object_name).get_exception()
 
     presigned_put_object_url = client.presigned_put_object(bucket_name, object_name)
-    value = fake.text().encode('utf-8')
+    value = r.gen(1024).encode()
     data = io.BytesIO(value).getvalue()
     response = _http.urlopen('PUT', presigned_put_object_url, body=data)
     if response.status != 200:
@@ -239,7 +266,7 @@ def main():
     for i in range(10):
         curr_object_name = object_name+"-{}".format(i)
         # print("object-name: {}".format(curr_object_name))
-        client.fput_object(bucket_name, curr_object_name, "testfile")
+        client.fput_object(bucket_name, curr_object_name, testfile)
         object_names.append(curr_object_name)
 
     # delete the objects in a single library call.
@@ -262,11 +289,11 @@ def main():
         client.remove_bucket(bucket_name+'.unique')
 
     # Remove temporary files.
-    os.remove('testfile')
-    os.remove('newfile')
-    os.remove('newfile-f')
-    os.remove('largefile')
-    os.remove('newfile-f-custom')
+    os.remove(testfile)
+    os.remove(largefile)
+    os.remove(newfile)
+    os.remove(newfile_f)
+    os.remove(newfile_f_custom)
 
 if __name__ == "__main__":
     # Execute only if run as a script

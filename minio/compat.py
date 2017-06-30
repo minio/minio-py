@@ -34,11 +34,11 @@ _is_py2 = (sys.version_info[0] == 2)
 _is_py3 = (sys.version_info[0] == 3)
 
 if _is_py2:
-    from urllib import pathname2url
-    urlencode = pathname2url
+    from urllib import quote
+    _urlencode = quote
 
-    from urllib import url2pathname
-    urldecode = url2pathname
+    from urllib import unquote
+    urldecode = unquote
 
     import urlparse
     urlsplit = urlparse.urlsplit
@@ -56,11 +56,11 @@ if _is_py2:
     ## Add missing imports
     basestring = basestring
 elif _is_py3:
-    from urllib.request import pathname2url
-    urlencode = pathname2url
+    from urllib.request import quote
+    _urlencode = quote
 
-    from urllib.request import url2pathname
-    urldecode = url2pathname
+    from urllib.request import unquote
+    urldecode = unquote
 
     import urllib.parse
     urlsplit = urllib.parse.urlsplit
@@ -80,3 +80,22 @@ elif _is_py3:
     str = str
 
 numeric_types = (int, long, float)
+
+def urlencode(resource):
+    """
+    This implementation of urlencode supports all unicode characters
+
+    :param: resource: Resource value to be url encoded.
+    """
+    if isinstance(resource, str):
+        return _urlencode(resource.encode('utf-8'))
+
+    return _urlencode(resource)
+
+def queryencode(query):
+    """
+    This implementation of queryencode supports all unicode characters
+
+    :param: query: Query value to be url encoded.
+    """
+    return urlencode(query).replace('/', '%2F')
