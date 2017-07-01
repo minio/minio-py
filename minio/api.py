@@ -1402,7 +1402,7 @@ class Minio(object):
         return presign_url
 
     def _do_put_multipart_object(self, bucket_name, object_name, part_metadata,
-                                 upload_id='', part_number=0):
+                                 upload_id='', part_number=0, metadata=None):
         """
         Initiate a multipart PUT operation for a part number.
 
@@ -1411,6 +1411,8 @@ class Minio(object):
         :param part_metadata: Part-data and metadata for the multipart request.
         :param upload_id: Upload id of the multipart request.
         :param part_number: Part number of the data to be uploaded.
+        :param metadata: Any additional metadata to be uploaded along
+           with your object.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -1427,6 +1429,9 @@ class Minio(object):
             'Content-Length': part_metadata.size,
             'Content-Md5': md5content_b64.decode()
         }
+
+        if metadata:
+            headers.update(metadata)
 
         response = self._url_open(
             'PUT', bucket_name=bucket_name,
@@ -1488,6 +1493,8 @@ class Minio(object):
         :param content_size: Total size of the content to be uploaded.
         :param content_type: Content type of of the multipart upload.
            Defaults to 'application/octet-stream'.
+        :param metadata: Any additional metadata to be uploaded along
+           with your object.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -1522,7 +1529,8 @@ class Minio(object):
                                                  object_name,
                                                  part_metadata,
                                                  upload_id,
-                                                 part_number)
+                                                 part_number,
+                                                 metadata=metadata)
             # Save etags.
             uploaded_parts[part_number] = UploadPart(bucket_name,
                                                      object_name,
@@ -1543,7 +1551,8 @@ class Minio(object):
         mpart_result = self._complete_multipart_upload(bucket_name,
                                                        object_name,
                                                        upload_id,
-                                                       uploaded_parts)
+                                                       uploaded_parts,
+                                                       metadata=metadata)
         # Return etag here.
         return mpart_result.etag
 
@@ -1583,7 +1592,7 @@ class Minio(object):
         return parse_new_multipart_upload(response.data)
 
     def _complete_multipart_upload(self, bucket_name, object_name,
-                                   upload_id, uploaded_parts):
+                                   upload_id, uploaded_parts, metadata=None):
         """
         Complete an active multipart upload request.
 
@@ -1591,6 +1600,8 @@ class Minio(object):
         :param object_name: Object name of the multipart request.
         :param upload_id: Upload id of the active multipart request.
         :param uploaded_parts: Key, Value dictionary of uploaded parts.
+        :param metadata: Any additional metadata to be uploaded along
+           with your object.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -1605,6 +1616,8 @@ class Minio(object):
             'Content-Type': 'application/xml',
             'Content-Md5': md5_base64,
         }
+        if metadata:
+            headers.update(metadata)
 
         response = self._url_open('POST', bucket_name=bucket_name,
                                   object_name=object_name,
