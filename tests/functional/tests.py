@@ -20,7 +20,7 @@ import io
 import uuid
 import urllib3
 import certifi
-import random
+import shutil
 
 from random import choice
 from string import ascii_lowercase
@@ -32,17 +32,18 @@ from minio.policy import Policy
 from minio.error import (ResponseError, PreconditionFailed,
                          BucketAlreadyOwnedByYou, BucketAlreadyExists)
 
-class random_data:
+class RandomData:
     """
-    random_data quickly generates pseudo random data by chunks of 1024
+    RandomData quickly generates pseudo random data by chunks of 1024
     """
     def __init__(self, choices_list, randomness_level):
         self.block = 1024
         self.seed = []
-        for i in range(randomness_level):
+        for _ in range(randomness_level):
             self.seed.append(''.join([choice(choices_list) for _ in range(self.block)]))
 
     def gen(self, nr_bytes):
+        """ generates random data for nr_bytes length """
         if nr_bytes % self.block is not 0:
             raise ValueError('Passed number of bytes should be multiple of ' + self.block)
         return ''.join([choice(self.seed) for _ in range(int(nr_bytes/self.block))])
@@ -51,9 +52,18 @@ def main():
     """
     Functional testing of minio python library.
     """
-    client = Minio('play.minio.io:9000',
-                   'Q3AM3UQ867SPQQA43P2F',
-                   'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
+    access_key = os.getenv('ACCESS_KEY', 'Q3AM3UQ867SPQQA43P2F')
+    secret_key = os.getenv('SECRET_KEY',
+                           'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
+    server_endpoint = os.getenv('SERVER_ENDPOINT', 'play.minio.io:9000')
+    secure = os.getenv('ENABLE_HTTPS', '1') == '1'
+    if server_endpoint == 'play.minio.io:9000':
+        access_key = 'Q3AM3UQ867SPQQA43P2F'
+        secret_key = 'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
+        secure = True
+
+    is_s3 = server_endpoint.startswith("s3.amazonaws")
+    client = Minio(server_endpoint, access_key, secret_key, secure=secure)
 
     _http = urllib3.PoolManager(
         cert_reqs='CERT_REQUIRED',
@@ -68,7 +78,6 @@ def main():
     # client.trace_on(sys.stderr)
     client.make_bucket(bucket_name)
 
-    is_s3 = client._endpoint_url.startswith("s3.amazonaws")
     if is_s3:
         client.make_bucket(bucket_name+'.unique',
                            location='us-west-1')
@@ -101,7 +110,7 @@ def main():
     newfile_f = 'newfile-f 新'
     newfile_f_custom = 'newfile-f-custom'
 
-    r = random_data(ascii_lowercase, 5)
+    r = RandomData(ascii_lowercase, 5)
 
     # Create a test file
     with open(testfile, 'wb') as file_data:
@@ -128,21 +137,25 @@ def main():
                           file_stat.st_size)
 
     # Fput a file
+    print("Upload a local file")
     client.fput_object(bucket_name, object_name+'-f', testfile)
     if is_s3:
         client.fput_object(bucket_name, object_name+'-f', testfile,
                            metadata={'x-amz-storage-class': 'STANDARD_IA'})
 
     # Fput a large file.
+    print("Upload a largfile through multipart upload")
     client.fput_object(bucket_name, object_name+'-large', largefile)
     if is_s3:
         client.fput_object(bucket_name, object_name+'-large', largefile,
                            metadata={'x-amz-storage-class': 'STANDARD_IA'})
 
     # Copy a file
+    print("Perform a server side copy of an object")
     client.copy_object(bucket_name, object_name+'-copy',
                        '/'+bucket_name+'/'+object_name+'-f')
 
+    print("Perform a server side copy of an object with pre-conditions and fail")
     try:
         copy_conditions = CopyConditions()
         copy_conditions.set_match_etag('test-etag')
@@ -153,6 +166,7 @@ def main():
         if err.message != 'At least one of the preconditions you specified did not hold.':
             raise
 
+    print("Perform look for all upload objects")
     # Fetch stats on your object.
     client.stat_object(bucket_name, object_name)
 
@@ -166,19 +180,23 @@ def main():
     client.stat_object(bucket_name, object_name+'-copy')
 
     # Get a full object
+    print("Download a full object, iterate on response to save to disk")
     object_data = client.get_object(bucket_name, object_name,
-                                    request_headers={'x-amz-meta-testing': 'value'})
+                                    request_headers={
+                                        'x-amz-meta-testing': 'value'
+                                    })
     with open(newfile, 'wb') as file_data:
-        for data in object_data:
-            file_data.write(data)
+        shutil.copyfileobj(object_data, file_data)
 
     # Get a full object locally.
-    client.fget_object(bucket_name, object_name, newfile_f,
-                       request_headers={'x-amz-meta-testing': 'value'})
+    print("Download a full object and save locally at path")
+    client.fget_object(bucket_name, object_name, newfile_f)
 
+    print("Testing putObject saving object metadata")
     client.fput_object(bucket_name, object_name+'-f', testfile,
                        metadata={'x-amz-meta-testing': 'value'})
 
+    print("Testing getObject validated saved metadata")
     stat = client.fget_object(bucket_name, object_name+'-f', newfile_f_custom)
     if 'X-Amz-Meta-Testing' not in stat.metadata:
         raise ValueError('Metadata key \'x-amz-meta-testing\' not found')
