@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Minio Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015, 2016 Minio, Inc.
+# (C) 2015, 2016, 2017 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ minio - Minio Python Library for Amazon S3 Compatible Cloud Storage
 
 __title__ = 'minio-py'
 __author__ = 'Minio, Inc.'
-__version__ = '2.2.3'
+__version__ = '2.2.4'
 __license__ = 'Apache 2.0'
 __copyright__ = 'Copyright 2015, 2016, 2017 Minio, Inc.'
 
