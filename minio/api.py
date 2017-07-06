@@ -65,14 +65,15 @@ from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_endpoint,
                       get_sha256_hexdigest, get_md5_base64digest, Hasher,
                       optimal_part_info,
-                      is_valid_bucket_name, PartMetadata, parts_manager,
+                      is_valid_bucket_name, PartMetadata, read_full,
                       is_valid_bucket_notification_config,
                       mkdir_p, dump_http)
 from .helpers import (MAX_MULTIPART_OBJECT_SIZE,
                       MIN_OBJECT_SIZE)
 from .signer import (sign_v4, presign_v4,
                      generate_credential_string,
-                     post_presign_signature, _SIGN_V4_ALGORITHM)
+                     post_presign_signature)
+from .signer import (_UNSIGNED_PAYLOAD, _SIGN_V4_ALGORITHM)
 from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_complete_multipart_upload,
                           xml_marshal_bucket_notifications,
@@ -138,6 +139,7 @@ class Minio(object):
         self._region = region
         self._region_map = dict()
         self._endpoint_url = url_components.geturl()
+        self._is_ssl = secure
         self._access_key = access_key
         self._secret_key = secret_key
         self._user_agent = _DEFAULT_USER_AGENT
@@ -760,8 +762,10 @@ class Minio(object):
             raise InvalidArgumentError(
                 'Could not read {} bytes from data to upload'.format(length)
             )
+
         return self._do_put_object(bucket_name, object_name,
-                                   current_data, metadata=metadata)
+                                   current_data, len(current_data),
+                                   metadata=metadata)
 
     def list_objects(self, bucket_name, prefix=None, recursive=False):
         """
@@ -1400,58 +1404,18 @@ class Minio(object):
                                  expires=int(expires.total_seconds()))
         return presign_url
 
-    def _do_put_multipart_object(self, bucket_name, object_name, part_metadata,
-                                 upload_id='', part_number=0, metadata=None):
+    def _do_put_object(self, bucket_name, object_name, part_data,
+                       part_size, upload_id='', part_number=0,
+                       metadata=None):
         """
-        Initiate a multipart PUT operation for a part number.
+        Initiate a multipart PUT operation for a part number
+        or single PUT object.
 
         :param bucket_name: Bucket name for the multipart request.
         :param object_name: Object name for the multipart request.
         :param part_metadata: Part-data and metadata for the multipart request.
-        :param upload_id: Upload id of the multipart request.
-        :param part_number: Part number of the data to be uploaded.
-        :param metadata: Any additional metadata to be uploaded along
-           with your object.
-        """
-        is_valid_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
-        data = part_metadata.data
-        if not callable(getattr(data, 'read')):
-            raise ValueError(
-                'Invalid input data does not implement a callable read() method')
-
-        # Convert hex representation of md5 content to base64
-        md5content_b64 = codecs.encode(codecs.decode(
-            part_metadata.md5_hex, 'hex_codec'), 'base64_codec').strip()
-
-        headers = {
-            'Content-Length': part_metadata.size,
-            'Content-Md5': md5content_b64.decode()
-        }
-
-        if metadata:
-            headers.update(metadata)
-
-        response = self._url_open(
-            'PUT', bucket_name=bucket_name,
-            object_name=object_name,
-            query={'uploadId': upload_id,
-                   'partNumber': str(part_number)},
-            headers=headers,
-            body=data,
-            content_sha256=part_metadata.sha256_hex
-        )
-
-        return response.headers['etag'].replace('"', '')
-
-    def _do_put_object(self, bucket_name, object_name, data,
-                       metadata=None):
-        """
-        Initiate a single PUT operation.
-
-        :param bucket_name: Bucket name for the put request.
-        :param object_name: Object name for the put request.
-        :param data: Input data for the put request.
+        :param upload_id: Upload id of the multipart request [OPTIONAL].
+        :param part_number: Part number of the data to be uploaded [OPTIONAL].
         :param metadata: Any additional metadata to be uploaded along
            with your object.
         """
@@ -1460,26 +1424,45 @@ class Minio(object):
 
         # Accept only bytes - otherwise we need to know how to encode
         # the data to bytes before storing in the object.
-        if not isinstance(data, bytes):
+        if not isinstance(part_data, bytes):
             raise ValueError('Input data must be bytes type')
 
-        headers = {}
+        headers = {
+            'Content-Length': part_size,
+        }
+
+        md5_base64 = None
+        sha256_hex = None
+        if self._is_ssl:
+            md5_base64 = get_md5_base64digest(part_data)
+            sha256_hex = _UNSIGNED_PAYLOAD
+        else:
+            sha256_hex = get_sha256_hexdigest(part_data)
+
+        if md5_base64:
+            headers['Content-Md5'] = md5_base64
+
         if metadata:
-            headers = metadata
+            headers.update(metadata)
 
-        headers['Content-Length'] = len(data)
-        headers['Content-Md5'] = get_md5_base64digest(data)
+        query = {}
+        if part_number > 0 and upload_id:
+            query = {
+                'uploadId': upload_id,
+                'partNumber': str(part_number),
+            }
 
-        response = self._url_open('PUT', bucket_name=bucket_name,
-                                  object_name=object_name,
-                                  headers=headers,
-                                  body=io.BytesIO(data),
-                                  content_sha256=get_sha256_hexdigest(data))
+        response = self._url_open(
+            'PUT',
+            bucket_name=bucket_name,
+            object_name=object_name,
+            query=query,
+            headers=headers,
+            body=io.BytesIO(part_data),
+            content_sha256=sha256_hex
+        )
 
-        etag = response.headers.get('etag', '').replace('"', '')
-
-        # Returns etag here.
-        return etag
+        return response.headers['etag'].replace('"', '')
 
     def _stream_put_object(self, bucket_name, object_name,
                            data, content_size,
@@ -1502,7 +1485,8 @@ class Minio(object):
                 'Invalid input data does not implement a callable read() method')
 
         # get upload id.
-        upload_id = self._new_multipart_upload(bucket_name, object_name, metadata)
+        upload_id = self._new_multipart_upload(bucket_name, object_name,
+                                               metadata)
 
         # Initialize variables
         total_uploaded = 0
@@ -1520,16 +1504,14 @@ class Minio(object):
             current_part_size = (part_size if part_number < total_parts_count
                                  else last_part_size)
 
-            part_metadata = parts_manager(data, current_part_size)
-
-            # Seek back to starting position.
-            part_metadata.data.seek(0)
-            etag = self._do_put_multipart_object(bucket_name,
-                                                 object_name,
-                                                 part_metadata,
-                                                 upload_id,
-                                                 part_number,
-                                                 metadata=metadata)
+            part_data = read_full(data, current_part_size)
+            etag = self._do_put_object(bucket_name,
+                                       object_name,
+                                       part_data,
+                                       len(part_data),
+                                       upload_id,
+                                       part_number,
+                                       metadata=metadata)
             # Save etags.
             uploaded_parts[part_number] = UploadPart(bucket_name,
                                                      object_name,
@@ -1537,9 +1519,9 @@ class Minio(object):
                                                      part_number,
                                                      etag,
                                                      None,
-                                                     part_metadata.size)
+                                                     len(part_data))
 
-            total_uploaded += part_metadata.size
+            total_uploaded += len(part_data)
 
         if total_uploaded != content_size:
             msg = 'Data uploaded {0} is not equal input size ' \
