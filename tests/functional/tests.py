@@ -16,37 +16,57 @@
 # limitations under the License.
 
 import os
-import io
 import uuid
+import shutil
+from random import random
+
+from string import ascii_lowercase
+from datetime import datetime, timedelta
+
 import urllib3
 import certifi
-import shutil
-
-from random import choice
-from string import ascii_lowercase
-
-from datetime import datetime, timedelta
 
 from minio import Minio, PostPolicy, CopyConditions
 from minio.policy import Policy
 from minio.error import (ResponseError, PreconditionFailed,
                          BucketAlreadyOwnedByYou, BucketAlreadyExists)
 
-class RandomData:
+class LimitedRandomReader(object):
     """
-    RandomData quickly generates pseudo random data by chunks of 1024
-    """
-    def __init__(self, choices_list, randomness_level):
-        self.block = 1024
-        self.seed = []
-        for _ in range(randomness_level):
-            self.seed.append(''.join([choice(choices_list) for _ in range(self.block)]))
+    LimitedRandomReader returns a Reader that upon read
+    returns random data, but stops with EOF after *limit*
+    bytes.
 
-    def gen(self, nr_bytes):
-        """ generates random data for nr_bytes length """
-        if nr_bytes % self.block is not 0:
-            raise ValueError('Passed number of bytes should be multiple of ' + self.block)
-        return ''.join([choice(self.seed) for _ in range(int(nr_bytes/self.block))])
+    LimitedRandomReader is compatible with BufferedIOBase.
+
+    returns a class:`LimitedRandomReader` that upon read
+       provides random data and stops with EOF after *limit*
+       bytes
+
+    :param limit: Trigger EOF after limit bytes.
+    """
+    def __init__(self, limit):
+        self._limit = limit
+        self._offset_location = 0
+
+    def read(self, amt=64*1024):
+        """
+        Similar to :meth:`io.read`, with amt option.
+
+        :param amt:
+            How much of the content to read.
+        """
+        # If offset is bigger than size. Treat it as EOF return here.
+        if self._offset_location == self._limit:
+            # return empty bytes to indicate EOF.
+            return b''
+
+        # make translation table from 0..255 to 97..122
+        bal = [c.encode('ascii') for c in ascii_lowercase]
+        amt = min(amt, self._limit - self._offset_location)
+        data = b''.join([bal[int(random() * 26)] for _ in range(amt)])
+        self._offset_location += len(data)
+        return data
 
 def main():
     """
@@ -64,6 +84,8 @@ def main():
 
     is_s3 = server_endpoint.startswith("s3.amazonaws")
     client = Minio(server_endpoint, access_key, secret_key, secure=secure)
+    # Check if we are running in the mint environment.
+    is_mint_env = os.path.exists(os.getenv('DATA_DIR', '/mint/data'))
 
     _http = urllib3.PoolManager(
         cert_reqs='CERT_REQUIRED',
@@ -102,53 +124,43 @@ def main():
     # List all buckets.
     buckets = client.list_buckets()
     for bucket in buckets:
-        _, _ = bucket.name, bucket.creation_date
+        # bucket object should be of a valid value.
+        if bucket.name and bucket.creation_date:
+            continue
+        raise ValueError(bucket)
 
-    testfile = 'test العربية file'
-    largefile = 'large भारतीय file'
     newfile = 'newfile جديد'
     newfile_f = 'newfile-f 新'
-    newfile_f_custom = 'newfile-f-custom'
 
-    r = RandomData(ascii_lowercase, 5)
+    testfile = 'datafile-1-MB'
+    largefile = 'datafile-11-MB'
+    if is_mint_env:
+        data_dir = os.getenv('DATA_DIR')
+        ## Choose data files
+        testfile = os.path.join(data_dir, 'datafile-1-MB')
+        largefile = os.path.join(data_dir, 'datafile-65-MB')
+    else:
+        with open(testfile, 'wb') as file_data:
+            shutil.copyfileobj(LimitedRandomReader(1024*1024), file_data)
+        with open(largefile, 'wb') as file_data:
+            shutil.copyfileobj(LimitedRandomReader(11*1024*1024), file_data)
 
-    # Create a test file
-    with open(testfile, 'wb') as file_data:
-        # Create a 1mb of random data
-        random_1mb = r.gen(1024*1024)
-        file_data.write(random_1mb.encode())
-
-    # Create a large file
-    with open(largefile, 'wb') as file_data:
-        # Create a 16mb of random data
-        random_16mb = r.gen(1024*1024*16)
-        file_data.write(random_16mb.encode())
-
-    # Put a file
-    file_stat = os.stat(testfile)
-    with open(testfile, 'rb') as file_data:
-        client.put_object(bucket_name, object_name, file_data,
-                          file_stat.st_size)
-
-    # Put a large file
-    file_stat = os.stat(largefile)
-    with open(largefile, 'rb') as file_data:
-        client.put_object(bucket_name, object_name, file_data,
-                          file_stat.st_size)
-
-    # Fput a file
-    print("Upload a local file")
+    # upload local small file.
+    print("Upload a small file through putObject")
     client.fput_object(bucket_name, object_name+'-f', testfile)
     if is_s3:
         client.fput_object(bucket_name, object_name+'-f', testfile,
                            metadata={'x-amz-storage-class': 'STANDARD_IA'})
 
-    # Fput a large file.
-    print("Upload a largfile through multipart upload")
+    # upload local large file through multipart.
+    print("Upload a largefile through multipart upload")
     client.fput_object(bucket_name, object_name+'-large', largefile)
     if is_s3:
         client.fput_object(bucket_name, object_name+'-large', largefile,
                            metadata={'x-amz-storage-class': 'STANDARD_IA'})
+
+    # Fetch stats on your large object.
+    client.stat_object(bucket_name, object_name+'-large')
 
     # Copy a file
     print("Perform a server side copy of an object")
@@ -166,44 +178,45 @@ def main():
         if err.message != 'At least one of the preconditions you specified did not hold.':
             raise
 
-    print("Perform look for all upload objects")
-    # Fetch stats on your object.
-    client.stat_object(bucket_name, object_name)
-
-    # Fetch stats on your object.
-    client.stat_object(bucket_name, object_name+'-f')
-
-    # Fetch stats on your large object.
-    client.stat_object(bucket_name, object_name+'-large')
-
     # Fetch stats on your object.
     client.stat_object(bucket_name, object_name+'-copy')
 
+    # Put a file
+    MB_1 = 1024*1024 # 1MiB.
+    MB_1_reader = LimitedRandomReader(MB_1)
+    print("Upload a streaming object of 1MiB")
+    client.put_object(bucket_name, object_name, MB_1_reader, MB_1)
+
+    # Put a large file
+    MB_11 = 11*1024*1024 # 11MiB.
+    MB_11_reader = LimitedRandomReader(MB_11)
+    print("Upload a streaming object of 11MiB")
+    client.put_object(bucket_name, object_name+'-metadata',
+                      MB_11_reader, MB_11,
+                      metadata={'x-amz-meta-testing': 'value'})
+
+    print("Stat on the uploaded object check if it exists")
+    # Fetch stats on your object.
+    client.stat_object(bucket_name, object_name)
+
+    # Fetch saved stat metadata on a previously uploaded object with metadata.
+    st_obj = client.stat_object(bucket_name, object_name+'-metadata')
+    if 'X-Amz-Meta-Testing' not in st_obj.metadata:
+        raise ValueError('Metadata key \'x-amz-meta-testing\' not found')
+    value = st_obj.metadata['X-Amz-Meta-Testing']
+    if value != 'value':
+        raise ValueError('Metadata key has unexpected'
+                         ' value {0}'.format(value))
+
     # Get a full object
     print("Download a full object, iterate on response to save to disk")
-    object_data = client.get_object(bucket_name, object_name,
-                                    request_headers={
-                                        'x-amz-meta-testing': 'value'
-                                    })
+    object_data = client.get_object(bucket_name, object_name)
     with open(newfile, 'wb') as file_data:
         shutil.copyfileobj(object_data, file_data)
 
     # Get a full object locally.
     print("Download a full object and save locally at path")
     client.fget_object(bucket_name, object_name, newfile_f)
-
-    print("Testing putObject saving object metadata")
-    client.fput_object(bucket_name, object_name+'-f', testfile,
-                       metadata={'x-amz-meta-testing': 'value'})
-
-    print("Testing getObject validated saved metadata")
-    stat = client.fget_object(bucket_name, object_name+'-f', newfile_f_custom)
-    if 'X-Amz-Meta-Testing' not in stat.metadata:
-        raise ValueError('Metadata key \'x-amz-meta-testing\' not found')
-    value = stat.metadata['X-Amz-Meta-Testing']
-    if value != 'value':
-        raise ValueError('Metadata key has unexpected'
-                         ' value {0}'.format(value))
 
     # List all object paths in bucket.
     print("Listing using ListObjects")
@@ -223,7 +236,8 @@ def main():
                            obj.etag, obj.size, \
                            obj.content_type
 
-    presigned_get_object_url = client.presigned_get_object(bucket_name, object_name)
+    presigned_get_object_url = client.presigned_get_object(bucket_name,
+                                                           object_name)
     response = _http.urlopen('GET', presigned_get_object_url)
     if response.status != 200:
         raise ResponseError(response,
@@ -231,19 +245,18 @@ def main():
                             bucket_name,
                             object_name).get_exception()
 
-    presigned_put_object_url = client.presigned_put_object(bucket_name, object_name)
-    value = r.gen(1024).encode()
-    data = io.BytesIO(value).getvalue()
-    response = _http.urlopen('PUT', presigned_put_object_url, body=data)
+    presigned_put_object_url = client.presigned_put_object(bucket_name,
+                                                           object_name)
+
+    response = _http.urlopen('PUT', presigned_put_object_url,
+                             body=LimitedRandomReader(MB_1))
     if response.status != 200:
         raise ResponseError(response,
                             'PUT',
                             bucket_name,
                             object_name).get_exception()
 
-    object_data = client.get_object(bucket_name, object_name)
-    if object_data.read() != value:
-        raise ValueError('Bytes not equal')
+    client.get_object(bucket_name, object_name)
 
     # Post policy.
     policy = PostPolicy()
@@ -256,6 +269,7 @@ def main():
 
     # Remove all objects.
     client.remove_object(bucket_name, object_name)
+    client.remove_object(bucket_name, object_name+'-metadata')
     client.remove_object(bucket_name, object_name+'-f')
     client.remove_object(bucket_name, object_name+'-large')
     client.remove_object(bucket_name, object_name+'-copy')
@@ -284,7 +298,8 @@ def main():
     for i in range(10):
         curr_object_name = object_name+"-{}".format(i)
         # print("object-name: {}".format(curr_object_name))
-        client.fput_object(bucket_name, curr_object_name, testfile)
+        client.put_object(bucket_name, curr_object_name,
+                          LimitedRandomReader(MB_1), MB_1)
         object_names.append(curr_object_name)
 
     # delete the objects in a single library call.
@@ -295,23 +310,23 @@ def main():
         had_errs = True
         print("Remove objects err is {}".format(del_err))
     if had_errs:
-        print("Removing objects FAILED - it had unexpected errors.")
-        raise
+        raise("Removing objects FAILED - it had unexpected errors.")
     else:
         print("Removing objects worked as expected.")
 
     # Remove a bucket. This operation will only work if your bucket is empty.
     print("Deleting buckets and finishing tests.")
     client.remove_bucket(bucket_name)
-    if client._endpoint_url.startswith("s3.amazonaws"):
+    if is_s3:
         client.remove_bucket(bucket_name+'.unique')
 
     # Remove temporary files.
-    os.remove(testfile)
-    os.remove(largefile)
+    if not is_mint_env:
+        os.remove(testfile)
+        os.remove(largefile)
+
     os.remove(newfile)
     os.remove(newfile_f)
-    os.remove(newfile_f_custom)
 
 if __name__ == "__main__":
     # Execute only if run as a script

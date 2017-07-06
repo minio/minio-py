@@ -77,7 +77,6 @@ from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_complete_multipart_upload,
                           xml_marshal_bucket_notifications,
                           xml_marshal_delete_objects)
-from .limited_reader import LimitedReader
 from . import policy
 from .fold_case_dict import FoldCaseDict
 
