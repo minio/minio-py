@@ -58,7 +58,7 @@ def post_presign_signature(date, region, secret_key, policy_str):
     return signature
 
 
-def presign_v4(method, url, access_key, secret_key, region=None,
+def presign_v4(method, url, credentials, region=None,
                headers=None, expires=None, response_headers=None):
     """
     Calculates signature version '4' for regular presigned URLs.
@@ -74,7 +74,7 @@ def presign_v4(method, url, access_key, secret_key, region=None,
     """
 
     # Validate input arguments.
-    if not access_key or not secret_key:
+    if not credentials.get().access_key or not credentials.get().secret_key:
         raise InvalidArgumentError('Invalid access_key and secret_key.')
 
     if region is None:
@@ -97,12 +97,15 @@ def presign_v4(method, url, access_key, secret_key, region=None,
     # Construct queries.
     query = {}
     query['X-Amz-Algorithm'] = _SIGN_V4_ALGORITHM
-    query['X-Amz-Credential'] = generate_credential_string(access_key,
+    query['X-Amz-Credential'] = generate_credential_string(credentials.get().access_key,
                                                            date, region)
     query['X-Amz-Date'] = iso8601Date
     query['X-Amz-Expires'] = str(expires)
     signed_headers = get_signed_headers(headers_to_sign)
     query['X-Amz-SignedHeaders'] = ';'.join(signed_headers)
+
+    if len(credentials.get().session_token) > 0:
+        query['X-Amz-Security-Token'] = credentials().get().session_token 
 
     if response_headers is not None:
         query.update(response_headers)
@@ -136,7 +139,7 @@ def presign_v4(method, url, access_key, secret_key, region=None,
                                                    content_hash_hex)
     string_to_sign = generate_string_to_sign(date, region,
                                              canonical_request)
-    signing_key = generate_signing_key(date, region, secret_key)
+    signing_key = generate_signing_key(date, region, credentials.get().secret_key)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
     new_parsed_url = urlsplit(new_url + "&X-Amz-Signature="+signature)
@@ -156,8 +159,7 @@ def get_signed_headers(headers):
     return sorted(signed_headers)
 
 
-def sign_v4(method, url, region, headers=None, access_key=None,
-            secret_key=None, content_sha256=None):
+def sign_v4(method, url, region, headers=None, credentials=None, content_sha256=None):
     """
     Signature version 4.
 
@@ -173,7 +175,7 @@ def sign_v4(method, url, region, headers=None, access_key=None,
     """
 
     # If no access key or secret key is provided return headers.
-    if not access_key or not secret_key:
+    if not credentials.get().access_key or not credentials.get().secret_key:
         return headers
 
     if headers is None:
@@ -197,6 +199,9 @@ def sign_v4(method, url, region, headers=None, access_key=None,
     headers['X-Amz-Date'] = date.strftime("%Y%m%dT%H%M%SZ")
     headers['X-Amz-Content-Sha256'] = content_sha256
 
+    if len(credentials.get().session_token) > 0:
+        headers['X-Amz-Security-Token'] = credentials.get().session_token
+
     headers_to_sign = headers
 
     signed_headers = get_signed_headers(headers_to_sign)
@@ -208,11 +213,11 @@ def sign_v4(method, url, region, headers=None, access_key=None,
 
     string_to_sign = generate_string_to_sign(date, region,
                                              canonical_req)
-    signing_key = generate_signing_key(date, region, secret_key)
+    signing_key = generate_signing_key(date, region, credentials.get().secret_key)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
 
-    authorization_header = generate_authorization_header(access_key,
+    authorization_header = generate_authorization_header(credentials.get().access_key,
                                                          date,
                                                          region,
                                                          signed_headers,
