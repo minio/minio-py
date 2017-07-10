@@ -30,7 +30,7 @@ import sys
 from threading import Thread
 from .compat import queue
 
-class Worker(Thread):
+class Worker_py2(Thread):
     """ Thread executing tasks from a given tasks queue """
     def __init__(self, tasks_queue, results_queue):
         Thread.__init__(self)
@@ -54,13 +54,13 @@ class Worker(Thread):
             self.tasks_queue.task_done()
 
 
-class ThreadPool:
+class ThreadPool_py2:
     """ Pool of threads consuming tasks from a queue """
     def __init__(self, num_threads):
         self.results_queue = queue()
         self.tasks_queue = queue(num_threads)
         for _ in range(num_threads):
-            Worker(self.tasks_queue, self.results_queue)
+            Worker_py2(self.tasks_queue, self.results_queue)
 
     def add_task(self, func, *args, **kargs):
         """ Add a task to the queue """
@@ -70,10 +70,41 @@ class ThreadPool:
         """ Add a list of tasks to the queue """
         for args in args_list:
             self.add_task(func, args)
-
-    def wait_completion(self):
-        """ Wait for completion of all the tasks in the queue """
         self.tasks_queue.join()
+
+    def result(self):
+        """ Return the result of all called tasks """
+        return self.results_queue
+
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+ 
+async def do_work(loop, work_queue, result_queue):
+    executor = ThreadPoolExecutor()
+    while not work_queue.empty():
+        func, args, kargs = await work_queue.get()
+        r = await loop.run_in_executor(executor, func, *args, **kargs)
+        result_queue.put(r)
+
+class ThreadPool_py3:
+    """ Pool of threads consuming tasks from a queue """
+    def __init__(self, num_threads):
+        self.tasks_queue = asyncio.Queue()
+        self.results_queue = queue()
+
+    def add_task(self, func, *args, **kargs):
+        """ Add a task to the queue """
+        self.tasks_queue.put_nowait((func, args, kargs))
+        
+    def parallel_run(self, func, args_list):
+        """ Add a list of tasks to the queue """
+        for args in args_list:
+            self.add_task(func, args)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        async_tasks = [asyncio.async(do_work(loop, self.tasks_queue, self.results_queue))]
+        loop.run_until_complete(asyncio.wait(async_tasks))
+        # loop.close()
 
     def result(self):
         """ Return the result of all called tasks """

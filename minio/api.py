@@ -79,7 +79,7 @@ from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_delete_objects)
 from . import policy
 from .fold_case_dict import FoldCaseDict
-from .thread_pool import ThreadPool
+from .thread_pool import ThreadPool_py3
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
@@ -1487,6 +1487,8 @@ class Minio(object):
         return etag
 
     def _upload_part_routine(self, part_info):
+
+        print("log", "_upload_part_routine")
         bucket_name, object_name, upload_id, \
                 part_number, part_metadata = part_info
         # Seek to the start of data
@@ -1531,7 +1533,7 @@ class Minio(object):
             content_size)
 
         # Instantiate a thread pool with 3 worker threads
-        pool = ThreadPool(_PARALLEL_UPLOADERS)
+        pool = ThreadPool_py3(_PARALLEL_UPLOADERS)
         parts_to_upload = []
 
         # Generate new parts and upload <= current_part_size until
@@ -1549,7 +1551,7 @@ class Minio(object):
 
         # Run parts upload in parallel
         pool.parallel_run(self._upload_part_routine, parts_to_upload)
-        pool.wait_completion()
+        # pool.wait_completion()
 
         # Update uploaded_parts with the part uploads result
         # and check total uploaded data.
