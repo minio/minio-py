@@ -79,8 +79,9 @@ class ThreadPool_py2:
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
  
-async def do_work(loop, work_queue, result_queue):
+async def do_work(work_queue, result_queue):
     executor = ThreadPoolExecutor()
+    loop = asyncio.get_event_loop()
     while not work_queue.empty():
         func, args, kargs = await work_queue.get()
         r = await loop.run_in_executor(executor, func, *args, **kargs)
@@ -91,6 +92,7 @@ class ThreadPool_py3:
     def __init__(self, num_threads):
         self.tasks_queue = asyncio.Queue()
         self.results_queue = queue()
+        self.num_threads = num_threads
 
     def add_task(self, func, *args, **kargs):
         """ Add a task to the queue """
@@ -102,7 +104,10 @@ class ThreadPool_py3:
             self.add_task(func, args)
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        async_tasks = [asyncio.async(do_work(loop, self.tasks_queue, self.results_queue))]
+        async_tasks = []
+        for i in range(1, self.num_threads):
+            async_tasks.append(asyncio.async(do_work(self.tasks_queue, self.results_queue)))
+
         loop.run_until_complete(asyncio.wait(async_tasks))
         # loop.close()
 
