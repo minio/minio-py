@@ -112,13 +112,12 @@ def mkdir_p(path):
         else:
             raise
 
-
 class PartMetadata(object):
     """
     Parts manager split parts metadata :class:`PartMetadata <PartMetadata>`.
 
     :param data: Part writer object backed by temporary file.
-    :param md5_hex: Md5 hash in hex format.
+    :param md5_hex: MD5 hash in hex format.
     :param sha256_hex: Sha256 hash in hex format.
     :param size: Size of the part.
     """
@@ -128,29 +127,30 @@ class PartMetadata(object):
         self.sha256_hex = sha256_hex
         self.size = size
 
-
-def parts_manager(data, part_size=5*1024*1024):
+def read_full(data, size):
     """
-    Reads data and provides temporary files of a given size.
+    read_full reads exactly `size` bytes from reader. returns
+    `size` bytes.
 
-    :param data: Input reader object which needs to be saved.
-    :param part_size: Individual part number defaults to 5MB.
-    :return: Returns :class:`PartMetadata <PartMetadata>`
+    :param data: Input stream to read from.
+    :param size: Number of bytes to read from `data`.
+    :return: Returns :bytes:`part_data`
     """
-    tmpdata = io.BytesIO()
-    md5hasher = Hasher.md5()
-    sha256hasher = Hasher.sha256()
-    total_read = 0
-    while total_read < part_size:
-        current_data = data.read(1024)
+    default_read_size = 32768 # 32KiB per read operation.
+    chunk = io.BytesIO()
+    chunk_size = 0
+
+    while chunk_size < size:
+        read_size = default_read_size
+        if (size - chunk_size) < default_read_size:
+            read_size = size - chunk_size
+        current_data = data.read(read_size)
         if not current_data or len(current_data) == 0:
             break
-        tmpdata.write(current_data)
-        md5hasher.update(current_data)
-        sha256hasher.update(current_data)
-        total_read += len(current_data)
+        chunk.write(current_data)
+        chunk_size+= len(current_data)
 
-    return PartMetadata(tmpdata, md5hasher.hexdigest(), sha256hasher.hexdigest(), total_read)
+    return chunk.getvalue()
 
 AWS_S3_ENDPOINT_MAP = {
     'us-east-1': 's3.amazonaws.com',
@@ -490,9 +490,10 @@ def encode_object_name(object_name):
     return urlencode(object_name)
 
 class Hasher(object):
-    """Adaptation of hashlib-based hash functions that return
-    unicode-encoded hex- and base64-digest strings.
-
+    """
+    Adaptation of hashlib-based hash functions that
+    return unicode-encoded hex- and base64-digest
+    strings.
     """
     def __init__(self, data, h):
         if data is None:

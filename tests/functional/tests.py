@@ -97,6 +97,7 @@ def main():
     object_name = uuid.uuid4().__str__()
 
     # Enable trace
+    # import sys
     # client.trace_on(sys.stderr)
     client.make_bucket(bucket_name)
 
