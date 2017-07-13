@@ -43,9 +43,11 @@ import codecs
 import urllib3
 import certifi
 
+import threading
+
 # Internal imports
 from . import __title__, __version__
-from .compat import (urlsplit, queryencode,
+from .compat import (tp, urlsplit, queryencode,
                      range, basestring)
 from .error import (KnownResponseError, ResponseError, NoSuchBucket,
                     InvalidArgumentError, InvalidSizeError, NoSuchBucketPolicy)
@@ -79,7 +81,6 @@ from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_delete_objects)
 from . import policy
 from .fold_case_dict import FoldCaseDict
-from .thread_pool import ThreadPool_py3
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
@@ -1487,8 +1488,7 @@ class Minio(object):
         return etag
 
     def _upload_part_routine(self, part_info):
-
-        print("log", "_upload_part_routine")
+        print("! ", threading.current_thread().ident)
         bucket_name, object_name, upload_id, \
                 part_number, part_metadata = part_info
         # Seek to the start of data
@@ -1504,6 +1504,8 @@ class Minio(object):
     def _stream_put_object(self, bucket_name, object_name,
                            data, content_size,
                            metadata=None):
+
+
         """
         Streaming multipart upload operation.
 
@@ -1533,7 +1535,7 @@ class Minio(object):
             content_size)
 
         # Instantiate a thread pool with 3 worker threads
-        pool = ThreadPool_py3(_PARALLEL_UPLOADERS)
+        pool = tp(_PARALLEL_UPLOADERS)
         parts_to_upload = []
 
         # Generate new parts and upload <= current_part_size until

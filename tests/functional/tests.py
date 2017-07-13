@@ -191,7 +191,7 @@ def main():
     client.put_object(bucket_name, object_name, MB_1_reader, MB_1)
 
     # Put a large file
-    MB_11 = 11*1024*1024 # 11MiB.
+    MB_11 = 32*1024*1024 # 11MiB.
     MB_11_reader = LimitedRandomReader(MB_11)
     print("Upload a streaming object of 11MiB")
     client.put_object(bucket_name, object_name+'-metadata',

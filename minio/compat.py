@@ -37,6 +37,9 @@ if _is_py2:
     from Queue import Queue
     queue = Queue
 
+    from .thread_pool import ThreadPool_py2
+    tp = ThreadPool_py2
+
     from urllib import quote
     _urlencode = quote
 
@@ -61,6 +64,9 @@ if _is_py2:
 elif _is_py3:
     from queue import Queue
     queue = Queue
+
+    from .thread_pool_py3 import ThreadPool_py3
+    tp = ThreadPool_py3
 
     from urllib.request import quote
     _urlencode = quote
