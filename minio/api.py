@@ -365,6 +365,8 @@ class Minio(object):
         if not policy_dict:
             return policy.Policy.NONE
 
+        if policy_dict.get('Statement') is None:
+            raise ValueError("None Policy statement")
         # Normalize statements.
         statements = []
         policy._append_statements(statements, policy_dict.get('Statement', []))
