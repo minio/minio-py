@@ -174,7 +174,7 @@ def sign_v4(method, url, region, headers=None, access_key=None,
 
     # If no access key or secret key is provided return headers.
     if not access_key or not secret_key:
-        return headers
+        raise InvalidArgumentError('Invalid access_key and secret_key.')
 
     if headers is None:
         headers = FoldCaseDict()
