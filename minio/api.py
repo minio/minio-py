@@ -939,7 +939,7 @@ class Minio(object):
 
         if last_modified:
             http_time_format = "%a, %d %b %Y %H:%M:%S GMT"
-            last_modified = mktime(strptime(last_modified, http_time_format))
+            last_modified = strptime(last_modified, http_time_format)
         return Object(bucket_name, object_name, last_modified, etag, size,
                       content_type=content_type, metadata=custom_metadata)
 

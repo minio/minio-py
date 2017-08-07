@@ -819,7 +819,7 @@ __Return Value__
 |``obj.size``|_int_  |size of the object. |
 |``obj.etag``|_string_|etag of the object.|
 |``obj.content_type``|_string_  | Content-Type of the object.|
-|``obj.last_modified``|_time.time_  |modified time stamp.|
+|``obj.last_modified``|_time.time_  | modified time in UTC.|
 |``obj.metadata`` |_dict_ | Contains any additional metadata on the object. |
 
 
