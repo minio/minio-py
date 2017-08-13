@@ -48,7 +48,7 @@ from . import __title__, __version__
 from .compat import (urlsplit, queryencode,
                      range, basestring)
 from .error import (KnownResponseError, ResponseError, NoSuchBucket,
-                    InvalidArgumentError, InvalidSizeError, NoSuchBucketPolicy)
+                    InvalidArgumentError, InvalidSizeError, InvalidXMLError, NoSuchBucketPolicy)
 from .definitions import Object, UploadPart
 from .parsers import (parse_list_buckets,
                       parse_list_objects,
@@ -298,8 +298,11 @@ class Minio(object):
 
         if response.status != 200:
             raise ResponseError(response, method).get_exception()
-
-        return parse_list_buckets(response.data)
+        try:
+            return parse_list_buckets(response.data)
+        except InvalidXMLError:
+            if self._endpoint_url.endswith("s3.amazonaws.com"):
+                raise InvalidArgumentError('Invalid access_key and secret_key.')
 
     def bucket_exists(self, bucket_name):
         """
