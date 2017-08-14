@@ -69,7 +69,7 @@ from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_bucket_notification_config,
                       mkdir_p, dump_http)
 from .helpers import (MAX_MULTIPART_OBJECT_SIZE,
-                      MIN_OBJECT_SIZE)
+                      MIN_PART_SIZE)
 from .signer import (sign_v4, presign_v4,
                      generate_credential_string,
                      post_presign_signature)
@@ -80,6 +80,7 @@ from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_delete_objects)
 from . import policy
 from .fold_case_dict import FoldCaseDict
+from .thread_pool import ThreadPool
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
@@ -93,8 +94,12 @@ _DEFAULT_USER_AGENT = 'Minio {0} {1}'.format(
     _APP_INFO.format(__title__,
                      __version__))
 
-_SEVEN_DAYS_SECONDS = 604800  # 7days
 
+# Duration of 7 days in seconds
+_SEVEN_DAYS_SECONDS = 604800
+
+# Number of parallel workers which upload parts
+_PARALLEL_UPLOADERS = 3
 
 class Minio(object):
     """
@@ -755,7 +760,7 @@ class Minio(object):
         metadata['Content-Type'] = 'application/octet-stream' if \
             not content_type else content_type
 
-        if length > MIN_OBJECT_SIZE:
+        if length > MIN_PART_SIZE:
             return self._stream_put_object(bucket_name, object_name,
                                            data, length, metadata=metadata)
 
@@ -1466,6 +1471,16 @@ class Minio(object):
 
         return response.headers['etag'].replace('"', '')
 
+    def _upload_part_routine(self, part_info):
+        bucket_name, object_name, upload_id, \
+                part_number, part_data = part_info
+        # Initiate multipart put.
+        etag = self._do_put_object(bucket_name, object_name,
+                part_data, len(part_data),
+                upload_id, part_number)
+
+        return (part_number, etag, len(part_data))
+
     def _stream_put_object(self, bucket_name, object_name,
                            data, content_size,
                            metadata=None):
@@ -1498,6 +1513,10 @@ class Minio(object):
         total_parts_count, part_size, last_part_size = optimal_part_info(
             content_size)
 
+        # Instantiate a thread pool with 3 worker threads
+        pool = ThreadPool(_PARALLEL_UPLOADERS)
+        parts_to_upload = []
+
         # Generate new parts and upload <= current_part_size until
         # part_number reaches total_parts_count calculated for the
         # given size. Additionally part_manager() also provides
@@ -1507,23 +1526,25 @@ class Minio(object):
                                  else last_part_size)
 
             part_data = read_full(data, current_part_size)
-            etag = self._do_put_object(bucket_name,
-                                       object_name,
-                                       part_data,
-                                       len(part_data),
-                                       upload_id,
-                                       part_number,
-                                       metadata=metadata)
-            # Save etags.
+            # Append current part information
+            parts_to_upload.append((bucket_name, object_name, upload_id, part_number, part_data))
+
+        # Run parts upload in parallel
+        pool.parallel_run(self._upload_part_routine, parts_to_upload)
+
+        # Update uploaded_parts with the part uploads result
+        # and check total uploaded data.
+        while not pool.result().empty():
+            part_number, etag, total_read = pool.result().get()
             uploaded_parts[part_number] = UploadPart(bucket_name,
                                                      object_name,
                                                      upload_id,
                                                      part_number,
                                                      etag,
                                                      None,
-                                                     len(part_data))
+                                                     total_read)
 
-            total_uploaded += len(part_data)
+            total_uploaded += total_read
 
         if total_uploaded != content_size:
             msg = 'Data uploaded {0} is not equal input size ' \
