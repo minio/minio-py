@@ -47,8 +47,8 @@ import certifi
 from . import __title__, __version__
 from .compat import (urlsplit, queryencode,
                      range, basestring)
-from .error import (KnownResponseError, ResponseError, NoSuchBucket,
-                    InvalidArgumentError, InvalidSizeError, NoSuchBucketPolicy)
+from .error import (KnownResponseError, ResponseError, NoSuchBucket, AccessDenied,
+                    InvalidArgumentError, InvalidSizeError, InvalidXMLError, NoSuchBucketPolicy)
 from .definitions import Object, UploadPart
 from .parsers import (parse_list_buckets,
                       parse_list_objects,
@@ -281,7 +281,6 @@ class Minio(object):
 
         method = 'GET'
         url = get_target_url(self._endpoint_url)
-
         # Set user agent once before the request.
         headers = {'User-Agent': self._user_agent}
 
@@ -303,8 +302,11 @@ class Minio(object):
 
         if response.status != 200:
             raise ResponseError(response, method).get_exception()
-
-        return parse_list_buckets(response.data)
+        try:
+            return parse_list_buckets(response.data)
+        except InvalidXMLError:
+            if self._endpoint_url.endswith("s3.amazonaws.com") and (not self._access_key or not self._secret_key):
+                raise AccessDenied(response)
 
     def bucket_exists(self, bucket_name):
         """
