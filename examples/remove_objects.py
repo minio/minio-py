@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-objectname
+# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-prefix
 # are dummy values, please replace them with original values.
 
 from minio import Minio
@@ -23,12 +23,11 @@ client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
-# Remove multiple objects in a single library call.
+# Remove a prefix recursively.
 try:
-    objects_to_delete = ['myobject-1', 'myobject-2', 'myobject-3']
-    # force evaluation of the remove_objects() call by iterating over
-    # the returned value.
-    for del_err in client.remove_objects('mybucket', objects_to_delete):
-        print("Deletion Error: {}".format(del_err))
+    get_name = lambda object: object.object_name
+    names = map(get_name, client.list_objects_v2('my-bucketname', 'my-prefix', recursive=True))
+    for err in client.remove_objects('my-bucketname', names):
+        print("Deletion Error: {}".format(err))
 except ResponseError as err:
     print(err)
