@@ -1009,7 +1009,7 @@ post_policy.set_key_startswith('myobject')
 # set content length for incoming uploads.
 post_policy.set_content_length_range(10, 1024)
 # set content-type to allow only text
-policy.set_content_type('text/plain')
+post_policy.set_content_type('text/plain')
 
 # set expiry 10 days into future.
 expires_date = datetime.utcnow()+timedelta(days=10)
