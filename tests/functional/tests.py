@@ -18,9 +18,13 @@
 import os
 import uuid
 import shutil
+import inspect
+import json
 from random import random
 
 from string import ascii_lowercase
+import time
+import traceback
 from datetime import datetime, timedelta
 
 import urllib3
@@ -31,6 +35,9 @@ from minio.policy import Policy
 from minio.error import (ResponseError, PreconditionFailed,
                          BucketAlreadyOwnedByYou, BucketAlreadyExists)
 
+# Constants
+PASS = 'PASS'
+FAIL = 'FAIL'
 class LimitedRandomReader(object):
     """
     LimitedRandomReader returns a Reader that upon read
@@ -68,31 +75,90 @@ class LimitedRandomReader(object):
         self._offset_location += len(data)
         return data
 
+def new_log_result(meth, alert = None):
+    # Initialize and return log content in log_output dictionary
+    # Collect args in args_arr
+    args_list = inspect.getargspec(meth).args
+    # Remove the first args_list element, which is always "self"
+    del args_list[0]
+    # Initialize the args , (arg: value), dictionary
+    args_dict = {value: '' for key, value in enumerate(args_list)}
+    # Create and return log output content
+    return {'name': 'minio-py',\
+            'function': meth.__name__+'('+', '.join(args_list)+')',\
+            'description': '',\
+            'args': args_dict,\
+            'duration': 0,\
+            'alert': alert,\
+            'message': None,\
+            'error': None,\
+            'status': PASS}
+
+def print_json(log_output):
+    print(json.dumps(log_output))
+
 def test_make_bucket(client):
+    start_time = time.time()
+
+    log_output = new_log_result(client.make_bucket)
+    log_output['description'] = 'Tests make_bucket api'
+    # Get a unique bucket_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+
     is_s3 = client._endpoint_url.startswith("s3.amazonaws")
-    # Get unique bucket_name, object_name.
-    bucket_name = uuid.uuid4().__str__()
-    object_name = uuid.uuid4().__str__()
-    client.make_bucket(bucket_name)
-    # Check if bucket was created properly.
-    client.bucket_exists(bucket_name)
-    # Remove buckets
-    client.remove_bucket(bucket_name)
-    ## Check if return codes a valid from server.
+    try:
+        # Create a bucket
+        client.make_bucket(bucket_name)
+        # Check if bucket was created properly
+        client.bucket_exists(bucket_name)
+        # Remove bucket
+        client.remove_bucket(bucket_name)
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
+
     if is_s3:
         try:
-            client.make_bucket(bucket_name+'.unique',
-                               location='us-west-1')
+            log_output['args']['location'] = location = 'us-east-1'
+            client.make_bucket(bucket_name+'.unique', location)
         except BucketAlreadyOwnedByYou as err:
+            # Expected this exception. Test passes
             pass
         except BucketAlreadyExists as err:
+            # Expected this exception. Test passes
             pass
-        except ResponseError as err:
-            raise
-        client.remove_bucket(bucket_name+'.unique')
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+        try:
+            client.remove_bucket(bucket_name+'.unique')
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_list_buckets(client):
+    start_time = time.time()
+
+    log_output = new_log_result(client.list_buckets)
+    log_output['description'] = 'Tests list_buckets api'
+    # Get a unique bucket_name
     bucket_name = uuid.uuid4().__str__()
+
     try:
         client.make_bucket(bucket_name)
         # List all buckets.
@@ -101,162 +167,350 @@ def test_list_buckets(client):
             # bucket object should be of a valid value.
             if bucket.name and bucket.creation_date:
                 continue
-            raise ValueError(bucket)
+            raise ValueError('list_bucket api failure')
+    except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
     finally:
         client.remove_bucket(bucket_name)
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_fput_object_small_file(client, testfile):
+    start_time = time.time()
+
+    log_output = new_log_result(client.fput_object)
+    log_output['description'] = 'Tests fput_object api'
+    # Get a unique bucket_name and object_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output['args']['object_name'] = object_name = uuid.uuid4().__str__()
+    log_output['args']['file_path'] = testfile
+    log_output['args']['metadata'] = metadata = {'x-amz-storage-class': 'STANDARD_IA'}
     is_s3 = client._endpoint_url.startswith("s3.amazonaws")
-    bucket_name = uuid.uuid4().__str__()
-    object_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
         # upload local small file.
-        print("Upload a small file through putObject")
         if is_s3:
             client.fput_object(bucket_name, object_name+'-f', testfile,
-                               metadata={'x-amz-storage-class': 'STANDARD_IA'})
+                               metadata)
         else:
             client.fput_object(bucket_name, object_name+'-f', testfile)
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        client.remove_object(bucket_name, object_name+'-f')
-        client.remove_bucket(bucket_name)
+        try:
+            client.remove_object(bucket_name, object_name+'-f')
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_fput_large_file(client, largefile):
-    # upload local large file through multipart.
+    start_time = time.time()
+
+    log_output = new_log_result(client.fput_object)
+    log_output['description'] = 'Tests fput_object api'
+    # Get a unique bucket_name and object_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output['args']['object_name'] = object_name = uuid.uuid4().__str__()
+    log_output['args']['file_path'] = largefile
+    log_output['args']['metadata'] = metadata = {'x-amz-storage-class': 'STANDARD_IA'}
     is_s3 = client._endpoint_url.startswith("s3.amazonaws")
-    bucket_name = uuid.uuid4().__str__()
-    object_name = uuid.uuid4().__str__()
+    # upload local large file through multipart.
     try:
         client.make_bucket(bucket_name)
-        print("Upload a largefile through multipart upload")
         if is_s3:
             client.fput_object(bucket_name, object_name+'-large', largefile,
-                               metadata={'x-amz-storage-class': 'STANDARD_IA'})
+                               metadata)
         else:
             client.fput_object(bucket_name, object_name+'-large', largefile)
 
         client.stat_object(bucket_name, object_name+'-large')
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        client.remove_object(bucket_name, object_name+'-large')
-        client.remove_bucket(bucket_name)
+        try:
+            client.remove_object(bucket_name, object_name+'-large')
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_copy_object(client):
-    bucket_name = uuid.uuid4().__str__()
+    start_time = time.time()
+
+    log_output = new_log_result(client.copy_object)
+    log_output['description'] = 'Tests copy_object api'
+    # Get a unique bucket_name and object_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
     object_name = uuid.uuid4().__str__()
+    log_output['args']['object_source'] = object_source = object_name+'-source'
+    log_output['args']['object_name'] = object_copy = object_name+'-copy'
     try:
         client.make_bucket(bucket_name)
-        # Put a file
-        print("Upload a streaming object of 1MiB")
+        # Upload a streaming object of 1MiB
         KB_1 = 1024 # 1KiB.
         KB_1_reader = LimitedRandomReader(KB_1)
-        client.put_object(bucket_name, object_name+'-f', KB_1_reader, KB_1)
-        # Copy a file
-        print("Perform a server side copy of an object")
-        client.copy_object(bucket_name, object_name+'-copy',
-                           '/'+bucket_name+'/'+object_name+'-f')
+        client.put_object(bucket_name, object_source, KB_1_reader, KB_1)
+        # Perform a server side copy of an object
+        client.copy_object(bucket_name, object_copy,
+                           '/'+bucket_name+'/'+object_source)
 
-        client.stat_object(bucket_name, object_name+'-copy')
-
-        print("Perform a server side copy of an object with pre-conditions and fail")
+        client.stat_object(bucket_name, object_copy)
+        # Perform a server side copy of an object with pre-conditions and fail
         try:
+            etag = 'test-etag'
             copy_conditions = CopyConditions()
-            copy_conditions.set_match_etag('test-etag')
-            client.copy_object(bucket_name, object_name+'-copy',
-                               '/'+bucket_name+'/'+object_name+'-f',
+            copy_conditions.set_match_etag(etag)
+            log_output['args']['conditions'] = {'set_match_etag': etag}
+            client.copy_object(bucket_name, object_copy,
+                               '/'+bucket_name+'/'+object_source,
                                copy_conditions)
         except PreconditionFailed as err:
             if err.message != 'At least one of the preconditions you specified did not hold.':
-                raise
+                log_output['message'] = err
+                log_output['error'] = traceback.format_exc()
+                log_output['status'] = FAIL
+                log_output['duration'] = duration = round(time.time() - start_time, 2)
+                print_json(log_output)
+                exit()
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        client.remove_object(bucket_name, object_name+'-f')
-        client.remove_object(bucket_name, object_name+'-copy')
-        client.remove_bucket(bucket_name)
+        try:
+            client.remove_object(bucket_name, object_source)
+            client.remove_object(bucket_name, object_copy)
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_put_object(client):
-    bucket_name = uuid.uuid4().__str__()
-    object_name = uuid.uuid4().__str__()
+    start_time = time.time()
+
+    log_output = new_log_result(client.put_object)
+    log_output['description'] = 'Tests put_object api'
+    # Get a unique bucket_name and object_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output['args']['object_name'] = object_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
-        MB_1 = 1024*1024 # 1MiB.
+        # Put/Upload a streaming object of 1MiB
+        log_output['args']['length'] = MB_1 = 1024*1024 # 1MiB.
         MB_1_reader = LimitedRandomReader(MB_1)
-        MB_11 = 11*1024*1024 # 11MiB.
-        MB_11_reader = LimitedRandomReader(MB_11)
-        # Put a file
-        print("Upload a streaming object of 1MiB")
+        log_output['args']['data'] = 'LimitedRandomReader(MB_1)'
         client.put_object(bucket_name, object_name, MB_1_reader, MB_1)
         client.stat_object(bucket_name, object_name)
-        # Put a large file
-        print("Upload a streaming object of 11MiB")
-        client.put_object(bucket_name, object_name+'-metadata',
-                          MB_11_reader, MB_11,
-                          metadata={'x-amz-meta-testing': 'value'})
-        print("Stat on the uploaded object check if it exists")
+        # Put/Upload a streaming object of 11MiB
+        log_output['args']['length'] = MB_11 = 11*1024*1024 # 11MiB.
+        MB_11_reader = LimitedRandomReader(MB_11)
+        log_output['args']['data'] = 'LimitedRandomReader(MB_11)'
+        log_output['args']['metadata'] = metadata = {'x-amz-meta-testing': 'value'}
+        content_type='application/octet-stream'
+        client.put_object(bucket_name,
+                          object_name+'-metadata',
+                          MB_11_reader,
+                          MB_11,
+                          content_type,
+                          metadata)
+        # Stat on the uploaded object to check if it exists
         # Fetch saved stat metadata on a previously uploaded object with metadata.
         st_obj = client.stat_object(bucket_name, object_name+'-metadata')
         if 'X-Amz-Meta-Testing' not in st_obj.metadata:
-            raise ValueError('Metadata key \'x-amz-meta-testing\' not found')
+            raise ValueError("Metadata key 'x-amz-meta-testing' not found")
         value = st_obj.metadata['X-Amz-Meta-Testing']
         if value != 'value':
             raise ValueError('Metadata key has unexpected'
                              ' value {0}'.format(value))
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        client.remove_object(bucket_name, object_name)
-        client.remove_object(bucket_name, object_name+'-metadata')
-        client.remove_bucket(bucket_name)
+        try:
+            client.remove_object(bucket_name, object_name)
+            client.remove_object(bucket_name, object_name+'-metadata')
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_remove_object(client):
-    bucket_name = uuid.uuid4().__str__()
-    object_name = uuid.uuid4().__str__()
+    start_time = time.time()
+
+    log_output = new_log_result(client.remove_object)
+    log_output['description'] = 'Tests remove_object api'
+    # Get a unique bucket_name and object_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output['args']['object_name'] = object_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
         KB_1 = 1024 # 1KiB.
         KB_1_reader = LimitedRandomReader(KB_1)
         client.put_object(bucket_name, object_name, KB_1_reader, KB_1)
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        client.remove_object(bucket_name, object_name)
-        client.remove_bucket(bucket_name)
-
+        try:
+            client.remove_object(bucket_name, object_name)
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_get_object(client):
-    bucket_name = uuid.uuid4().__str__()
-    object_name = uuid.uuid4().__str__()
+    start_time = time.time()
+
+    log_output = new_log_result(client.get_object)
+    log_output['description'] = 'Tests get_object api'
+    # Get a unique bucket_name and object_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output['args']['object_name'] = object_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
         MB_1 = 1024*1024 # 1MiB.
         MB_1_reader = LimitedRandomReader(MB_1)
         client.put_object(bucket_name, object_name, MB_1_reader, MB_1)
         newfile = 'newfile جديد'
-        # Get a full object
-        print("Download a full object, iterate on response to save to disk")
+        # Get/Download a full object, iterate on response to save to disk
         object_data = client.get_object(bucket_name, object_name)
         with open(newfile, 'wb') as file_data:
+            # What is the point of copy? Do we want to verify something?
             shutil.copyfileobj(object_data, file_data)
+
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        os.remove(newfile)
-        client.remove_object(bucket_name, object_name)
-        client.remove_bucket(bucket_name)
+        try:
+            os.remove(newfile)
+            client.remove_object(bucket_name, object_name)
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_fget_object(client):
-    bucket_name = uuid.uuid4().__str__()
-    object_name = uuid.uuid4().__str__()
+    start_time = time.time()
+
+    log_output = new_log_result(client.fget_object)
+    log_output['description'] = 'Tests fget_object api'
+    # Get a unique bucket_name and object_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output['args']['object_name'] = object_name = uuid.uuid4().__str__()
+    log_output['args']['file_path'] = newfile_f = 'newfile-f 新'
     try:
         client.make_bucket(bucket_name)
         MB_1 = 1024*1024 # 1MiB.
         MB_1_reader = LimitedRandomReader(MB_1)
         client.put_object(bucket_name, object_name, MB_1_reader, MB_1)
-        newfile_f = 'newfile-f 新'
-        # Get a full object locally.
-        print("Download a full object and save locally at path")
+        # Get/Download a full object and save locally at path
         client.fget_object(bucket_name, object_name, newfile_f)
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        os.remove(newfile_f)
-        client.remove_object(bucket_name, object_name)
-        client.remove_bucket(bucket_name)
+        try:
+            os.remove(newfile_f)
+            client.remove_object(bucket_name, object_name)
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_list_objects(client):
-    bucket_name = uuid.uuid4().__str__()
-    object_name = uuid.uuid4().__str__()
+    start_time = time.time()
+
+    log_output = new_log_result(client.list_objects)
+    log_output['description'] = 'Tests list_objects api'
+    # Get a unique bucket_name and object_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output['args']['object_name'] = object_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
         MB_1 = 1024*1024 # 1MiB.
@@ -265,21 +519,45 @@ def test_list_objects(client):
         MB_1_reader = LimitedRandomReader(MB_1)
         client.put_object(bucket_name, object_name+"-2", MB_1_reader, MB_1)
         # List all object paths in bucket.
-        print("Listing using ListObjects")
-        objects = client.list_objects(bucket_name, recursive=True)
+        log_output['args']['recursive'] = is_recursive = True
+        objects = client.list_objects(bucket_name, None, is_recursive)
         for obj in objects:
-            _, _, _, _, _, _ = obj.bucket_name, obj.object_name, \
-                    obj.last_modified, \
-                    obj.etag, obj.size, \
-                    obj.content_type
+            _, _, _, _, _, _ = obj.bucket_name,\
+                               obj.object_name,\
+                               obj.last_modified,\
+                               obj.etag, obj.size,\
+                               obj.content_type
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        client.remove_object(bucket_name, object_name+"-1")
-        client.remove_object(bucket_name, object_name+"-2")
-        client.remove_bucket(bucket_name)
+        try:
+            client.remove_object(bucket_name, object_name+"-1")
+            client.remove_object(bucket_name, object_name+"-2")
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_list_objects_v2(client):
-    bucket_name = uuid.uuid4().__str__()
-    object_name = uuid.uuid4().__str__()
+    start_time = time.time()
+
+    log_output = new_log_result(client.list_objects_v2)
+    log_output['description'] = 'Tests list_objects_v2 api'
+    # Get a unique bucket_name and object_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output['args']['object_name'] = object_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
         MB_1 = 1024*1024 # 1MiB.
@@ -288,23 +566,47 @@ def test_list_objects_v2(client):
         MB_1_reader = LimitedRandomReader(MB_1)
         client.put_object(bucket_name, object_name+"-2", MB_1_reader, MB_1)
         # List all object paths in bucket using V2 API.
-        print("Listing using ListObjectsV2")
-        objects = client.list_objects_v2(bucket_name, recursive=True)
+        log_output['args']['recursive'] = is_recursive = True
+        objects = client.list_objects_v2(bucket_name, None, is_recursive)
         for obj in objects:
-            _, _, _, _, _, _ = obj.bucket_name, obj.object_name, \
-                               obj.last_modified, \
-                               obj.etag, obj.size, \
+            _, _, _, _, _, _ = obj.bucket_name,\
+                               obj.object_name,\
+                               obj.last_modified,\
+                               obj.etag, obj.size,\
                                obj.content_type
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        client.remove_object(bucket_name, object_name+"-1")
-        client.remove_object(bucket_name, object_name+"-2")
-        client.remove_bucket(bucket_name)
+        try:
+            client.remove_object(bucket_name, object_name+"-1")
+            client.remove_object(bucket_name, object_name+"-2")
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_presigned_get_object(client):
     _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
             ca_certs=certifi.where())
-    bucket_name = uuid.uuid4().__str__()
-    object_name = uuid.uuid4().__str__()
+    start_time = time.time()
+
+    log_output = new_log_result(client.presigned_get_object)
+    log_output['description'] = 'Tests presigned_get_object api'
+    # Get a unique bucket_name and object_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output['args']['object_name'] = object_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
         MB_1 = 1024*1024 # 1MiB.
@@ -316,19 +618,42 @@ def test_presigned_get_object(client):
         response = _http.urlopen('GET', presigned_get_object_url)
         if response.status != 200:
             raise ResponseError(response,
-                    'GET',
-                    bucket_name,
-                    object_name).get_exception()
+                                'GET',
+                                bucket_name,
+                                object_name).get_exception()
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        client.remove_object(bucket_name, object_name)
-        client.remove_bucket(bucket_name)
+        try:
+            client.remove_object(bucket_name, object_name)
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_presigned_put_object(client):
     _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
             ca_certs=certifi.where())
 
-    bucket_name = uuid.uuid4().__str__()
-    object_name = uuid.uuid4().__str__()
+    start_time = time.time()
+
+    log_output = new_log_result(client.presigned_put_object)
+    log_output['description'] = 'Tests presigned_put_object api'
+    # Get a unique bucket_name and object_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output['args']['object_name'] = object_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
 
@@ -343,92 +668,231 @@ def test_presigned_put_object(client):
                                 object_name).get_exception()
 
         client.stat_object(bucket_name, object_name)
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        client.remove_object(bucket_name, object_name)
-        client.remove_bucket(bucket_name)
+        try:
+            client.remove_object(bucket_name, object_name)
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_presigned_post_policy(client):
+    start_time = time.time()
+
+    log_output = new_log_result(client.presigned_post_policy)
+    log_output['description'] = 'Tests presigned_post_policy api'
     bucket_name = uuid.uuid4().__str__()
+    no_of_days = 10
+    prefix = 'objectPrefix/'
     try:
         client.make_bucket(bucket_name)
         # Post policy.
         policy = PostPolicy()
         policy.set_bucket_name(bucket_name)
-        policy.set_key_startswith('objectPrefix/')
-
-        expires_date = datetime.utcnow()+timedelta(days=10)
+        policy.set_key_startswith(prefix)
+        expires_date = datetime.utcnow()+timedelta(days=no_of_days)
         policy.set_expires(expires_date)
+        # post_policy arg is a class. To avoid displaying meaningless value
+        # for the class, policy settings are made part of the args for
+        # clarity and debugging purposes.
+        log_output['args']['post_policy'] = {'bucket_name': bucket_name,
+                                             'prefix': prefix,
+                                             'expires_in_days': no_of_days}
         client.presigned_post_policy(policy)
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = 'FAIL1'
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        client.remove_bucket(bucket_name)
+        try:
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = 'FAIL2'
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_get_bucket_policy(client):
-    bucket_name = uuid.uuid4().__str__()
+    start_time = time.time()
+
+    log_output = new_log_result(client.get_bucket_policy)
+    log_output['description'] = 'Tests get_bucket_policy api'
+    # Get a unique bucket_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
         policy_name = client.get_bucket_policy(bucket_name)
         if policy_name != Policy.NONE:
-            raise ValueError('Policy name is invalid ' + policy_name)
+            raise ValueError('Policy name is invalid: ' + policy_name)
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        client.remove_bucket(bucket_name)
+        try:
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_set_bucket_policy(client):
-    bucket_name = uuid.uuid4().__str__()
+    start_time = time.time()
+
+    log_output = new_log_result(client.set_bucket_policy)
+    log_output['description'] = 'Tests set_bucket_policy api'
+    # Get a unique bucket_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output['args']['prefix'] = prefix = '1/'
     try:
         client.make_bucket(bucket_name)
         # Set read-only policy successfully.
-        client.set_bucket_policy(bucket_name, '1/', Policy.READ_ONLY)
+        client.set_bucket_policy(bucket_name, prefix, Policy.READ_ONLY)
         # Set read-write policy successfully.
-        client.set_bucket_policy(bucket_name, '1/', Policy.READ_WRITE)
+        client.set_bucket_policy(bucket_name, prefix, Policy.READ_WRITE)
         # Reset policy to NONE.
-        client.set_bucket_policy(bucket_name, '', Policy.NONE)
+        # Added into log output for clarity/debugging purposes
+        log_output['args']['prefix-2'] = prefix = ''
+        client.set_bucket_policy(bucket_name, prefix, Policy.NONE)
         # Validate if the policy is reverted back to NONE.
         policy_name = client.get_bucket_policy(bucket_name)
         if policy_name != Policy.NONE:
             raise ValueError('Policy name is invalid ' + policy_name)
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = 'FAIL1'
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        client.remove_bucket(bucket_name)
+        try:
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = 'FAIL2'
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_remove_objects(client):
-    bucket_name = uuid.uuid4().__str__()
+    start_time = time.time()
+
+    log_output = new_log_result(client.remove_objects)
+    log_output['description'] = 'Tests remove_objects api'
+    # Get a unique bucket_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
         MB_1 = 1024*1024 # 1MiB.
         # Upload some new objects to prepare for multi-object delete test.
-        print("Prepare for remove_objects() test.")
         object_names = []
         for i in range(10):
             curr_object_name = "prefix"+"-{}".format(i)
             client.put_object(bucket_name, curr_object_name, LimitedRandomReader(MB_1), MB_1)
             object_names.append(curr_object_name)
         # delete the objects in a single library call.
-        print("Performing remove_objects() test.")
-        del_errs = client.remove_objects(bucket_name, object_names)
-        had_errs = False
+        log_output['args']['objects_iter'] = objects_iter = object_names
+        del_errs = client.remove_objects(bucket_name, objects_iter)
         for del_err in del_errs:
-            had_errs = True
-            print("Remove objects err is {}".format(del_err))
-        if had_errs:
-            raise("Removing objects FAILED - it had unexpected errors.")
-        else:
-            print("Removing objects worked as expected.")
+            raise ValueError("Remove objects err: {}".format(del_err))
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
     finally:
-        # Try to clean everything to keep our server intact
-        client.remove_objects(bucket_name, object_names)
-        client.remove_bucket(bucket_name)
+        try:
+            # Try to clean everything to keep our server intact
+            client.remove_objects(bucket_name, objects_iter)
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def test_remove_bucket(client):
     is_s3 = client._endpoint_url.startswith("s3.amazonaws")
-    bucket_name = uuid.uuid4().__str__()
+    is_s3 = True
+    start_time = time.time()
+
+    log_output = new_log_result(client.remove_bucket)
+    log_output['description'] = 'Tests remove_bucket api'
+    # Get a unique bucket_name
+    log_output['args']['bucket_name'] = bucket_name = uuid.uuid4().__str__()
     try:
-        client.make_bucket(bucket_name)
-    # Remove a bucket. This operation will only work if your bucket is empty.
-    finally:
-        print("Deleting buckets and finishing tests.")
         if is_s3:
-            client.remove_bucket(bucket_name+'.unique')
+            log_output['args']['location'] = location = 'us-east-1'
+            client.make_bucket(bucket_name+'.unique', location)
         else:
-            client.remove_bucket(bucket_name)
+            client.make_bucket(bucket_name)
+    except Exception as err:
+        log_output['message'] = err
+        log_output['error'] = traceback.format_exc()
+        log_output['status'] = FAIL
+        log_output['duration'] = duration = round(time.time() - start_time, 2)
+        print_json(log_output)
+        exit()
+    finally:
+        try:
+            # Removing bucket. This operation will only work if your bucket is empty.
+            if is_s3:
+                client.remove_bucket(bucket_name+'.unique')
+            else:
+                client.remove_bucket(bucket_name)
+        except Exception as err:
+            log_output['message'] = err
+            log_output['error'] = traceback.format_exc()
+            log_output['status'] = FAIL
+            log_output['duration'] = duration = round(time.time() - start_time, 2)
+            print_json(log_output)
+            exit()
+    # Test passes
+    log_output['duration'] = duration = round(time.time() - start_time, 2)
+    print_json(log_output)
 
 def main():
     """
@@ -447,16 +911,12 @@ def main():
     is_s3 = server_endpoint.startswith("s3.amazonaws")
     client = Minio(server_endpoint, access_key, secret_key, secure=secure)
     # Check if we are running in the mint environment.
-    is_mint_env = os.path.exists(os.getenv('DATA_DIR', '/mint/data'))
-
-    _http = urllib3.PoolManager(
-        cert_reqs='CERT_REQUIRED',
-        ca_certs=certifi.where()
-    )
-
-    # Get unique bucket_name, object_name.
-    bucket_name = uuid.uuid4().__str__()
-    object_name = uuid.uuid4().__str__()
+    data_dir = os.getenv('DATA_DIR')
+    if data_dir == None:
+       os.environ['DATA_DIR'] = data_dir = '/mint/data'
+    is_mint_env = (os.path.exists(data_dir) and
+                  os.path.exists(os.path.join(data_dir, 'datafile-1-MB')) and
+                  os.path.exists(os.path.join(data_dir, 'datafile-11-MB')))
 
     # Enable trace
     # import sys
@@ -464,8 +924,7 @@ def main():
 
     testfile = 'datafile-1-MB'
     largefile = 'datafile-11-MB'
-    if is_mint_env:
-        data_dir = os.getenv('DATA_DIR')
+    if is_mint_env :
         ## Choose data files
         testfile = os.path.join(data_dir, 'datafile-1-MB')
         largefile = os.path.join(data_dir, 'datafile-65-MB')
