@@ -22,9 +22,9 @@ build() {
     echo "building..."
     cd ../
     if [[ $py2flag = 1 ]]; then
-        sudo python setup.py install
+	python2 setup.py install --prefix ${HOME}/.local
     else
-        sudo python3 setup.py install
+	python3 setup.py install --prefix ${HOME}/.local
     fi
     cd tests
 }
@@ -32,28 +32,28 @@ build() {
 run() {
     echo "running..."
     if [[ $py2flag = 1 ]]; then
-	python ./functional/tests.py 
+	python2 ./functional/tests.py
     else
-        python3 ./functional/tests.py
-    fi 
+	python3 ./functional/tests.py
+    fi
 }
 
 main () {
-    if [[ $# -lt 1 ]]; then 
-        echo "Usage: ./functional_test.sh [py2|py3|all]"
+    if [[ $# -lt 1 ]]; then
+	echo "Usage: ./functional_test.sh [py2|py3|all]"
     fi
     # Build test file binary
-    if [[ $1 == "py2" || $1 == "all" ]]; then 
-        py2flag=1
-        echo "Running python2 tests..."
-        build
-        run
+    if [[ $1 == "py2" || $1 == "all" ]]; then
+	py2flag=1
+	echo "Running python2 tests..."
+	build
+	run
     fi
     if [[ $1 == "py3" || $1 == "all" ]]; then
-        py2flag=0
-        echo "Running python3 tests..."
-        build
-        run
+	py2flag=0
+	echo "Running python3 tests..."
+	build
+	run
     fi
 
 }
