@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Minio Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2015, 2016 Minio, Inc.
+# 2015, 2016, 2017 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ minio.helpers
 
 This module implements all helper functions.
 
-:copyright: (c) 2015 by Minio, Inc.
+:copyright: (c) 2015, 2016, 2017 by Minio, Inc.
 :license: Apache 2.0, see LICENSE for more details.
 
 """
@@ -50,6 +50,31 @@ _ALLOWED_HOSTNAME_REGEX = re.compile(
     '^((?!-)[A-Z\\d-]{1,63}(?<!-)\\.)*((?!-)[A-Z\\d-]{1,63}(?<!-))$',
     re.IGNORECASE)
 
+_EXTRACT_REGION_REGEX = re.compile('s3[.-]?(.+?).amazonaws.com')
+
+def get_s3_region_from_endpoint(endpoint):
+    """
+    Extracts and returns an AWS S3 region from an endpoint
+    of form `s3-ap-southeast-1.amazonaws.com`
+
+    :param endpoint: Endpoint region to be extracted.
+    """
+
+    # Extract region by regex search.
+    m = _EXTRACT_REGION_REGEX.search(endpoint)
+    if m:
+        # Regex matches, we have found a region.
+        region = m.group(1)
+        if region == 'external-1':
+            # Handle special scenario for us-east-1 URL.
+            return 'us-east-1'
+        if region.startswith('dualstack'):
+            # Handle special scenario for dualstack URL.
+            return region.split('.')[1]
+        return region
+
+    # No regex matches return None.
+    return None
 
 def dump_http(method, url, request_headers, response, output_stream):
     """
@@ -273,10 +298,6 @@ def is_valid_endpoint(endpoint):
         if not _ALLOWED_HOSTNAME_REGEX.match(hostname):
             raise InvalidEndpointError('Hostname does not meet URL standards.')
 
-        if hostname.endswith('.amazonaws.com') and \
-           (hostname != 's3.amazonaws.com'):
-            raise InvalidEndpointError('Amazon S3 hostname should be '
-                                       's3.amazonaws.com.')
     except AttributeError as error:
         raise TypeError(error)
 

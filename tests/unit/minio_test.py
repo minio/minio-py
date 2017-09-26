@@ -22,7 +22,8 @@ from minio import Minio
 from minio import __version__ as minio_version
 from minio.api import _DEFAULT_USER_AGENT
 from minio.error import InvalidEndpointError, InvalidBucketError
-from minio.helpers import get_target_url, is_valid_bucket_name
+from minio.helpers import (get_target_url, is_valid_bucket_name,
+                           get_s3_region_from_endpoint)
 
 class ValidBucketName(TestCase):
     @raises(InvalidBucketError)
@@ -102,3 +103,28 @@ class UserAgentTests(TestCase):
     def test_set_app_info_requires_non_empty_version(self):
         client = Minio('localhost:9000')
         client.set_app_info('hello', '')
+
+class GetRegionTests(TestCase):
+    def test_region_none(self):
+        region = get_s3_region_from_endpoint('localhost')
+        eq_(region, None)
+
+    def test_region_us_west(self):
+        region = get_s3_region_from_endpoint('s3-us-west-1.amazonaws.com')
+        eq_(region, 'us-west-1')
+
+    def test_region_with_dot(self):
+        region = get_s3_region_from_endpoint('s3.us-west-1.amazonaws.com')
+        eq_(region, 'us-west-1')
+
+    def test_region_with_dualstack(self):
+        region = get_s3_region_from_endpoint('s3.dualstack.us-west-1.amazonaws.com')
+        eq_(region, 'us-west-1')
+
+    def test_region_us_east(self):
+        region = get_s3_region_from_endpoint('s3.amazonaws.com')
+        eq_(region, None)
+
+    @raises(TypeError)
+    def test_invalid_value(self):
+        region = get_s3_region_from_endpoint(None)
