@@ -84,8 +84,6 @@ class LogOutput(object):
                         put together with the method name:
                         <method>.__name__+'('+', '.join(args_list)+')'
                         e.g. 'remove_object(bucket_name, object_name)'
-            'description': short description for the test, optional,
-                           defaults to empty string, ''
             'args': method/api arguments with their values, in
                     dictionary form: {'arg1': val1, 'arg2': val2, ...}
             'duration': duration of the whole test in milliseconds,
@@ -109,7 +107,6 @@ class LogOutput(object):
         self.__args_list = inspect.getargspec(meth).args[1:]
         self.__name = 'minio-py'
         self.__function = meth.__name__+'('+', '.join(self.__args_list)+')'
-        self.__description = ''
         self.__args = {}
         self.__duration = 0
         self.__alert = ''
@@ -122,45 +119,34 @@ class LogOutput(object):
     @property
     def function(self): return self.__function
     @property
-    def description(self): return self.__description
-    @property
     def args(self): return self.__args
 
     @name.setter
     def name(self, val): self.__name = val
     @function.setter
     def function(self, val): self.__function = val
-    @description.setter
-    def description(self, val): self.__description = val
     @args.setter
     def args(self, val): self.__args = val
 
-    def json_report_failure(self, err_msg):
-        # print(err_msg)
-        return json.dumps({'name': self.__name,
+    def json_report(self, err_msg=''):
+        self.__args = {k: v for k, v in self.__args.items() if v and v != ''}
+        entry = {'name': self.__name,
             'function': self.__function,
-            'description': self.__description,
             'args': self.__args,
-            'duration': round(time.time() - self.__start_time, 2),
+            'duration': int(round((time.time() - self.__start_time)*1000)),
             'alert': self.__alert,
             'message': str(err_msg),
-            'error': traceback.format_exc(),
-            'status': self.FAIL
-        })
+            'error': traceback.format_exc() if err_msg and err_msg != '' else '',
+            'status': self.FAIL if err_msg and err_msg != '' else self.PASS
+        }
+        return json.dumps({k: v for k, v in entry.items() if v and v != ''})
 
-    def json_report_success(self):
-        return json.dumps({'name': self.__name,
-            'function': self.__function,
-            'description': self.__description,
-            'args': self.__args,
-            'duration': round(time.time() - self.__start_time, 2),
-            'status': self.PASS
-        })
+def generate_bucket_name():
+    return "minio-py-test-" + uuid.uuid4().__str__()
 
 def test_make_bucket(client, log_output):
-    log_output.description = 'Tests make_bucket api'
     # Get a unique bucket_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
 
     is_s3 = client._endpoint_url.startswith("s3.amazonaws")
     try:
@@ -190,12 +176,11 @@ def test_make_bucket(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_list_buckets(client, log_output):
-    log_output.description = 'Tests list_buckets api'
     # Get a unique bucket_name
-    bucket_name = uuid.uuid4().__str__()
+    bucket_name = generate_bucket_name()
 
     try:
         client.make_bucket(bucket_name)
@@ -211,12 +196,11 @@ def test_list_buckets(client, log_output):
     finally:
         client.remove_bucket(bucket_name)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_fput_object_small_file(client, testfile, log_output):
-    log_output.description = 'Tests fput_object api'
     # Get a unique bucket_name and object_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
     log_output.args['file_path'] = testfile
     log_output.args['metadata'] = metadata = {'x-amz-storage-class': 'STANDARD_IA'}
@@ -238,12 +222,11 @@ def test_fput_object_small_file(client, testfile, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_fput_large_file(client, largefile, log_output):
-    log_output.description = 'Tests fput_object api'
     # Get a unique bucket_name and object_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
     log_output.args['file_path'] = largefile
     log_output.args['metadata'] = metadata = {'x-amz-storage-class': 'STANDARD_IA'}
@@ -267,12 +250,11 @@ def test_fput_large_file(client, largefile, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_copy_object(client, log_output):
-    log_output.description = 'Tests copy_object api'
     # Get a unique bucket_name and object_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     object_name = uuid.uuid4().__str__()
     log_output.args['object_source'] = object_source = object_name+'-source'
     log_output.args['object_name'] = object_copy = object_name+'-copy'
@@ -309,12 +291,11 @@ def test_copy_object(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_put_object(client, log_output):
-    log_output.description = 'Tests put_object api'
     # Get a unique bucket_name and object_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
@@ -355,12 +336,11 @@ def test_put_object(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_remove_object(client, log_output):
-    log_output.description = 'Tests remove_object api'
     # Get a unique bucket_name and object_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
@@ -376,12 +356,11 @@ def test_remove_object(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_get_object(client, log_output):
-    log_output.description = 'Tests get_object api'
     # Get a unique bucket_name and object_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
     try:
         newfile = 'newfile جديد'
@@ -405,12 +384,11 @@ def test_get_object(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_fget_object(client, log_output):
-    log_output.description = 'Tests fget_object api'
     # Get a unique bucket_name and object_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
     log_output.args['file_path'] = newfile_f = 'newfile-f 新'
     try:
@@ -430,12 +408,11 @@ def test_fget_object(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_list_objects(client, log_output):
-    log_output.description = 'Tests list_objects api'
     # Get a unique bucket_name and object_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
@@ -463,12 +440,11 @@ def test_list_objects(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_list_objects_v2(client, log_output):
-    log_output.description = 'Tests list_objects_v2 api'
     # Get a unique bucket_name and object_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
@@ -496,14 +472,13 @@ def test_list_objects_v2(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_presigned_get_object(client, log_output):
     _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
             ca_certs=certifi.where())
-    log_output.description = 'Tests presigned_get_object api'
     # Get a unique bucket_name and object_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
@@ -528,15 +503,14 @@ def test_presigned_get_object(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_presigned_put_object(client, log_output):
     _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
             ca_certs=certifi.where())
 
-    log_output.description = 'Tests presigned_put_object api'
     # Get a unique bucket_name and object_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
@@ -561,11 +535,10 @@ def test_presigned_put_object(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_presigned_post_policy(client, log_output):
-    log_output.description = 'Tests presigned_post_policy api'
-    bucket_name = uuid.uuid4().__str__()
+    bucket_name = generate_bucket_name()
     no_of_days = 10
     prefix = 'objectPrefix/'
     try:
@@ -591,12 +564,11 @@ def test_presigned_post_policy(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_get_bucket_policy(client, log_output):
-    log_output.description = 'Tests get_bucket_policy api'
     # Get a unique bucket_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     try:
         client.make_bucket(bucket_name)
         policy_name = client.get_bucket_policy(bucket_name)
@@ -610,12 +582,11 @@ def test_get_bucket_policy(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_set_bucket_policy(client, log_output):
-    log_output.description = 'Tests set_bucket_policy api'
     # Get a unique bucket_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['prefix'] = prefix = '1/'
     try:
         client.make_bucket(bucket_name)
@@ -639,12 +610,11 @@ def test_set_bucket_policy(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_remove_objects(client, log_output):
-    log_output.description = 'Tests remove_objects api'
     # Get a unique bucket_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     try:
         MB_1 = 1024*1024 # 1MiB.
         client.make_bucket(bucket_name)
@@ -669,14 +639,13 @@ def test_remove_objects(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def test_remove_bucket(client, log_output):
     is_s3 = client._endpoint_url.startswith("s3.amazonaws")
 
-    log_output.description = 'Tests remove_bucket api'
     # Get a unique bucket_name
-    log_output.args['bucket_name'] = bucket_name = uuid.uuid4().__str__()
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     try:
         if is_s3:
             log_output.args['location'] = location = 'us-east-1'
@@ -695,7 +664,7 @@ def test_remove_bucket(client, log_output):
         except Exception as err:
             raise Exception(err)
     # Test passes
-    print(log_output.json_report_success())
+    print(log_output.json_report())
 
 def main():
     """
@@ -799,7 +768,7 @@ def main():
             os.remove(testfile)
             os.remove(largefile)
     except Exception as err:
-        print(log_output.json_report_failure(err))
+        print(log_output.json_report(err))
         exit()
 
 if __name__ == "__main__":
