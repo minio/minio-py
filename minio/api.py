@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Minio Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2015, 2016 Minio, Inc.
+# 2015, 2016, 2017 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ minio.api
 
 This module implements the API.
 
-:copyright: (c) 2015, 2016 by Minio, Inc.
+:copyright: (c) 2015, 2016, 2017 by Minio, Inc.
 :license: Apache 2.0, see LICENSE for more details.
 
 """
@@ -67,6 +67,7 @@ from .helpers import (get_target_url, is_non_empty_string,
                       optimal_part_info,
                       is_valid_bucket_name, PartMetadata, read_full,
                       is_valid_bucket_notification_config,
+                      get_s3_region_from_endpoint,
                       mkdir_p, dump_http)
 from .helpers import (MAX_MULTIPART_OBJECT_SIZE,
                       MIN_PART_SIZE)
@@ -141,6 +142,11 @@ class Minio(object):
 
         # Parse url endpoints.
         url_components = urlsplit(endpoint_url)
+
+        # Extract region if possible from endpoint.
+        if not region:
+            region = get_s3_region_from_endpoint(endpoint)
+
         self._region = region
         self._region_map = dict()
         self._endpoint_url = url_components.geturl()
