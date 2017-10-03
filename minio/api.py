@@ -97,7 +97,7 @@ _DEFAULT_USER_AGENT = 'Minio {0} {1}'.format(
 
 
 # Duration of 7 days in seconds
-_SEVEN_DAYS_SECONDS = 604800
+_MAX_EXPIRY_TIME = 604800 # 7 days in seconds
 
 # Number of parallel workers which upload parts
 _PARALLEL_UPLOADERS = 3
@@ -1210,6 +1210,54 @@ class Minio(object):
                                                upload.upload_id)
                 return
 
+    def presigned_url(self, method,
+                    bucket_name,
+                    object_name,
+                    expires=timedelta(days=7),
+                    response_headers=None):
+        """
+        Presigns a method on an object and provides a url
+
+        Example:
+            from datetime import timedelta
+
+            presignedURL = presigned_url('GET',
+                                         'bucket_name',
+                                         'object_name',
+                                         expires=timedelta(days=7))
+            print(presignedURL)
+
+        :param bucket_name: Bucket for the presigned url.
+        :param object_name: Object for which presigned url is generated.
+        :param expires: Optional expires argument to specify timedelta.
+                        Defaults to 7days.
+        :params response_headers: Optional response_headers argument to
+                                  specify response fields like date, size,
+                                  type of file, data about server, etc.
+        :return: Presigned put object url.
+        """
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+
+        if expires.total_seconds() < 1 or \
+           expires.total_seconds() > _MAX_EXPIRY_TIME:
+            raise InvalidArgumentError('Expires param valid values'
+                                       ' are between 1 sec to'
+                                       ' {0} secs'.format(_MAX_EXPIRY_TIME))
+
+        region = self._get_bucket_region(bucket_name)
+        url = get_target_url(self._endpoint_url,
+                             bucket_name=bucket_name,
+                             object_name=object_name,
+                             bucket_region=region)
+
+        return presign_v4(method, url,
+                          self._access_key,
+                          self._secret_key,
+                          region=region,
+                          expires=int(expires.total_seconds()),
+                          response_headers=response_headers)
+
     def presigned_get_object(self, bucket_name, object_name,
                              expires=timedelta(days=7),
                              response_headers=None):
@@ -1231,16 +1279,11 @@ class Minio(object):
            Defaults to 7days.
         :return: Presigned url.
         """
-        if expires.total_seconds() < 1 or \
-           expires.total_seconds() > _SEVEN_DAYS_SECONDS:
-            raise InvalidArgumentError('Expires param valid values'
-                                       ' are between 1 secs to'
-                                       ' {0} secs'.format(_SEVEN_DAYS_SECONDS))
-
-        return self._presigned_get_partial_object(bucket_name,
-                                                  object_name,
-                                                  expires,
-                                                  response_headers=response_headers)
+        return self.presigned_url('GET',
+                                  bucket_name,
+                                  object_name,
+                                  expires,
+                                  response_headers=response_headers)
 
     def presigned_put_object(self, bucket_name, object_name,
                              expires=timedelta(days=7)):
@@ -1261,27 +1304,10 @@ class Minio(object):
            Defaults to 7days.
         :return: Presigned put object url.
         """
-        is_valid_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
-
-        if expires.total_seconds() < 1 or \
-                        expires.total_seconds() > _SEVEN_DAYS_SECONDS:
-            raise InvalidArgumentError('Expires param valid values'
-                                       ' are between 1 secs to'
-                                       ' {0} secs'.format(_SEVEN_DAYS_SECONDS))
-
-        region = self._get_bucket_region(bucket_name)
-        url = get_target_url(self._endpoint_url,
-                             bucket_name=bucket_name,
-                             object_name=object_name,
-                             bucket_region=region)
-
-        presign_url = presign_v4('PUT', url,
-                                 self._access_key,
-                                 self._secret_key,
-                                 region=region,
-                                 expires=int(expires.total_seconds()))
-        return presign_url
+        return self.presigned_url('PUT',
+                                  bucket_name,
+                                  object_name,
+                                  expires)
 
     def presigned_post_policy(self, post_policy):
         """
@@ -1378,46 +1404,6 @@ class Minio(object):
                                   preload_content=False)
 
         return response
-
-    def _presigned_get_partial_object(self, bucket_name, object_name,
-                                      expires=timedelta(days=7),
-                                      offset=0, length=0,
-                                      response_headers=None):
-        """
-        Presigns a get partial object request and provides a url,
-        this is a internal function not exposed.
-
-        :param bucket_name: Bucket for the presigned url.
-        :param object_name: Object for which presigned url is generated.
-        :param expires: optional expires argument to specify timedelta.
-           Defaults to 7days.
-        :param offset, length: optional defaults to '0, 0'.
-        :return: Presigned url.
-        """
-        is_valid_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
-
-        region = self._get_bucket_region(bucket_name)
-        url = get_target_url(self._endpoint_url,
-                             bucket_name=bucket_name,
-                             object_name=object_name,
-                             bucket_region=region)
-
-        headers = {}
-        if offset != 0 or length != 0:
-            request_range = '{}-{}'.format(
-                offset, "" if length == 0 else offset + length - 1
-            )
-            headers['Range'] = 'bytes=' + request_range
-
-        presign_url = presign_v4('GET', url,
-                                 self._access_key,
-                                 self._secret_key,
-                                 region=region,
-                                 headers=headers,
-                                 response_headers=response_headers,
-                                 expires=int(expires.total_seconds()))
-        return presign_url
 
     def _do_put_object(self, bucket_name, object_name, part_data,
                        part_size, upload_id='', part_number=0,
