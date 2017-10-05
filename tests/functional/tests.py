@@ -32,7 +32,7 @@ import certifi
 
 from minio import Minio, PostPolicy, CopyConditions
 from minio.policy import Policy
-from minio.error import (ResponseError, PreconditionFailed,
+from minio.error import (APINotImplemented, ResponseError, PreconditionFailed,
                          BucketAlreadyOwnedByYou, BucketAlreadyExists)
 
 class LimitedRandomReader(object):
@@ -98,10 +98,10 @@ class LogOutput(object):
             'status': exit status, possible values are 'PASS', 'FAIL', 'NA',
                       defaults to 'PASS'
     """
-class LogOutput(object):
 
     PASS = 'PASS'
     FAIL = 'FAIL'
+    NA = 'NA'
 
     def __init__(self, meth):
         self.__args_list = inspect.getargspec(meth).args[1:]
@@ -128,7 +128,7 @@ class LogOutput(object):
     @args.setter
     def args(self, val): self.__args = val
 
-    def json_report(self, err_msg=''):
+    def json_report(self, err_msg='', status=''):
         self.__args = {k: v for k, v in self.__args.items() if v and v != ''}
         entry = {'name': self.__name,
             'function': self.__function,
@@ -137,7 +137,8 @@ class LogOutput(object):
             'alert': self.__alert,
             'message': str(err_msg),
             'error': traceback.format_exc() if err_msg and err_msg != '' else '',
-            'status': self.FAIL if err_msg and err_msg != '' else self.PASS
+            'status': status if status and status != '' else \
+                    self.FAIL if err_msg and err_msg != '' else self.PASS
         }
         return json.dumps({k: v for k, v in entry.items() if v and v != ''})
 
@@ -574,15 +575,18 @@ def test_get_bucket_policy(client, log_output):
         policy_name = client.get_bucket_policy(bucket_name)
         if policy_name != Policy.NONE:
             raise ValueError('Policy name is invalid: ' + policy_name)
+    except APINotImplemented:
+        print(log_output.json_report(status=LogOutput.NA))
     except Exception as err:
         raise Exception(err)
+    else:
+        # Test passes
+        print(log_output.json_report())
     finally:
         try:
             client.remove_bucket(bucket_name)
         except Exception as err:
             raise Exception(err)
-    # Test passes
-    print(log_output.json_report())
 
 def test_set_bucket_policy(client, log_output):
     # Get a unique bucket_name
@@ -602,15 +606,18 @@ def test_set_bucket_policy(client, log_output):
         policy_name = client.get_bucket_policy(bucket_name)
         if policy_name != Policy.NONE:
             raise ValueError('Policy name is invalid: ' + policy_name)
+    except APINotImplemented:
+        print(log_output.json_report(status=LogOutput.NA))
     except Exception as err:
         raise Exception(err)
+    else:
+        # Test passes
+        print(log_output.json_report())
     finally:
         try:
             client.remove_bucket(bucket_name)
         except Exception as err:
             raise Exception(err)
-    # Test passes
-    print(log_output.json_report())
 
 def test_remove_objects(client, log_output):
     # Get a unique bucket_name
