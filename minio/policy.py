@@ -378,7 +378,7 @@ def _remove_statements(statements, policy, bucket_name, prefix=''):
 #
 def _merge_dict(d1, d2):
     out = collections.defaultdict(list)
-    for k, v in itertools.chain(d1.iteritems(), d2.iteritems()):
+    for k, v in itertools.chain(d1.items(), d2.items()):
         out[k] = list(set(out[k] + [v] if isinstance(v, basestring) else v))
     return dict(out)
 
@@ -399,7 +399,7 @@ def _merge_dict(d1, d2):
 #
 def _merge_condition(c1, c2):
     out = collections.defaultdict(dict)
-    for k, v in itertools.chain(c1.iteritems(), c2.iteritems()):
+    for k, v in itertools.chain(c1.items(), c2.items()):
         out.update({k:  _merge_dict(out[k], v)})
     return dict(out)
 
