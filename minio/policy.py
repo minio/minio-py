@@ -240,8 +240,8 @@ def _remove_bucket_actions(statement, policy, prefix=''):
 
     actions = _get_action(statement)
     cond_value = statement.get('Condition', {})
-    if (statement.get('Effect') == 'Allow' and
-            statement.get('Principal') == {'AWS': '*'}):
+    aws = statement.get('Principal', {}).get('AWS', [])
+    if (statement.get('Effect') == 'Allow' and (aws == '*' or '*' in aws) ):
         if policy == Policy.READ_ONLY:
             statement, actions, cond_value = _remove_read_only(statement,
                                                                actions,
@@ -265,9 +265,9 @@ def _remove_bucket_actions(statement, policy, prefix=''):
 # Removes object actions in given statement for given policy.
 def _remove_object_actions(statement, policy):
     actions = _get_action(statement)
-    if (statement.get('Effect') == 'Allow' and
-            statement.get('Principal') == {'AWS': '*'} and
-            not statement.get('Condition')):
+    aws = statement.get('Principal', {}).get('AWS', [])
+    if (statement.get('Effect') == 'Allow' and (aws == '*' or '*' in aws) and
+        not statement.get('Condition') ):
         if policy == Policy.READ_ONLY:
             actions = list(set(actions) - _READ_ONLY_OBJECT_ACTIONS)
         elif policy == Policy.WRITE_ONLY:
@@ -311,10 +311,9 @@ def _remove_statements(statements, policy, bucket_name, prefix=''):
             s = _remove_object_actions(s, policy)
 
         if s:
-            if (resource == bucket_resource and
-                    set(_get_action(s)) & _READ_ONLY_BUCKET_ACTIONS and
-                    s.get('Effect') == 'Allow' and
-                    s.get('Principal') == {'AWS': '*'}):
+            aws = s.get('Principal', {}).get('AWS', [])
+            if (resource == bucket_resource and set(_get_action(s)) & _READ_ONLY_BUCKET_ACTIONS and
+                s.get('Effect') == 'Allow' and (aws == '*' or '*' in aws) ):
                 cond_value = s.get('Condition', {})
                 string_equals_value = cond_value.get('StringEquals', {})
                 values = string_equals_value.get('s3:prefix', [])
@@ -340,22 +339,18 @@ def _remove_statements(statements, policy, bucket_name, prefix=''):
             break
 
     for s in read_only_bucket_statements:
-        if (skip_bucket_statement and
-                s['Resource'] == bucket_resource and
-                s.get('Effect') == 'Allow' and
-                s.get('Principal') == {'AWS': '*'} and
-                not s.get('Condition')):
+        aws = s.get('Principal', {}).get('AWS', [])
+        if (skip_bucket_statement and s['Resource'] == bucket_resource and
+            s.get('Effect') == 'Allow' and (aws == '*' or '*' in aws) and not s.get('Condition')):
             continue
 
         _append_statement(out, s)
 
     if len(out) == 1:
         s = out[0]
-        if (s['Resource'] == bucket_resource and
-                s.get('Action') == list(_COMMON_BUCKET_ACTIONS) and
-                s.get('Effect') == 'Allow' and
-                s.get('Principal') == {'AWS': '*'} and
-                not s.get('Condition')):
+        aws = s.get('Principal', {}).get('AWS', [])
+        if (s['Resource'] == bucket_resource and s.get('Action') == list(_COMMON_BUCKET_ACTIONS) and
+            s.get('Effect') == 'Allow' and (aws == '*' or '*' in aws) and not s.get('Condition') ):
             out = []
 
     return out
@@ -452,8 +447,8 @@ def _get_bucket_policy(statement, prefix=''):
 
     actions = set(_get_action(statement))
     cond_value = statement.get('Condition', {})
-    if (statement.get('Effect') == 'Allow' and
-            statement.get('Principal') == {'AWS': '*'}):
+    aws = statement.get('Principal', {}).get('AWS', [])
+    if (statement.get('Effect') == 'Allow' and (aws == '*' or '*' in aws) ):
         if actions & _COMMON_BUCKET_ACTIONS and not cond_value:
             common_found = True
 
@@ -489,11 +484,10 @@ def _get_bucket_policy(statement, prefix=''):
 def _get_object_policy(statement):
     read_only = False
     write_only = False
-
+    aws = statement.get('Principal', {}).get('AWS', [])
     actions = set(_get_action(statement))
-    if (statement.get('Effect') == 'Allow' and
-            statement.get('Principal') == {'AWS': '*'} and
-            not statement.get('Condition')):
+    if (statement.get('Effect') == 'Allow' and (aws == '*' or '*' in aws) and
+        not statement.get('Condition') ):
         if actions & _READ_ONLY_OBJECT_ACTIONS:
             read_only = True
         if actions & _WRITE_ONLY_OBJECT_ACTIONS:
