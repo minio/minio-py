@@ -103,9 +103,9 @@ class LogOutput(object):
     FAIL = 'FAIL'
     NA = 'NA'
 
-    def __init__(self, meth):
+    def __init__(self, meth, test_name):
         self.__args_list = inspect.getargspec(meth).args[1:]
-        self.__name = 'minio-py'
+        self.__name = 'minio-py:'+test_name
         self.__function = meth.__name__+'('+', '.join(self.__args_list)+')'
         self.__args = {}
         self.__duration = 0
@@ -128,13 +128,13 @@ class LogOutput(object):
     @args.setter
     def args(self, val): self.__args = val
 
-    def json_report(self, err_msg='', status=''):
+    def json_report(self, err_msg='', alert='', status=''):
         self.__args = {k: v for k, v in self.__args.items() if v and v != ''}
         entry = {'name': self.__name,
             'function': self.__function,
             'args': self.__args,
             'duration': int(round((time.time() - self.__start_time)*1000)),
-            'alert': self.__alert,
+            'alert': str(alert),
             'message': str(err_msg),
             'error': traceback.format_exc() if err_msg and err_msg != '' else '',
             'status': status if status and status != '' else \
@@ -576,7 +576,7 @@ def test_get_bucket_policy(client, log_output):
         if policy_name != Policy.NONE:
             raise ValueError('Policy name is invalid: ' + policy_name)
     except APINotImplemented:
-        print(log_output.json_report(status=LogOutput.NA))
+        print(log_output.json_report(alert='Not Implemented', status=LogOutput.NA))
     except Exception as err:
         raise Exception(err)
     else:
@@ -588,26 +588,72 @@ def test_get_bucket_policy(client, log_output):
         except Exception as err:
             raise Exception(err)
 
-def test_set_bucket_policy(client, log_output):
+def test_set_bucket_policy_readonly(client, log_output):
     # Get a unique bucket_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
-    log_output.args['prefix'] = prefix = '1/'
+    log_output.args['prefix'] = prefix = ''
     try:
         client.make_bucket(bucket_name)
         # Set read-only policy successfully.
         client.set_bucket_policy(bucket_name, prefix, Policy.READ_ONLY)
+        # Validate if the policy is set correctly
+        policy_name = client.get_bucket_policy(bucket_name)
+        if policy_name != Policy.READ_ONLY:
+            raise ValueError('Failed to set ReadOnly bucket policy: ' + policy_name)
+    except APINotImplemented:
+        print(log_output.json_report(alert='Not Implemented', status=LogOutput.NA))
+    except Exception as err:
+        raise Exception(err)
+    else:
+        # Test passes
+        print(log_output.json_report())
+    finally:
+        try:
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            raise Exception(err)
+
+def test_set_bucket_policy_readwrite(client, log_output):
+    # Get a unique bucket_name
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
+    log_output.args['prefix'] = prefix = ''
+    try:
+        client.make_bucket(bucket_name)
         # Set read-write policy successfully.
         client.set_bucket_policy(bucket_name, prefix, Policy.READ_WRITE)
+        # Validate if the policy is set correctly
+        policy_name = client.get_bucket_policy(bucket_name)
+        if policy_name != Policy.READ_WRITE:
+            raise ValueError('Failed to set ReadWrite bucket policy: ' + policy_name)
+    except APINotImplemented:
+        print(log_output.json_report(alert='Not Implemented', status=LogOutput.NA))
+    except Exception as err:
+        raise Exception(err)
+    else:
+        # Test passes
+        print(log_output.json_report())
+    finally:
+        try:
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            raise Exception(err)
+
+def test_no_bucket_policy(client, log_output):
+    # Get a unique bucket_name
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
+    log_output.args['prefix'] = prefix = ''
+    try:
+        client.make_bucket(bucket_name)
+        # # Added into log output for clarity/debugging purposes
+        # log_output.args['prefix-2'] = prefix = ''
         # Reset policy to NONE.
-        # Added into log output for clarity/debugging purposes
-        log_output.args['prefix-2'] = prefix = ''
         client.set_bucket_policy(bucket_name, prefix, Policy.NONE)
         # Validate if the policy is reverted back to NONE.
         policy_name = client.get_bucket_policy(bucket_name)
         if policy_name != Policy.NONE:
             raise ValueError('Policy name is invalid: ' + policy_name)
     except APINotImplemented:
-        print(log_output.json_report(status=LogOutput.NA))
+        print(log_output.json_report(alert='Not Implemented', status=LogOutput.NA))
     except Exception as err:
         raise Exception(err)
     else:
@@ -715,59 +761,65 @@ def main():
             with open(largefile, 'wb') as file_data:
                 shutil.copyfileobj(LimitedRandomReader(11*1024*1024), file_data)
 
-        log_output =  LogOutput(client.make_bucket)
+        log_output =  LogOutput(client.make_bucket, 'test_make_bucket')
         test_make_bucket(client, log_output)
 
-        log_output =  LogOutput(client.list_buckets)
+        log_output =  LogOutput(client.list_buckets, 'test_list_buckets')
         test_list_buckets(client, log_output)
 
-        log_output =  LogOutput(client.fput_object)
+        log_output =  LogOutput(client.fput_object, 'test_fput_object_small_file')
         test_fput_object_small_file(client, testfile, log_output)
 
-        log_output =  LogOutput(client.fput_object)
+        log_output =  LogOutput(client.fput_object, 'test_fput_large_file')
         test_fput_large_file(client, largefile, log_output)
 
-        log_output =  LogOutput(client.copy_object)
+        log_output =  LogOutput(client.copy_object, 'test_copy_object')
         test_copy_object(client, log_output)
 
-        log_output =  LogOutput(client.put_object)
+        log_output =  LogOutput(client.put_object, 'test_put_object')
         test_put_object(client, log_output)
 
-        log_output =  LogOutput(client.get_object)
+        log_output =  LogOutput(client.get_object, 'test_get_object')
         test_get_object(client, log_output)
 
-        log_output =  LogOutput(client.fget_object)
+        log_output =  LogOutput(client.fget_object, 'test_fget_object')
         test_fget_object(client, log_output)
 
-        log_output =  LogOutput(client.list_objects)
+        log_output =  LogOutput(client.list_objects, 'test_list_objects')
         test_list_objects(client, log_output)
 
-        log_output =  LogOutput(client.list_objects_v2)
+        log_output =  LogOutput(client.list_objects_v2, 'test_list_objects_v2')
         test_list_objects_v2(client, log_output)
 
-        log_output =  LogOutput(client.presigned_get_object)
+        log_output =  LogOutput(client.presigned_get_object, 'test_presigned_get_object')
         test_presigned_get_object(client, log_output)
 
-        log_output =  LogOutput(client.presigned_put_object)
+        log_output =  LogOutput(client.presigned_put_object, 'test_presigned_put_object')
         test_presigned_put_object(client, log_output)
 
-        log_output =  LogOutput(client.presigned_post_policy)
+        log_output =  LogOutput(client.presigned_post_policy, 'test_presigned_post_policy')
         test_presigned_post_policy(client, log_output)
 
-        log_output =  LogOutput(client.get_bucket_policy)
+        log_output =  LogOutput(client.get_bucket_policy, 'test_get_bucket_policy')
         test_get_bucket_policy(client,log_output)
 
-        log_output =  LogOutput(client.set_bucket_policy)
-        test_set_bucket_policy(client, log_output)
+        log_output =  LogOutput(client.set_bucket_policy, 'test_set_bucket_policy_readonly')
+        test_set_bucket_policy_readonly(client, log_output)
+
+        log_output =  LogOutput(client.set_bucket_policy, 'test_set_bucket_policy_readwrite')
+        test_set_bucket_policy_readwrite(client, log_output)
+
+        log_output =  LogOutput(client.set_bucket_policy, 'test_no_bucket_policy')
+        test_no_bucket_policy(client, log_output)
 
         # Remove all objects.
-        log_output =  LogOutput(client.remove_object)
+        log_output =  LogOutput(client.remove_object, 'test_remove_object')
         test_remove_object(client, log_output)
 
-        log_output =  LogOutput(client.remove_objects)
+        log_output =  LogOutput(client.remove_objects, 'test_remove_objects')
         test_remove_objects(client, log_output)
 
-        log_output =  LogOutput(client.remove_bucket)
+        log_output =  LogOutput(client.remove_bucket, 'test_remove_bucket')
         test_remove_bucket(client, log_output)
 
         # Remove temporary files.
