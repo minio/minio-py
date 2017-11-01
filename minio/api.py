@@ -125,15 +125,18 @@ class Minio(object):
          are allowed to run before being aborted.
     :return: :class:`Minio <Minio>` object
     """
-
     def __init__(self, endpoint, access_key=None,
                  secret_key=None, secure=True,
                  region=None,
-                 timeout=None,
-                 certificate_bundle=certifi.where()):
+                 http_client=None):
 
         # Validate endpoint.
         is_valid_endpoint(endpoint)
+
+        # Validate http client has correct base class.
+        if http_client and not isinstance(http_client, urllib3.poolmanager.PoolManager):
+            raise InvalidArgumentError('HTTP client should be of instance `urllib3.poolmanager.PoolManager`')
+
 
         # Default is a secured connection.
         endpoint_url = 'https://' + endpoint
@@ -156,19 +159,19 @@ class Minio(object):
         self._user_agent = _DEFAULT_USER_AGENT
         self._trace_output_stream = None
 
-        self._conn_timeout = urllib3.Timeout.DEFAULT_TIMEOUT if not timeout \
-                             else urllib3.Timeout(timeout)
-
-        self._http = urllib3.PoolManager(
-            timeout=self._conn_timeout,
-            cert_reqs='CERT_REQUIRED',
-            ca_certs=certificate_bundle,
-            retries=urllib3.Retry(
-                total=5,
-                backoff_factor=0.2,
-                status_forcelist=[500, 502, 503, 504]
+        if not http_client:
+            self._http = urllib3.PoolManager(
+                timeout=urllib3.Timeout.DEFAULT_TIMEOUT,
+                        cert_reqs='CERT_REQUIRED',
+                        ca_certs=certifi.where(),
+                        retries=urllib3.Retry(
+                            total=5,
+                            backoff_factor=0.2,
+                            status_forcelist=[500, 502, 503, 504]
+                        )
             )
-        )
+        else:
+            self._http = http_client
 
     # Set application information.
     def set_app_info(self, app_name, app_version):
