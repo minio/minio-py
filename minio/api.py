@@ -123,6 +123,7 @@ class Minio(object):
          location discovery.
     :param timeout: Set this value to control how long requests
          are allowed to run before being aborted.
+    :param verify: Set this to `True` to skip SSL Cert Verification
     :return: :class:`Minio <Minio>` object
     """
 
