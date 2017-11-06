@@ -51,17 +51,17 @@ def xml_marshal_complete_multipart_upload(uploaded_parts):
     """
     Marshal's complete multipart upload request based on *uploaded_parts*.
 
-    :param uploaded_parts: List of all uploaded parts ordered in the
-           way they were uploaded.
+    :param uploaded_parts: List of all uploaded parts, ordered by part number.
     :return: Marshalled XML data.
     """
     root = s3_xml.Element('CompleteMultipartUpload', {'xmlns': _S3_NAMESPACE})
-    for part_number in uploaded_parts.keys():
+    for uploaded_part in uploaded_parts:
+        part_number = uploaded_part.part_number
         part = s3_xml.SubElement(root, 'Part')
         part_num = s3_xml.SubElement(part, 'PartNumber')
         part_num.text = str(part_number)
         etag = s3_xml.SubElement(part, 'ETag')
-        etag.text = '"' + uploaded_parts[part_number].etag + '"'
+        etag.text = '"' + uploaded_part.etag + '"'
         data = io.BytesIO()
         s3_xml.ElementTree(root).write(data, encoding=None,
                                        xml_declaration=False)

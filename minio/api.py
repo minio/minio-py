@@ -1605,7 +1605,12 @@ class Minio(object):
         is_non_empty_string(object_name)
         is_non_empty_string(upload_id)
 
-        data = xml_marshal_complete_multipart_upload(uploaded_parts)
+        # Order uploaded parts as required by S3 specification
+        ordered_parts = []
+        for part in sorted(uploaded_parts.keys()):
+            ordered_parts.append(uploaded_parts[part])
+
+        data = xml_marshal_complete_multipart_upload(ordered_parts)
         sha256_hex = get_sha256_hexdigest(data)
         md5_base64 = get_md5_base64digest(data)
 
