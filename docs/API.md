@@ -44,11 +44,11 @@ s3Client = Minio('s3.amazonaws.com',
 ## 1. Constructor
 
 <a name="Minio"></a>
-### Minio(endpoint, access_key=None, secret_key=None, secure=True)
+### Minio(endpoint, access_key=None, secret_key=None, secure=True, region=None, http_client=None)
 
 |   |
 |---|
-| `Minio(endpoint, access_key=None, secret_key=None, secure=True, region=None, timeout=None)`  |
+| `Minio(endpoint, access_key=None, secret_key=None, secure=True, region=None, http_client=None)`  |
 | Initializes a new client object.  |
 
 __Parameters__
@@ -61,7 +61,7 @@ __Parameters__
 | `secret_key` | _string_  |  Secret key for the object storage endpoint. (Optional if you need anonymous access). |
 | `secure`  |_bool_   | Set this value to `True` to enable secure (HTTPS) access. (Optional defaults to `True`).  |
 | `region`  |_string_ | Set this value to override automatic bucket location discovery. (Optional defaults to `None`). |
-| `timeout` |_float_ | Set this value to control how long requests are allowed to run before being aborted. (Optional defaults to `None`) |
+| `http_client` |_urllib3.poolmanager.PoolManager_ | Set this value to use custom http client instead of using default http client. (Optional defaults to `None`) |
 
 __Example__
 
@@ -74,6 +74,28 @@ from minio.error import ResponseError
 minioClient = Minio('play.minio.io:9000',
                     access_key='Q3AM3UQ867SPQQA43P2F',
                     secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
+```
+
+```py
+from minio import Minio
+from minio.error import ResponseError
+import urllib3
+
+httpClient = urllib3.ProxyManager(
+                'https://proxy_host.sampledomain.com:8119/'
+                timeout=urllib3.Timeout.DEFAULT_TIMEOUT,
+                cert_reqs='CERT_REQUIRED',
+                retries=urllib3.Retry(
+                    total=5,
+                    backoff_factor=0.2,
+                    status_forcelist=[500, 502, 503, 504]
+                )
+            )
+minioClient = Minio('your_hostname.sampledomain.com:9000',
+                    access_key='ACCESS_KEY',
+                    secret_key='SECRET_KEY',
+                    secure=True,
+                    http_client=httpClient)
 ```
 
 ### AWS S3
