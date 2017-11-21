@@ -120,6 +120,9 @@ class PostPolicy(object):
 
         self._content_length_range = (min_length, max_length)
 
+    def append_policy(self, condition, target, value):
+        self.policies.append([condition, target, value])
+
     def _marshal_json(self, extras=()):
         """
         Marshal various policies into json str/bytes.
