@@ -1527,7 +1527,15 @@ class Minio(object):
             parts_to_upload.append((bucket_name, object_name, upload_id, part_number, part_data))
 
         # Run parts upload in parallel
-        pool.parallel_run(self._upload_part_routine, parts_to_upload)
+        try:
+            pool.parallel_run(self._upload_part_routine, parts_to_upload)
+        except:
+            # Any exception that occurs sends an abort on the
+            # on-going multipart operation.
+            self._remove_incomplete_upload(bucket_name,
+                                           object_name,
+                                           upload_id)
+            raise
 
         # Update uploaded_parts with the part uploads result
         # and check total uploaded data.
@@ -1546,14 +1554,28 @@ class Minio(object):
         if total_uploaded != content_size:
             msg = 'Data uploaded {0} is not equal input size ' \
                   '{1}'.format(total_uploaded, content_size)
+            # cleanup incomplete upload upon incorrect upload
+            # automatically
+            self._remove_incomplete_upload(bucket_name,
+                                           object_name,
+                                           upload_id)
             raise InvalidSizeError(msg)
 
         # Complete all multipart transactions if possible.
-        mpart_result = self._complete_multipart_upload(bucket_name,
-                                                       object_name,
-                                                       upload_id,
-                                                       uploaded_parts,
-                                                       metadata=metadata)
+        try:
+            mpart_result = self._complete_multipart_upload(bucket_name,
+                                                           object_name,
+                                                           upload_id,
+                                                           uploaded_parts,
+                                                           metadata=metadata)
+        except:
+            # Any exception that occurs sends an abort on the
+            # on-going multipart operation.
+            self._remove_incomplete_upload(bucket_name,
+                                           object_name,
+                                           upload_id)
+            raise
+
         # Return etag here.
         return mpart_result.etag
 
