@@ -1337,13 +1337,11 @@ class Minio(object):
         credential_string = generate_credential_string(self._access_key,
                                                        date, region)
 
-        post_policy.policies.append(('eq', '$x-amz-date', iso8601_date))
-        post_policy.policies.append(
-            ('eq', '$x-amz-algorithm', _SIGN_V4_ALGORITHM))
-        post_policy.policies.append(
-            ('eq', '$x-amz-credential', credential_string))
-
-        post_policy_base64 = post_policy.base64()
+        post_policy_base64 = post_policy.base64(extras=[
+            ('eq', '$x-amz-date', iso8601_date),
+            ('eq', '$x-amz-algorithm', _SIGN_V4_ALGORITHM),
+            ('eq', '$x-amz-credential', credential_string),
+        ])
         signature = post_presign_signature(date, region,
                                            self._secret_key,
                                            post_policy_base64)

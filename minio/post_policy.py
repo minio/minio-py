@@ -120,11 +120,15 @@ class PostPolicy(object):
 
         self._content_length_range = (min_length, max_length)
 
-    def _marshal_json(self):
+    def append_policy(self, condition, target, value):
+        self.policies.append([condition, target, value])
+
+    def _marshal_json(self, extras=()):
         """
         Marshal various policies into json str/bytes.
         """
-        policies = self.policies
+        policies = self.policies[:]
+        policies.extend(extras)
         if self._content_length_range:
             policies.append(['content-length-range'] +
                             list(self._content_length_range))
@@ -139,11 +143,11 @@ class PostPolicy(object):
 
         return json.dumps(policy_stmt)
 
-    def base64(self):
+    def base64(self, extras=()):
         """
         Encode json into base64.
         """
-        s = self._marshal_json()
+        s = self._marshal_json(extras=extras)
         s_bytes = s if isinstance(s, bytes) else s.encode('utf-8')
         b64enc = base64.b64encode(s_bytes)
         return b64enc.decode('utf-8') if isinstance(b64enc, bytes) else b64enc
