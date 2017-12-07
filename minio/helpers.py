@@ -189,6 +189,7 @@ AWS_S3_ENDPOINT_MAP = {
     'eu-central-1': 's3-eu-central-1.amazonaws.com',
     'ap-south-1': 's3.ap-south-1.amazonaws.com',
     'ap-southeast-1': 's3-ap-southeast-1.amazonaws.com',
+    'ap-southeast-2': 's3-ap-southeast-2.amazonaws.com',
     'ap-northeast-1': 's3-ap-northeast-1.amazonaws.com',
     'ap-northeast-2': 's3-ap-northeast-2.amazonaws.com',
     'cn-north-1': 's3.cn-north-1.amazonaws.com.cn'
