@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import os
+from sys import exit
 import uuid
 import shutil
 import inspect
@@ -828,7 +829,7 @@ def main():
             os.remove(largefile)
     except Exception as err:
         print(log_output.json_report(err))
-        exit()
+        exit(1)
 
 if __name__ == "__main__":
     # Execute only if run as a script
