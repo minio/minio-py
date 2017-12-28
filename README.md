@@ -16,6 +16,12 @@ This document assumes that you have a working [Python](https://www.python.org/do
 pip install minio
 ```
 
+## Download from pip3
+
+```sh
+pip3 install minio
+```
+
 ## Download from source
 
 ```sh
