@@ -25,6 +25,9 @@ This module implements all helper functions.
 """
 
 from __future__ import absolute_import
+# if math.ceil returns an integer and devide two integers returns a float, calculate
+# part size will cause errors, so make sure division integers returns a float.
+from __future__ import division
 import io
 
 import collections
