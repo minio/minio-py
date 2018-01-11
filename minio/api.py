@@ -1212,7 +1212,6 @@ class Minio(object):
             if object_name == upload.object_name:
                 self._remove_incomplete_upload(bucket_name, object_name,
                                                upload.upload_id)
-                return
 
     def presigned_url(self, method,
                     bucket_name,
