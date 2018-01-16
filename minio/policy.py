@@ -522,37 +522,51 @@ def _get_permissions(s, resource, object_resource, matched_resource,
 
 
 # Returns policy of given bucket name, prefix in given statements.
-def get_policy(statements, bucket_name, prefix=''):
-    bucket_resource = _get_bucket_resource(bucket_name)[0]
-    object_resource = _get_object_resource(bucket_name, prefix)[0]
+def get_policy(statements, bucket_name, prefix=""):
+    policies = list_policy(statements, bucket_name)
+    found_policy = policies.get(prefix)
 
-    bucket_common_found = False
-    bucket_read_only = False
-    bucket_write_only = False
-    matched_resource = ''
-    obj_read_only = False
-    obj_write_only = False
-    for s in statements:
-        resources = _get_resource(s)
-        for resource in resources:
-            bucket_common_found, bucket_read_only, bucket_write_only, \
-                obj_read_only, obj_write_only = _get_permissions(
-                    s, resource, object_resource, matched_resource,
-                    bucket_resource, prefix, bucket_common_found,
-                    bucket_read_only, bucket_write_only)
+    if found_policy is None:
+        return Policy.NONE
 
-    policy = Policy.NONE
-    if bucket_common_found:
-        if (bucket_read_only and bucket_write_only and
-                obj_read_only and obj_write_only):
-            policy = Policy.READ_WRITE
-        elif bucket_read_only and obj_read_only:
-            policy = Policy.READ_ONLY
-        elif bucket_write_only and obj_write_only:
-            policy = Policy.WRITE_ONLY
+    return found_policy
 
-    return policy
+# Returns a dictionary containing policies and their respective prefix name
+def list_policy(statements, bucket_name, prefix=""):
+    policies = {}
+    for statement in statements:
+        # get resource from statement
+        resources = statement.get("Resource")
+        for res in resources:
+            trimmed_res = res.strip(_AWS_RESOURCE_PREFIX).strip(bucket_name)
+            trimmed_res = trimmed_res.replace("/", "", 1).replace("*", "", 1)
 
+            if trimmed_res != "":
+                if trimmed_res.startswith(prefix) or prefix == "":
+                    policy = Policy.NONE
+                    permissions = statement.get("Action")
+
+                    if "s3:GetObject" in permissions and \
+                       "s3:DeleteObject" in permissions and \
+                       "s3:PutObject" in permissions and \
+                       "s3:AbortMultipartUpload" in permissions and \
+                       "s3:ListMultipartUploadParts" in permissions:
+                        policy = Policy.READ_WRITE
+
+                    elif "s3:DeleteObject" in permissions and \
+                         "s3:PutObject" in permissions and \
+                         "s3:AbortMultipartUpload" in permissions and \
+                         "s3:ListMultipartUploadParts" in permissions:
+                        policy = Policy.WRITE_ONLY
+
+                    elif "s3:GetObject" in permissions:
+                        policy = Policy.READ_ONLY
+
+                    policies.update({
+                        trimmed_res: policy
+                    })
+
+    return policies
 
 # Returns new statements containing policy of given bucket name and
 # prefix are appended.
