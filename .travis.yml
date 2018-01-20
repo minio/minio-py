@@ -20,4 +20,4 @@ script:
 - pyflakes minio/*.py || true
 - python setup.py install
 - python setup.py nosetests
-- python tests/functional/tests.py
+- MINT_MODE=full python tests/functional/tests.py

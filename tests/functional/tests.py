@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Minio Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015, 2016, 2017 Minio, Inc.
+# (C) 2015, 2016, 2017, 2018 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from __future__ import division
 
 import os
 from sys import exit
@@ -839,8 +841,8 @@ def test_get_partial_object(client, log_output):
     try:
         newfile = 'newfile'
         MB_1 = 1024*1024 # 1MiB.
-        log_output.args['offset'] = offset = MB_1/2
-        log_output.args['length'] = length = (MB_1/2)-1000
+        log_output.args['offset'] = offset = int(MB_1/2)
+        log_output.args['length'] = length = int(MB_1/2)-1000
         MB_1_reader = LimitedRandomReader(MB_1)
         client.make_bucket(bucket_name)
         client.put_object(bucket_name, object_name, MB_1_reader, MB_1)
