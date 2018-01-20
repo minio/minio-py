@@ -938,17 +938,17 @@ def test_list_objects_with_prefix(client, log_output):
         for i in range(no_of_created_files):
             str_i = str(i)
             MB_1_reader = LimitedRandomReader(MB_1)
-            client.put_object(bucket_name, path_prefix + object_name + '_' + str_i, MB_1_reader, MB_1)
+            client.put_object(bucket_name, path_prefix + str_i + '_' + object_name, MB_1_reader, MB_1)
             path_prefix += str_i + '/'
         # Created files and directory structure
         # ._<bucket_name>/
-        # |___<object_name>_0
+        # |___0_<object_name>
         # |___0/
-        #     |___<object_name>_1
+        #     |___1_<object_name>
         #     |___1/
-        #         |___<object_name>_2
+        #         |___2_<object_name>
         #         |___2/
-        #             |___<object_name>_3
+        #             |___3_<object_name>
         #
 
         # Test and verify list_objects api outputs
@@ -966,9 +966,9 @@ def test_list_objects_with_prefix(client, log_output):
         list_objects_api_test(client, bucket_name, 2)
 
         # List objects for '0' directory/prefix without recursive option
-        # Expect 1 object (directory '0' itself) to be listed
+        # Expect 2 object (directory '0' and '0_' object) to be listed
         log_output.args['prefix'] = prefix = '0'
-        list_objects_api_test(client, bucket_name, 1, prefix)
+        list_objects_api_test(client, bucket_name, 2, prefix)
 
         # List objects for '0/' directory/prefix without recursive option
         # Expect only 2 objects under directory '0/' to be listed, non-recursive
@@ -993,7 +993,7 @@ def test_list_objects_with_prefix(client, log_output):
             path_prefix = ''
             for i in range(no_of_created_files):
                 str_i = str(i)
-                client.remove_object(bucket_name, path_prefix + object_name + '_' + str_i)
+                client.remove_object(bucket_name, path_prefix + str_i + '_' + object_name)
                 path_prefix += str_i + '/'
             client.remove_bucket(bucket_name)
         except Exception as err:
