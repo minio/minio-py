@@ -417,7 +417,7 @@ def test_copy_object_etag_match(client, log_output):
         client.copy_object(bucket_name, object_copy,
                            '/'+bucket_name+'/'+object_source)
         # Verification
-        source_etag = client.stat_object(bucket_name, object_copy).etag
+        source_etag = client.stat_object(bucket_name, object_source).etag
         copy_conditions = CopyConditions()
         copy_conditions.set_match_etag(source_etag)
         log_output.args['conditions'] = {'set_match_etag': source_etag}
@@ -1095,50 +1095,6 @@ def collect_incomplete_upload_ids(client, b_name, o_name):
         upload_ids_listed.append(obj.upload_id)
     return upload_ids_listed
 
-# Helper method for test_list_incomplete_uploads
-# and test_remove_incomplete_uploads tests
-def uniq_list(list1, list2):
-    # Get a unique sorted list out of
-    # list1 and list2
-    return sorted(list(set(list1)) + list(set(list2) - set(list1)))
-
-def test_list_incomplete_uploads(client, log_output):
-    # default value for function attribute for log_output is;
-    # log_output.function = "list_incomplete_uploads(bucket_name, prefix, recursive)"
-
-    # Get a unique bucket_name and object_name
-    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
-    log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
-    try:
-        client.make_bucket(bucket_name)
-        no_of_upload_ids = 3
-        # Create 'no_of_upload_ids' many incomplete upload ids
-        upload_ids_created = create_upload_ids(client,
-                                               bucket_name,
-                                               object_name,
-                                               no_of_upload_ids)
-        # Get the list of incomplete upload ids for object_name
-        # using 'list_incomplete_uploads' command
-        upload_ids_listed = collect_incomplete_upload_ids(client,
-                                                          bucket_name,
-                                                          object_name)
-        # Verify listed/returned ids
-        if upload_ids_created != upload_ids_listed:
-            raise ValueError("Listed upload ids do not match the created ids")
-    except Exception as err:
-        raise Exception(err)
-    finally:
-        try:
-            for upload_id in uniq_list(upload_ids_created, upload_ids_listed):
-                client._remove_incomplete_upload(bucket_name,
-                                                 object_name,
-                                                 upload_id)
-            client.remove_bucket(bucket_name)
-        except Exception as err:
-            raise Exception(err)
-    # Test passes
-    print(log_output.json_report())
-
 def test_remove_incomplete_upload(client, log_output):
     # default value for function attribute for log_output is;
     # log_output.function = "remove_incomplete_upload(bucket_name, object_name)"
@@ -1739,9 +1695,6 @@ def main():
             log_output =  LogOutput(client.list_objects, 'test_list_objects_with_1001_files')
             test_list_objects_with_1001_files(client, log_output)
 
-            log_output =  LogOutput(client.list_incomplete_uploads, 'test_list_incomplete_uploads')
-            test_list_incomplete_uploads(client, log_output)
-
             log_output =  LogOutput(client.remove_incomplete_upload, 'test_remove_incomplete_upload')
             test_remove_incomplete_upload(client, log_output)
 
@@ -1802,9 +1755,6 @@ def main():
 
             log_output =  LogOutput(client.remove_incomplete_upload, 'test_remove_incomplete_upload')
             test_remove_incomplete_upload(client, log_output)
-
-            log_output =  LogOutput(client.list_incomplete_uploads, 'test_list_incomplete_uploads')
-            test_list_incomplete_uploads(client, log_output)
 
             log_output =  LogOutput(client.presigned_get_object, 'test_presigned_get_object_default_expiry')
             test_presigned_get_object_default_expiry(client, log_output)
