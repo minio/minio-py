@@ -18,6 +18,8 @@
 from __future__ import division
 
 import os
+import io
+
 from sys import exit
 import uuid
 import shutil
@@ -619,14 +621,11 @@ def test_negative_put_object_with_path_segment(client, log_output):
     log_output.args['object_name'] = object_name = "/a/b/c/" + uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
-        # Put/Upload a streaming object of 1MiB
-        log_output.args['length'] = MB_1 = 1*1024*1024 # 1MiB.
-        MB_1_reader = LimitedRandomReader(MB_1)
-        log_output.args['data'] = 'LimitedRandomReader(MB_1)'
+        log_output.args['length'] = 0 # Keep 0 bytes body to check for error.
+        log_output.args['data'] = ''
         client.put_object(bucket_name,
                           object_name,
-                          MB_1_reader,
-                          MB_1)
+                          io.BytesIO(b''), 0)
     except ResponseError as err:
         pass
     except Exception as err:
