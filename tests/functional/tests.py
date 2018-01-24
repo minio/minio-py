@@ -1369,6 +1369,7 @@ def test_thread_safe(client, test_file, log_output):
             thrd = Thread(target=client.fput_object,
                           args=(bucket_name, object_name, test_file))
             thrd.start()
+            thrd.join()
         # Create a wrapper method to capture get_object api's return
         # value during threading by introducing a list object to hold
         # the return value from each call. Without this, the return
@@ -1383,8 +1384,8 @@ def test_thread_safe(client, test_file, log_output):
             # Create dynamic/varying names for to be created threads
             thrd_name = 'thread_'+str(i)
             vars()[thrd_name] = Thread(target=threaded_get_object,
-                                      args=(client, bucket_name,
-                                            object_name, obj_data))
+                                       args=(client, bucket_name,
+                                       object_name, obj_data))
             vars()[thrd_name].start()
             thrd_list.append(vars()[thrd_name])
         # Wait until all threads to finish
@@ -1404,7 +1405,7 @@ def test_thread_safe(client, test_file, log_output):
         raise Exception(err)
     finally:
         try:
-            os.remove('copied_file')
+            os.path.isfile('copied_file') and os.remove('copied_file')
             client.remove_object(bucket_name, object_name)
             client.remove_bucket(bucket_name)
         except Exception as err:
