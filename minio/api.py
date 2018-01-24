@@ -1398,13 +1398,11 @@ class Minio(object):
             )
             headers['Range'] = 'bytes=' + request_range
 
-        response = self._url_open('GET',
-                                  bucket_name=bucket_name,
-                                  object_name=object_name,
-                                  headers=headers,
-                                  preload_content=False)
-
-        return response
+        return self._url_open('GET',
+                               bucket_name=bucket_name,
+                               object_name=object_name,
+                               headers=headers,
+                               preload_content=False)
 
     def _do_put_object(self, bucket_name, object_name, part_data,
                        part_size, upload_id='', part_number=0,
