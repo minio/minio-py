@@ -225,7 +225,8 @@ def get_target_url(endpoint_url, bucket_name=None, object_name=None,
 
     # Strip 80/443 ports since curl & browsers do not
     # send them in Host header.
-    if parsed_url.port == 80 or parsed_url.port == 443:
+    if (scheme == 'http' and parsed_url.port == 80) or\
+       (scheme == 'https' and parsed_url.port == 443):
         host = parsed_url.hostname
 
     if 's3.amazonaws.com' in host:
