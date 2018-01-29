@@ -96,9 +96,6 @@ _DEFAULT_USER_AGENT = 'Minio {0} {1}'.format(
                      __version__))
 
 
-# Duration of 7 days in seconds
-_MAX_EXPIRY_TIME = 604800 # 7 days in seconds
-
 # Number of parallel workers which upload parts
 _PARALLEL_UPLOADERS = 3
 
@@ -1242,11 +1239,8 @@ class Minio(object):
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
-        if expires.total_seconds() < 1 or \
-           expires.total_seconds() > _MAX_EXPIRY_TIME:
-            raise InvalidArgumentError('Expires param valid values'
-                                       ' are between 1 sec to'
-                                       ' {0} secs'.format(_MAX_EXPIRY_TIME))
+        if expires.total_seconds() <= 0:
+            raise InvalidArgumentError('Expires param must be positive value')
 
         region = self._get_bucket_region(bucket_name)
         url = get_target_url(self._endpoint_url,
