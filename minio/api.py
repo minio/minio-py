@@ -1240,7 +1240,7 @@ class Minio(object):
         is_non_empty_string(object_name)
 
         if expires.total_seconds() <= 0:
-            raise InvalidArgumentError('Expires param must be positive value)
+            raise InvalidArgumentError('Expires param must be positive value')
 
         region = self._get_bucket_region(bucket_name)
         url = get_target_url(self._endpoint_url,
