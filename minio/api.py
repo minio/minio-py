@@ -264,7 +264,7 @@ class Minio(object):
         url = self._endpoint_url + '/' + bucket_name + '/'
 
         # Get signature headers if any.
-        headers = sign_v4(method, url, 'us-east-1',
+        headers = sign_v4(method, url, location,
                           headers, self._access_key,
                           self._secret_key, content_sha256_hex)
 
@@ -296,6 +296,9 @@ class Minio(object):
 
         # default for all requests.
         region = 'us-east-1'
+        # region is set then use the region.
+        if self._region:
+            region = self._region
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
@@ -1705,6 +1708,10 @@ class Minio(object):
         headers = {}
         # default for all requests.
         region = 'us-east-1'
+
+        # Region is set override.
+        if self._region:
+            return self._region
 
         # For anonymous requests no need to get bucket location.
         if self._access_key is None or self._secret_key is None:
