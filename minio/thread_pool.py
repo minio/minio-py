@@ -37,12 +37,13 @@ class Worker(Thread):
         self.tasks_queue = tasks_queue
         self.results_queue = results_queue
         self.exceptions_queue = exceptions_queue
-        self.daemon = True
+        self.daemon = False
         self.start()
 
     def run(self):
         fast_quit = False
-        while True:
+
+        while not self.tasks_queue.empty():
             func, args, kargs = self.tasks_queue.get()
             if not fast_quit:
                 try:
@@ -61,8 +62,7 @@ class ThreadPool:
         self.results_queue = queue()
         self.exceptions_queue = queue()
         self.tasks_queue = queue(num_threads)
-        for _ in range(num_threads):
-            Worker(self.tasks_queue, self.results_queue, self.exceptions_queue)
+        self.num_threads = num_threads
 
     def add_task(self, func, *args, **kargs):
         """ Add a task to the queue """
@@ -72,6 +72,10 @@ class ThreadPool:
         """ Add a list of tasks to the queue """
         for args in args_list:
             self.add_task(func, args)
+            
+        for _ in range(self.num_threads):
+            Worker(self.tasks_queue, self.results_queue, self.exceptions_queue)
+
         # Wait for completion of all the tasks in the queue
         self.tasks_queue.join()
         # Check if one of the thread raised an exception, if yes
@@ -79,7 +83,9 @@ class ThreadPool:
         if not self.exceptions_queue.empty():
             raise self.exceptions_queue.get()
 
+
     def result(self):
         """ Return the result of all called tasks """
         return self.results_queue
+
 
