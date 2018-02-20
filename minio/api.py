@@ -437,6 +437,30 @@ class Minio(object):
                            body=content,
                            content_sha256=content_sha256_hex)
 
+    def list_bucket_policies(self, bucket_name, prefix=""):
+        """
+        List bucket policies of given bucket name.
+
+        :param bucket_name: Bucket name.
+        :param prefix: Path prefix.
+        """
+        
+        is_valid_bucket_name(bucket_name)
+
+        policy_dict = self._get_bucket_policy(bucket_name)
+        if not policy_dict:
+            return {}
+
+        if policy_dict.get('Statement') is None:
+            raise ValueError("None Policy statement")
+
+        # Normalize statements.
+        statements = []
+        policy._append_statements(statements, policy_dict.get('Statement', []))
+
+        return policy.get_policies(statements, bucket_name, prefix)
+
+
     def get_bucket_notification(self, bucket_name):
         """
         Get notifications configured for the given bucket.

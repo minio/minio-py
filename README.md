@@ -116,6 +116,7 @@ The full API Reference is available here.
 
 * [`get_bucket_policy`](https://docs.minio.io/docs/python-client-api-reference#get_bucket_policy)
 * [`set_bucket_policy`](https://docs.minio.io/docs/python-client-api-reference#set_bucket_policy)
+* [`list_bucket_policies`](https://docs.minio.io/docs/python-client-api-reference#list_bucket_policies)
 
 ### API Reference : Bucket notification Operations
 
@@ -161,6 +162,7 @@ The full API Reference is available here.
 
 * [set_bucket_policy.py](https://github.com/minio/minio-py/blob/master/examples/set_bucket_policy.py)
 * [get_bucket_policy.py](https://github.com/minio/minio-py/blob/master/examples/get_bucket_policy.py)
+* [list_bucket_policies.py](https://github.com/minio/minio-py/blob/master/examples/list_bucket_policies.py)
 
 #### Full Examples: Bucket policy Operations
 

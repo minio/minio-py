@@ -563,3 +563,30 @@ def set_policy(statements, policy, bucket_name, prefix=''):
     _append_statements(out, ns)
 
     return out
+
+# Returns a map of prefixes associated to their policy of type Policy
+def get_policies(statements, bucket_name, prefix=''):
+    objResources = []
+    policies = {}
+
+    # Find all resources valid for this request (under the specified
+    # bucket & prefix)
+    for s in statements:
+        resources = _get_resource(s)
+        for r in resources:
+            if r.startswith(_AWS_RESOURCE_PREFIX+bucket_name+'/'+prefix):
+                objResources.append(r)
+
+    # Iterate over all resources and call get_policy() for each of them
+    # to construct the final dictionary which contains all policies
+    for r in objResources:
+        asterisk = ""
+        if r.endswith('*'):
+            r = r[:-1]
+            asterisk='*'
+        objectPath = r[len(_AWS_RESOURCE_PREFIX+bucket_name)+1:]
+        p = get_policy(statements, bucket_name, objectPath)
+        policies[bucket_name+"/"+objectPath+asterisk] = p
+
+    return policies
+

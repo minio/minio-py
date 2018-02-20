@@ -32,11 +32,11 @@ s3Client = Minio('s3.amazonaws.com',
 |:---|:---|:---|:---|
 | [`make_bucket`](#make_bucket) | [`get_object`](#get_object) | [`presigned_get_object`](#presigned_get_object) | [`get_bucket_policy`](#get_bucket_policy) |
 | [`list_buckets`](#list_buckets) | [`put_object`](#put_object) | [`presigned_put_object`](#presigned_put_object) | [`set_bucket_policy`](#set_bucket_policy) |
-| [`bucket_exists`](#bucket_exists) | [`copy_object`](#copy_object) | [`presigned_post_policy`](#presigned_post_policy) | [`get_bucket_notification`](#get_bucket_notification) |
-| [`remove_bucket`](#remove_bucket) | [`stat_object`](#stat_object) | | [`set_bucket_notification`](#set_bucket_notification) |
-| [`list_objects`](#list_objects) | [`remove_object`](#remove_object) | | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
-| [`list_objects_v2`](#list_objects_v2) | [`remove_objects`](#remove_objects) | | [`listen_bucket_notification`](#listen_bucket_notification) |
-| [`list_incomplete_uploads`](#list_incomplete_uploads) | [`remove_incomplete_upload`](#remove_incomplete_upload) | | |
+| [`bucket_exists`](#bucket_exists) | [`copy_object`](#copy_object) | [`presigned_post_policy`](#presigned_post_policy) | [`list_bucket_policies`](#list_bucket_policies) |
+| [`remove_bucket`](#remove_bucket) | [`stat_object`](#stat_object) | | [`get_bucket_notification`](#get_bucket_notification) |
+| [`list_objects`](#list_objects) | [`remove_object`](#remove_object) | | [`set_bucket_notification`](#set_bucket_notification) |
+| [`list_objects_v2`](#list_objects_v2) | [`remove_objects`](#remove_objects) | | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
+| [`list_incomplete_uploads`](#list_incomplete_uploads) | [`remove_incomplete_upload`](#remove_incomplete_upload) | | [`listen_bucket_notification`](#listen_bucket_notification) |
 | | [`fput_object`](#fput_object) | | |
 | | [`fget_object`](#fget_object) | | |
 | | [`get_partial_object`](#get_partial_object) | | |
@@ -361,6 +361,33 @@ __Example__
 minioClient.set_bucket_policy('mybucket',
                               'my-prefixname',
                               Policy.READ_ONLY)
+```
+
+<a name="list_bucket_policies"></a>
+### list_bucket_policies(bucket_name, prefix)
+Lists all policies under a specified bucket and prefix.
+
+__Parameters__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``bucket_name``   | _string_ |Name of the bucket.|
+|``prefix``   |_string_  |The prefix of objects to get policies. |
+
+__Return Value__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``policies``   | _dict_  | A map of prefixes (type string) and their policies (type minio.policy.Policy). |
+
+__Example__
+
+
+```py
+# Get all policies of all object paths that begin with 'my-prefixname' under bucket 'mybucket'.
+policies = minioClient.list_bucket_policies('mybucket',
+                                       'my-prefixname')
+print(policies)
 ```
 
 <a name="get_bucket_notification"></a>
