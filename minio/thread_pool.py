@@ -37,7 +37,7 @@ class Worker(Thread):
         self.tasks_queue = tasks_queue
         self.results_queue = results_queue
         self.exceptions_queue = exceptions_queue
-        self.daemon = False
+        self.daemon = True
         self.start()
 
     def run(self):
@@ -61,7 +61,7 @@ class ThreadPool:
     def __init__(self, num_threads):
         self.results_queue = queue()
         self.exceptions_queue = queue()
-        self.tasks_queue = queue(num_threads)
+        self.tasks_queue = queue()
         self.num_threads = num_threads
 
     def add_task(self, func, *args, **kargs):
