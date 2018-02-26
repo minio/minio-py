@@ -30,7 +30,7 @@ This module implements the API.
 from __future__ import absolute_import
 import platform
 
-from time import mktime, strptime
+from time import mktime
 from datetime import datetime, timedelta
 
 import io
@@ -42,6 +42,7 @@ import codecs
 # Dependencies
 import urllib3
 import certifi
+import dateutil.parser
 
 # Internal imports
 from . import __title__, __version__
@@ -958,8 +959,7 @@ class Minio(object):
                 custom_metadata[k] = response.headers.get(k)
 
         if last_modified:
-            http_time_format = "%a, %d %b %Y %H:%M:%S GMT"
-            last_modified = strptime(last_modified, http_time_format)
+            last_modified = dateutil.parser.parse(last_modified).timetuple()
         return Object(bucket_name, object_name, last_modified, etag, size,
                       content_type=content_type, metadata=custom_metadata)
 

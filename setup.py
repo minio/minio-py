@@ -43,6 +43,7 @@ requires = [
     'urllib3',
     'pytz',
     'certifi',
+    'python-dateutil',
 ]
 
 tests_requires = [
