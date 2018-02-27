@@ -550,7 +550,7 @@ class Minio(object):
 
     def fput_object(self, bucket_name, object_name, file_path,
                     content_type='application/octet-stream',
-                    metadata=None):
+                    metadata=None, progress=None):
         """
         Add a new object to the cloud storage server.
 
@@ -562,7 +562,8 @@ class Minio(object):
         :param file_path: Local file path to be uploaded.
         :param content_type: Content type of the object.
         :param metadata: Any additional metadata to be uploaded along
-            with your PUT request.
+            with the PUT request.
+        :param progress: An io.BufferedRandom used to track the progress of the operation.
         :return: etag
         """
 
@@ -571,7 +572,7 @@ class Minio(object):
         file_size = os.stat(file_path).st_size
 
         return self.put_object(bucket_name, object_name, file_data, file_size,
-                content_type, metadata)
+                content_type, metadata, progress)
 
     def fget_object(self, bucket_name, object_name, file_path, request_headers=None):
         """
@@ -735,7 +736,7 @@ class Minio(object):
 
     def put_object(self, bucket_name, object_name, data, length,
                    content_type='application/octet-stream',
-                   metadata=None):
+                   metadata=None, progress=None):
         """
         Add a new object to the cloud storage server.
 
@@ -757,7 +758,8 @@ class Minio(object):
         :param length: Total length of object.
         :param content_type: mime type of object as a string.
         :param metadata: Any additional metadata to be uploaded along
-            with your PUT request.
+            with the PUT request.
+        :param progress: An io.BufferedRandom used to track the progress of the operation.
         :return: etag
         """
         is_valid_bucket_name(bucket_name)
@@ -777,7 +779,8 @@ class Minio(object):
 
         if length > MIN_PART_SIZE:
             return self._stream_put_object(bucket_name, object_name,
-                                           data, length, metadata=metadata)
+                                           data, length, metadata=metadata,
+                                           progress=progress)
 
         current_data = data.read(length)
         if len(current_data) != length:
@@ -785,9 +788,18 @@ class Minio(object):
                 'Could not read {} bytes from data to upload'.format(length)
             )
 
-        return self._do_put_object(bucket_name, object_name,
+        if progress is not None:
+            progress.seek(0)
+
+        etag = self._do_put_object(bucket_name, object_name,
                                    current_data, len(current_data),
                                    metadata=metadata)
+
+        if progress is not None:
+            progress.seek(len(current_data))
+
+        return etag
+
 
     def list_objects(self, bucket_name, prefix=None, recursive=False):
         """
@@ -1479,7 +1491,7 @@ class Minio(object):
 
     def _stream_put_object(self, bucket_name, object_name,
                            data, content_size,
-                           metadata=None):
+                           metadata=None, progress=None):
         """
         Streaming multipart upload operation.
 
@@ -1489,7 +1501,8 @@ class Minio(object):
         :param content_type: Content type of of the multipart upload.
            Defaults to 'application/octet-stream'.
         :param metadata: Any additional metadata to be uploaded along
-           with your object.
+           with the object.
+        :param progress: An io.BufferedRandom used to track the progress of the operation.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -1549,6 +1562,9 @@ class Minio(object):
                                                      total_read)
 
             total_uploaded += total_read
+
+            if progress is not None:
+                progress.seek(total_uploaded)
 
         if total_uploaded != content_size:
             msg = 'Data uploaded {0} is not equal input size ' \
