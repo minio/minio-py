@@ -83,7 +83,6 @@ class ThreadPool:
         if not self.exceptions_queue.empty():
             raise self.exceptions_queue.get()
 
-
     def result(self):
         """ Return the result of all called tasks """
         return self.results_queue
