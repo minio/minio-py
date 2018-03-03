@@ -26,12 +26,13 @@ in parallel. Tasks results can also be retrieved.
 
 """
 
-import sys
 from threading import Thread
 from .compat import queue
 
+
 class Worker(Thread):
     """ Thread executing tasks from a given tasks queue """
+
     def __init__(self, tasks_queue, results_queue, exceptions_queue):
         Thread.__init__(self)
         self.tasks_queue = tasks_queue
@@ -42,7 +43,6 @@ class Worker(Thread):
 
     def run(self):
         fast_quit = False
-
         while not self.tasks_queue.empty():
             func, args, kargs = self.tasks_queue.get()
             if not fast_quit:
@@ -58,6 +58,7 @@ class Worker(Thread):
 
 class ThreadPool:
     """ Pool of threads consuming tasks from a queue """
+
     def __init__(self, num_threads):
         self.results_queue = queue()
         self.exceptions_queue = queue()
@@ -72,7 +73,7 @@ class ThreadPool:
         """ Add a list of tasks to the queue """
         for args in args_list:
             self.add_task(func, args)
-            
+
         for _ in range(self.num_threads):
             Worker(self.tasks_queue, self.results_queue, self.exceptions_queue)
 
@@ -86,5 +87,4 @@ class ThreadPool:
     def result(self):
         """ Return the result of all called tasks """
         return self.results_queue
-
 
