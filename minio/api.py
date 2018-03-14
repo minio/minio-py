@@ -160,11 +160,16 @@ class Minio(object):
         self._user_agent = _DEFAULT_USER_AGENT
         self._trace_output_stream = None
 
+        # Load CA certificates from SSL_CERT_FILE file if set
+        ca_certs = os.environ.get('SSL_CERT_FILE')
+        if not ca_certs:
+            ca_certs = certifi.where()
+
         if not http_client:
             self._http = urllib3.PoolManager(
                 timeout=urllib3.Timeout.DEFAULT_TIMEOUT,
                         cert_reqs='CERT_REQUIRED',
-                        ca_certs=certifi.where(),
+                        ca_certs=ca_certs,
                         retries=urllib3.Retry(
                             total=5,
                             backoff_factor=0.2,
