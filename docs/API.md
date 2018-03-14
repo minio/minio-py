@@ -748,6 +748,7 @@ __Parameters__
 |``length``   |_int_   |Total length of object.   |
 |``content_type``   |_string_ | Content type of the object. (optional, defaults to 'application/octet-stream').   |
 |``metadata``   |_dict_ | Any additional metadata. (optional, defaults to None). |
+|``progress``   |_io.BufferedRandom_ | Dummy reader to track the progress of the operation. (optional, defaults to None). |
 
 __Return Value__
 
@@ -792,6 +793,7 @@ __Parameters__
 |``file_path``   |_string_ |Path on the local filesystem to which the object data will be written. |
 |``content_type``   |_string_ | Content type of the object. (optional, defaults to 'application/octet-stream'). |
 |``metadata``   |_dict_ | Any additional metadata. (optional, defaults to None). |
+|``progress``   |_io.BufferedRandom_ | Dummy reader to track the progress of the operation. (optional, defaults to None). |
 
 __Return Value__
 
