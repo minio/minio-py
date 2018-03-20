@@ -311,7 +311,7 @@ for obj in uploads:
 ```
 
 <a name="get_bucket_policy"></a>
-### get_bucket_policy(bucket_name, prefix)
+### get_bucket_policy(bucket_name)
 Gets current policy of a bucket.
 
 __Parameters__
@@ -319,48 +319,67 @@ __Parameters__
 |Param   |Type   |Description   |
 |:---|:---|:---|
 |``bucket_name``   | _string_  |Name of the bucket.|
-|``prefix``   |_string_    |The prefix of objects to get current policy. |
 
 __Return Value__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``Policy``   | _minio.policy.Policy_   |Policy enum. Policy.READ_ONLY,Policy.WRITE_ONLY,Policy.READ_WRITE or Policy.NONE.   |
+|``Policy``    |  _string_ | Bucket policy in JSON format.|
 
 __Example__
 
 
 ```py
-# Get current policy of all object paths in bucket that begin with my-prefixname.
-policy = minioClient.get_bucket_policy('mybucket',
-                                       'my-prefixname')
+# Get current policy of all object paths in bucket "mybucket".
+policy = minioClient.get_bucket_policy('mybucket')
 print(policy)
 ```
 
 <a name="set_bucket_policy"></a>
-### set_bucket_policy(bucket_name, prefix, policy)
+### set_bucket_policy(bucket_name, policy)
 
-Set a bucket policy for a specified bucket. If `prefix` is not empty,
-the bucket policy will only be assigned to objects that fit the
-given prefix.
+Set a bucket policy for a specified bucket.
 
 __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
-|``bucket_name``   | _string_  |Name of the bucket.|
-|``prefix``   |_string_ |The prefix of objects to get current policy. |
-|``Policy``   | _minio.policy.Policy_   |Policy enum. Policy.READ_ONLY,Policy.WRITE_ONLY,Policy.READ_WRITE or Policy.NONE.   |
+|``bucket_name``  | _string_  |Name of the bucket.|
+|``Policy``   | _string_ | Bucket policy in JSON format.|
 
 
 __Example__
 
 
 ```py
-# Set policy Policy.READ_ONLY to all object paths in bucket that begin with my-prefixname.
-minioClient.set_bucket_policy('mybucket',
-                              'my-prefixname',
-                              Policy.READ_ONLY)
+# Set policy to READ ONLY to all object paths in bucket.
+policy_READ_ONLY = {"Version":"2012-10-17",
+                    "Statement":[
+                        {
+                        "Sid":"",
+                        "Effect":"Allow",
+                        "Principal":{"AWS":"*"},
+                        "Action":"s3:GetBucketLocation",
+                        "Resource":"arn:aws:s3:::mybucket"
+                        },
+                        {
+                        "Sid":"",
+                        "Effect":"Allow",
+                        "Principal":{"AWS":"*"},
+                        "Action":"s3:ListBucket",
+                        "Resource":"arn:aws:s3:::mybucket"
+                        },
+                        {
+                        "Sid":"",
+                        "Effect":"Allow",
+                        "Principal":{"AWS":"*"},
+                        "Action":"s3:GetObject",
+                        "Resource":"arn:aws:s3:::mybucket/*"
+                        }
+                    ]}
+
+
+minioClient.set_bucket_policy('mybucket', policy_READ_ONLY)
 ```
 
 <a name="get_bucket_notification"></a>

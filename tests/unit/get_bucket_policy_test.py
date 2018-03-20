@@ -21,13 +21,11 @@ from nose.tools import eq_, raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
-from minio.policy import Policy
 from minio.error import NoSuchBucket
 from tests.unit.minio_mocks import (
     MockConnection,
     MockResponse
 )
-
 
 class GetBucketPolicyTest(TestCase):
     @mock.patch('urllib3.PoolManager')
@@ -35,9 +33,7 @@ class GetBucketPolicyTest(TestCase):
     def test_get_policy_for_non_existent_bucket(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-
         bucket_name = 'non-existent-bucket'
-
         mock_server.mock_add_request(
             MockResponse(
                 'GET',
@@ -46,22 +42,41 @@ class GetBucketPolicyTest(TestCase):
                 404,
             )
         )
-
         client = Minio('localhost:9000')
-
         client.get_bucket_policy(bucket_name)
 
     @mock.patch('urllib3.PoolManager')
-    def test_get_policy_for_existent_bucket_with_no_prefix(
-            self, mock_connection
-    ):
-        mock_data = '{"Version":"2012-10-17","Statement":[{"Action":["s3:GetBucketLocation"],"Effect":"Allow","Principal":{"AWS":["*"]},"Resource":["arn:aws:s3:::test-bucket"],"Sid":""},{"Action":["s3:GetBucketLocation"],"Effect":"Allow","Principal":{"AWS":"*"},"Resource":["arn:aws:s3:::test-bucket"],"Sid":""},{"Action":["s3:ListBucket"],"Condition":{"StringEquals":{"s3:prefix":["test-prefix-readonly"]}},"Effect":"Allow","Principal":{"AWS":"*"},"Resource":["arn:aws:s3:::test-bucket"],"Sid":""},{"Action":["s3:GetObject"],"Effect":"Allow","Principal":{"AWS":"*"},"Resource":["arn:aws:s3:::test-bucket/test-prefix-readonly*"],"Sid":""}]}'  # NOQA
-
+    def test_get_policy_for_existent_bucket(self, mock_connection):
+        print "Running test_get_policy_for_existent_bucket..."
+        mock_data = {
+            "Version":"2012-10-17",
+            "Statement":[
+                {
+                "Sid":"",
+                "Effect":"Allow",
+                "Principal":{"AWS":"*"},
+                "Action":"s3:GetBucketLocation",
+                "Resource":"arn:aws:s3:::test-bucket"
+                },
+                {
+                "Sid":"",
+                "Effect":"Allow",
+                "Principal":{"AWS":"*"},
+                "Action":"s3:ListBucket",
+                "Resource":"arn:aws:s3:::test-bucket"
+                },
+                {
+                "Sid":"",
+                "Effect":"Allow",
+                "Principal":{"AWS":"*"},
+                "Action":"s3:GetObject",
+                "Resource":"arn:aws:s3:::test-bucket/*"
+                }
+            ]
+        }
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-
         bucket_name = 'test-bucket'
-
         mock_server.mock_add_request(
             MockResponse(
                 'GET',
@@ -71,35 +86,6 @@ class GetBucketPolicyTest(TestCase):
                 content=mock_data
             )
         )
-
         client = Minio('localhost:9000')
-
         response = client.get_bucket_policy(bucket_name)
-        eq_(response, Policy.NONE)
-
-    @mock.patch('urllib3.PoolManager')
-    def test_get_policy_for_existent_bucket_with_prefix(
-            self, mock_connection
-    ):
-        mock_data = '{"Version":"2012-10-17","Statement":[{"Action":["s3:GetBucketLocation"],"Effect":"Allow","Principal":{"AWS":["*"]},"Resource":["arn:aws:s3:::test-bucket"],"Sid":""},{"Action":["s3:GetBucketLocation"],"Effect":"Allow","Principal":{"AWS":"*"},"Resource":["arn:aws:s3:::test-bucket"],"Sid":""},{"Action":["s3:ListBucket"],"Condition":{"StringEquals":{"s3:prefix":["test-prefix-readonly"]}},"Effect":"Allow","Principal":{"AWS":"*"},"Resource":["arn:aws:s3:::test-bucket"],"Sid":""},{"Action":["s3:GetObject"],"Effect":"Allow","Principal":{"AWS":"*"},"Resource":["arn:aws:s3:::test-bucket/test-prefix-readonly*"],"Sid":""}]}'  # NOQA
-
-        mock_server = MockConnection()
-        mock_connection.return_value = mock_server
-
-        bucket_name = 'test-bucket'
-        prefix_name = 'test-prefix-readonly'
-
-        mock_server.mock_add_request(
-            MockResponse(
-                'GET',
-                'https://localhost:9000/' + bucket_name + '/?policy=',
-                {'User-Agent': _DEFAULT_USER_AGENT},
-                200,
-                content=mock_data
-            )
-        )
-
-        client = Minio('localhost:9000')
-
-        response = client.get_bucket_policy(bucket_name, prefix_name)
-        eq_(response, Policy.READ_ONLY)
+        eq_(response, mock_data)

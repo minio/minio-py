@@ -80,7 +80,6 @@ from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_complete_multipart_upload,
                           xml_marshal_bucket_notifications,
                           xml_marshal_delete_objects)
-from . import policy
 from .fold_case_dict import FoldCaseDict
 from .thread_pool import ThreadPool
 
@@ -352,91 +351,44 @@ class Minio(object):
         # Make sure to purge bucket_name from region cache.
         self._delete_bucket_region(bucket_name)
 
-    def _get_bucket_policy(self, bucket_name):
-        policy_dict = {}
-        try:
-            response = self._url_open("GET",
-                                      bucket_name=bucket_name,
-                                      query={"policy": ""})
-        except NoSuchBucketPolicy as e:
-            return None
-        except ResponseError as e:
-            raise
-
-        data = response.data
-        if isinstance(data, bytes) and isinstance(data, str):  # Python 2
-            policy_dict = json.loads(data.decode('utf-8'))
-        elif isinstance(data, str):  # Python 3
-            policy_dict = json.loads(data)
-        else:
-            policy_dict = json.loads(str(data, 'utf-8'))
-
-        return policy_dict
-
-    def get_bucket_policy(self, bucket_name, prefix=""):
+    def get_bucket_policy(self, bucket_name):
         """
         Get bucket policy of given bucket name.
 
         :param bucket_name: Bucket name.
-        :param prefix: Object prefix.
         """
         is_valid_bucket_name(bucket_name)
 
-        policy_dict = self._get_bucket_policy(bucket_name)
-        if not policy_dict:
-            return policy.Policy.NONE
+        response = self._url_open("GET",
+                                  bucket_name=bucket_name,
+                                  query={"policy": ""})
+        return response.data
 
-        if policy_dict.get('Statement') is None:
-            raise ValueError("None Policy statement")
-        # Normalize statements.
-        statements = []
-        policy._append_statements(statements, policy_dict.get('Statement', []))
+    def delete_bucket_policy(self, bucket_name):
+        self._url_open("DELETE",
+                        bucket_name=bucket_name,
+                        query={"policy": ""})
 
-        return policy.get_policy(statements, bucket_name, prefix)
-
-    def set_bucket_policy(self, bucket_name, prefix, policy_access):
+    def set_bucket_policy(self, bucket_name, policy):
         """
-        Set bucket policy of given bucket name and object prefix.
+        Set bucket policy of given bucket name.
 
         :param bucket_name: Bucket name.
-        :param prefix: Object prefix.
+        :param policy: Access policy/ies in JSON format.
         """
         is_valid_bucket_name(bucket_name)
 
-        policy_dict = self._get_bucket_policy(bucket_name)
-        if policy_access == policy.Policy.NONE and not policy_dict:
-            return
-
-        if not policy_dict:
-            policy_dict = {'Statement': [],
-                           "Version": "2012-10-17"}
-
-        # Normalize statements.
-        statements = []
-        policy._append_statements(statements, policy_dict['Statement'])
-
-        statements = policy.set_policy(statements, policy_access,
-                                       bucket_name, prefix)
-        if not statements:
-            self._url_open("DELETE",
-                           bucket_name=bucket_name,
-                           query={"policy": ""})
-        else:
-            policy_dict['Statement'] = statements
-            content = json.dumps(policy_dict)
-
-            headers = {
-                'Content-Length': str(len(content)),
-                'Content-Md5': get_md5_base64digest(content)
-            }
-            content_sha256_hex = get_sha256_hexdigest(content)
-
-            self._url_open("PUT",
-                           bucket_name=bucket_name,
-                           query={"policy": ""},
-                           headers=headers,
-                           body=content,
-                           content_sha256=content_sha256_hex)
+        headers = {
+            'Content-Length': str(len(policy)),
+            'Content-Md5': get_md5_base64digest(policy)
+        }
+        content_sha256_hex = get_sha256_hexdigest(policy)
+        self._url_open("PUT",
+                        bucket_name=bucket_name,
+                        query={"policy": ""},
+                        headers=headers,
+                        body=policy,
+                        content_sha256=content_sha256_hex)
 
     def get_bucket_notification(self, bucket_name):
         """
