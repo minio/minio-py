@@ -19,7 +19,7 @@
 
 from minio import Minio
 from minio.error import ResponseError
-from minio.policy import Policy
+import json
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
@@ -27,24 +27,106 @@ client = Minio('s3.amazonaws.com',
 
 # Make a new bucket
 try:
-    # Set policy Policy.READ_ONLY to bucket 'my-bucketname' which
-    # enables 'my-bucketname' readable by everyone.
-    client.set_bucket_policy('my-bucketname', '', Policy.READ_ONLY)
+    # Set bucket policy to read-only for bucket 'my-bucketname'
+    policy_READ_ONLY = {
+        "Version":"2012-10-17",
+        "Statement":[
+            {
+            "Sid":"",
+            "Effect":"Allow",
+            "Principal":{"AWS":"*"},
+            "Action":"s3:GetBucketLocation",
+            "Resource":"arn:aws:s3:::my-bucketname"
+            },
+            {
+            "Sid":"",
+            "Effect":"Allow",
+            "Principal":{"AWS":"*"},
+            "Action":"s3:ListBucket",
+            "Resource":"arn:aws:s3:::my-bucketname"
+            },
+            {
+            "Sid":"",
+            "Effect":"Allow",
+            "Principal":{"AWS":"*"},
+            "Action":"s3:GetObject",
+            "Resource":"arn:aws:s3:::my-bucketname/*"
+            }
+        ]
+    }
+    client.set_bucket_policy('my-bucketname', json.dumps(policy_READ_ONLY))
 
-    # Set policy Policy.READ_WRITE to bucket 'my-bucketname' and
-    # prefix 'public-folder/' which enables
-    # 'my-bucketname/public-folder/' read/writeable by everyone.
-    client.set_bucket_policy('my-bucketname', 'public-folder/',
-                             Policy.READ_WRITE)
+    # Set bucket policy to read-write for bucket 'my-bucketname'
+    policy_READ_WRITE = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": ["s3:GetBucketLocation"],
+                "Sid": "",
+                "Resource": ["arn:aws:s3:::my-bucketname"],
+                "Effect": "Allow",
+                "Principal": {"AWS": "*"}
+            },
+            {
+                "Action": ["s3:ListBucket"],
+                "Sid": "",
+                "Resource": ["arn:aws:s3:::my-bucketname"],
+                "Effect": "Allow",
+                "Principal": {"AWS": "*"}
+            },
+            {
+                "Action": ["s3:ListBucketMultipartUploads"],
+                "Sid": "",
+                "Resource": ["arn:aws:s3:::my-bucketname"],
+                "Effect": "Allow",
+                "Principal": {"AWS": "*"}
+            },
+            {
+                "Action": ["s3:ListMultipartUploadParts",
+                            "s3:GetObject",
+                            "s3:AbortMultipartUpload",
+                            "s3:DeleteObject",
+                            "s3:PutObject"],
+                "Sid": "",
+                "Resource": ["arn:aws:s3:::my-bucketname/*"],
+                "Effect": "Allow",
+                "Principal": {"AWS": "*"}
+            }
+        ]
+    }
+    client.set_bucket_policy('my-bucketname', json.dumps(policy_READ_WRITE))
 
-    # Set policy Policy.WRITE_ONLY to bucket 'my-bucketname' and
-    # prefix 'incoming' which enables 'my-bucketname/incoming'
-    # writeable by everyone.
-    client.set_bucket_policy('my-bucketname', 'incoming',
-                             Policy.WRITE_ONLY)
+    # Set bucket policy to write-only for bucket 'my-bucketname'
+    policy_WRITE_ONLY = {
+        "Version":"2012-10-17",
+        "Statement":[
+            {
+                "Sid":"",
+                "Effect":"Allow",
+                "Principal":{"AWS":"*"},
+                "Action":"s3:GetBucketLocation",
+                "Resource":"arn:aws:s3:::my-bucketname"
+            },
+            {"Sid":"",
+            "Effect":"Allow",
+            "Principal":{"AWS":"*"},
+            "Action":"s3:ListBucketMultipartUploads",
+            "Resource":"arn:aws:s3:::my-bucketname"
+            },
+            {
+                "Sid":"",
+                "Effect":"Allow",
+                "Principal":{"AWS":"*"},
+                "Action":[
+                    "s3:ListMultipartUploadParts",
+                    "s3:AbortMultipartUpload",
+                    "s3:DeleteObject",
+                    "s3:PutObject"],
+                "Resource":"arn:aws:s3:::my-bucketname/*"
+            }
+        ]
+    }
+    client.set_bucket_policy('my-bucketname', json.dumps(policy_WRITE_ONLY))
 
-    # Set policy Policy.NONE to bucket 'my-bucketname' which
-    # removes existing policy and set no access to everyone.
-    client.set_bucket_policy('my-bucketname', '', Policy.NONE)
 except ResponseError as err:
     print(err)
