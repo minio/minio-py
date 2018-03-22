@@ -201,16 +201,16 @@ except ResponseError as err:
 ```
 
 <a name="list_objects"></a>
-### list_objects(bucket_name, prefix, recursive=False)
+### list_objects(bucket_name, prefix=None, recursive=False)
 Lists objects in a bucket.
 
 __Parameters__
 
 | Param  |Type  | Description  |
 |:---|:---|:---|
-|``bucket_name``   |_string_ | Name of the bucket.  |
-|``objectPrefix``   | _string_ |The prefix of the objects that should be listed. |
-|``recursive``   | _bool_ |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional default is False.   |
+|``bucket_name`` | _string_ | Name of the bucket.  |
+|``prefix``      | _string_ | The prefix of the objects that should be listed. Optional, default is None.|
+|``recursive``   |  _bool_  |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional, default is False.   |
 
 __Return Value__
 
@@ -220,11 +220,14 @@ __Return Value__
 
 | Param  |Type  | Description  |
 |:---|:---|:---|
-|``object.object_name``   |_string_ | name of the object.  |
-|``object.size`` |_int_ | size of the object.  |
-|``object.etag``   |_string_ | etag of the object.  |
-|``object.last_modified`` |_datetime.datetime_ | modified time stamp.  |
-
+|``object.bucket_name``  | _string_ | name of the bucket object resides in.|
+|``object.object_name``  | _string_ | name of the object.|
+|``object.is_dir``       |  _bool_  | `True` if listed object is a dir (prefix) and `False` otherwise.|
+|``object.size`` | _int_ | size of the object.|
+|``object.etag`` | _string_ | etag of the object.|
+|``object.last_modified`` |_datetime.datetime_ | modified time stamp.|
+|``object.content_type`` | _string_ | content-type of the object.|
+|``object.metadata``     |  _dict_  | contains any additional metadata on the object.|
 
 __Example__
 
@@ -238,16 +241,16 @@ for obj in objects:
 ```
 
 <a name="list_objects_v2"></a>
-### list_objects_v2(bucket_name, prefix, recursive=False)
+### list_objects_v2(bucket_name, prefix=None, recursive=False)
 Lists objects in a bucket using the Version 2 API.
 
 __Parameters__
 
 | Param  |Type  | Description  |
 |:---|:---|:---|
-|``bucket_name``   |_string_ | Name of the bucket.  |
-|``objectPrefix``   | _string_ |The prefix of the objects that should be listed. |
-|``recursive``   | _bool_ |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional default is False.   |
+|``bucket_name`` | _string_ | Name of the bucket.|
+|``prefix``| _string_ |The prefix of the objects that should be listed.  Optional, default is None.|
+|``recursive``   | _bool_ |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional, default is False.|
 
 __Return Value__
 
@@ -257,11 +260,14 @@ __Return Value__
 
 | Param  |Type  | Description  |
 |:---|:---|:---|
-|``object.object_name``   |_string_ | name of the object.  |
-|``object.size`` |_int_ | size of the object.  |
-|``object.etag``   |_string_ | etag of the object.  |
-|``object.last_modified`` |_datetime.datetime_ | modified time stamp.  |
-
+|``object.bucket_name``  | _string_ | name of the bucket object resides in.|
+|``object.object_name``  | _string_ | name of the object.|
+|``object.is_dir``       |  _bool_  | `True` if listed object is a dir (prefix) and `False` otherwise.|
+|``object.size`` | _int_ | size of the object.|
+|``object.etag`` | _string_ | etag of the object.|
+|``object.last_modified`` |_datetime.datetime_ | modified time stamp.|
+|``object.content_type`` | _string_ | content-type of the object.|
+|``object.metadata``     |  _dict_  | contains any additional metadata on the object.|
 
 __Example__
 
@@ -326,7 +332,6 @@ __Return Value__
 |Param   |Type   |Description   |
 |:---|:---|:---|
 |``Policy``   | _minio.policy.Policy_   |Policy enum. Policy.READ_ONLY,Policy.WRITE_ONLY,Policy.READ_WRITE or Policy.NONE.   |
-
 __Example__
 
 
@@ -581,7 +586,7 @@ for event in events:
 
 ## 3. Object operations
 <a name="get_object"></a>
-### get_object(bucket_name, object_name)
+### get_object(bucket_name, object_name, request_headers=None)
 Downloads an object.
 
 __Parameters__
@@ -613,7 +618,7 @@ except ResponseError as err:
 ```
 
 <a name="get_partial_object"></a>
-### get_partial_object(bucket_name, object_name, offset=0, length=0)
+### get_partial_object(bucket_name, object_name, offset=0, length=0, request_headers=None)
 Downloads the specified range bytes of an object.
 
 __Parameters__
@@ -646,7 +651,7 @@ except ResponseError as err:
 ```
 
 <a name="fget_object"></a>
-### fget_object(bucket_name, object_name, file_path)
+### fget_object(bucket_name, object_name, file_path, request_headers=None)
 Downloads and saves the object as a file in the local filesystem.
 
 __Parameters__
@@ -684,7 +689,7 @@ except ResponseError as err:
 ```
 
 <a name="copy_object"></a>
-### copy_object(bucket_name, object_name, object_source, copy_conditions)
+### copy_object(bucket_name, object_name, object_source, copy_conditions=None)
  Copy a source object on object storage server to a new object.
 
  NOTE: Maximum object size supported by this API is 5GB.
@@ -733,7 +738,7 @@ except ResponseError as err:
 ```
 
 <a name="put_object"></a>
-### put_object(bucket_name, object_name, data, length, content_type)
+### put_object(bucket_name, object_name, data, length, content_type='application/octet-stream', metadata=None)
 Add a new object to the object storage server.
 
 NOTE: Maximum object size supported by this API is 5TiB.
@@ -780,7 +785,7 @@ except ResponseError as err:
 ```
 
 <a name="fput_object"></a>
-### fput_object(bucket_name, object_name, file_path, content_type)
+### fput_object(bucket_name, object_name, file_path, content_type='application/octet-stream', metadata=None)
 Uploads contents from a file to objectName.
 
 __Parameters__
@@ -789,9 +794,9 @@ __Parameters__
 |:---|:---|:---|
 |``bucket_name``   |_string_  |Name of the bucket.   |
 |``object_name``   |_string_    |Name of the object.   |
-|``file_path``   |_string_ |Path on the local filesystem to which the object data will be written. |
-|``content_type``   |_string_ | Content type of the object. (optional, defaults to 'application/octet-stream'). |
-|``metadata``   |_dict_ | Any additional metadata. (optional, defaults to None). |
+|``file_path``   |_string_ |Path on the local filesystem from which object data will be read. |
+|``content_type``   |_string_ | Content type of the object (optional, defaults to 'application/octet-stream'). |
+|``metadata``   |_dict_ | Any additional metadata (optional, defaults to None). |
 
 __Return Value__
 
