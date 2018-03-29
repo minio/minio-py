@@ -750,7 +750,7 @@ class Minio(object):
         Examples:
          file_stat = os.stat('hello.txt')
          with open('hello.txt', 'rb') as data:
-             minio.put_object('foo', 'bar', data, file_stat.size, 'text/plain')
+             minio.put_object('foo', 'bar', data, file_stat.st_size, 'text/plain')
 
         - For length lesser than 5MB put_object automatically
           does single Put operation.
