@@ -71,6 +71,7 @@ from .helpers import (get_target_url, is_non_empty_string,
                       get_s3_region_from_endpoint,
                       mkdir_p, dump_http)
 from .helpers import (MAX_MULTIPART_OBJECT_SIZE,
+                      MAX_POOL_SIZE,
                       MIN_PART_SIZE)
 from .signer import (sign_v4, presign_v4,
                      generate_credential_string,
@@ -168,6 +169,7 @@ class Minio(object):
         if not http_client:
             self._http = urllib3.PoolManager(
                 timeout=urllib3.Timeout.DEFAULT_TIMEOUT,
+                maxsize=MAX_POOL_SIZE,
                         cert_reqs='CERT_REQUIRED',
                         ca_certs=ca_certs,
                         retries=urllib3.Retry(
