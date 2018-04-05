@@ -46,6 +46,7 @@ from .error import (InvalidBucketError, InvalidEndpointError,
 # Constants
 MAX_MULTIPART_COUNT = 10000 # 10000 parts
 MAX_MULTIPART_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
+MAX_POOL_SIZE = 10
 MIN_PART_SIZE = 5 * 1024 * 1024  # 5MiB
 
 _VALID_BUCKETNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\\.\\-]+[a-z0-9]$')
