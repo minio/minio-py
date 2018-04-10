@@ -200,7 +200,7 @@ except ResponseError as err:
 ```
 
 <a name="list_objects"></a>
-### list_objects(bucket_name, prefix, recursive=False)
+### list_objects(bucket_name, prefix=None, recursive=False)
 列出存储桶中所有对象。
 
 参数
@@ -208,7 +208,7 @@ except ResponseError as err:
 | 参数  |  类型 | 描述  |
 |:---|:---|:---|
 |``bucket_name``   |_string_ | 存储桶名称。  |
-|``objectPrefix``   | _string_ |用于过滤的对象名称前缀。 |
+|``prefix``   | _string_ |用于过滤的对象名称前缀。可选项，默认为None。 |
 |``recursive``   | _bool_ |`True`代表递归查找，`False`代表类似文件夹查找，以'/'分隔，不查子文件夹。（可选，默认值是`False`）。   |
 
 __返回值__
@@ -219,10 +219,14 @@ __返回值__
 
 | 参数  |  类型 | 描述  |
 |:---|:---|:---|
-|``object.object_name``   |_string_ | 对象名称。  |
-|``object.size`` |_int_ | 对象的大小。  |
-|``object.etag``   |_string_ | 对象的etag值。  |
-|``object.last_modified`` |_datetime.datetime_ | 最后修改时间。  |
+|``object.bucket_name``  | _string_ | 对象所在存储桶的名称。|
+|``object.object_name``  | _string_ | 对象的名称。|
+|``object.is_dir``       |  _bool_  | `True`代表列举的对象是文件夹（对象前缀）， `False`与之相反。|
+|``object.size`` | _int_ | 对象的大小。|
+|``object.etag`` | _string_ | 对象的etag值。|
+|``object.last_modified`` |_datetime.datetime_ | 最后修改时间。|
+|``object.content_type`` | _string_ | 对象的content-type。|
+|``object.metadata``     |  _dict_  | 对象的其它元数据。|
 
 
 __示例__
@@ -237,7 +241,7 @@ for obj in objects:
 ```
 
 <a name="list_objects_v2"></a>
-### list_objects_v2(bucket_name, prefix, recursive=False)
+### list_objects_v2(bucket_name, prefix=None, recursive=False)
 使用V2版本API列出一个存储桶中的对象。
 
 参数
@@ -245,7 +249,7 @@ for obj in objects:
 | 参数  |  类型 | 描述  |
 |:---|:---|:---|
 |``bucket_name``   |_string_ | 存储桶名称。  |
-|``objectPrefix``   | _string_ |用于过滤的对象名称前缀。 |
+|``prefix``   | _string_ |用于过滤的对象名称前缀。可选项，默认为None。 |
 |``recursive``   | _bool_ |`True`代表递归查找，`False`代表类似文件夹查找，以'/'分隔，不查子文件夹。（可选，默认值是`False`）。   |
 
 __返回值__
@@ -256,10 +260,14 @@ __返回值__
 
 | 参数  |  类型 | 描述  |
 |:---|:---|:---|
-|``object.object_name``   |_string_ | 对象名称。  |
-|``object.size`` |_int_ | 对象的大小。  |
-|``object.etag``   |_string_ | 对象的etag值。  |
-|``object.last_modified`` |_datetime.datetime_ | 最后修改时间。  |
+|``object.bucket_name``  | _string_ | 对象所在存储桶的名称。|
+|``object.object_name``  | _string_ | 对象的名称。|
+|``object.is_dir``       |  _bool_  | `True`代表列举的对象是文件夹（对象前缀）， `False`与之相反。|
+|``object.size`` | _int_ | 对象的大小。|
+|``object.etag`` | _string_ | 对象的etag值。|
+|``object.last_modified`` |_datetime.datetime_ | 最后修改时间。|
+|``object.content_type`` | _string_ | 对象的content-type。|
+|``object.metadata``     |  _dict_  | 对象的其它元数据。|
 
 
 __示例__
@@ -552,7 +560,7 @@ for event in events:
 
 ## 3. 操作对象
 <a name="get_object"></a>
-### get_object(bucket_name, object_name)
+### get_object(bucket_name, object_name, request_headers=None)
 下载一个对象。
 
 参数
@@ -584,7 +592,7 @@ except ResponseError as err:
 ```
 
 <a name="get_partial_object"></a>
-### get_partial_object(bucket_name, object_name, offset=0, length=0)
+### get_partial_object(bucket_name, object_name, offset=0, length=0, request_headers=None)
 下载一个对象的指定区间的字节数组。
 
 参数
@@ -617,7 +625,7 @@ except ResponseError as err:
 ```
 
 <a name="fget_object"></a>
-### fget_object(bucket_name, object_name, file_path)
+### fget_object(bucket_name, object_name, file_path, request_headers=None)
 下载并将文件保存到本地。
 
 参数
@@ -655,7 +663,7 @@ except ResponseError as err:
 ```
 
 <a name="copy_object"></a>
-### copy_object(bucket_name, object_name, object_source, copy_conditions)
+### copy_object(bucket_name, object_name, object_source, copy_conditions=None)
  拷贝对象存储服务上的源对象到一个新对象。
 
 注意：本API支持的最大文件大小是5GB。
@@ -704,7 +712,7 @@ except ResponseError as err:
 ```
 
 <a name="put_object"></a>
-### put_object(bucket_name, object_name, data, length, content_type)
+### put_object(bucket_name, object_name, data, length, content_type='application/octet-stream', metadata=None)
 添加一个新的对象到对象存储服务。
 
 注意：本API支持的最大文件大小是5TB。
@@ -751,7 +759,7 @@ except ResponseError as err:
 ```
 
 <a name="fput_object"></a>
-### fput_object(bucket_name, object_name, file_path, content_type)
+### fput_object(bucket_name, object_name, file_path, content_type='application/octet-stream', metadata=None)
 通过文件上传到对象中。
 
 参数
@@ -761,8 +769,8 @@ except ResponseError as err:
 |``bucket_name``   |_string_  |存储桶名称。   |
 |``object_name``   |_string_    |对象名称。   |
 |``file_path``   |_string_ |本地文件的路径，会将该文件的内容上传到对象存储服务上。 |
-|``content_type``   |_string_ | 对象的Content type。（可选，默认是“application/octet-stream”）。 |
-|``metadata``   |_dict_ | 其它元数据。（可选，默认是None）。 |
+|``content_type``   |_string_ | 对象的Content type（可选，默认是“application/octet-stream”）。 |
+|``metadata``   |_dict_ | 其它元数据（可选，默认是None）。 |
 
 __返回值__
 
