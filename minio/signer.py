@@ -59,7 +59,8 @@ def post_presign_signature(date, region, secret_key, policy_str):
 
 
 def presign_v4(method, url, access_key, secret_key, region=None,
-               headers=None, expires=None, response_headers=None):
+               headers=None, expires=None, response_headers=None,
+               request_date=None):
     """
     Calculates signature version '4' for regular presigned URLs.
 
@@ -71,6 +72,8 @@ def presign_v4(method, url, access_key, secret_key, region=None,
     :param headers: any additional HTTP request headers to
        be presigned, it is optional.
     :param expires: final expiration of the generated URL. Maximum is 7days.
+    :param response_headers: Specify additional query string parameters.
+    :param request_date: the date of the request.
     """
 
     # Validate input arguments.
@@ -86,19 +89,22 @@ def presign_v4(method, url, access_key, secret_key, region=None,
     if expires is None:
         expires = '604800'
 
+    if request_date is None:
+        request_date = datetime.utcnow()
+
     parsed_url = urlsplit(url)
     content_hash_hex = _UNSIGNED_PAYLOAD
     host = parsed_url.netloc
     headers['Host'] = host
-    date = datetime.utcnow()
-    iso8601Date = date.strftime("%Y%m%dT%H%M%SZ")
+    iso8601Date = request_date.strftime("%Y%m%dT%H%M%SZ")
 
     headers_to_sign = headers
     # Construct queries.
     query = {}
     query['X-Amz-Algorithm'] = _SIGN_V4_ALGORITHM
     query['X-Amz-Credential'] = generate_credential_string(access_key,
-                                                           date, region)
+                                                           request_date,
+                                                           region)
     query['X-Amz-Date'] = iso8601Date
     query['X-Amz-Expires'] = str(expires)
     signed_headers = get_signed_headers(headers_to_sign)
@@ -134,9 +140,9 @@ def presign_v4(method, url, access_key, secret_key, region=None,
                                                    headers_to_sign,
                                                    signed_headers,
                                                    content_hash_hex)
-    string_to_sign = generate_string_to_sign(date, region,
+    string_to_sign = generate_string_to_sign(request_date, region,
                                              canonical_request)
-    signing_key = generate_signing_key(date, region, secret_key)
+    signing_key = generate_signing_key(request_date, region, secret_key)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
     new_parsed_url = urlsplit(new_url + "&X-Amz-Signature="+signature)
