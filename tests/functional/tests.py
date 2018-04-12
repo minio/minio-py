@@ -1370,42 +1370,55 @@ def test_thread_safe(client, test_file, log_output):
                           args=(bucket_name, object_name, test_file))
             thrd.start()
             thrd.join()
-        # Create a wrapper method to capture get_object api's return
-        # value during threading by introducing a list object to hold
-        # the return value from each call. Without this, the return
-        # value of get_object api calls will be lost during threading.
-        def threaded_get_object(cli, bckt_name, obj_name, obj_data):
-            obj_data.append(cli.get_object(bckt_name, obj_name))
+
+        # A list of exceptions raised by get_object_and_check
+        # called in multiple threads.
+        exceptions = []
+
+        # get_object_and_check() downloads an object, stores it in a file
+        # and then calculates its checksum. In case of mismatch, a new
+        # exception is generated and saved in exceptions.
+        def get_object_and_check(client, bckt_name, obj_name, no,
+                expected_sha_sum):
+            try:
+                obj_data = client.get_object(bckt_name, obj_name)
+                local_file = 'copied_file_'+str(no)
+                # Create a file with the returned data
+                with open(local_file, 'wb') as file_data:
+                    shutil.copyfileobj(obj_data, file_data)
+                with open(local_file, 'rb') as f:
+                    contents = f.read()
+                    copied_file_sha_sum = hashlib.sha256(contents).hexdigest()
+                # Compare sha-sum values of the source file and the copied one
+                if expected_sha_sum != copied_file_sha_sum:
+                    raise ValueError(
+                       'Sha-sum mismatch on multi-threaded put and get objects')
+            except Exception as err:
+                exceptions.append(Exception(err))
+            finally:
+                # Remove downloaded file
+                os.path.isfile(local_file) and os.remove(local_file)
+
         # Get/Download 'no_of_threads' many objects
         # simultaneously using multi-threading
-        obj_data=[]
         thrd_list = []
         for i in range(no_of_threads):
             # Create dynamic/varying names for to be created threads
             thrd_name = 'thread_'+str(i)
-            vars()[thrd_name] = Thread(target=threaded_get_object,
+            vars()[thrd_name] = Thread(target=get_object_and_check,
                                        args=(client, bucket_name,
-                                       object_name, obj_data))
+                                       object_name, i, test_file_sha_sum))
             vars()[thrd_name].start()
             thrd_list.append(vars()[thrd_name])
         # Wait until all threads to finish
         for t in thrd_list:
             t.join()
-        # Create a file with the returned data, 'obj_data[0]'
-        with open('copied_file', 'wb') as file_data:
-            shutil.copyfileobj(obj_data[0], file_data)
-        # Create sha-sum for the created file, 'copied_file'
-        with open('copied_file', 'rb') as f:
-            contents = f.read()
-            copied_file_sha_sum = hashlib.sha256(contents).hexdigest()
-        # Compare sha-sum values of the source file and the copied one
-        if test_file_sha_sum != copied_file_sha_sum:
-            raise ValueError('Sha-sum mismatch on multi-threaded put and get objects')
+        if len(exceptions) > 0:
+            raise exceptions[0]
     except Exception as err:
         raise Exception(err)
     finally:
         try:
-            os.path.isfile('copied_file') and os.remove('copied_file')
             client.remove_object(bucket_name, object_name)
             client.remove_bucket(bucket_name)
         except Exception as err:
