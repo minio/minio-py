@@ -552,7 +552,7 @@ class Minio(object):
                     event = json.loads(line)
                     if event['Records'] is not None:
                         yield event
-            except SyntaxError:
+            except json.decoder.JSONDecodeError:
                 response.close()
                 continue
 
