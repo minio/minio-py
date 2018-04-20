@@ -38,8 +38,7 @@ import hashlib
 from threading import Thread
 
 from minio import Minio, PostPolicy, CopyConditions
-from minio.policy import Policy
-from minio.error import (APINotImplemented, ResponseError,
+from minio.error import (APINotImplemented, NoSuchBucketPolicy, ResponseError,
                          PreconditionFailed, BucketAlreadyOwnedByYou,
                          BucketAlreadyExists, InvalidBucketError)
 
@@ -154,7 +153,7 @@ def is_s3(client):
     return "s3.amazonaws" in client._endpoint_url
 
 def test_make_bucket_default_region(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "make_bucket(bucket_name, location)"
 
     # Get a unique bucket_name
@@ -177,7 +176,7 @@ def test_make_bucket_default_region(client, log_output):
     print(log_output.json_report())
 
 def test_make_bucket_with_region(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "make_bucket(bucket_name, location)"
 
     # Get a unique bucket_name
@@ -200,7 +199,7 @@ def test_make_bucket_with_region(client, log_output):
     print(log_output.json_report())
 
 def test_negative_make_bucket_invalid_name(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "make_bucket(bucket_name, location)"
 
     # Get a unique bucket_name
@@ -230,7 +229,7 @@ def test_negative_make_bucket_invalid_name(client, log_output):
     print(log_output.json_report())
 
 def test_make_bucket_recreate(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "make_bucket(bucket_name, location)"
 
     # Get a unique bucket_name
@@ -260,7 +259,7 @@ def test_make_bucket_recreate(client, log_output):
         exit()
 
 def test_list_buckets(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "list_buckets(  )"
 
     # Get a unique bucket_name
@@ -283,7 +282,7 @@ def test_list_buckets(client, log_output):
     print(log_output.json_report())
 
 def test_fput_object_small_file(client, testfile, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "fput_object(bucket_name, object_name, file_path, content_type, metadata)"
 
     # Get a unique bucket_name and object_name
@@ -311,7 +310,7 @@ def test_fput_object_small_file(client, testfile, log_output):
     print(log_output.json_report())
 
 def test_fput_object_large_file(client, largefile, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "fput_object(bucket_name, object_name, file_path, content_type, metadata)"
 
     # Get a unique bucket_name and object_name
@@ -341,7 +340,7 @@ def test_fput_object_large_file(client, largefile, log_output):
     print(log_output.json_report())
 
 def test_fput_object_with_content_type(client, testfile, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "fput_object(bucket_name, object_name, file_path, content_type, metadata)"
 
     # Get a unique bucket_name and object_name
@@ -371,7 +370,7 @@ def test_fput_object_with_content_type(client, testfile, log_output):
     print(log_output.json_report())
 
 def test_copy_object_no_copy_condition(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "copy_object(bucket_name, object_name, object_source, conditions)"
 
     # Get a unique bucket_name and object_name
@@ -403,7 +402,7 @@ def test_copy_object_no_copy_condition(client, log_output):
     print(log_output.json_report())
 
 def test_copy_object_etag_match(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "copy_object(bucket_name, object_name, object_source, conditions)"
 
     # Get a unique bucket_name and object_name
@@ -441,7 +440,7 @@ def test_copy_object_etag_match(client, log_output):
     print(log_output.json_report())
 
 def test_copy_object_negative_etag_match(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "copy_object(bucket_name, object_name, object_source, conditions)"
 
     # Get a unique bucket_name and object_name
@@ -482,7 +481,7 @@ def test_copy_object_negative_etag_match(client, log_output):
     print(log_output.json_report())
 
 def test_copy_object_modified_since(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "copy_object(bucket_name, object_name, object_source, conditions)"
 
     # Get a unique bucket_name and object_name
@@ -521,7 +520,7 @@ def test_copy_object_modified_since(client, log_output):
     print(log_output.json_report())
 
 def test_copy_object_unmodified_since(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "copy_object(bucket_name, object_name, object_source, conditions)"
 
     # Get a unique bucket_name and object_name
@@ -565,7 +564,7 @@ def test_copy_object_unmodified_since(client, log_output):
     print(log_output.json_report())
 
 def test_put_object(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "put_object(bucket_name, object_name, data, length, content_type, metadata)"
 
     # Get a unique bucket_name and object_name
@@ -613,7 +612,7 @@ def test_put_object(client, log_output):
     print(log_output.json_report())
 
 def test_negative_put_object_with_path_segment(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "put_object(bucket_name, object_name, data, length, content_type, metadata)"
 
     # Get a unique bucket_name and object_name
@@ -671,7 +670,7 @@ def validate_stat_data(st_obj, expected_size, expected_meta):
         raise ValueError("Metadata key 'x-amz-meta-testing' not found")
 
 def test_stat_object(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "stat_object(bucket_name, object_name)"
 
     # Get a unique bucket_name and object_name
@@ -715,7 +714,7 @@ def test_stat_object(client, log_output):
     print(log_output.json_report())
 
 def test_remove_object(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "remove_object(bucket_name, object_name)"
 
     # Get a unique bucket_name and object_name
@@ -738,7 +737,7 @@ def test_remove_object(client, log_output):
     print(log_output.json_report())
 
 def test_get_object(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "get_object(bucket_name, object_name, request_headers)"
 
     # Get a unique bucket_name and object_name
@@ -768,7 +767,7 @@ def test_get_object(client, log_output):
     print(log_output.json_report())
 
 def test_fget_object(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "fget_object(bucket_name, object_name, file_path, request_headers)"
 
     # Get a unique bucket_name and object_name
@@ -795,7 +794,7 @@ def test_fget_object(client, log_output):
     print(log_output.json_report())
 
 def test_get_partial_object_with_default_length(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "get_partial_object(bucket_name, object_name, offset, length, request_headers)"
 
     # Get a unique bucket_name and object_name
@@ -831,7 +830,7 @@ def test_get_partial_object_with_default_length(client, log_output):
     print(log_output.json_report())
 
 def test_get_partial_object(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "get_partial_object(bucket_name, object_name, offset, length, request_headers)"
 
     # Get a unique bucket_name and object_name
@@ -867,7 +866,7 @@ def test_get_partial_object(client, log_output):
     print(log_output.json_report())
 
 def test_list_objects(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "list_objects(bucket_name, prefix, recursive)"
 
     # Get a unique bucket_name and object_name
@@ -920,7 +919,7 @@ def list_objects_api_test(client, bucket_name, expected_no, *argv):
         raise ValueError("Listed no of objects ({}), does not match the expected no of objects ({})".format(no_of_files, expected_no))
 
 def test_list_objects_with_prefix(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "list_objects(bucket_name, prefix, recursive)"
 
     # Get a unique bucket_name and object_name
@@ -1003,7 +1002,7 @@ def test_list_objects_with_prefix(client, log_output):
     print(log_output.json_report())
 
 def test_list_objects_with_1001_files(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "list_objects(bucket_name, prefix, recursive)"
 
     # Get a unique bucket_name and object_name
@@ -1041,7 +1040,7 @@ def test_list_objects_with_1001_files(client, log_output):
     print(log_output.json_report())
 
 def test_list_objects_v2(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "list_objects(bucket_name, prefix, recursive)"
 
     # Get a unique bucket_name and object_name
@@ -1097,7 +1096,7 @@ def collect_incomplete_upload_ids(client, b_name, o_name):
     return upload_ids_listed
 
 def test_remove_incomplete_upload(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "remove_incomplete_upload(bucket_name, object_name)"
 
     # Get a unique bucket_name and object_name
@@ -1130,7 +1129,7 @@ def test_remove_incomplete_upload(client, log_output):
     print(log_output.json_report())
 
 def test_presigned_get_object_default_expiry(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "presigned_get_object(bucket_name, object_name, expires, response_headers)"
 
     _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
@@ -1164,7 +1163,7 @@ def test_presigned_get_object_default_expiry(client, log_output):
     print(log_output.json_report())
 
 def test_presigned_get_object_expiry_5sec(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "presigned_get_object(bucket_name, object_name, expires, response_headers)"
 
     _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
@@ -1205,7 +1204,7 @@ def test_presigned_get_object_expiry_5sec(client, log_output):
     print(log_output.json_report())
 
 def test_presigned_get_object_response_headers(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "presigned_get_object(bucket_name, object_name, expires, response_headers)"
 
     _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
@@ -1248,7 +1247,7 @@ def test_presigned_get_object_response_headers(client, log_output):
     print(log_output.json_report())
 
 def test_presigned_put_object_default_expiry(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "presigned_put_object(bucket_name, object_name, expires)"
 
     _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
@@ -1284,7 +1283,7 @@ def test_presigned_put_object_default_expiry(client, log_output):
     print(log_output.json_report())
 
 def test_presigned_put_object_expiry_5sec(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "presigned_put_object(bucket_name, object_name, expires)"
 
     _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
@@ -1319,7 +1318,7 @@ def test_presigned_put_object_expiry_5sec(client, log_output):
     print(log_output.json_report())
 
 def test_presigned_post_policy(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "presigned_post_policy(post_policy)"
 
     bucket_name = generate_bucket_name()
@@ -1427,46 +1426,97 @@ def test_thread_safe(client, test_file, log_output):
     print(log_output.json_report())
 
 def test_get_bucket_policy(client, log_output):
-    # default value for function attribute for log_output is;
-    # log_output.function = "get_bucket_policy(bucket_name, prefix)"
+    # default value for log_output.function attribute is;
+    # log_output.function = "get_bucket_policy(bucket_name)"
 
     # Get a unique bucket_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     try:
         client.make_bucket(bucket_name)
-        policy_name = client.get_bucket_policy(bucket_name)
-        if policy_name != Policy.NONE:
-            raise ValueError('Policy name is invalid: ' + policy_name)
+        client.get_bucket_policy(bucket_name)
     except APINotImplemented:
         print(log_output.json_report(alert='Not Implemented', status=LogOutput.NA))
-    except Exception as err:
-        raise Exception(err)
-    else:
+    except NoSuchBucketPolicy:
         # Test passes
         print(log_output.json_report())
+    except Exception as err:
+        raise Exception(err)
     finally:
         try:
             client.remove_bucket(bucket_name)
         except Exception as err:
             raise Exception(err)
 
+def get_policy_actions(stat):
+    actions = []
+    for s in stat:
+        action = s.get('Action')
+        if action not in actions:
+            actions.append(action)
+    # flatten  nested lists in actions
+    flattened_actions = []
+    for a in actions:
+        if isinstance(a, list):
+            for aa in a:
+                flattened_actions.append(aa)
+        else:
+            flattened_actions.append(a)
+    actions = [s.replace('s3:', '') for s in flattened_actions]
+    return actions
+
+def policy_validated(client, bucket_name, policy):
+    policy_dict = json.loads(client.get_bucket_policy(bucket_name).decode("utf-8"))
+    actions = get_policy_actions(policy_dict.get('Statement'))
+    actions.sort()
+    expected_actions = get_policy_actions(policy.get('Statement'))
+    expected_actions.sort()
+    if expected_actions != actions:
+        return False
+    return True
+
 def test_set_bucket_policy_readonly(client, log_output):
-    # default value for function attribute for log_output is;
-    # log_output.function = "set_bucket_policy(bucket_name, prefix, policy_access)"
+    # default value for log_output.function attribute is;
+    # log_output.function = "set_bucket_policy(bucket_name, policy)"
 
     # Get a unique bucket_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
-    log_output.args['prefix'] = prefix = ''
     try:
         client.make_bucket(bucket_name)
-        # Set read-only policy successfully.
-        client.set_bucket_policy(bucket_name, prefix, Policy.READ_ONLY)
+        # read-only policy
+        policy = {
+            "Version":"2012-10-17",
+            "Statement":[
+                {
+                "Sid":"",
+                "Effect":"Allow",
+                "Principal":{"AWS":"*"},
+                "Action":"s3:GetBucketLocation",
+                "Resource":"arn:aws:s3:::"+bucket_name
+                },
+                {
+                "Sid":"",
+                "Effect":"Allow",
+                "Principal":{"AWS":"*"},
+                "Action":"s3:ListBucket",
+                "Resource":"arn:aws:s3:::"+bucket_name
+                },
+                {
+                "Sid":"",
+                "Effect":"Allow",
+                "Principal":{"AWS":"*"},
+                "Action":"s3:GetObject",
+                "Resource":"arn:aws:s3:::"+bucket_name+"/*"
+                }
+            ]
+        }
+        # Set read-only policy
+        client.set_bucket_policy(bucket_name, json.dumps(policy))
         # Validate if the policy is set correctly
-        policy_name = client.get_bucket_policy(bucket_name)
-        if policy_name != Policy.READ_ONLY:
-            raise ValueError('Failed to set ReadOnly bucket policy: ' + policy_name)
+        if not policy_validated(client, bucket_name, policy):
+            raise ValueError('Failed to set ReadOnly bucket policy')
     except APINotImplemented:
-        print(log_output.json_report(alert='Not Implemented', status=LogOutput.NA))
+        print(log_output.json_report(alert='Not Implemented',
+                                     status=LogOutput.NA))
     except Exception as err:
         raise Exception(err)
     else:
@@ -1479,50 +1529,56 @@ def test_set_bucket_policy_readonly(client, log_output):
             raise Exception(err)
 
 def test_set_bucket_policy_readwrite(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "set_bucket_policy(bucket_name, prefix, policy_access)"
 
     # Get a unique bucket_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
-    log_output.args['prefix'] = prefix = ''
     try:
         client.make_bucket(bucket_name)
-        # Set read-write policy successfully.
-        client.set_bucket_policy(bucket_name, prefix, Policy.READ_WRITE)
+        # Read-write policy
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": ["s3:GetBucketLocation"],
+                    "Sid": "",
+                    "Resource": ["arn:aws:s3:::"+bucket_name],
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"}
+                },
+                {
+                    "Action": ["s3:ListBucket"],
+                    "Sid": "",
+                    "Resource": ["arn:aws:s3:::"+bucket_name],
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"}
+                },
+                {
+                    "Action": ["s3:ListBucketMultipartUploads"],
+                    "Sid": "",
+                    "Resource": ["arn:aws:s3:::"+bucket_name],
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"}
+                },
+                {
+                    "Action": ["s3:ListMultipartUploadParts",
+                               "s3:GetObject",
+                               "s3:AbortMultipartUpload",
+                               "s3:DeleteObject",
+                               "s3:PutObject"],
+                    "Sid": "",
+                    "Resource": ["arn:aws:s3:::"+bucket_name+"/*"],
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"}
+                }
+            ]
+        }
+        # Set read-write policy
+        client.set_bucket_policy(bucket_name, json.dumps(policy))
         # Validate if the policy is set correctly
-        policy_name = client.get_bucket_policy(bucket_name)
-        if policy_name != Policy.READ_WRITE:
-            raise ValueError('Failed to set ReadWrite bucket policy: ' + policy_name)
-    except APINotImplemented:
-        print(log_output.json_report(alert='Not Implemented', status=LogOutput.NA))
-    except Exception as err:
-        raise Exception(err)
-    else:
-        # Test passes
-        print(log_output.json_report())
-    finally:
-        try:
-            client.remove_bucket(bucket_name)
-        except Exception as err:
-            raise Exception(err)
-
-def test_no_bucket_policy(client, log_output):
-    # default value for function attribute for log_output is;
-    # log_output.function = "set_bucket_policy(bucket_name, prefix, policy_access)"
-
-    # Get a unique bucket_name
-    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
-    log_output.args['prefix'] = prefix = ''
-    try:
-        client.make_bucket(bucket_name)
-        # # Added into log output for clarity/debugging purposes
-        # log_output.args['prefix-2'] = prefix = ''
-        # Reset policy to NONE.
-        client.set_bucket_policy(bucket_name, prefix, Policy.NONE)
-        # Validate if the policy is reverted back to NONE.
-        policy_name = client.get_bucket_policy(bucket_name)
-        if policy_name != Policy.NONE:
-            raise ValueError('Policy name is invalid: ' + policy_name)
+        if not policy_validated(client, bucket_name, policy):
+            raise ValueError('Failed to set ReadOnly bucket policy')
     except APINotImplemented:
         print(log_output.json_report(alert='Not Implemented', status=LogOutput.NA))
     except Exception as err:
@@ -1537,7 +1593,7 @@ def test_no_bucket_policy(client, log_output):
             raise Exception(err)
 
 def test_remove_objects(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "remove_objects(bucket_name, objects_iter)"
 
     # Get a unique bucket_name
@@ -1569,7 +1625,7 @@ def test_remove_objects(client, log_output):
     print(log_output.json_report())
 
 def test_remove_bucket(client, log_output):
-    # default value for function attribute for log_output is;
+    # default value for log_output.function attribute is;
     # log_output.function = "remove_bucket(bucket_name)"
 
 
@@ -1746,8 +1802,6 @@ def main():
             log_output =  LogOutput(client.set_bucket_policy, 'test_set_bucket_policy_readwrite')
             test_set_bucket_policy_readwrite(client, log_output)
 
-            log_output =  LogOutput(client.set_bucket_policy, 'test_no_bucket_policy')
-            test_no_bucket_policy(client, log_output)
         else:
             # Quick mode tests
             log_output =  LogOutput(client.make_bucket, 'test_make_bucket_default_region')

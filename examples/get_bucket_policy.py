@@ -28,8 +28,5 @@ client = Minio('s3.amazonaws.com', secure=True,
 try:
     # Get current policy of bucket 'my-bucketname'.
     print(client.get_bucket_policy('my-bucketname'))
-
-    # Get current policy of bucket 'my-bucketname' and prefix 'my-prefix'.
-    print(client.get_bucket_policy('my-bucketname', 'my-prefix'))
 except ResponseError as err:
     print(err)
