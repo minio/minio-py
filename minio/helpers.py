@@ -325,8 +325,9 @@ def is_virtual_host(endpoint_url, bucket_name):
     # such buckets.
     if 'https' in parsed_url.scheme and '.' in bucket_name:
         return False
-    if 's3.amazonaws.com' in parsed_url.netloc:
-        return True
+    for host in ['s3.amazonaws.com', 'aliyuncs.com']:
+        if host in parsed_url.netloc:
+            return True
     return False
 
 def is_valid_bucket_name(bucket_name):
