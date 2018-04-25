@@ -69,7 +69,8 @@ from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_bucket_name, PartMetadata, read_full,
                       is_valid_bucket_notification_config,
                       get_s3_region_from_endpoint,
-                      mkdir_p, dump_http)
+                      mkdir_p, dump_http, amzprefix_user_metadata,
+                      is_supported_header,is_amz_header)
 from .helpers import (MAX_MULTIPART_OBJECT_SIZE,
                       MAX_POOL_SIZE,
                       MIN_PART_SIZE)
@@ -732,9 +733,10 @@ class Minio(object):
         if not metadata:
             metadata = {}
 
+        metadata = amzprefix_user_metadata(metadata)
+
         metadata['Content-Type'] = 'application/octet-stream' if \
             not content_type else content_type
-
         if length > MIN_PART_SIZE:
             return self._stream_put_object(bucket_name, object_name,
                                            data, length, metadata=metadata)
@@ -903,18 +905,10 @@ class Minio(object):
         content_type = response.headers.get('content-type', '')
         last_modified = response.headers.get('last-modified')
 
-        ## Supported headers for object.
-        supported_headers = [
-            'cache-control',
-            'content-encoding',
-            'content-disposition',
-            ## Add more supported headers here.
-        ]
-
         ## Capture only custom metadata.
         custom_metadata = dict()
         for k in response.headers:
-            if k in supported_headers or k.lower().startswith('x-amz-meta-'):
+            if is_supported_header(k) or is_amz_header(k):
                 custom_metadata[k] = response.headers.get(k)
 
         if last_modified:

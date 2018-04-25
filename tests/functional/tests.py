@@ -582,7 +582,7 @@ def test_put_object(client, log_output):
         log_output.args['length'] = MB_11 = 11*1024*1024 # 11MiB.
         MB_11_reader = LimitedRandomReader(MB_11)
         log_output.args['data'] = 'LimitedRandomReader(MB_11)'
-        log_output.args['metadata'] = metadata = {'x-amz-meta-testing': 'value'}
+        log_output.args['metadata'] = metadata = {'x-amz-meta-testing': 'value','test-key':'value2'}
         log_output.args['content_type'] = content_type='application/octet-stream'
         client.put_object(bucket_name,
                           object_name+'-metadata',
@@ -599,6 +599,8 @@ def test_put_object(client, log_output):
         if value != 'value':
             raise ValueError('Metadata key has unexpected'
                              ' value {0}'.format(value))
+        if 'X-Amz-Meta-Test-Key' not in st_obj.metadata:
+            raise ValueError("Metadata key 'x-amz-meta-test-key' not found")
     except Exception as err:
         raise Exception(err)
     finally:

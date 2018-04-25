@@ -603,3 +603,36 @@ def optimal_part_info(length):
     # Last part size.
     last_part_size = length - int(total_parts_count-1)*part_size
     return total_parts_count, part_size, last_part_size
+
+# return a new metadata dictionary where user defined metadata keys
+# are prefixed by "x-amz-meta-"
+def amzprefix_user_metadata(metadata):
+    m = dict()
+    for k,v in metadata.items():
+       if is_amz_header(k) or is_supported_header(k) or is_storageclass_header(k):
+            m[k] = v
+       else:
+            m["X-Amz-Meta-" + k] = v
+    return m
+
+# returns true if amz s3 system defined metadata
+def is_amz_header(key):
+    key = key.lower()
+    return key.startswith("x-amz-meta") or key == "x-amz-acl" or key.startswith("x-amz-server-side-encryption")
+
+# returns true if a standard supported header
+def is_supported_header(key):
+    ## Supported headers for object.
+    supported_headers = [
+	   "cache-control",
+	   "content-encoding",
+	   "content-disposition",
+	   "content-language",
+	   "x-amz-website-redirect-location",
+            ## Add more supported headers here.
+        ]
+    return key.lower() in supported_headers
+
+# returns true if header is a storage class header
+def is_storageclass_header(key):
+    return key.lower() == "x-amz-storage-class"
