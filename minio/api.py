@@ -1179,7 +1179,8 @@ class Minio(object):
                     bucket_name,
                     object_name,
                     expires=timedelta(days=7),
-                    response_headers=None):
+                    response_headers=None,
+                    request_date=None):
         """
         Presigns a method on an object and provides a url
 
@@ -1199,6 +1200,9 @@ class Minio(object):
         :params response_headers: Optional response_headers argument to
                                   specify response fields like date, size,
                                   type of file, data about server, etc.
+        :params request_date: Optional request_date argument to
+                              specify a different request date. Default is
+                              current date.
         :return: Presigned put object url.
         """
         is_valid_bucket_name(bucket_name)
@@ -1221,11 +1225,13 @@ class Minio(object):
                           self._secret_key,
                           region=region,
                           expires=int(expires.total_seconds()),
-                          response_headers=response_headers)
+                          response_headers=response_headers,
+                          request_date=request_date)
 
     def presigned_get_object(self, bucket_name, object_name,
                              expires=timedelta(days=7),
-                             response_headers=None):
+                             response_headers=None,
+                             request_date=None):
         """
         Presigns a get object request and provides a url
 
@@ -1242,13 +1248,20 @@ class Minio(object):
         :param object_name: Object for which presigned url is generated.
         :param expires: Optional expires argument to specify timedelta.
            Defaults to 7days.
+        :params response_headers: Optional response_headers argument to
+                                  specify response fields like date, size,
+                                  type of file, data about server, etc.
+        :params request_date: Optional request_date argument to
+                              specify a different request date. Default is
+                              current date.
         :return: Presigned url.
         """
         return self.presigned_url('GET',
                                   bucket_name,
                                   object_name,
                                   expires,
-                                  response_headers=response_headers)
+                                  response_headers=response_headers,
+                                  request_date=request_date)
 
     def presigned_put_object(self, bucket_name, object_name,
                              expires=timedelta(days=7)):

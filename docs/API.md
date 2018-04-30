@@ -979,7 +979,7 @@ except ResponseError as err:
 ## 4. Presigned operations
 
 <a name="presigned_get_object"></a>
-### presigned_get_object(bucket_name, object_name, expiry=timedelta(days=7))
+### presigned_get_object(bucket_name, object_name, expires=timedelta(days=7))
 Generates a presigned URL for HTTP GET operations. Browsers/Mobile clients may point to this URL to directly download objects even if the bucket is private. This presigned URL can have an associated expiration time in seconds after which it is no longer operational. The default expiry is set to 7 days.
 
 __Parameters__
@@ -988,8 +988,9 @@ __Parameters__
 |:---|:---|:---|
 |``bucket_name``   |_string_   |Name of the bucket.   |
 |``object_name``   |_string_    |Name of the object.   |
-|``expiry``   | _datetime.datetime_    |Expiry in seconds. Default expiry is set to 7 days.    |
+|``expires``   | _datetime.timedelta_    |Expires in timedelta. Default expiry is set to 7 days.    |
 |``response_headers``   | _dictionary_    |Additional headers to include (e.g. `response-content-type` or `response-content-disposition`)     |
+|``request_date``   | _datetime.datetime_    |Optional datetime to specify a different request date. Expiry is relative to the request date. Default is current date.     |
 
 __Example__
 
