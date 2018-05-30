@@ -474,7 +474,7 @@ class Minio(object):
         Yeilds new event notifications on a bucket, caller should iterate
         to read new notifications.
 
-        NOTE: Notification is retried in case of `SyntaxError` otherwise
+        NOTE: Notification is retried in case of `json.decoder.JSONDecodeError` otherwise
         the function raises an exception.
 
         :param bucket_name: Bucket name to listen event notifications from.
@@ -505,7 +505,7 @@ class Minio(object):
                     event = json.loads(line)
                     if event['Records'] is not None:
                         yield event
-            except SyntaxError:
+            except json.decoder.JSONDecodeError:
                 response.close()
                 continue
 
