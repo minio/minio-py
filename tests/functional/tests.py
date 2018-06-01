@@ -628,15 +628,19 @@ def test_negative_put_object_with_path_segment(client, log_output):
                           object_name,
                           io.BytesIO(b''), 0)
     except ResponseError as err:
-        pass
+        if err.code != 'XMinioInvalidObjectName':
+            raise err
     except Exception as err:
-        raise Exception(err)
+        raise err
     finally:
         try:
             client.remove_object(bucket_name, object_name)
-            client.remove_bucket(bucket_name)
+        except ResponseError as err:
+            if err.code != 'XMinioInvalidObjectName':
+                raise err
         except Exception as err:
-            raise Exception(err)
+            raise err
+        client.remove_bucket(bucket_name)
     # Test passes
     print(log_output.json_report())
 
