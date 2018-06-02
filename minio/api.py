@@ -39,6 +39,11 @@ import os
 import itertools
 import codecs
 
+try:
+    from json.decoder import JSONDecodeError
+except ImportError:
+    JSONDecodeError = ValueError
+
 # Dependencies
 import urllib3
 import certifi
@@ -474,7 +479,7 @@ class Minio(object):
         Yeilds new event notifications on a bucket, caller should iterate
         to read new notifications.
 
-        NOTE: Notification is retried in case of `json.decoder.JSONDecodeError` otherwise
+        NOTE: Notification is retried in case of `JSONDecodeError` otherwise
         the function raises an exception.
 
         :param bucket_name: Bucket name to listen event notifications from.
@@ -505,7 +510,7 @@ class Minio(object):
                     event = json.loads(line)
                     if event['Records'] is not None:
                         yield event
-            except json.decoder.JSONDecodeError:
+            except JSONDecodeError:
                 response.close()
                 continue
 
