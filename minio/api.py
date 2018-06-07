@@ -507,9 +507,10 @@ class Minio(object):
                                       query=query, preload_content=False)
             try:
                 for line in response.stream():
-                    event = json.loads(line)
-                    if event['Records'] is not None:
-                        yield event
+                    if line.strip():
+                        event = json.loads(line)
+                        if event['Records'] is not None:
+                            yield event
             except JSONDecodeError:
                 response.close()
                 continue
