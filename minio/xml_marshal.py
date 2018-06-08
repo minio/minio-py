@@ -185,7 +185,7 @@ def _add_notification_config_to_xml(node, element_name, configs):
             event_node = s3_xml.SubElement(config_node, 'Event')
             event_node.text = event
 
-        filter_rules = config_node.get('Filter', {}).get(
+        filter_rules = config.get('Filter', {}).get(
             'Key', {}).get('FilterRules', [])
         if filter_rules:
             filter_node = s3_xml.SubElement(config_node, 'Filter')
