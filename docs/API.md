@@ -759,7 +759,7 @@ except ResponseError as err:
 
 <a name="put_object"></a>
 ### put_object(bucket_name, object_name, data, length, content_type='application/octet-stream', metadata=None)
-Add a new object to the object storage server.
+Add a new object to the object storage server. If provided metadata key is not one of the valid/supported metadata names, the metadata information is saved with prefix `X-Amz-Meta-` prepended to the original metadata key name.
 
 NOTE: Maximum object size supported by this API is 5TiB.
 
@@ -806,7 +806,7 @@ except ResponseError as err:
 
 <a name="fput_object"></a>
 ### fput_object(bucket_name, object_name, file_path, content_type='application/octet-stream', metadata=None)
-Uploads contents from a file to objectName.
+Uploads contents from a file, `file_path`, to `object_name`. If provided metadata key is not one of the valid/supported metadata names, the metadata information is saved with prefix `X-Amz-Meta-` prepended to the original metadata key name.
 
 __Parameters__
 
@@ -847,7 +847,7 @@ except ResponseError as err:
 
 <a name="stat_object"></a>
 ### stat_object(bucket_name, object_name)
-Gets metadata of an object.
+Gets metadata of an object. If provided metadata key is not one of the valid/supported metadata names when the object was put/fput, the metadata information is saved with prefix `X-Amz-Meta-` prepended to the original metadata key name. So, the metadata returned by stat_object api will be presented with the original metadata key name prepended with `X-Amz-Meta-`.
 
 __Parameters__
 
