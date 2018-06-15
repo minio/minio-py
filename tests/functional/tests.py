@@ -295,7 +295,7 @@ def test_fput_object_small_file(client, testfile, log_output):
         # upload local small file.
         if is_s3(client):
             client.fput_object(bucket_name, object_name+'-f', testfile,
-                               metadata)
+                               metadata=metadata)
         else:
             client.fput_object(bucket_name, object_name+'-f', testfile)
     except Exception as err:
@@ -323,7 +323,7 @@ def test_fput_object_large_file(client, largefile, log_output):
         client.make_bucket(bucket_name)
         if is_s3(client):
             client.fput_object(bucket_name, object_name+'-large', largefile,
-                               metadata)
+                               metadata=metadata)
         else:
             client.fput_object(bucket_name, object_name+'-large', largefile)
 
@@ -354,7 +354,7 @@ def test_fput_object_with_content_type(client, testfile, log_output):
         # upload local small file with content_type defined.
         if is_s3(client):
             client.fput_object(bucket_name, object_name+'-f', testfile,
-                               content_type, metadata)
+                               content_type, metadata=metadata)
         else:
             client.fput_object(bucket_name, object_name+'-f', testfile,
                                content_type)
