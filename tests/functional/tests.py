@@ -295,7 +295,7 @@ def test_fput_object_small_file(client, testfile, log_output):
         # upload local small file.
         if is_s3(client):
             client.fput_object(bucket_name, object_name+'-f', testfile,
-                               metadata)
+                               metadata=metadata)
         else:
             client.fput_object(bucket_name, object_name+'-f', testfile)
     except Exception as err:
@@ -323,7 +323,7 @@ def test_fput_object_large_file(client, largefile, log_output):
         client.make_bucket(bucket_name)
         if is_s3(client):
             client.fput_object(bucket_name, object_name+'-large', largefile,
-                               metadata)
+                               metadata=metadata)
         else:
             client.fput_object(bucket_name, object_name+'-large', largefile)
 
@@ -354,7 +354,7 @@ def test_fput_object_with_content_type(client, testfile, log_output):
         # upload local small file with content_type defined.
         if is_s3(client):
             client.fput_object(bucket_name, object_name+'-f', testfile,
-                               content_type, metadata)
+                               content_type, metadata=metadata)
         else:
             client.fput_object(bucket_name, object_name+'-f', testfile,
                                content_type)
@@ -628,15 +628,19 @@ def test_negative_put_object_with_path_segment(client, log_output):
                           object_name,
                           io.BytesIO(b''), 0)
     except ResponseError as err:
-        pass
+        if err.code != 'XMinioInvalidObjectName':
+            raise err
     except Exception as err:
-        raise Exception(err)
+        raise err
     finally:
         try:
             client.remove_object(bucket_name, object_name)
-            client.remove_bucket(bucket_name)
+        except ResponseError as err:
+            if err.code != 'XMinioInvalidObjectName':
+                raise err
         except Exception as err:
-            raise Exception(err)
+            raise err
+        client.remove_bucket(bucket_name)
     # Test passes
     print(log_output.json_report())
 
