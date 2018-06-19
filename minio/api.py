@@ -599,7 +599,13 @@ class Minio(object):
                 raise InvalidSizeError(msg)
 
         # Rename with destination file.
-        os.rename(file_part_path, file_path)
+        if !os.path.exists(file_path)
+             os.rename(file_part_path, file_path)
+        else:
+            #If the file already exists, need to remove it for Windows OS compatibility
+            os.remove(file_path)
+            os.rename(file_part_path, file_path)
+        
 
         # Return the stat
         return stat
