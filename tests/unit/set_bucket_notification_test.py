@@ -305,9 +305,9 @@ class SetBucketNotificationTest(TestCase):
                 'PUT',
                 'https://localhost:9000/my-test-bucket/?notification=',
                 {
-                    'Content-Md5': 'AGCNfbD5OuiyIJFd+r67MA==',
+                    'Content-Md5': 'k97dHBBUq9MR7ZViy7oUsw==',
                     'User-Agent': _DEFAULT_USER_AGENT,
-                    'Content-Length': '206',
+                    'Content-Length': '300',
                 },
                 200, content=""
             )
@@ -345,8 +345,8 @@ class SetBucketNotificationTest(TestCase):
                 'PUT',
                 'https://localhost:9000/my-test-bucket/?notification=',
                 {
-                    'Content-Length': '206',
-                    'Content-Md5': 'AGCNfbD5OuiyIJFd+r67MA==',
+                    'Content-Length': '300',
+                    'Content-Md5': '2aIwAt1lAd5JShphHCD4GA==',
                     'User-Agent': _DEFAULT_USER_AGENT,
                 },
                 200, content=""
