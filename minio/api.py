@@ -604,7 +604,10 @@ class Minio(object):
                                                         content_size)
                 raise InvalidSizeError(msg)
 
-        # Rename with destination file.
+        #Delete existing file to be compatible with Windows
+        if os.path.exists(file_path):
+               os.remove(file_path)
+        #Rename with destination file path
         os.rename(file_part_path, file_path)
 
         # Return the stat
