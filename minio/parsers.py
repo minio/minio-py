@@ -197,7 +197,7 @@ def _parse_objects_from_xml_elts(bucket_name, contents, common_prefixes):
     """
     objects = [
         Object(bucket_name,
-               content.get_urldecoded_elem_text('Key'),
+               content.get_child_text('Key'),
                content.get_localized_time_elem('LastModified'),
                content.get_etag_elem(strict=False),
                content.get_int_elem('Size'))
@@ -205,7 +205,7 @@ def _parse_objects_from_xml_elts(bucket_name, contents, common_prefixes):
     ]
 
     object_dirs = [
-        Object(bucket_name, urldecode(dir_elt.text()), None, '',
+        Object(bucket_name, dir_elt.text(), None, '',
                0, is_dir=True)
         for dirs_elt in common_prefixes
         for dir_elt in dirs_elt.findall('Prefix')
