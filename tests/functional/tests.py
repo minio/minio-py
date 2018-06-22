@@ -1748,8 +1748,8 @@ def main():
             log_output =  LogOutput(client.presigned_get_object, 'test_presigned_get_object_default_expiry')
             test_presigned_get_object_default_expiry(client, log_output)
 
-            #log_output =  LogOutput(client.presigned_get_object, 'test_presigned_get_object_expiry_5sec')
-            #test_presigned_get_object_expiry_5sec(client, log_output)
+            log_output =  LogOutput(client.presigned_get_object, 'test_presigned_get_object_expiry_5sec')
+            test_presigned_get_object_expiry_5sec(client, log_output)
 
             log_output =  LogOutput(client.presigned_get_object, 'test_presigned_get_object_response_headers')
             test_presigned_get_object_response_headers(client, log_output)
