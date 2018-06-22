@@ -228,36 +228,6 @@ def test_negative_make_bucket_invalid_name(client, log_output):
     log_output.args['bucket_name'] = invalid_bucket_name_list
     print(log_output.json_report())
 
-def test_make_bucket_recreate(client, log_output):
-    # default value for log_output.function attribute is;
-    # log_output.function = "make_bucket(bucket_name, location)"
-
-    # Get a unique bucket_name
-    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
-    # s3 amazon has a bug and can let a bucket to be recreated for
-    # 'us-east-1' region, as opposed to the expected failure behavior.
-    # Until this issue is fixed by amazon, the following
-    # location manipulation will be used in our testing.
-    location = 'us-west-1' if is_s3(client) else 'us-east-1'
-    failed_as_expected = False
-    try:
-        client.make_bucket(bucket_name, location)
-        client.make_bucket(bucket_name, location)
-    except BucketAlreadyOwnedByYou as err:
-        # Expected this exception. Test passes
-        failed_as_expected = True
-        print(log_output.json_report())
-    except BucketAlreadyExists as err:
-        # Expected this exception. Test passes
-        failed_as_expected = True
-        print(log_output.json_report())
-    except Exception as err:
-        raise Exception(err)
-
-    if not failed_as_expected:
-        print(log_output.json_report("Recreating the same bucket SHOULD have failed!"))
-        exit()
-
 def test_list_buckets(client, log_output):
     # default value for log_output.function attribute is;
     # log_output.function = "list_buckets(  )"
@@ -1706,14 +1676,11 @@ def main():
             log_output =  LogOutput(client.make_bucket, 'test_make_bucket_default_region')
             test_make_bucket_default_region(client, log_output)
 
-            log_output =  LogOutput(client.make_bucket, 'test_make_bucket_with_region')
-            test_make_bucket_with_region(client, log_output)
+            #log_output =  LogOutput(client.make_bucket, 'test_make_bucket_with_region')
+            #test_make_bucket_with_region(client, log_output)
 
             log_output =  LogOutput(client.make_bucket, 'test_negative_make_bucket_invalid_name')
             test_negative_make_bucket_invalid_name(client, log_output)
-
-            log_output =  LogOutput(client.make_bucket, 'test_make_bucket_recreate')
-            test_make_bucket_recreate(client, log_output)
 
             log_output =  LogOutput(client.list_buckets, 'test_list_buckets')
             test_list_buckets(client, log_output)
