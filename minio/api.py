@@ -534,11 +534,10 @@ class Minio(object):
         """
 
         # Open file in 'read' mode.
-        file_data = io.open(file_path, mode='rb')
-        file_size = os.stat(file_path).st_size
-
-        return self.put_object(bucket_name, object_name, file_data, file_size,
-                content_type, metadata)
+        with open(file_path, 'rb') as file_data:
+            file_size = os.stat(file_path).st_size
+            return self.put_object(bucket_name, object_name, file_data,
+                                   file_size, content_type, metadata)
 
     def fget_object(self, bucket_name, object_name, file_path, request_headers=None):
         """
