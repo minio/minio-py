@@ -1098,7 +1098,7 @@ class Minio(object):
                                       query=query)
             (uploads, is_truncated, key_marker,
              upload_id_marker) = parse_list_multipart_uploads(response.data,
-                                                              bucket_name=bucket_name)
+                                                              bucket_name)
             for upload in uploads:
                 if is_aggregate_size:
                     upload.size = self._get_total_multipart_upload_size(
@@ -1498,7 +1498,8 @@ class Minio(object):
 
             part_data = read_full(data, current_part_size)
             # Append current part information
-            parts_to_upload.append((bucket_name, object_name, upload_id, part_number, part_data))
+            parts_to_upload.append((bucket_name, object_name, upload_id,
+                                    part_number, part_data))
 
         # Run parts upload in parallel
         try:
@@ -1540,8 +1541,7 @@ class Minio(object):
             mpart_result = self._complete_multipart_upload(bucket_name,
                                                            object_name,
                                                            upload_id,
-                                                           uploaded_parts,
-                                                           metadata=metadata)
+                                                           uploaded_parts)
         except:
             # Any exception that occurs sends an abort on the
             # on-going multipart operation.
@@ -1589,7 +1589,7 @@ class Minio(object):
         return parse_new_multipart_upload(response.data)
 
     def _complete_multipart_upload(self, bucket_name, object_name,
-                                   upload_id, uploaded_parts, metadata=None):
+                                   upload_id, uploaded_parts):
         """
         Complete an active multipart upload request.
 
@@ -1597,8 +1597,6 @@ class Minio(object):
         :param object_name: Object name of the multipart request.
         :param upload_id: Upload id of the active multipart request.
         :param uploaded_parts: Key, Value dictionary of uploaded parts.
-        :param metadata: Any additional metadata to be uploaded along
-           with your object.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -1618,8 +1616,6 @@ class Minio(object):
             'Content-Type': 'application/xml',
             'Content-Md5': md5_base64,
         }
-        if metadata:
-            headers.update(metadata)
 
         response = self._url_open('POST', bucket_name=bucket_name,
                                   object_name=object_name,
