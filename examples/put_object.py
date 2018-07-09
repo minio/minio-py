@@ -27,17 +27,18 @@ client = Minio('s3.amazonaws.com',
 
 # Put a file with default content-type.
 try:
-    file_stat = os.stat('my-testfile')
-    file_data = open('my-testfile', 'rb')
-    client.put_object('my-bucketname', 'my-objectname', file_data, file_stat.st_size)
+    with open('my-testfile', 'rb') as file_data:
+        file_stat = os.stat('my-testfile')
+        client.put_object('my-bucketname', 'my-objectname',
+                          file_data, file_stat.st_size)
 except ResponseError as err:
     print(err)
 
 # Put a file with 'application/csv'
 try:
-    file_stat = os.stat('my-testfile.csv')
-    file_data = open('my-testfile.csv', 'rb')
-    client.put_object('my-bucketname', 'my-objectname', file_data,
-                      file_stat.st_size, content_type='application/csv')
+    with open('my-testfile.csv', 'rb') as file_data:
+        file_stat = os.stat('my-testfile.csv')
+        client.put_object('my-bucketname', 'my-objectname', file_data,
+                          file_stat.st_size, content_type='application/csv')
 except ResponseError as err:
     print(err)

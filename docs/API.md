@@ -788,18 +788,20 @@ The maximum size of a single object is limited to 5TB. put_object transparently 
 import os
 # Put a file with default content-type, upon success prints the etag identifier computed by server.
 try:
-    file_stat = os.stat('my-testfile')
-    file_data = open('my-testfile', 'rb')
-    print(minioClient.put_object('mybucket', 'myobject', file_data, file_stat.st_size))
+    with open('my-testfile', 'rb') as file_data:
+        file_stat = os.stat('my-testfile')
+        print(minioClient.put_object('mybucket', 'myobject',
+                               file_data, file_stat.st_size))
 except ResponseError as err:
     print(err)
 
 # Put a file with 'application/csv'.
 try:
-    file_stat = os.stat('my-testfile.csv')
-    file_data = open('my-testfile.csv', 'rb')
-    minioClient.put_object('mybucket', 'myobject.csv', file_data,
-                           file_stat.st_size, content_type='application/csv')
+    with open('my-testfile.csv', 'rb') as file_data:
+        file_stat = os.stat('my-testfile.csv')
+        minioClient.put_object('mybucket', 'myobject.csv', file_data,
+                    file_stat.st_size, content_type='application/csv')
+
 except ResponseError as err:
     print(err)
 ```
