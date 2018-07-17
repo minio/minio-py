@@ -226,8 +226,6 @@ __Return Value__
 |``object.size`` | _int_ | size of the object.|
 |``object.etag`` | _string_ | etag of the object.|
 |``object.last_modified`` |_datetime.datetime_ | modified time stamp.|
-|``object.content_type`` | _string_ | content-type of the object.|
-|``object.metadata``     |  _dict_  | contains any additional metadata on the object.|
 
 __Example__
 
@@ -266,8 +264,6 @@ __Return Value__
 |``object.size`` | _int_ | size of the object.|
 |``object.etag`` | _string_ | etag of the object.|
 |``object.last_modified`` |_datetime.datetime_ | modified time stamp.|
-|``object.content_type`` | _string_ | content-type of the object.|
-|``object.metadata``     |  _dict_  | contains any additional metadata on the object.|
 
 __Example__
 
