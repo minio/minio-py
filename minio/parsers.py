@@ -331,7 +331,7 @@ def parse_new_multipart_upload(data):
     :param data: Response data for new multipart upload.
     :return: Returns a upload id.
     """
-    root = S3Element.fromstring('NewMultipartUploadResult', data)
+    root = S3Element.fromstring('InitiateMultipartUploadResult', data)
     return root.get_child_text('UploadId')
 
 def parse_location_constraint(data):
