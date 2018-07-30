@@ -517,7 +517,8 @@ class Minio(object):
 
     def fput_object(self, bucket_name, object_name, file_path,
                     content_type='application/octet-stream',
-                    metadata=None):
+                    metadata=None,
+                    sse=None):
         """
         Add a new object to the cloud storage server.
 
@@ -537,9 +538,9 @@ class Minio(object):
         with open(file_path, 'rb') as file_data:
             file_size = os.stat(file_path).st_size
             return self.put_object(bucket_name, object_name, file_data,
-                                   file_size, content_type, metadata)
+                                   file_size, content_type, metadata, sse)
 
-    def fget_object(self, bucket_name, object_name, file_path, request_headers=None):
+    def fget_object(self, bucket_name, object_name, file_path, request_headers=None, sse=None):
         """
         Retrieves an object from a bucket and writes at file_path.
 
@@ -554,7 +555,7 @@ class Minio(object):
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
-        stat = self.stat_object(bucket_name, object_name)
+        stat = self.stat_object(bucket_name, object_name, sse)
 
         if os.path.isdir(file_path):
             raise OSError("file is a directory.")
@@ -576,7 +577,8 @@ class Minio(object):
             response = self._get_partial_object(bucket_name, object_name,
                                                 offset=file_statinfo.st_size,
                                                 length=0,
-                                                request_headers=request_headers)
+                                                request_headers=request_headers,
+                                                sse=sse)
 
             # Save content_size to verify if we wrote more data.
             content_size = int(response.headers['content-length'])
@@ -612,7 +614,7 @@ class Minio(object):
         # Return the stat
         return stat
 
-    def get_object(self, bucket_name, object_name, request_headers=None):
+    def get_object(self, bucket_name, object_name, request_headers=None, sse=None):
         """
         Retrieves an object from a bucket.
 
@@ -636,9 +638,10 @@ class Minio(object):
 
         return self._get_partial_object(bucket_name,
                                         object_name,
-                                        request_headers=request_headers)
+                                        request_headers=request_headers,
+                                        sse=sse)
 
-    def get_partial_object(self, bucket_name, object_name, offset=0, length=0, request_headers=None):
+    def get_partial_object(self, bucket_name, object_name, offset=0, length=0, request_headers=None, sse=None):
         """
         Retrieves an object from a bucket.
 
@@ -669,10 +672,11 @@ class Minio(object):
         return self._get_partial_object(bucket_name,
                                         object_name,
                                         offset, length,
-                                        request_headers=request_headers)
+                                        request_headers=request_headers,
+                                        sse=sse)
 
     def copy_object(self, bucket_name, object_name, object_source,
-                    conditions=None):
+                    conditions=None, source_sse=None, sse=None):
         """
         Copy a source object on object storage server to a new object.
 
@@ -690,9 +694,23 @@ class Minio(object):
         is_non_empty_string(object_name)
         is_non_empty_string(object_source)
 
+        # Source argument to copy_object can only be of type copy_SSE_C
+        if source_sse.type() != "copy_SSE-C":
+            raise InvalidArgumentError("copy_object requires source of type minio.sse.copy_SSE_C")
+
+        #Destination argument to copy_object cannot be of type copy_SSE_C
+        if sse.type() != "SSE-C" and sse.type() != "SSE-KMS" and sse.type() != "SSE-S3":
+            raise InvalidArgumentError("unsuported type of dest argument in copy_object")
+       
         headers = {}
         if conditions:
             headers = {k: v for k, v in conditions.items()}
+        
+        if source_sse:
+            headers.update(source_sse.marshal())
+        
+        if sse:
+            headers.update(sse.marshal())
 
         headers['X-Amz-Copy-Source'] = queryencode(object_source)
         response = self._url_open('PUT',
@@ -701,10 +719,12 @@ class Minio(object):
                                   headers=headers)
 
         return parse_copy_object(bucket_name, object_name, response.data)
-
+    
     def put_object(self, bucket_name, object_name, data, length,
                    content_type='application/octet-stream',
-                   metadata=None):
+                   metadata=None, 
+                   sse=None,
+                   ):
         """
         Add a new object to the cloud storage server.
 
@@ -747,7 +767,7 @@ class Minio(object):
             not content_type else content_type
         if length > MIN_PART_SIZE:
             return self._stream_put_object(bucket_name, object_name,
-                                           data, length, metadata=metadata)
+                                           data, length, metadata=metadata, sse=sse)
 
         current_data = data.read(length)
         if len(current_data) != length:
@@ -757,7 +777,8 @@ class Minio(object):
 
         return self._do_put_object(bucket_name, object_name,
                                    current_data, len(current_data),
-                                   metadata=metadata)
+                                   metadata=metadata,
+                                   sse=sse)
 
     def list_objects(self, bucket_name, prefix=None, recursive=False):
         """
@@ -894,7 +915,7 @@ class Minio(object):
             for obj in objects:
                 yield obj
 
-    def stat_object(self, bucket_name, object_name):
+    def stat_object(self, bucket_name, object_name, sse=None):
         """
         Check if an object exists.
 
@@ -902,11 +923,17 @@ class Minio(object):
         :param object_name: Name of object
         :return: Object metadata if object exists
         """
+
+        headers = {}
+
+        if sse:
+            headers.update(sse.marshal())
+
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
         response = self._url_open('HEAD', bucket_name=bucket_name,
-                                  object_name=object_name)
+                                  object_name=object_name, headers=headers)
 
         etag = response.headers.get('etag', '').replace('"', '')
         size = int(response.headers.get('content-length', '0'))
@@ -1233,7 +1260,8 @@ class Minio(object):
     def presigned_get_object(self, bucket_name, object_name,
                              expires=timedelta(days=7),
                              response_headers=None,
-                             request_date=None):
+                             request_date=None,
+                             sse=None):
         """
         Presigns a get object request and provides a url
 
@@ -1258,15 +1286,21 @@ class Minio(object):
                               current date.
         :return: Presigned url.
         """
+        headers = {}
+        if response_headers:
+            headers = response_headers
+        if sse:
+            headers.update(sse.marshal())
+
         return self.presigned_url('GET',
                                   bucket_name,
                                   object_name,
                                   expires,
-                                  response_headers=response_headers,
+                                  response_headers=headers,
                                   request_date=request_date)
 
     def presigned_put_object(self, bucket_name, object_name,
-                             expires=timedelta(days=7)):
+                             expires=timedelta(days=7), sse=None):
         """
         Presigns a put object request and provides a url
 
@@ -1284,10 +1318,16 @@ class Minio(object):
            Defaults to 7days.
         :return: Presigned put object url.
         """
+
+        headers = {}
+        if sse:
+            headers.update(sse)
+
         return self.presigned_url('PUT',
                                   bucket_name,
                                   object_name,
-                                  expires)
+                                  expires,
+                                  response_headers=headers)
 
     def presigned_post_policy(self, post_policy):
         """
@@ -1336,7 +1376,7 @@ class Minio(object):
 
     # All private functions below.
     def _get_partial_object(self, bucket_name, object_name,
-                            offset=0, length=0, request_headers=None):
+                            offset=0, length=0, request_headers=None, sse=None):
         """Retrieves an object from a bucket.
 
         Optionally takes an offset and length of data to retrieve.
@@ -1375,6 +1415,9 @@ class Minio(object):
             )
             headers['Range'] = 'bytes=' + request_range
 
+        if sse:
+            headers.update(sse.marshal())
+           
         return self._url_open('GET',
                                bucket_name=bucket_name,
                                object_name=object_name,
@@ -1383,7 +1426,8 @@ class Minio(object):
 
     def _do_put_object(self, bucket_name, object_name, part_data,
                        part_size, upload_id='', part_number=0,
-                       metadata=None):
+                       metadata=None,
+                       sse=None):
         """
         Initiate a multipart PUT operation for a part number
         or single PUT object.
@@ -1422,6 +1466,9 @@ class Minio(object):
         if metadata:
             headers.update(metadata)
 
+        if sse:
+            headers.update(sse.marshal())
+
         query = {}
         if part_number > 0 and upload_id:
             query = {
@@ -1443,17 +1490,17 @@ class Minio(object):
 
     def _upload_part_routine(self, part_info):
         bucket_name, object_name, upload_id, \
-                part_number, part_data = part_info
+                part_number, part_data, sse = part_info
         # Initiate multipart put.
         etag = self._do_put_object(bucket_name, object_name,
                 part_data, len(part_data),
-                upload_id, part_number)
+                upload_id, part_number, sse=sse)
 
         return (part_number, etag, len(part_data))
 
     def _stream_put_object(self, bucket_name, object_name,
                            data, content_size,
-                           metadata=None):
+                           metadata=None, sse=None):
         """
         Streaming multipart upload operation.
 
@@ -1473,7 +1520,7 @@ class Minio(object):
 
         # get upload id.
         upload_id = self._new_multipart_upload(bucket_name, object_name,
-                                               metadata)
+                                               metadata, sse)
 
         # Initialize variables
         total_uploaded = 0
@@ -1498,7 +1545,7 @@ class Minio(object):
             part_data = read_full(data, current_part_size)
             # Append current part information
             parts_to_upload.append((bucket_name, object_name, upload_id,
-                                    part_number, part_data))
+                                    part_number, part_data, sse))
 
         # Run parts upload in parallel
         try:
@@ -1568,7 +1615,7 @@ class Minio(object):
                        headers={})
 
     def _new_multipart_upload(self, bucket_name, object_name,
-                              metadata=None):
+                              metadata=None, sse=None):
         """
         Initialize new multipart upload request.
 
@@ -1580,10 +1627,16 @@ class Minio(object):
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
+        headers = {}
+        if metadata:
+            headers.update(metadata)
+        if sse:
+            headers.update(sse.marshal())
+
         response = self._url_open('POST', bucket_name=bucket_name,
                                   object_name=object_name,
                                   query={'uploads': ''},
-                                  headers=metadata)
+                                  headers=headers)
 
         return parse_new_multipart_upload(response.data)
 
