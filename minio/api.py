@@ -694,23 +694,21 @@ class Minio(object):
         is_non_empty_string(object_name)
         is_non_empty_string(object_source)
 
-        # Source argument to copy_object can only be of type copy_SSE_C
-        if source_sse.type() != "copy_SSE-C":
-            raise InvalidArgumentError("copy_object requires source of type minio.sse.copy_SSE_C")
-
-        #Destination argument to copy_object cannot be of type copy_SSE_C
-        if sse.type() != "SSE-C" and sse.type() != "SSE-KMS" and sse.type() != "SSE-S3":
-            raise InvalidArgumentError("unsuported type of dest argument in copy_object")
-       
         headers = {}
         if conditions:
             headers = {k: v for k, v in conditions.items()}
         
-        if source_sse:
-            headers.update(source_sse.marshal())
+        if source_sse: # Source argument to copy_object can only be of type copy_SSE_C
+            if source_sse.type() == "copy_SSE-C":
+                headers.update(source_sse.marshal())
+            else:
+                raise InvalidArgumentError("copy_object requires source of type minio.sse.copy_SSE_C")
         
-        if sse:
-            headers.update(sse.marshal())
+        if sse:  #Destination argument to copy_object cannot be of type copy_SSE_C
+            if sse.type() == "SSE-C" or sse.type() == "SSE-KMS" or sse.type() == "SSE-S3":
+                headers.update(sse.marshal())
+            else:
+                raise InvalidArgumentError("unsuported type of dest argument in copy_object")
 
         headers['X-Amz-Copy-Source'] = queryencode(object_source)
         response = self._url_open('PUT',

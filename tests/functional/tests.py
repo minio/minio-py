@@ -43,7 +43,6 @@ from minio.error import (APINotImplemented, NoSuchBucketPolicy, ResponseError,
                          BucketAlreadyExists, InvalidBucketError)
 from minio.sse import SSE_C
 from minio.sse import copy_SSE_C
-import minio.sse
 
 class LimitedRandomReader(object):
     """
@@ -372,10 +371,10 @@ def test_fput_object_with_content_type(client, testfile, log_output):
     # Test passes
     print(log_output.json_report())
 
-def test_copy_object_no_copy_condition(client, log_output, sse=None, sse_copy=None):
+def test_copy_object_no_copy_condition(client, log_output, ssec_copy=None, ssec=None):
     # default value for log_output.function attribute is;
     # log_output.function = "copy_object(bucket_name, object_name, object_source, conditions)"
-
+   
     # Get a unique bucket_name and object_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     object_name = uuid.uuid4().__str__()
@@ -386,11 +385,10 @@ def test_copy_object_no_copy_condition(client, log_output, sse=None, sse_copy=No
         # Upload a streaming object of 1MiB
         KB_1 = 1024 # 1KiB.
         KB_1_reader = LimitedRandomReader(KB_1)
-        client.put_object(bucket_name, object_source, KB_1_reader, KB_1, sse=sse)
-        # Perform a server side copy of an object
+        client.put_object(bucket_name, object_source, KB_1_reader, KB_1, sse=ssec)
         client.copy_object(bucket_name, object_copy,
-                           '/'+bucket_name+'/'+object_source, sse=sse, sse_copy=sse_copy)
-        st_obj = client.stat_object(bucket_name, object_copy, sse=sse)
+                           '/'+bucket_name+'/'+object_source, source_sse=ssec_copy, sse=ssec)
+        st_obj = client.stat_object(bucket_name, object_copy, sse=ssec)
         validate_stat_data(st_obj, KB_1, {})
     except Exception as err:
         raise Exception(err)
@@ -1709,13 +1707,13 @@ def main():
             with open(largefile, 'wb') as file_data:
                 shutil.copyfileobj(LimitedRandomReader(11*1024*1024), file_data)
 
+        # Create a Customer Key of 32 Bytes for Server Side Encryption (SSE-C)
         cust_key = b'AABBCCDDAABBCCDDAABBCCDDAABBCCDD'
+        # Create an SSE-C object with provided customer key
         ssec = SSE_C(cust_key)
+        # Test copy_object for SSE-C
         ssec_copy = copy_SSE_C(cust_key)
         
-        #Bad customer key not of length 32 bytes
-        #bad_cust_key = b'AABBCCDDAABBCCDDAABBCCDDAABBCCD'
-        #ssec_bad = SSE_C(bad_cust_key)
 
         if isFullMode():
             log_output =  LogOutput(client.make_bucket, 'test_make_bucket_default_region')
@@ -1764,7 +1762,7 @@ def main():
             test_copy_object_unmodified_since(client, log_output)
 
             log_output =  LogOutput(client.copy_object, 'test_copy_object_with_sse')
-            test_copy_object_no_copy_condition(client, log_output, sse_copy=ssec_copy, sse=ssec)
+            test_copy_object_no_copy_condition(client, log_output, ssec_copy=ssec_copy, ssec=ssec)
 
             log_output =  LogOutput(client.put_object, 'test_put_object')
             test_put_object(client, log_output)
@@ -1820,8 +1818,8 @@ def main():
             log_output =  LogOutput(client.presigned_get_object, 'test_presigned_get_object_default_expiry')
             test_presigned_get_object_default_expiry(client, log_output)
 
-            #log_output =  LogOutput(client.presigned_get_object, 'test_presigned_get_object_expiry_5sec')
-            #test_presigned_get_object_expiry_5sec(client, log_output)
+            log_output =  LogOutput(client.presigned_get_object, 'test_presigned_get_object_expiry_5sec')
+            test_presigned_get_object_expiry_5sec(client, log_output)
 
             log_output =  LogOutput(client.presigned_get_object, 'test_presigned_get_object_response_headers')
             test_presigned_get_object_response_headers(client, log_output)
@@ -1829,8 +1827,8 @@ def main():
             log_output =  LogOutput(client.presigned_put_object, 'test_presigned_put_object_default_expiry')
             test_presigned_put_object_default_expiry(client, log_output)
 
-            #log_output =  LogOutput(client.presigned_put_object, 'test_presigned_put_object_expiry_5sec')
-            #test_presigned_put_object_expiry_5sec(client, log_output)
+            log_output =  LogOutput(client.presigned_put_object, 'test_presigned_put_object_expiry_5sec')
+            test_presigned_put_object_expiry_5sec(client, log_output)
 
             log_output =  LogOutput(client.presigned_post_policy, 'test_presigned_post_policy')
             test_presigned_post_policy(client, log_output)
@@ -1893,8 +1891,8 @@ def main():
             test_copy_object_no_copy_condition(client, log_output)
 
             log_output =  LogOutput(client.copy_object, 'test_copy_object_with_sse')
-            test_copy_object_no_copy_condition(client, log_output, sse=ssec, sse_copy=ssec_copy)
-
+            test_copy_object_no_copy_condition(client, log_output, ssec_copy=ssec_copy, ssec=ssec)
+            
             log_output =  LogOutput(client.get_bucket_policy, 'test_get_bucket_policy')
             test_get_bucket_policy(client,log_output)
 

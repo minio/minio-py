@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Minio Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 Minio, Inc.
+# Minio Python Library for Amazon S3 Compatible Cloud Storage, (C) 2018 Minio, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ minio.sse
 
 This module contains core API parsers.
 
-:copyright: (c) 2015 by Minio, Inc.
+:copyright: (c) 2018 by Minio, Inc.
 :license: Apache 2.0, see LICENSE for more details.
 
 """

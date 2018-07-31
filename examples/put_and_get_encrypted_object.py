@@ -3,12 +3,13 @@ from io import BytesIO
 import hashlib
 
 from minio.api import Minio
+from minio.sse import SSE_C
 
-AWSAccessKeyId = ''
-AWSSecretKey = ''
+AWSAccessKeyId = '<Access Key>'
+AWSSecretKey = '<Secret Key>'
 
-STORAGE_ENDPOINT = 's3.amazonaws.com'
-STORAGE_BUCKET = ''
+STORAGE_ENDPOINT = 'play.minio.io:9000'
+STORAGE_BUCKET = 'test-encryption-bucket'
 
 
 def main():
@@ -20,21 +21,15 @@ def main():
 
     minio = Minio(STORAGE_ENDPOINT, access_key=AWSAccessKeyId, secret_key=AWSSecretKey)
 
-    # Put object with special headers which encrypt object in S3 with provided key
-    minio.put_object(STORAGE_BUCKET, 'test_crypt.txt', content, content.getbuffer().nbytes,
-                     metadata={
-                         'x-amz-server-side-encryption-customer-algorithm': 'AES256',
-                         'x-amz-server-side-encryption-customer-key': encryption_key,
-                         'x-amz-server-side-encryption-customer-key-MD5': encryption_key_md5
-                     })
+    sse_customer_key = SSE_C(key)
 
-    # Get decrypted object with same headers
-    obj = minio.get_object(STORAGE_BUCKET, 'test_crypt1.txt', request_headers={
-        'x-amz-server-side-encryption-customer-algorithm': 'AES256',
-        'x-amz-server-side-encryption-customer-key': encryption_key,
-        'x-amz-server-side-encryption-customer-key-MD5': encryption_key_md5
-    })
+    # Put object with special headers from SSE_C object which encrypt object in S3 with provided key 
+    minio.put_object(STORAGE_BUCKET, 'test_crypt.txt', content, content.getbuffer().nbytes, sse=sse_customer_key)
 
+     # Get decrypted object with same headers
+    obj = minio.get_object(STORAGE_BUCKET, 'test_crypt.txt', sse=sse_customer_key)
+
+   
     print(obj.read())
 
 if __name__ == '__main__':
