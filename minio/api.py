@@ -1258,8 +1258,7 @@ class Minio(object):
     def presigned_get_object(self, bucket_name, object_name,
                              expires=timedelta(days=7),
                              response_headers=None,
-                             request_date=None,
-                             sse=None):
+                             request_date=None):
         """
         Presigns a get object request and provides a url
 
@@ -1284,21 +1283,16 @@ class Minio(object):
                               current date.
         :return: Presigned url.
         """
-        headers = {}
-        if response_headers:
-            headers = response_headers
-        if sse:
-            headers.update(sse.marshal())
 
         return self.presigned_url('GET',
                                   bucket_name,
                                   object_name,
                                   expires,
-                                  response_headers=headers,
+                                  response_headers=response_headers,
                                   request_date=request_date)
 
     def presigned_put_object(self, bucket_name, object_name,
-                             expires=timedelta(days=7), sse=None):
+                             expires=timedelta(days=7)):
         """
         Presigns a put object request and provides a url
 
@@ -1317,15 +1311,10 @@ class Minio(object):
         :return: Presigned put object url.
         """
 
-        headers = {}
-        if sse:
-            headers.update(sse)
-
         return self.presigned_url('PUT',
                                   bucket_name,
                                   object_name,
-                                  expires,
-                                  response_headers=headers)
+                                  expires)
 
     def presigned_post_policy(self, post_policy):
         """
