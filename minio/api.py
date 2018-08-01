@@ -72,8 +72,8 @@ from .helpers import (get_target_url, is_non_empty_string,
                       get_sha256_hexdigest, get_md5_base64digest, Hasher,
                       optimal_part_info,
                       is_valid_bucket_name, PartMetadata, read_full,
-                      is_valid_bucket_notification_config,
-                      get_s3_region_from_endpoint,
+                      is_valid_bucket_notification_config, 
+                      get_s3_region_from_endpoint, is_valid_sse_object, is_valid_sse_put_object,
                       mkdir_p, dump_http, amzprefix_user_metadata,
                       is_supported_header,is_amz_header)
 from .helpers import (MAX_MULTIPART_OBJECT_SIZE,
@@ -633,6 +633,7 @@ class Minio(object):
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
+        is_valid_sse_object(sse=sse)
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
@@ -666,6 +667,7 @@ class Minio(object):
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
+        is_valid_sse_object(sse=sse)
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
@@ -747,8 +749,14 @@ class Minio(object):
             with your PUT request.
         :return: etag
         """
+        headers = {}
+        if sse:
+            is_valid_sse_put_object(sse)
+            headers.update(sse.marshal())
+        
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
+
         if not callable(getattr(data, 'read')):
             raise ValueError(
                 'Invalid input data does not implement a callable read() method')
@@ -921,9 +929,9 @@ class Minio(object):
         :param object_name: Name of object
         :return: Object metadata if object exists
         """
+        is_valid_sse_object(sse=sse)
 
         headers = {}
-
         if sse:
             headers.update(sse.marshal())
 
