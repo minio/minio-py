@@ -39,7 +39,7 @@ import errno
 import math
 
 from .compat import (urlsplit, urlencode, queryencode,
-                     str, bytes, basestring)
+                     str, bytes, basestring, _is_py3, _is_py2)
 from .error import (InvalidBucketError, InvalidEndpointError,
                     InvalidArgumentError)
 
@@ -375,6 +375,25 @@ def is_non_empty_string(input_string):
 
     return True
 
+def is_valid_policy_type(policy):
+    """
+    Validate if policy is type str
+
+    :param policy: S3 style Bucket policy.
+    :return: True if policy parameter is of a valid type, 'string'.
+    Raise :exc:`TypeError` otherwise.
+    """
+    if _is_py3:
+        string_type = str,
+    elif _is_py2:
+        string_type = basestring
+
+    if not isinstance(policy, string_type):
+        raise TypeError('policy can only be of type str')
+
+    is_non_empty_string(policy)
+
+    return True
 
 def is_valid_bucket_notification_config(notifications):
     """

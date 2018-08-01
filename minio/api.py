@@ -74,6 +74,8 @@ from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_bucket_name, PartMetadata, read_full,
                       is_valid_bucket_notification_config, 
                       get_s3_region_from_endpoint, is_valid_sse_object, is_valid_sse_put_object,
+                      is_valid_bucket_notification_config, is_valid_policy_type,
+                      get_s3_region_from_endpoint,
                       mkdir_p, dump_http, amzprefix_user_metadata,
                       is_supported_header,is_amz_header)
 from .helpers import (MAX_MULTIPART_OBJECT_SIZE,
@@ -387,8 +389,10 @@ class Minio(object):
         Set bucket policy of given bucket name.
 
         :param bucket_name: Bucket name.
-        :param policy: Access policy/ies in JSON format.
+        :param policy: Access policy/ies in string format.
         """
+        is_valid_policy_type(policy)
+
         is_valid_bucket_name(bucket_name)
 
         headers = {
