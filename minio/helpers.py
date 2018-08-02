@@ -525,7 +525,7 @@ def is_valid_bucket_notification_config(notifications):
 
     return True
 
-def is_valid_sse_object(sse=None):
+def is_valid_sse_c_object(sse=None):
     """
     Validate the SSE object and type
 
@@ -534,15 +534,24 @@ def is_valid_sse_object(sse=None):
     if sse and sse.type() != "SSE-C":
             raise InvalidArgumentError("Required type SSE-C object to be passed")
 
-def is_valid_sse_put_object(sse):
+def is_valid_sse_object(sse):
     """
     Validate the SSE object and type
 
     :param sse: SSE object defined.
     """
-    if sse.type() != "SSE-C" and sse.type() != "SSE-KMS" and sse.type() != "SSE-S3":
+    if sse and sse.type() != "SSE-C" and sse.type() != "SSE-KMS" and sse.type() != "SSE-S3":
         raise InvalidArgumentError("unsuported type of sse argument in put_object")
-        
+
+def is_valid_source_sse_object(sse):
+    """
+    Validate the SSE object and type
+
+    :param sse: SSE object defined.
+    """
+    if sse and sse.type() != "copy_SSE-C":
+        raise InvalidArgumentError("Required type copy_SSE-C object to be passed")
+
 def encode_object_name(object_name):
     """
     URL encode input object name.

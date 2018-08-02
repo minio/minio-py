@@ -72,8 +72,8 @@ from .helpers import (get_target_url, is_non_empty_string,
                       get_sha256_hexdigest, get_md5_base64digest, Hasher,
                       optimal_part_info,
                       is_valid_bucket_name, PartMetadata, read_full,
-                      is_valid_bucket_notification_config, 
-                      get_s3_region_from_endpoint, is_valid_sse_object, is_valid_sse_put_object,
+                      get_s3_region_from_endpoint, is_valid_sse_object, is_valid_sse_c_object, 
+                      is_valid_source_sse_object,
                       is_valid_bucket_notification_config, is_valid_policy_type,
                       get_s3_region_from_endpoint,
                       mkdir_p, dump_http, amzprefix_user_metadata,
@@ -637,7 +637,6 @@ class Minio(object):
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
-        #is_valid_sse_object(sse=sse)
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
@@ -671,7 +670,6 @@ class Minio(object):
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
-        #is_valid_sse_object(sse=sse)
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
@@ -705,12 +703,14 @@ class Minio(object):
             headers = {k: v for k, v in conditions.items()}
         
         # Source argument to copy_object can only be of type copy_SSE_C
-        is_valid_sse_object(source_sse)
-        headers.update(source_sse.marshal())
-        
+        if source_sse:
+            is_valid_source_sse_object(source_sse)
+            headers.update(source_sse.marshal())
+ 
         #Destination argument to copy_object cannot be of type copy_SSE_C
-        is_valid_sse_put_object(sse)
-        headers.update(sse.marshal())
+        if sse:
+            is_valid_sse_object(sse)
+            headers.update(sse.marshal())
 
         headers['X-Amz-Copy-Source'] = queryencode(object_source)
         response = self._url_open('PUT',
@@ -749,11 +749,8 @@ class Minio(object):
             with your PUT request.
         :return: etag
         """
-        headers = {}
-        if sse:
-            is_valid_sse_put_object(sse)
-            headers.update(sse.marshal())
-        
+
+        is_valid_sse_object(sse)
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
@@ -929,10 +926,10 @@ class Minio(object):
         :param object_name: Name of object
         :return: Object metadata if object exists
         """
-        is_valid_sse_object(sse=sse)
 
         headers = {}
         if sse:
+            is_valid_sse_c_object(sse=sse)
             headers.update(sse.marshal())
 
         is_valid_bucket_name(bucket_name)
@@ -1397,7 +1394,7 @@ class Minio(object):
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
-        is_valid_sse_object(sse=sse)
+        is_valid_sse_c_object(sse=sse)
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
