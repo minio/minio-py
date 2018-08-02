@@ -675,7 +675,6 @@ def validate_stat_data(st_obj, expected_size, expected_meta):
         raise ValueError('Incorrect file type. Expected: is_dir=False',
                          ', received: is_dir=', received_is_dir)
 
-    #if not all(i in expected_meta.items() for i in received_metadata.items()):
     if not all(i in received_metadata.items() for i in expected_meta.items()):
         raise ValueError("Metadata key 'x-amz-meta-testing' not found")
 
