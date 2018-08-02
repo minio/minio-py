@@ -637,7 +637,7 @@ class Minio(object):
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
-        is_valid_sse_object(sse=sse)
+        #is_valid_sse_object(sse=sse)
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
@@ -671,7 +671,7 @@ class Minio(object):
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
-        is_valid_sse_object(sse=sse)
+        #is_valid_sse_object(sse=sse)
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
@@ -704,17 +704,13 @@ class Minio(object):
         if conditions:
             headers = {k: v for k, v in conditions.items()}
         
-        if source_sse: # Source argument to copy_object can only be of type copy_SSE_C
-            if source_sse.type() == "copy_SSE-C":
-                headers.update(source_sse.marshal())
-            else:
-                raise InvalidArgumentError("copy_object requires source of type minio.sse.copy_SSE_C")
+        # Source argument to copy_object can only be of type copy_SSE_C
+        is_valid_sse_object(source_sse)
+        headers.update(source_sse.marshal())
         
-        if sse:  #Destination argument to copy_object cannot be of type copy_SSE_C
-            if sse.type() == "SSE-C" or sse.type() == "SSE-KMS" or sse.type() == "SSE-S3":
-                headers.update(sse.marshal())
-            else:
-                raise InvalidArgumentError("unsuported type of dest argument in copy_object")
+        #Destination argument to copy_object cannot be of type copy_SSE_C
+        is_valid_sse_put_object(sse)
+        headers.update(sse.marshal())
 
         headers['X-Amz-Copy-Source'] = queryencode(object_source)
         response = self._url_open('PUT',
@@ -1401,6 +1397,7 @@ class Minio(object):
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
+        is_valid_sse_object(sse=sse)
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
