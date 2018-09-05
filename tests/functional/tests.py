@@ -374,7 +374,7 @@ def test_fput_object_with_content_type(client, testfile, log_output):
 def test_copy_object_no_copy_condition(client, log_output, ssec_copy=None, ssec=None):
     # default value for log_output.function attribute is;
     # log_output.function = "copy_object(bucket_name, object_name, object_source, conditions)"
-   
+
     # Get a unique bucket_name and object_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     object_name = uuid.uuid4().__str__()
@@ -1661,8 +1661,10 @@ def test_remove_bucket(client, log_output):
     # Test passes
     print(log_output.json_report())
 
+
 def isFullMode():
-	return os.getenv("MINT_MODE") == "full"
+    return os.getenv("MINT_MODE") == "full"
+
 
 def main():
     """
@@ -1672,7 +1674,7 @@ def main():
     try:
         access_key = os.getenv('ACCESS_KEY', 'Q3AM3UQ867SPQQA43P2F')
         secret_key = os.getenv('SECRET_KEY',
-                            'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
+                               'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
         server_endpoint = os.getenv('SERVER_ENDPOINT', 'play.minio.io:9000')
         secure = os.getenv('ENABLE_HTTPS', '1') == '1'
         if server_endpoint == 'play.minio.io:9000':
@@ -1683,12 +1685,12 @@ def main():
         client = Minio(server_endpoint, access_key, secret_key, secure=secure)
         # Check if we are running in the mint environment.
         data_dir = os.getenv('DATA_DIR')
-        if data_dir == None:
+        if data_dir is None:
             os.environ['DATA_DIR'] = data_dir = '/mint/data'
 
-        is_mint_env = (os.path.exists(data_dir) and\
-                        os.path.exists(os.path.join(data_dir, 'datafile-1-MB')) and\
-                        os.path.exists(os.path.join(data_dir, 'datafile-11-MB')))
+        is_mint_env = (os.path.exists(data_dir) and
+                       os.path.exists(os.path.join(data_dir, 'datafile-1-MB')) and
+                       os.path.exists(os.path.join(data_dir, 'datafile-11-MB')))
 
         # Enable trace
         # import sys
@@ -1696,8 +1698,8 @@ def main():
 
         testfile = 'datafile-1-MB'
         largefile = 'datafile-11-MB'
-        if is_mint_env :
-            ## Choose data files
+        if is_mint_env:
+            # Choose data files
             testfile = os.path.join(data_dir, 'datafile-1-MB')
             largefile = os.path.join(data_dir, 'datafile-11-MB')
         else:
@@ -1712,7 +1714,6 @@ def main():
         ssec = SSE_C(cust_key)
         # Test copy_object for SSE-C
         ssec_copy = copy_SSE_C(cust_key)
-        
 
         if isFullMode():
             log_output =  LogOutput(client.make_bucket, 'test_make_bucket_default_region')
@@ -1733,14 +1734,16 @@ def main():
             log_output =  LogOutput(client.fput_object, 'test_fput_object_small_file')
             test_fput_object_small_file(client, testfile, log_output)
 
-            log_output =  LogOutput(client.fput_object, 'test_fput_object_small_file_with_SSE-C')
-            test_fput_object_small_file(client, testfile, log_output, sse=ssec)
+            if secure:
+                log_output = LogOutput(client.fput_object, 'test_fput_object_small_file_with_SSE-C')
+                test_fput_object_small_file(client, testfile, log_output, sse=ssec)
 
             log_output =  LogOutput(client.fput_object, 'test_fput_object_large_file')
             test_fput_object_large_file(client, largefile, log_output)
 
-            log_output =  LogOutput(client.fput_object, 'test_fput_object_large_file_with_SSE-C')
-            test_fput_object_large_file(client, largefile, log_output, sse=ssec)
+            if secure:
+                log_output = LogOutput(client.fput_object, 'test_fput_object_large_file_with_SSE-C')
+                test_fput_object_large_file(client, largefile, log_output, sse=ssec)
 
             log_output =  LogOutput(client.fput_object, 'test_fput_object_with_content_type')
             test_fput_object_with_content_type(client, testfile, log_output)
@@ -1760,35 +1763,40 @@ def main():
             log_output =  LogOutput(client.copy_object, 'test_copy_object_unmodified_since')
             test_copy_object_unmodified_since(client, log_output)
 
-            log_output =  LogOutput(client.copy_object, 'test_copy_object_with_sse')
-            test_copy_object_no_copy_condition(client, log_output, ssec_copy=ssec_copy, ssec=ssec)
+            if secure:
+                log_output = LogOutput(client.copy_object, 'test_copy_object_with_sse')
+                test_copy_object_no_copy_condition(client, log_output, ssec_copy=ssec_copy, ssec=ssec)
 
             log_output =  LogOutput(client.put_object, 'test_put_object')
             test_put_object(client, log_output)
 
-            log_output =  LogOutput(client.put_object, 'test_put_object_with_SSE-C')
-            test_put_object(client, log_output, sse=ssec)
-            
+            if secure:
+                log_output = LogOutput(client.put_object, 'test_put_object_with_SSE-C')
+                test_put_object(client, log_output, sse=ssec)
+
             log_output =  LogOutput(client.put_object, 'test_negative_put_object_with_path_segment')
             test_negative_put_object_with_path_segment(client, log_output)
 
             log_output =  LogOutput(client.stat_object, 'test_stat_object')
             test_stat_object(client, log_output)
 
-            log_output =  LogOutput(client.stat_object, 'test_stat_object_with_SSE-C')
-            test_stat_object(client, log_output, sse=ssec)
+            if secure:
+                log_output = LogOutput(client.stat_object, 'test_stat_object_with_SSE-C')
+                test_stat_object(client, log_output, sse=ssec)
 
             log_output =  LogOutput(client.get_object, 'test_get_object')
             test_get_object(client, log_output)
 
-            log_output =  LogOutput(client.get_object, 'test_get_object_with_SSE-C')
-            test_get_object(client, log_output,sse=ssec)
+            if secure:
+                log_output = LogOutput(client.get_object, 'test_get_object_with_SSE-C')
+                test_get_object(client, log_output, sse=ssec)
 
             log_output =  LogOutput(client.fget_object, 'test_fget_object')
             test_fget_object(client, log_output)
 
-            log_output =  LogOutput(client.fget_object, 'test_fget_object_with_SSE-C')
-            test_fget_object(client, log_output, sse=ssec)
+            if secure:
+                log_output = LogOutput(client.fget_object, 'test_fget_object_with_SSE-C')
+                test_fget_object(client, log_output, sse=ssec)
 
             log_output =  LogOutput(client.get_partial_object, 'test_get_partial_object_with_default_length')
             test_get_partial_object_with_default_length(client, log_output)
@@ -1796,8 +1804,9 @@ def main():
             log_output =  LogOutput(client.get_partial_object, 'test_get_partial_object')
             test_get_partial_object(client, log_output)
 
-            log_output =  LogOutput(client.get_partial_object, 'test_get_partial_object_with_SSE-C')
-            test_get_partial_object(client, log_output)
+            if secure:
+                log_output = LogOutput(client.get_partial_object, 'test_get_partial_object_with_SSE-C')
+                test_get_partial_object(client, log_output)
 
             log_output =  LogOutput(client.list_objects, 'test_list_objects')
             test_list_objects(client, log_output)
@@ -1836,7 +1845,7 @@ def main():
             test_thread_safe(client, testfile, log_output)
 
             log_output =  LogOutput(client.get_bucket_policy, 'test_get_bucket_policy')
-            test_get_bucket_policy(client,log_output)
+            test_get_bucket_policy(client, log_output)
 
             log_output =  LogOutput(client.set_bucket_policy, 'test_set_bucket_policy_readonly')
             test_set_bucket_policy_readonly(client, log_output)
@@ -1846,7 +1855,6 @@ def main():
 
         else:
             # Quick mode tests
-          
             log_output =  LogOutput(client.make_bucket, 'test_make_bucket_default_region')
             test_make_bucket_default_region(client, log_output)
 
@@ -1855,21 +1863,24 @@ def main():
 
             log_output =  LogOutput(client.put_object, 'test_put_object')
             test_put_object(client, log_output)
-            
-            log_output =  LogOutput(client.put_object, 'test_put_object_with_SSE-C')
-            test_put_object(client, log_output, sse=ssec)
-            
+
+            if secure:
+                log_output =  LogOutput(client.put_object, 'test_put_object_with_SSE-C')
+                test_put_object(client, log_output, sse=ssec)
+
             log_output =  LogOutput(client.stat_object, 'test_stat_object')
             test_stat_object(client, log_output)
 
-            log_output =  LogOutput(client.stat_object, 'test_stat_object_with_SSE-C')
-            test_stat_object(client, log_output, sse=ssec)
+            if secure:
+                log_output = LogOutput(client.stat_object, 'test_stat_object_with_SSE-C')
+                test_stat_object(client, log_output, sse=ssec)
 
             log_output =  LogOutput(client.get_object, 'test_get_object')
             test_get_object(client, log_output)
 
-            log_output =  LogOutput(client.get_object, 'test_get_object_with_SSE-C')
-            test_get_object(client, log_output,sse=ssec)
+            if secure:
+                log_output = LogOutput(client.get_object, 'test_get_object_with_SSE-C')
+                test_get_object(client, log_output, sse=ssec)
 
             log_output =  LogOutput(client.list_objects, 'test_list_objects')
             test_list_objects(client, log_output)
@@ -1889,11 +1900,12 @@ def main():
             log_output =  LogOutput(client.copy_object, 'test_copy_object_no_copy_condition')
             test_copy_object_no_copy_condition(client, log_output)
 
-            log_output =  LogOutput(client.copy_object, 'test_copy_object_with_sse')
-            test_copy_object_no_copy_condition(client, log_output, ssec_copy=ssec_copy, ssec=ssec)
-            
+            if secure:
+                log_output = LogOutput(client.copy_object, 'test_copy_object_with_sse')
+                test_copy_object_no_copy_condition(client, log_output, ssec_copy=ssec_copy, ssec=ssec)
+
             log_output =  LogOutput(client.get_bucket_policy, 'test_get_bucket_policy')
-            test_get_bucket_policy(client,log_output)
+            test_get_bucket_policy(client, log_output)
 
             log_output =  LogOutput(client.set_bucket_policy, 'test_set_bucket_policy_readonly')
             test_set_bucket_policy_readonly(client, log_output)
