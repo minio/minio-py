@@ -420,7 +420,7 @@ class Minio(object):
             bucket_name=bucket_name,
             query={"notification": ""},
         )
-        data = response.read().decode('utf-8')
+        data = response.data.decode('utf-8')
         return parse_get_bucket_notification(data)
 
     def set_bucket_notification(self, bucket_name, notifications):
