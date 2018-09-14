@@ -1484,6 +1484,32 @@ def policy_validated(client, bucket_name, policy):
         return False
     return True
 
+def test_get_bucket_notification(client, log_output):
+    # Get a unique bucket_name
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
+    try:
+        # make bucket as a preparation for empty bucket notification
+        client.make_bucket(bucket_name)
+        notification = client.get_bucket_notification(bucket_name)
+        if notification != {}:
+            raise ValueError("Failed to receive an empty bucket notification")
+
+    except APINotImplemented:
+            print(log_output.json_report(alert='Not Implemented',
+                                         status=LogOutput.NA))
+    except Exception as err:
+            print("exception", err)
+            raise Exception(err)
+    else:
+        # Test passes
+        print(log_output.json_report())
+    finally:
+        try:
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            raise Exception(err)
+
+
 def test_set_bucket_policy_readonly(client, log_output):
     # default value for log_output.function attribute is;
     # log_output.function = "set_bucket_policy(bucket_name, policy)"
@@ -1853,6 +1879,9 @@ def main():
             log_output =  LogOutput(client.set_bucket_policy, 'test_set_bucket_policy_readwrite')
             test_set_bucket_policy_readwrite(client, log_output)
 
+            log_output = LogOutput(client.get_bucket_notification, 'test_get_bucket_notification')
+            test_get_bucket_notification(client, log_output)
+
         else:
             # Quick mode tests
             log_output =  LogOutput(client.make_bucket, 'test_make_bucket_default_region')
@@ -1909,6 +1938,10 @@ def main():
 
             log_output =  LogOutput(client.set_bucket_policy, 'test_set_bucket_policy_readonly')
             test_set_bucket_policy_readonly(client, log_output)
+
+            log_output = LogOutput(client.get_bucket_notification, 'test_get_bucket_notification')
+            test_get_bucket_notification(client, log_output)
+
 
         # Remove all objects.
         log_output =  LogOutput(client.remove_object, 'test_remove_object')
