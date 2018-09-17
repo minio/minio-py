@@ -143,6 +143,14 @@ class S3Element(object):
         """
         return self.element.text
 
+    def is_dir(self):
+        """Returns True if the object is a dir
+        ie, if an object name has `/` suffixed.
+
+        """
+        text = self.get_child_text('Key')
+        return text.endswith("/")
+
 
 def parse_multipart_upload_result(data):
     """
@@ -200,7 +208,8 @@ def _parse_objects_from_xml_elts(bucket_name, contents, common_prefixes):
                content.get_child_text('Key'),
                content.get_localized_time_elem('LastModified'),
                content.get_etag_elem(strict=False),
-               content.get_int_elem('Size'))
+               content.get_int_elem('Size'),
+               is_dir=content.is_dir())
         for content in contents
     ]
 
