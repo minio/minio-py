@@ -1459,15 +1459,18 @@ class Minio(object):
         if metadata:
             headers.update(metadata)
 
-        if sse:
-            headers.update(sse.marshal())
-
         query = {}
         if part_number > 0 and upload_id:
             query = {
                 'uploadId': upload_id,
                 'partNumber': str(part_number),
             }
+            # Encryption headers for multipart uploads should
+            # be set only in the case of SSE-C.
+            if sse and sse.type() == "SSE-C":
+                headers.update(sse.marshal())
+        elif sse:
+            headers.update(sse.marshal())
 
         response = self._url_open(
             'PUT',
