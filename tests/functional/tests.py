@@ -1141,9 +1141,12 @@ def test_remove_incomplete_upload(client, log_output):
 def test_presigned_get_object_default_expiry(client, log_output):
     # default value for log_output.function attribute is;
     # log_output.function = "presigned_get_object(bucket_name, object_name, expires, response_headers)"
+    ca_certs = os.environ.get('SSL_CERT_FILE')
+    if not ca_certs:
+        ca_certs = certifi.where()
 
-    _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
-                                ca_certs=certifi.where())
+    _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=ca_certs)
+
     # Get a unique bucket_name and object_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
@@ -1176,8 +1179,11 @@ def test_presigned_get_object_expiry_5sec(client, log_output):
     # default value for log_output.function attribute is;
     # log_output.function = "presigned_get_object(bucket_name, object_name, expires, response_headers)"
 
-    _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
-                                ca_certs=certifi.where())
+    ca_certs = os.environ.get('SSL_CERT_FILE')
+    if not ca_certs:
+        ca_certs = certifi.where()
+    _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=ca_certs)
+
     # Get a unique bucket_name and object_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
@@ -1217,8 +1223,11 @@ def test_presigned_get_object_response_headers(client, log_output):
     # default value for log_output.function attribute is;
     # log_output.function = "presigned_get_object(bucket_name, object_name, expires, response_headers)"
 
-    _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
-                                ca_certs=certifi.where())
+    ca_certs = os.environ.get('SSL_CERT_FILE')
+    if not ca_certs:
+        ca_certs = certifi.where()
+    _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=ca_certs)
+
     # Get a unique bucket_name and object_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
@@ -1260,8 +1269,10 @@ def test_presigned_put_object_default_expiry(client, log_output):
     # default value for log_output.function attribute is;
     # log_output.function = "presigned_put_object(bucket_name, object_name, expires)"
 
-    _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
-                                ca_certs=certifi.where())
+    ca_certs = os.environ.get('SSL_CERT_FILE')
+    if not ca_certs:
+        ca_certs = certifi.where()
+    _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=ca_certs)
 
     # Get a unique bucket_name and object_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
@@ -1296,8 +1307,10 @@ def test_presigned_put_object_expiry_5sec(client, log_output):
     # default value for log_output.function attribute is;
     # log_output.function = "presigned_put_object(bucket_name, object_name, expires)"
 
-    _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
-                                ca_certs=certifi.where())
+    ca_certs = os.environ.get('SSL_CERT_FILE')
+    if not ca_certs:
+        ca_certs = certifi.where()
+    _http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=ca_certs)
 
     # Get a unique bucket_name and object_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
