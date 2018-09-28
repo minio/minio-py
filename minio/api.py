@@ -1528,7 +1528,7 @@ class Minio(object):
 
         # Instantiate a thread pool with 3 worker threads
         pool = ThreadPool(_PARALLEL_UPLOADERS)
-        parts_to_upload = []
+        pool.start_parallel()
 
         # Generate new parts and upload <= current_part_size until
         # part_number reaches total_parts_count calculated for the
@@ -1539,13 +1539,11 @@ class Minio(object):
                                  else last_part_size)
 
             part_data = read_full(data, current_part_size)
-            # Append current part information
-            parts_to_upload.append((bucket_name, object_name, upload_id,
+            pool.add_task(self._upload_part_routine, (bucket_name, object_name, upload_id,
                                     part_number, part_data, sse))
 
-        # Run parts upload in parallel
         try:
-            pool.parallel_run(self._upload_part_routine, parts_to_upload)
+            upload_result = pool.result()
         except:
             # Any exception that occurs sends an abort on the
             # on-going multipart operation.
@@ -1556,8 +1554,8 @@ class Minio(object):
 
         # Update uploaded_parts with the part uploads result
         # and check total uploaded data.
-        while not pool.result().empty():
-            part_number, etag, total_read = pool.result().get()
+        while not upload_result.empty():
+            part_number, etag, total_read = upload_result.get()
             uploaded_parts[part_number] = UploadPart(bucket_name,
                                                      object_name,
                                                      upload_id,
