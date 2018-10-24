@@ -67,7 +67,7 @@ class ThreadPool:
     def __init__(self, num_threads):
         self.results_queue = queue()
         self.exceptions_queue = queue()
-        self.tasks_queue = queue()
+        self.tasks_queue = queue(num_threads)
         self.num_threads = num_threads
 
     def add_task(self, func, *args, **kargs):
