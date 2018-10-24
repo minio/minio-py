@@ -7,7 +7,7 @@ environment:
 
 install:
   # We need wheel installed to build wheels
-  - "%PYTHON%\\python.exe -m pip install wheel faker"
+  - "%PYTHON%\\python.exe -m pip install wheel faker nose"
   - "%PYTHON%\\python.exe setup.py install"
 
 build: off

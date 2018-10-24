@@ -64,7 +64,6 @@ setup(
     packages=packages,
     install_requires=requires,
     tests_require=tests_requires,
-    setup_requires=['nose>=1.0'],
     license='Apache License 2.0',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
