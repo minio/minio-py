@@ -568,6 +568,11 @@ def test_copy_object_unmodified_since(client, log_output):
     # Test passes
     print(log_output.json_report())
 
+def normalize_metadata(meta_data):
+    norm_dict = {k.lower(): v for k, v in meta_data.items()}
+    return norm_dict
+
+    
 def test_put_object(client, log_output, sse=None):
     # default value for log_output.function attribute is;
     # log_output.function = "put_object(bucket_name, object_name, data, length, content_type, metadata)"
@@ -599,13 +604,14 @@ def test_put_object(client, log_output, sse=None):
         # Stat on the uploaded object to check if it exists
         # Fetch saved stat metadata on a previously uploaded object with metadata.
         st_obj = client.stat_object(bucket_name, object_name+'-metadata', sse=sse)
-        if 'X-Amz-Meta-Testing' not in st_obj.metadata:
+        normalized_meta = normalize_metadata(st_obj.metadata)
+        if 'x-amz-meta-testing' not in normalized_meta:
             raise ValueError("Metadata key 'x-amz-meta-testing' not found")
-        value = st_obj.metadata['X-Amz-Meta-Testing']
+        value = normalized_meta['x-amz-meta-testing']
         if value != 'value':
             raise ValueError('Metadata key has unexpected'
                              ' value {0}'.format(value))
-        if 'X-Amz-Meta-Test-Key' not in st_obj.metadata:
+        if 'x-amz-meta-test-key' not in normalized_meta:
             raise ValueError("Metadata key 'x-amz-meta-test-key' not found")
     except Exception as err:
         raise Exception(err)
@@ -654,7 +660,7 @@ def validate_stat_data(st_obj, expected_size, expected_meta):
 
     received_modification_time = st_obj.last_modified
     received_etag = st_obj.etag
-    received_metadata = st_obj.metadata
+    received_metadata = normalize_metadata(st_obj.metadata)
     received_content_type = st_obj.content_type
     received_size = st_obj.size
     received_is_dir = st_obj.is_dir
@@ -714,7 +720,7 @@ def test_stat_object(client, log_output, sse=None):
         # Get the stat on the uploaded object
         st_obj = client.stat_object(bucket_name, object_name+'-metadata',sse=sse)
         # Verify the collected stat data.
-        validate_stat_data(st_obj, MB_11, metadata)
+        validate_stat_data(st_obj, MB_11, normalize_metadata(metadata))
     except Exception as err:
         raise Exception(err)
     finally:
