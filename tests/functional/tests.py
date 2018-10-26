@@ -181,6 +181,10 @@ def test_make_bucket_with_region(client, log_output):
     # default value for log_output.function attribute is;
     # log_output.function = "make_bucket(bucket_name, location)"
 
+    # Only test make bucket with region against AWS S3
+    if not is_s3(client):
+        return
+
     # Get a unique bucket_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     # A non-default location
