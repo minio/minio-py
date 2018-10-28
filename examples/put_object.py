@@ -30,7 +30,7 @@ try:
     with open('my-testfile', 'rb') as file_data:
         file_stat = os.stat('my-testfile')
         client.put_object('my-bucketname', 'my-objectname',
-                          file_data, file_stat.st_size)
+                          file_data, file_stat.st_size, progress=False)
 except ResponseError as err:
     print(err)
 
@@ -39,6 +39,6 @@ try:
     with open('my-testfile.csv', 'rb') as file_data:
         file_stat = os.stat('my-testfile.csv')
         client.put_object('my-bucketname', 'my-objectname', file_data,
-                          file_stat.st_size, content_type='application/csv')
+                          file_stat.st_size, content_type='application/csv', progress=True)
 except ResponseError as err:
     print(err)

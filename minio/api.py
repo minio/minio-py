@@ -39,6 +39,8 @@ import os
 import itertools
 import codecs
 
+
+
 try:
     from json.decoder import JSONDecodeError
 except ImportError:
@@ -91,6 +93,7 @@ from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_delete_objects)
 from .fold_case_dict import FoldCaseDict
 from .thread_pool import ThreadPool
+from .progress import Progress
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
@@ -110,6 +113,7 @@ _MAX_EXPIRY_TIME = 604800 # 7 days in seconds
 
 # Number of parallel workers which upload parts
 _PARALLEL_UPLOADERS = 3
+
 
 class Minio(object):
     """
@@ -521,8 +525,7 @@ class Minio(object):
 
     def fput_object(self, bucket_name, object_name, file_path,
                     content_type='application/octet-stream',
-                    metadata=None,
-                    sse=None):
+                    metadata=None, sse=None, progress=None):
         """
         Add a new object to the cloud storage server.
 
@@ -535,6 +538,7 @@ class Minio(object):
         :param content_type: Content type of the object.
         :param metadata: Any additional metadata to be uploaded along
             with your PUT request.
+        :param progress: Display progress
         :return: etag
         """
 
@@ -542,7 +546,7 @@ class Minio(object):
         with open(file_path, 'rb') as file_data:
             file_size = os.stat(file_path).st_size
             return self.put_object(bucket_name, object_name, file_data,
-                                   file_size, content_type, metadata, sse)
+                                   file_size, content_type, metadata, sse, progress)
 
     def fget_object(self, bucket_name, object_name, file_path, request_headers=None, sse=None):
         """
@@ -722,9 +726,7 @@ class Minio(object):
     
     def put_object(self, bucket_name, object_name, data, length,
                    content_type='application/octet-stream',
-                   metadata=None, 
-                   sse=None,
-                   ):
+                   metadata=None, sse=None, progress=None):
         """
         Add a new object to the cloud storage server.
 
@@ -747,6 +749,7 @@ class Minio(object):
         :param content_type: mime type of object as a string.
         :param metadata: Any additional metadata to be uploaded along
             with your PUT request.
+        :param progress: Display progress
         :return: etag
         """
 
@@ -768,9 +771,13 @@ class Minio(object):
 
         metadata['Content-Type'] = 'application/octet-stream' if \
             not content_type else content_type
+        
+        if progress:
+            progress = Progress(total_size=length, file_name=object_name)
+
         if length > MIN_PART_SIZE:
             return self._stream_put_object(bucket_name, object_name,
-                                           data, length, metadata=metadata, sse=sse)
+                                           data, length, metadata=metadata, sse=sse, progress=progress)
 
         current_data = data.read(length)
         if len(current_data) != length:
@@ -780,8 +787,7 @@ class Minio(object):
 
         return self._do_put_object(bucket_name, object_name,
                                    current_data, len(current_data),
-                                   metadata=metadata,
-                                   sse=sse)
+                                   metadata=metadata, sse=sse, progress=progress)
 
     def list_objects(self, bucket_name, prefix=None, recursive=False):
         """
@@ -1419,8 +1425,7 @@ class Minio(object):
 
     def _do_put_object(self, bucket_name, object_name, part_data,
                        part_size, upload_id='', part_number=0,
-                       metadata=None,
-                       sse=None):
+                       metadata=None, sse=None, progress=None):
         """
         Initiate a multipart PUT operation for a part number
         or single PUT object.
@@ -1446,7 +1451,6 @@ class Minio(object):
         }
 
         md5_base64 = None
-        sha256_hex = None
         if self._is_ssl:
             md5_base64 = get_md5_base64digest(part_data)
             sha256_hex = _UNSIGNED_PAYLOAD
@@ -1482,21 +1486,23 @@ class Minio(object):
             content_sha256=sha256_hex
         )
 
+        if progress:
+            progress.update(part_size)
         return response.headers['etag'].replace('"', '')
 
     def _upload_part_routine(self, part_info):
         bucket_name, object_name, upload_id, \
-                part_number, part_data, sse = part_info
+                part_number, part_data, sse, progress = part_info
         # Initiate multipart put.
-        etag = self._do_put_object(bucket_name, object_name,
-                part_data, len(part_data),
-                upload_id, part_number, sse=sse)
+        etag = self._do_put_object(bucket_name, object_name, part_data,
+                                   len(part_data), upload_id,
+                                   part_number, sse=sse, progress=progress)
 
-        return (part_number, etag, len(part_data))
+        return part_number, etag, len(part_data)
 
     def _stream_put_object(self, bucket_name, object_name,
                            data, content_size,
-                           metadata=None, sse=None):
+                           metadata=None, sse=None, progress=None):
         """
         Streaming multipart upload operation.
 
@@ -1540,7 +1546,7 @@ class Minio(object):
 
             part_data = read_full(data, current_part_size)
             pool.add_task(self._upload_part_routine, (bucket_name, object_name, upload_id,
-                                    part_number, part_data, sse))
+                                                      part_number, part_data, sse, progress))
 
         try:
             upload_result = pool.result()

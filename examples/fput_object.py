@@ -25,7 +25,7 @@ client = Minio('s3.amazonaws.com',
 
 # Put an object 'my-objectname' with contents from 'my-filepath'
 try:
-    client.fput_object('my-bucketname', 'my-objectname', 'my-filepath')
+    client.fput_object('my-bucketname', 'my-objectname', 'my-filepath', progress=True)
 except ResponseError as err:
     print(err)
 
@@ -33,6 +33,6 @@ except ResponseError as err:
 # 'my-filepath.csv' as 'application/csv'.
 try:
     client.fput_object('my-bucketname', 'my-objectname-csv',
-                       'my-filepath.csv', content_type='application/csv')
+                       'my-filepath.csv', content_type='application/csv', progress=True)
 except ResponseError as err:
     print(err)
