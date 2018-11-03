@@ -771,7 +771,7 @@ class Minio(object):
             not content_type else content_type
         
         if progress:
-            progress = Progress(total_size=length, desc=object_name)
+            progress = Progress(total_size=length, file_name=object_name)
 
         if length > MIN_PART_SIZE:
             return self._stream_put_object(bucket_name, object_name,
@@ -785,8 +785,7 @@ class Minio(object):
 
         return self._do_put_object(bucket_name, object_name,
                                    current_data, len(current_data),
-                                   metadata=metadata,
-                                   sse=sse)
+                                   metadata=metadata, sse=sse, progress=progress)
 
     def list_objects(self, bucket_name, prefix=None, recursive=False):
         """

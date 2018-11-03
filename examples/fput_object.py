@@ -32,7 +32,7 @@ except ResponseError as err:
 # Put on object 'my-objectname-csv' with contents from
 # 'my-filepath.csv' as 'application/csv'.
 try:
-    client.fput_object('my-bucketname', 'my-objectname-csv',
-                       'my-filepath.csv', content_type='application/csv')
+    client.fput_object('album', 'my-testfile2',
+                       'my-testfile2', content_type='application/csv', progress=True)
 except ResponseError as err:
     print(err)

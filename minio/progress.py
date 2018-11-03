@@ -1,31 +1,54 @@
 import time
 import sys
+from queue import Empty
+from threading import Thread
+from .compat import queue
 
 
-class Progress(object):
-    def __init__(self, total_size, desc):
+class Progress(Thread):
+    def __init__(self, total_size, file_name, interval=1):
+        Thread.__init__(self)
+        self.daemon = True
         self.total_size = total_size
+        self.display_queue = queue()
         self.current_size = 0
-        self.desc = desc
-        self.prefix = self.desc + ': ' if self.desc else ''
+        self.file_name = file_name
+        self.prefix = self.file_name + ': ' if self.file_name else ''
         self.sp = StatusPrinter(sys.stdout)
-
         self.start_t = time.time()
+        self.interval = interval
+
+    def run(self):
+        displayed_time = 0
+
+        while True:
+            try:
+                # display every 1 secs
+                task = self.display_queue.get(timeout=1)
+            except Empty:
+                elapsed_time = time.time() - self.start_t
+                if elapsed_time > displayed_time:
+                    displayed_time = elapsed_time
+                self.sp.print_status(
+                    self.prefix + format_meter(self.current_size, self.total_size, displayed_time))
+                continue
+            prefix, now, total = task
+            displayed_time = time.time() - self.start_t
+            self.sp.print_status(self.prefix + format_meter(now, total, displayed_time))
+            self.display_queue.task_done()
+            if now == total:
+                break
 
     def update(self, size):
 
         if self.current_size == 0:
-            self.sp.print_status(self.prefix + format_meter(0, self.total_size, 0))
+            self.start()
+            self.display_queue.put((self.prefix, 0, self.total_size))
 
-        cur_t = time.time()
         self.current_size += size
-        self.sp.print_status(self.prefix + format_meter(size, self.total_size, cur_t - self.start_t))
+        self.display_queue.put((self.prefix, self.current_size, self.total_size))
         if self.current_size == self.total_size:
-            self.done()
-
-    def done(self):
-        cur_t = time.time()
-        self.sp.print_status(self.prefix + format_meter(self.total_size, self.total_size, cur_t - self.start_t))
+            self.display_queue.join()
 
 
 def format_interval(t):
@@ -45,24 +68,22 @@ def format_meter(n, total, elapsed):
         total = None
 
     elapsed_str = format_interval(elapsed)
-    rate = '%5.2f' % (n / elapsed) if elapsed else '?'
+    n_to_mb = n / 1024 / 1024
+    rate = '%5.2f' % (n_to_mb / elapsed) if elapsed else '?'
+    frac = float(n) / total
 
-    if total:
-        frac = float(n) / total
+    n_bars = 10
+    bar_length = int(frac * n_bars)
+    bar = '#' * bar_length + '-' * (n_bars - bar_length)
 
-        N_BARS = 10
-        bar_length = int(frac * N_BARS)
-        bar = '#' * bar_length + '-' * (N_BARS - bar_length)
+    percentage = '%3d%%' % (frac * 100)
 
-        percentage = '%3d%%' % (frac * 100)
+    left_str = format_interval(elapsed / n * (total - n)) if n else '?'
 
-        left_str = format_interval(elapsed / n * (total - n)) if n else '?'
-
-        return '|%s| %d/%d %s [elapsed: %s left: %s, %s iters/sec]' % (
-            bar, n, total, percentage, elapsed_str, left_str, rate)
-
-    else:
-        return '%d [elapsed: %s, %s iters/sec]' % (n, elapsed_str, rate)
+    humanized_total = '%0.2f' % (total / 1024 / 1024) + ' MB'
+    humanized_n = '%0.2f' % n_to_mb + ' MB'
+    return '|%s| %s/%s %s [elapsed: %s left: %s, %s MB/sec]' % (
+        bar, humanized_n, humanized_total, percentage, elapsed_str, left_str, rate)
 
 
 class StatusPrinter(object):
