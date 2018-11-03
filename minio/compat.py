@@ -37,6 +37,9 @@ if _is_py2:
     from Queue import Queue
     queue = Queue
 
+    from Queue import Empty
+    queue_empty = Empty
+
     from urllib import quote
     _urlencode = quote
 
@@ -61,6 +64,9 @@ if _is_py2:
 elif _is_py3:
     from queue import Queue
     queue = Queue
+
+    from queue import Empty
+    queue_empty = Empty
 
     from urllib.request import quote
     _urlencode = quote

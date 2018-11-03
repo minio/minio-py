@@ -1,8 +1,7 @@
 import time
 import sys
-from queue import Empty
 from threading import Thread
-from .compat import queue
+from .compat import queue, queue_empty
 
 
 class Progress(Thread):
@@ -25,7 +24,7 @@ class Progress(Thread):
             try:
                 # display every 1 secs
                 task = self.display_queue.get(timeout=1)
-            except Empty:
+            except queue_empty:
                 elapsed_time = time.time() - self.start_t
                 if elapsed_time > displayed_time:
                     displayed_time = elapsed_time
