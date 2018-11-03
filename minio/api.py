@@ -538,6 +538,7 @@ class Minio(object):
         :param content_type: Content type of the object.
         :param metadata: Any additional metadata to be uploaded along
             with your PUT request.
+        :param progress: Display progress
         :return: etag
         """
 
@@ -748,6 +749,7 @@ class Minio(object):
         :param content_type: mime type of object as a string.
         :param metadata: Any additional metadata to be uploaded along
             with your PUT request.
+        :param progress: Display progress
         :return: etag
         """
 
