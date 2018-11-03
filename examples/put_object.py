@@ -21,15 +21,15 @@ import os
 from minio import Minio
 from minio.error import ResponseError
 
-client = Minio('play.minio.io:9000',
-               access_key='Q3AM3UQ867SPQQA43P2F',
-               secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG', secure=True)
+client = Minio('s3.amazonaws.com',
+               access_key='YOUR-ACCESSKEYID',
+               secret_key='YOUR-SECRETACCESSKEY')
 
 # Put a file with default content-type.
 try:
     with open('my-testfile', 'rb') as file_data:
         file_stat = os.stat('my-testfile')
-        client.put_object('album', 'my-testfile',
+        client.put_object('my-bucketname', 'my-objectname',
                           file_data, file_stat.st_size, progress=False)
 except ResponseError as err:
     print(err)
@@ -38,7 +38,7 @@ except ResponseError as err:
 try:
     with open('my-testfile.csv', 'rb') as file_data:
         file_stat = os.stat('my-testfile.csv')
-        client.put_object('album', 'album', file_data,
+        client.put_object('my-bucketname', 'my-objectname', file_data,
                           file_stat.st_size, content_type='application/csv', progress=True)
 except ResponseError as err:
     print(err)

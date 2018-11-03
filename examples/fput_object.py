@@ -19,20 +19,20 @@
 from minio import Minio
 from minio.error import ResponseError
 
-client = Minio('play.minio.io:9000',
-               access_key='Q3AM3UQ867SPQQA43P2F',
-               secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG', secure=True)
+client = Minio('s3.amazonaws.com',
+               access_key='YOUR-ACCESSKEYID',
+               secret_key='YOUR-SECRETACCESSKEY')
 
 # Put an object 'my-objectname' with contents from 'my-filepath'
 try:
-    client.fput_object('album', 'my-testfile', 'my-testfile', progress=True)
+    client.fput_object('my-bucketname', 'my-objectname', 'my-filepath', progress=True)
 except ResponseError as err:
     print(err)
 
 # Put on object 'my-objectname-csv' with contents from
 # 'my-filepath.csv' as 'application/csv'.
 try:
-    client.fput_object('album', 'my-testfile2',
-                       'my-testfile2', content_type='application/csv', progress=True)
+    client.fput_object('my-bucketname', 'my-objectname-csv',
+                       'my-filepath.csv', content_type='application/csv', progress=True)
 except ResponseError as err:
     print(err)
