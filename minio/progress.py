@@ -17,7 +17,7 @@
 """
 minio.progress
 
-This module implements a progress while communicate minio server
+This module implements a progress printer while uploading object
 
 :copyright: (c) 2018 by Minio, Inc.
 :license: Apache 2.0, see LICENSE for more details.
@@ -53,23 +53,22 @@ _REFRESH_CHAR = '\r'
 class Progress(Thread):
     """
         Constructs a :class:`Progress` object.
-
-        :param total_size: Total size of file.
-        :param file_name: Filename to be showed.
+        :param total_size: Total size of object.
+        :param object_name: Object name to be showed.
         :param interval: The time interval at which progress will be displayed.
 
         :return: :class:`Progress` object
     """
-    def __init__(self, total_size, file_name, interval=1):
+    def __init__(self, total_size, object_name, interval=1):
         Thread.__init__(self)
         self.daemon = True
         self.total_size = total_size
-        self.file_name = file_name
+        self.object_name = object_name
         self.interval = interval
 
         self.display_queue = queue()
         self.current_size = 0
-        self.prefix = self.file_name + ': ' if self.file_name else ''
+        self.prefix = self.object_name + ': ' if self.object_name else ''
         self.sp = StatusPrinter(sys.stdout)
         self.start_t = time.time()
 
@@ -97,8 +96,8 @@ class Progress(Thread):
 
     def update(self, size):
         """
-        Update file size to be showed.
-        :param size: File size to be showed. The file size should be in bytes.
+        Update object size to be showed.
+        :param size: Object size to be showed. The object size should be in bytes.
         """
         if not isinstance(size, int):
             raise ValueError('{} type can not be displayed. Please change it to Int.'.format(type(size)))
@@ -129,8 +128,8 @@ def format_interval(seconds):
 def format_meter(n, total, elapsed):
     """
     Consistent format to be displayed on the screen.
-    :param n: Number of finished file size
-    :param total: Total file size
+    :param n: Number of finished object size
+    :param total: Total object size
     :param elapsed: number of seconds passed since start
     """
 

@@ -773,7 +773,7 @@ class Minio(object):
             not content_type else content_type
         
         if progress:
-            progress = Progress(total_size=length, file_name=object_name)
+            progress = Progress(total_size=length, object_name=object_name)
 
         if length > MIN_PART_SIZE:
             return self._stream_put_object(bucket_name, object_name,
