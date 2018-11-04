@@ -1,35 +1,92 @@
+# -*- coding: utf-8 -*-
+# Minio Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# 2018 Minio, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+minio.progress
+
+This module implements a progress while communicate minio server
+
+:copyright: (c) 2018 by Minio, Inc.
+:license: Apache 2.0, see LICENSE for more details.
+
+"""
+
 import time
 import sys
 from threading import Thread
 from .compat import queue, queue_empty
 
 
+_BAR_SIZE = 10
+_KILOBYTE = 1024
+_BAR = '#'
+_REMAINING_BAR = '-'
+
+_UNKNOWN_SIZE = '?'
+_STR_MEGABYTE = ' MB'
+
+_HOURS_OF_ELAPSED = '%d:%02d:%02d'
+_MINUTES_OF_ELAPSED = '%02d:%02d'
+
+_RATE_FORMAT = '%5.2f'
+_PERCENTAGE_FORMAT = '%3d%%'
+_HUMANINZED_FORMAT = '%0.2f'
+
+_DISPLAY_FORMAT = '|%s| %s/%s %s [elapsed: %s left: %s, %s MB/sec]'
+
+_REFRESH_CHAR = '\r'
+
+
 class Progress(Thread):
+    """
+        Constructs a :class:`Progress` object.
+
+        :param total_size: Total size of file.
+        :param file_name: Filename to be showed.
+        :param interval: The time interval at which progress will be displayed.
+
+        :return: :class:`Progress` object
+    """
     def __init__(self, total_size, file_name, interval=1):
         Thread.__init__(self)
         self.daemon = True
         self.total_size = total_size
+        self.file_name = file_name
+        self.interval = interval
+
         self.display_queue = queue()
         self.current_size = 0
-        self.file_name = file_name
         self.prefix = self.file_name + ': ' if self.file_name else ''
         self.sp = StatusPrinter(sys.stdout)
         self.start_t = time.time()
-        self.interval = interval
 
     def run(self):
-        displayed_time = 0
 
+        displayed_time = 0
         while True:
             try:
-                # display every 1 secs
-                task = self.display_queue.get(timeout=1)
+                # display every interval secs
+                task = self.display_queue.get(timeout=self.interval)
             except queue_empty:
                 elapsed_time = time.time() - self.start_t
                 if elapsed_time > displayed_time:
                     displayed_time = elapsed_time
                 self.sp.print_status(
-                    self.prefix + format_meter(self.current_size, self.total_size, displayed_time))
+                    self.prefix + format_meter(self.current_size,
+                                               self.total_size, displayed_time))
                 continue
             prefix, now, total = task
             displayed_time = time.time() - self.start_t
@@ -39,6 +96,10 @@ class Progress(Thread):
                 break
 
     def update(self, size):
+        """
+        Update file size to be showed.
+        :param size: File size to be showed. The file size should be in bytes.
+        """
 
         if self.current_size == 0:
             self.start()
@@ -50,47 +111,54 @@ class Progress(Thread):
             self.display_queue.join()
 
 
-def format_interval(t):
-    mins, s = divmod(int(t), 60)
-    h, m = divmod(mins, 60)
-    if h:
-        return '%d:%02d:%02d' % (h, m, s)
+def format_interval(seconds):
+    """
+    Consistent time format to be displayed on the elapsed time in screen.
+    :param seconds: seconds
+    """
+    minutes, seconds = divmod(int(seconds), 60)
+    hours, m = divmod(minutes, 60)
+    if hours:
+        return _HOURS_OF_ELAPSED % (hours, m, seconds)
     else:
-        return '%02d:%02d' % (m, s)
+        return _MINUTES_OF_ELAPSED % (m, seconds)
 
 
 def format_meter(n, total, elapsed):
-    # n - number of finished iterations
-    # total - total number of iterations, or None
-    # elapsed - number of seconds passed since start
-    if n > total:
-        total = None
+    """
+    Consistent format to be displayed on the screen.
+    :param n: Number of finished file size
+    :param total: Total file size, or None
+    :param elapsed: number of seconds passed since start
+    """
 
+    n_to_mb = n / _KILOBYTE / _KILOBYTE
     elapsed_str = format_interval(elapsed)
-    n_to_mb = n / 1024 / 1024
-    rate = '%5.2f' % (n_to_mb / elapsed) if elapsed else '?'
+
+    rate = _RATE_FORMAT % (n_to_mb / elapsed) if elapsed else _UNKNOWN_SIZE
     frac = float(n) / total
+    bar_length = int(frac * _BAR_SIZE)
+    bar = _BAR * bar_length + _REMAINING_BAR * (_BAR_SIZE - bar_length)
+    percentage = _PERCENTAGE_FORMAT % (frac * 100)
+    left_str = format_interval(elapsed / n * (total - n)) if n else _UNKNOWN_SIZE
 
-    n_bars = 10
-    bar_length = int(frac * n_bars)
-    bar = '#' * bar_length + '-' * (n_bars - bar_length)
+    humanized_total = _HUMANINZED_FORMAT % (total / _KILOBYTE / _KILOBYTE) + _STR_MEGABYTE
+    humanized_n = _HUMANINZED_FORMAT % n_to_mb + _STR_MEGABYTE
 
-    percentage = '%3d%%' % (frac * 100)
-
-    left_str = format_interval(elapsed / n * (total - n)) if n else '?'
-
-    humanized_total = '%0.2f' % (total / 1024 / 1024) + ' MB'
-    humanized_n = '%0.2f' % n_to_mb + ' MB'
-    return '|%s| %s/%s %s [elapsed: %s left: %s, %s MB/sec]' % (
+    return _DISPLAY_FORMAT % (
         bar, humanized_n, humanized_total, percentage, elapsed_str, left_str, rate)
 
 
 class StatusPrinter(object):
-    def __init__(self, file):
-        self.file = file
+    """
+    Constructs a `StatusPrinter`
+    :param stdout: standard output
+    """
+    def __init__(self, stdout):
+        self.stdout = stdout
         self.last_printed_len = 0
 
     def print_status(self, s):
-        self.file.write('\r' + s + ' ' * max(self.last_printed_len - len(s), 0))
-        self.file.flush()
+        self.stdout.write(_REFRESH_CHAR + s + ' ' * max(self.last_printed_len - len(s), 0))
+        self.stdout.flush()
         self.last_printed_len = len(s)

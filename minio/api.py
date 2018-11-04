@@ -525,7 +525,7 @@ class Minio(object):
 
     def fput_object(self, bucket_name, object_name, file_path,
                     content_type='application/octet-stream',
-                    metadata=None, sse=None, progress=None):
+                    metadata=None, sse=None, progress=False):
         """
         Add a new object to the cloud storage server.
 
@@ -726,7 +726,7 @@ class Minio(object):
     
     def put_object(self, bucket_name, object_name, data, length,
                    content_type='application/octet-stream',
-                   metadata=None, sse=None, progress=None):
+                   metadata=None, sse=None, progress=False):
         """
         Add a new object to the cloud storage server.
 
@@ -777,7 +777,8 @@ class Minio(object):
 
         if length > MIN_PART_SIZE:
             return self._stream_put_object(bucket_name, object_name,
-                                           data, length, metadata=metadata, sse=sse, progress=progress)
+                                           data, length, metadata=metadata,
+                                           sse=sse, progress=progress)
 
         current_data = data.read(length)
         if len(current_data) != length:
@@ -787,7 +788,8 @@ class Minio(object):
 
         return self._do_put_object(bucket_name, object_name,
                                    current_data, len(current_data),
-                                   metadata=metadata, sse=sse, progress=progress)
+                                   metadata=metadata, sse=sse,
+                                   progress=progress)
 
     def list_objects(self, bucket_name, prefix=None, recursive=False):
         """
@@ -1437,6 +1439,7 @@ class Minio(object):
         :param part_number: Part number of the data to be uploaded [OPTIONAL].
         :param metadata: Any additional metadata to be uploaded along
            with your object.
+        :param progress: A progress object
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -1513,6 +1516,7 @@ class Minio(object):
            Defaults to 'application/octet-stream'.
         :param metadata: Any additional metadata to be uploaded along
            with your object.
+        :param progress: A progress object
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
