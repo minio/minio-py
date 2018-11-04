@@ -100,6 +100,8 @@ class Progress(Thread):
         Update file size to be showed.
         :param size: File size to be showed. The file size should be in bytes.
         """
+        if not isinstance(size, int):
+            raise ValueError('{} type can not be displayed. Please change it to Int.'.format(type(size)))
 
         if self.current_size == 0:
             self.start()
@@ -128,7 +130,7 @@ def format_meter(n, total, elapsed):
     """
     Consistent format to be displayed on the screen.
     :param n: Number of finished file size
-    :param total: Total file size, or None
+    :param total: Total file size
     :param elapsed: number of seconds passed since start
     """
 
