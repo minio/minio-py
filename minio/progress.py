@@ -100,7 +100,8 @@ class Progress(Thread):
         :param size: Object size to be showed. The object size should be in bytes.
         """
         if not isinstance(size, int):
-            raise ValueError('{} type can not be displayed. Please change it to Int.'.format(type(size)))
+            raise ValueError('{} type can not be displayed. '
+                             'Please change it to Int.'.format(type(size)))
 
         if self.current_size == 0:
             self.start()
