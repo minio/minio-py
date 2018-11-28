@@ -210,7 +210,7 @@ class ResponseError(MinioError):
                     self.code = 'NoSuchBucket'
                     self.message = self._response.reason
         elif self._response.status == 409:
-            self.code = 'Confict'
+            self.code = 'Conflict'
             self.message = 'The bucket you tried to delete is not empty.'
         elif self._response.status == 403:
             self.code = 'AccessDenied'
