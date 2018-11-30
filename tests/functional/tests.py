@@ -376,6 +376,42 @@ def test_copy_object_no_copy_condition(client, log_output, ssec_copy=None, ssec=
     # Test passes
     print(log_output.json_report())
 
+def test_copy_object_with_metadata(client, log_output):
+    # default value for log_output.function attribute is;
+    # log_output.function = "copy_object(bucket_name, object_name, object_source, metadata)"
+
+    # Get a unique bucket_name and object_name
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
+    object_name = uuid.uuid4().__str__()
+    log_output.args['object_source'] = object_source = object_name+'-source'
+    log_output.args['object_name'] = object_copy = object_name+'-copy'
+    log_output.args['metadata'] = metadata = {"testing-string": "string", "testing-int": 1}
+    try:
+        client.make_bucket(bucket_name)
+        # Upload a streaming object of 1MiB
+        KB_1 = 1024 # 1KiB.
+        KB_1_reader = LimitedRandomReader(KB_1)
+        client.put_object(bucket_name, object_source, KB_1_reader, KB_1)
+        
+        # Perform a server side copy of an object
+        client.copy_object(bucket_name, object_copy,
+                           '/'+bucket_name+'/'+object_source,metadata=metadata)
+        # Verification
+        stat_obj = client.stat_object(bucket_name, object_copy)
+        expected_metadata = {'x-amz-meta-testing-int': '1', 'x-amz-meta-testing-string': 'string'}
+        validate_stat_data(stat_obj, KB_1, expected_metadata)
+    except Exception as err:
+        raise Exception(err)
+    finally:
+        try:
+            client.remove_object(bucket_name, object_source)
+            client.remove_object(bucket_name, object_copy)
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            raise Exception(err)
+    # Test passes
+    print(log_output.json_report())
+    
 def test_copy_object_etag_match(client, log_output):
     # default value for log_output.function attribute is;
     # log_output.function = "copy_object(bucket_name, object_name, object_source, conditions)"
@@ -1769,6 +1805,9 @@ def main():
 
             log_output =  LogOutput(client.copy_object, 'test_copy_object_etag_match')
             test_copy_object_etag_match(client, log_output)
+
+            log_output =  LogOutput(client.copy_object, 'test_copy_object_with_metadata')
+            test_copy_object_with_metadata(client, log_output)
 
             log_output =  LogOutput(client.copy_object, 'test_copy_object_negative_etag_match')
             test_copy_object_negative_etag_match(client, log_output)

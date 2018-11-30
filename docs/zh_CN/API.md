@@ -663,7 +663,7 @@ except ResponseError as err:
 ```
 
 <a name="copy_object"></a>
-### copy_object(bucket_name, object_name, object_source, copy_conditions=None)
+### copy_object(bucket_name, object_name, object_source, copy_conditions=None, metadata=None)
  拷贝对象存储服务上的源对象到一个新对象。
 
 注意：本API支持的最大文件大小是5GB。
@@ -702,10 +702,13 @@ copy_conditions.set_match_etag("31624deb84149d2f8ef9c385918b653a")
 # Set matching ETag except condition, copy object which does not match the following ETag.
 copy_conditions.set_match_etag_except("31624deb84149d2f8ef9c385918b653a")
 
+# Set metadata
+metadata = {"test-key": "test-data"}
+
 try:
     copy_result = minioClient.copy_object("mybucket", "myobject",
                                           "/my-sourcebucketname/my-sourceobjectname",
-                                          copy_conditions)
+                                          copy_conditions,metadata=metadata)
     print(copy_result)
 except ResponseError as err:
     print(err)
