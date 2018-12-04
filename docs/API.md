@@ -708,7 +708,7 @@ except ResponseError as err:
 ```
 
 <a name="copy_object"></a>
-### copy_object(bucket_name, object_name, object_source, copy_conditions=None)
+### copy_object(bucket_name, object_name, object_source, copy_conditions=None, metadata=None)
  Copy a source object on object storage server to a new object.
 
  NOTE: Maximum object size supported by this API is 5GB.
@@ -723,6 +723,7 @@ __Parameters__
 |``copy_conditions`` |_CopyConditions_ | Collection of conditions to be satisfied for the request (optional, defaults to 'None'). |
 |``source_sse`` |_dict_   |Server-Side Encryption headers for source object (optional, defaults to None).   |
 |``sse`` |_dict_   |Server-Side Encryption headers for destination object (optional, defaults to None).   |
+|``metadata`` |_dict_   |User defined metadata to be copied with the destination object (optional, defaults to None).   |
 
 
 __Example__
@@ -749,10 +750,13 @@ copy_conditions.set_match_etag("31624deb84149d2f8ef9c385918b653a")
 # Set matching ETag except condition, copy object which does not match the following ETag.
 copy_conditions.set_match_etag_except("31624deb84149d2f8ef9c385918b653a")
 
+# Set metadata, which will be copied along with the destination object.
+metadata = {"test-key": "test-data"}
+
 try:
     copy_result = minioClient.copy_object("mybucket", "myobject",
                                           "/my-sourcebucketname/my-sourceobjectname",
-                                          copy_conditions)
+                                          copy_conditions,metadata=metadata)
     print(copy_result)
 except ResponseError as err:
     print(err)
