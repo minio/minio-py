@@ -29,6 +29,7 @@ This module implements the API.
 # Standard python packages
 from __future__ import absolute_import
 import platform
+from threading import Thread
 
 from time import mktime
 from datetime import datetime, timedelta
@@ -93,7 +94,6 @@ from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_delete_objects)
 from .fold_case_dict import FoldCaseDict
 from .thread_pool import ThreadPool
-from .progress import Progress
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
@@ -525,7 +525,7 @@ class Minio(object):
 
     def fput_object(self, bucket_name, object_name, file_path,
                     content_type='application/octet-stream',
-                    metadata=None, sse=None, progress=False):
+                    metadata=None, sse=None, progress=None):
         """
         Add a new object to the cloud storage server.
 
@@ -538,7 +538,7 @@ class Minio(object):
         :param content_type: Content type of the object.
         :param metadata: Any additional metadata to be uploaded along
             with your PUT request.
-        :param progress: Display progress
+        :param progress: A progress object
         :return: etag
         """
 
@@ -735,7 +735,7 @@ class Minio(object):
     
     def put_object(self, bucket_name, object_name, data, length,
                    content_type='application/octet-stream',
-                   metadata=None, sse=None, progress=False):
+                   metadata=None, sse=None, progress=None):
         """
         Add a new object to the cloud storage server.
 
@@ -758,13 +758,18 @@ class Minio(object):
         :param content_type: mime type of object as a string.
         :param metadata: Any additional metadata to be uploaded along
             with your PUT request.
-        :param progress: Display progress
+        :param progress: A progress object
         :return: etag
         """
 
         is_valid_sse_object(sse)
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
+
+        if progress:
+            if not isinstance(progress, Thread):
+                raise TypeError('Progress object should inherit the thread.')
+            progress.set_meta(total_length=length, object_name=object_name)
 
         if not callable(getattr(data, 'read')):
             raise ValueError(
@@ -780,9 +785,6 @@ class Minio(object):
 
         metadata['Content-Type'] = 'application/octet-stream' if \
             not content_type else content_type
-        
-        if progress:
-            progress = Progress(total_size=length, object_name=object_name)
 
         if length > MIN_PART_SIZE:
             return self._stream_put_object(bucket_name, object_name,

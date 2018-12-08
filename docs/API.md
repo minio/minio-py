@@ -779,7 +779,7 @@ __Parameters__
 |``content_type``   |_string_ | Content type of the object. (optional, defaults to 'application/octet-stream').   |
 |``metadata``   |_dict_ | Any additional metadata. (optional, defaults to None). |
 |``sse`` |_dict_   |Server-Side Encryption headers (optional, defaults to None).   |
-|``progress`` |_bool_   |Display progress (optional, defaults to False).   |
+|``progress`` |_subclass_of_threading_   |A progress object (optional, defaults to None).   |
 
 __Return Value__
 
@@ -827,7 +827,7 @@ __Parameters__
 |``content_type``   |_string_ | Content type of the object (optional, defaults to 'application/octet-stream'). |
 |``metadata``   |_dict_ | Any additional metadata (optional, defaults to None). |
 |``sse`` |_dict_   |Server-Side Encryption headers (optional, defaults to None).   |
-|``progress`` |_bool_   |Display progress (optional, defaults to False).   |
+|``progress`` |_subclass_of_threading_   |A progress object (optional, defaults to None).   |
 
 __Return Value__
 
