@@ -684,7 +684,7 @@ class Minio(object):
                                         sse=sse)
 
     def copy_object(self, bucket_name, object_name, object_source,
-                    conditions=None, source_sse=None, sse=None):
+                    conditions=None, source_sse=None, sse=None, metadata=None):
         """
         Copy a source object on object storage server to a new object.
 
@@ -697,14 +697,23 @@ class Minio(object):
         :param object_source: Source object to be copied.
         :param conditions: :class:`CopyConditions` object. Collection of
         supported CopyObject conditions.
+        :param metadata: Any user-defined metadata to be copied along with 
+        destination object.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
         is_non_empty_string(object_source)
 
         headers = {}
+
+        # Preserving the user-defined metadata in headers
+        if metadata is not None:
+            headers = amzprefix_user_metadata(metadata)
+            headers["x-amz-metadata-directive"] = "REPLACE"
+        
         if conditions:
-            headers = {k: v for k, v in conditions.items()}
+            for k, v in conditions.items():
+                headers[k] = v 
         
         # Source argument to copy_object can only be of type copy_SSE_C
         if source_sse:
