@@ -514,6 +514,8 @@ class Minio(object):
             try:
                 for line in response.stream():
                     if line.strip():
+                        if hasattr(line, 'decode'):
+                            line = line.decode('utf-8')
                         event = json.loads(line)
                         if event['Records'] is not None:
                             yield event
