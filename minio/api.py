@@ -252,9 +252,11 @@ class Minio(object):
         """
         is_valid_bucket_name(bucket_name)
 
-        ## Region already set in constructor, validate if
-        ## caller requested bucket location is same.
+        # Default region for all requests.
+        region = 'us-east-1'
         if self._region:
+            region = self._region
+            # Validate if caller requested bucket location is same as current region
             if self._region != location:
                 raise InvalidArgumentError("Configured region {0}, requested"
                                            " {1}".format(self._region,
@@ -283,7 +285,7 @@ class Minio(object):
         url = self._endpoint_url + '/' + bucket_name + '/'
 
         # Get signature headers if any.
-        headers = sign_v4(method, url, location,
+        headers = sign_v4(method, url, region,
                           headers, self._access_key,
                           self._secret_key, content_sha256_hex)
 
@@ -516,6 +518,8 @@ class Minio(object):
             try:
                 for line in response.stream():
                     if line.strip():
+                        if hasattr(line, 'decode'):
+                            line = line.decode('utf-8')
                         event = json.loads(line)
                         if event['Records'] is not None:
                             yield event
