@@ -773,6 +773,7 @@ class Minio(object):
         if progress:
             if not isinstance(progress, Thread):
                 raise TypeError('Progress object should inherit the thread.')
+            # Set progress bar length and object name before upload
             progress.set_meta(total_length=length, object_name=object_name)
 
         if not callable(getattr(data, 'read')):
@@ -1505,6 +1506,7 @@ class Minio(object):
         )
 
         if progress:
+            # Update the 'progress' object with uploaded 'part_size'.
             progress.update(part_size)
         return response.headers['etag'].replace('"', '')
 
