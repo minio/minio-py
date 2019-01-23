@@ -255,20 +255,14 @@ def get_target_url(endpoint_url, bucket_name=None, object_name=None,
         ordered_query = collections.OrderedDict(sorted(query.items()))
         query_components = []
         for component_key in ordered_query:
-            if ordered_query[component_key] is not None:
-                if isinstance(ordered_query[component_key], list):
-                    for value in ordered_query[component_key]:
-                        query_components.append(component_key+'='+
-                                                queryencode(value))
-                else:
-                    query_components.append(
-                        component_key+'='+
-                        queryencode(
-                            ordered_query[component_key]
-                        )
-                    )
+            if isinstance(ordered_query[component_key], list):
+                for value in ordered_query[component_key]:
+                    query_components.append(component_key+'='+
+                                            queryencode(value))
             else:
-                query_components.append(component_key)
+                query_components.append(
+                    component_key+'='+
+                    queryencode(ordered_query.get(component_key, '')))
 
         query_string = '&'.join(query_components)
         if query_string:

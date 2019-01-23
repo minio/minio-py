@@ -45,7 +45,7 @@ class ListIncompleteUploadsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('GET',
-                         'https://localhost:9000/bucket/?max-uploads=1000&uploads=',
+                         'https://localhost:9000/bucket/?max-uploads=1000&prefix=&uploads=',
                          {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data))
         client = Minio('localhost:9000')
         upload_iter = client._list_incomplete_uploads('bucket', '', True, False)
@@ -102,7 +102,7 @@ class ListIncompleteUploadsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('GET',
-                         'https://localhost:9000/bucket/?delimiter=%2F&max-uploads=1000&uploads=',
+                         'https://localhost:9000/bucket/?delimiter=%2F&max-uploads=1000&prefix=&uploads=',
                          {'User-Agent': _DEFAULT_USER_AGENT},
                          200, content=mock_data))
 
@@ -203,7 +203,7 @@ class ListIncompleteUploadsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('GET',
-                         'https://localhost:9000/bucket/?max-uploads=1000&uploads=',
+                         'https://localhost:9000/bucket/?max-uploads=1000&prefix=&uploads=',
                          {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data1))
 
         client = Minio('localhost:9000')
@@ -213,7 +213,7 @@ class ListIncompleteUploadsTest(TestCase):
             mock_server.mock_add_request(MockResponse('GET',
                                                       'https://localhost:9000/bucket/?'
                                                       'key-marker=keymarker&'
-                                                      'max-uploads=1000&'
+                                                      'max-uploads=1000&prefix=&'
                                                       'upload-id-marker=uploadidmarker&uploads=',
                                                       {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data2))
             uploads.append(upload)

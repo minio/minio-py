@@ -392,7 +392,7 @@ def test_copy_object_with_metadata(client, log_output):
         KB_1 = 1024 # 1KiB.
         KB_1_reader = LimitedRandomReader(KB_1)
         client.put_object(bucket_name, object_source, KB_1_reader, KB_1)
-        
+
         # Perform a server side copy of an object
         client.copy_object(bucket_name, object_copy,
                            '/'+bucket_name+'/'+object_source,metadata=metadata)
@@ -411,7 +411,7 @@ def test_copy_object_with_metadata(client, log_output):
             raise Exception(err)
     # Test passes
     print(log_output.json_report())
-    
+
 def test_copy_object_etag_match(client, log_output):
     # default value for log_output.function attribute is;
     # log_output.function = "copy_object(bucket_name, object_name, object_source, conditions)"
@@ -578,7 +578,7 @@ def normalize_metadata(meta_data):
     norm_dict = {k.lower(): v for k, v in meta_data.items()}
     return norm_dict
 
-    
+
 def test_put_object(client, log_output, sse=None):
     # default value for log_output.function attribute is;
     # log_output.function = "put_object(bucket_name, object_name, data, length, content_type, metadata)"
@@ -907,7 +907,7 @@ def test_list_objects(client, log_output):
         client.put_object(bucket_name, object_name+"-2", MB_1_reader, MB_1)
         # List all object paths in bucket.
         log_output.args['recursive'] = is_recursive = True
-        objects = client.list_objects(bucket_name, None, is_recursive)
+        objects = client.list_objects(bucket_name, '', is_recursive)
         for obj in objects:
             _, _, _, _, _, _ = obj.bucket_name,\
                                obj.object_name,\
@@ -1081,7 +1081,7 @@ def test_list_objects_v2(client, log_output):
         client.put_object(bucket_name, object_name+"-2", MB_1_reader, MB_1)
         # List all object paths in bucket using V2 API.
         log_output.args['recursive'] = is_recursive = True
-        objects = client.list_objects_v2(bucket_name, None, is_recursive)
+        objects = client.list_objects_v2(bucket_name, '', is_recursive)
         for obj in objects:
             _, _, _, _, _, _ = obj.bucket_name,\
                                obj.object_name,\
