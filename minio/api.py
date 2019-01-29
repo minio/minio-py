@@ -72,7 +72,7 @@ from .helpers import (get_target_url, is_non_empty_string,
                       get_sha256_hexdigest, get_md5_base64digest, Hasher,
                       optimal_part_info,
                       is_valid_bucket_name, PartMetadata, read_full,
-                      get_s3_region_from_endpoint, is_valid_sse_object, is_valid_sse_c_object, 
+                      get_s3_region_from_endpoint, is_valid_sse_object, is_valid_sse_c_object,
                       is_valid_source_sse_object,
                       is_valid_bucket_notification_config, is_valid_policy_type,
                       get_s3_region_from_endpoint,
@@ -496,6 +496,14 @@ class Minio(object):
         """
         is_valid_bucket_name(bucket_name)
 
+        # If someone explicitly set prefix to None convert it to empty string.
+        if prefix is None:
+            prefix = ''
+
+        # If someone explicitly set suffix to None convert it to empty string.
+        if suffix is None:
+            suffix = ''
+
         url_components = urlsplit(self._endpoint_url)
         if url_components.hostname == 's3.amazonaws.com':
             raise InvalidArgumentError(
@@ -697,7 +705,7 @@ class Minio(object):
         :param object_source: Source object to be copied.
         :param conditions: :class:`CopyConditions` object. Collection of
         supported CopyObject conditions.
-        :param metadata: Any user-defined metadata to be copied along with 
+        :param metadata: Any user-defined metadata to be copied along with
         destination object.
         """
         is_valid_bucket_name(bucket_name)
@@ -710,16 +718,16 @@ class Minio(object):
         if metadata is not None:
             headers = amzprefix_user_metadata(metadata)
             headers["x-amz-metadata-directive"] = "REPLACE"
-        
+
         if conditions:
             for k, v in conditions.items():
-                headers[k] = v 
-        
+                headers[k] = v
+
         # Source argument to copy_object can only be of type copy_SSE_C
         if source_sse:
             is_valid_source_sse_object(source_sse)
             headers.update(source_sse.marshal())
- 
+
         #Destination argument to copy_object cannot be of type copy_SSE_C
         if sse:
             is_valid_sse_object(sse)
@@ -732,10 +740,10 @@ class Minio(object):
                                   headers=headers)
 
         return parse_copy_object(bucket_name, object_name, response.data)
-    
+
     def put_object(self, bucket_name, object_name, data, length,
                    content_type='application/octet-stream',
-                   metadata=None, 
+                   metadata=None,
                    sse=None,
                    ):
         """
@@ -796,7 +804,7 @@ class Minio(object):
                                    metadata=metadata,
                                    sse=sse)
 
-    def list_objects(self, bucket_name, prefix=None, recursive=False):
+    def list_objects(self, bucket_name, prefix='', recursive=False):
         """
         List objects in the given bucket.
 
@@ -835,16 +843,17 @@ class Minio(object):
         """
         is_valid_bucket_name(bucket_name)
 
+        # If someone explicitly set prefix to None convert it to empty string.
+        if prefix is None:
+            prefix = ''
+
         method = 'GET'
 
         # Initialize query parameters.
         query = {
-            'max-keys': '1000'
+            'max-keys': '1000',
+            'prefix': prefix
         }
-
-        # Add if prefix present.
-        if prefix:
-            query['prefix'] = prefix
 
         # Delimited by default.
         if not recursive:
@@ -865,7 +874,7 @@ class Minio(object):
             for obj in objects:
                 yield obj
 
-    def list_objects_v2(self, bucket_name, prefix=None, recursive=False):
+    def list_objects_v2(self, bucket_name, prefix='', recursive=False):
         """
         List objects in the given bucket using the List objects V2 API.
 
@@ -904,13 +913,15 @@ class Minio(object):
         """
         is_valid_bucket_name(bucket_name)
 
+        # If someone explicitly set prefix to None convert it to empty string.
+        if prefix is None:
+            prefix = ''
+
         # Initialize query parameters.
         query = {
-            'list-type': '2'
+            'list-type': '2',
+            'prefix': prefix
         }
-        # Add if prefix present.
-        if prefix:
-            query['prefix'] = prefix
 
         # Delimited by default.
         if not recursive:
@@ -1058,7 +1069,7 @@ class Minio(object):
                 # clear batch for next set of items
                 obj_batch = []
 
-    def list_incomplete_uploads(self, bucket_name, prefix=None,
+    def list_incomplete_uploads(self, bucket_name, prefix='',
                                 recursive=False):
         """
         List all in-complete uploads for a given bucket.
@@ -1104,7 +1115,7 @@ class Minio(object):
 
         return self._list_incomplete_uploads(bucket_name, prefix, recursive)
 
-    def _list_incomplete_uploads(self, bucket_name, prefix=None,
+    def _list_incomplete_uploads(self, bucket_name, prefix='',
                                  recursive=False, is_aggregate_size=True):
         """
         List incomplete uploads list all previously uploaded incomplete multipart objects.
@@ -1116,18 +1127,21 @@ class Minio(object):
         """
         is_valid_bucket_name(bucket_name)
 
+        # If someone explicitly set prefix to None convert it to empty string.
+        if prefix is None:
+            prefix = ''
+
         # Initialize query parameters.
         query = {
             'uploads': '',
-            'max-uploads': '1000'
+            'max-uploads': '1000',
+            'prefix': prefix
         }
 
-        if prefix:
-            query['prefix'] = prefix
         if not recursive:
             query['delimiter'] = '/'
 
-        key_marker, upload_id_marker = None, None
+        key_marker, upload_id_marker = '', ''
         is_truncated = True
         while is_truncated:
             if key_marker:
@@ -1181,7 +1195,7 @@ class Minio(object):
         }
 
         is_truncated = True
-        part_number_marker = None
+        part_number_marker = ''
         while is_truncated:
             if part_number_marker:
                 query['part-number-marker'] = str(part_number_marker)
@@ -1423,7 +1437,7 @@ class Minio(object):
 
         if sse:
             headers.update(sse.marshal())
-           
+
         return self._url_open('GET',
                                bucket_name=bucket_name,
                                object_name=object_name,
@@ -1458,8 +1472,8 @@ class Minio(object):
             'Content-Length': part_size,
         }
 
-        md5_base64 = None
-        sha256_hex = None
+        md5_base64 = ''
+        sha256_hex = ''
         if self._is_ssl:
             md5_base64 = get_md5_base64digest(part_data)
             sha256_hex = _UNSIGNED_PAYLOAD

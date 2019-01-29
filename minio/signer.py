@@ -125,6 +125,8 @@ def presign_v4(method, url, access_key, secret_key, region=None,
                 single_component.append(
                     queryencode(ordered_query[component_key])
                 )
+            else:
+                single_component.append('=')
             query_components.append(''.join(single_component))
 
         query_string = '&'.join(query_components)
