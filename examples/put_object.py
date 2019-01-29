@@ -20,6 +20,7 @@ import os
 
 from minio import Minio
 from minio.error import ResponseError
+from examples.progress import Progress
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
@@ -40,5 +41,15 @@ try:
         file_stat = os.stat('my-testfile.csv')
         client.put_object('my-bucketname', 'my-objectname', file_data,
                           file_stat.st_size, content_type='application/csv')
+except ResponseError as err:
+    print(err)
+
+# Put a file with progress.
+progress = Progress()
+try:
+    with open('my-testfile', 'rb') as file_data:
+        file_stat = os.stat('my-testfile')
+        client.put_object('my-bucketname', 'my-objectname',
+                          file_data, file_stat.st_size, progress=progress)
 except ResponseError as err:
     print(err)
