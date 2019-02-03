@@ -82,7 +82,7 @@ from minio.error import ResponseError
 import urllib3
 
 httpClient = urllib3.ProxyManager(
-                'https://proxy_host.sampledomain.com:8119/'
+                'https://proxy_host.sampledomain.com:8119/',
                 timeout=urllib3.Timeout.DEFAULT_TIMEOUT,
                 cert_reqs='CERT_REQUIRED',
                 retries=urllib3.Retry(
