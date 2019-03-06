@@ -31,15 +31,12 @@ from __future__ import absolute_import
 import platform
 from threading import Thread
 
-from time import mktime
 from datetime import datetime, timedelta
 
 import io
 import json
 import os
 import itertools
-import codecs
-
 
 
 try:
@@ -56,8 +53,8 @@ import dateutil.parser
 from . import __title__, __version__
 from .compat import (urlsplit, queryencode,
                      range, basestring)
-from .error import (KnownResponseError, ResponseError, NoSuchBucket, AccessDenied,
-                    InvalidArgumentError, InvalidSizeError, InvalidXMLError, NoSuchBucketPolicy)
+from .error import (ResponseError, NoSuchBucket, AccessDenied,
+                    InvalidArgumentError, InvalidSizeError, InvalidXMLError)
 from .definitions import Object, UploadPart
 from .parsers import (parse_list_buckets,
                       parse_list_objects,
@@ -72,13 +69,12 @@ from .parsers import (parse_list_buckets,
                       parse_multi_object_delete_response)
 from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_endpoint,
-                      get_sha256_hexdigest, get_md5_base64digest, Hasher,
+                      get_sha256_hexdigest, get_md5_base64digest,
                       optimal_part_info,
-                      is_valid_bucket_name, PartMetadata, read_full,
+                      is_valid_bucket_name, read_full,
                       get_s3_region_from_endpoint, is_valid_sse_object, is_valid_sse_c_object,
                       is_valid_source_sse_object,
                       is_valid_bucket_notification_config, is_valid_policy_type,
-                      get_s3_region_from_endpoint,
                       mkdir_p, dump_http, amzprefix_user_metadata,
                       is_supported_header,is_amz_header)
 from .helpers import (MAX_MULTIPART_OBJECT_SIZE,
@@ -130,6 +126,7 @@ class Minio(object):
     :param endpoint: Hostname of the cloud storage server.
     :param access_key: Access key to sign self._http.request with.
     :param secret_key: Secret key to sign self._http.request with.
+    :param session_token: Session token to sign self._http.request with.
     :param secure: Set this value if wish to make secure requests.
          Default is True.
     :param region: Set this value to override automatic bucket
@@ -139,7 +136,9 @@ class Minio(object):
     :return: :class:`Minio <Minio>` object
     """
     def __init__(self, endpoint, access_key=None,
-                 secret_key=None, secure=True,
+                 secret_key=None,
+                 session_token=None,
+                 secure=True,
                  region=None,
                  http_client=None):
 
@@ -169,6 +168,7 @@ class Minio(object):
         self._is_ssl = secure
         self._access_key = access_key
         self._secret_key = secret_key
+        self._session_token = session_token
         self._user_agent = _DEFAULT_USER_AGENT
         self._trace_output_stream = None
 
@@ -287,7 +287,9 @@ class Minio(object):
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
                           headers, self._access_key,
-                          self._secret_key, content_sha256_hex)
+                          self._secret_key,
+                          self._session_token,
+                          content_sha256_hex)
 
         response = self._http.urlopen(method, url,
                                       body=content,
@@ -324,7 +326,9 @@ class Minio(object):
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
                           headers, self._access_key,
-                          self._secret_key, None)
+                          self._secret_key,
+                          self._session_token,
+                          None)
 
         response = self._http.urlopen(method, url,
                                       body=None,
@@ -354,9 +358,9 @@ class Minio(object):
         try:
             self._url_open('HEAD', bucket_name=bucket_name)
         # If the bucket has not been created yet, Minio will return a "NoSuchBucket" error.
-        except NoSuchBucket as e:
+        except NoSuchBucket:
             return False
-        except ResponseError as e:
+        except ResponseError:
             raise
         return True
 
@@ -1293,6 +1297,7 @@ class Minio(object):
         return presign_v4(method, url,
                           self._access_key,
                           self._secret_key,
+                          session_token=self._session_token,
                           region=region,
                           expires=int(expires.total_seconds()),
                           response_headers=response_headers,
@@ -1384,21 +1389,29 @@ class Minio(object):
         credential_string = generate_credential_string(self._access_key,
                                                        date, region)
 
-        post_policy_base64 = post_policy.base64(extras=[
+        policy = [
             ('eq', '$x-amz-date', iso8601_date),
             ('eq', '$x-amz-algorithm', _SIGN_V4_ALGORITHM),
             ('eq', '$x-amz-credential', credential_string),
-        ])
+        ]
+        if self._session_token:
+            policy.add(('eq', '$x-amz-security-token', self._session_token))
+
+        post_policy_base64 = post_policy.base64(extras=policy)
         signature = post_presign_signature(date, region,
                                            self._secret_key,
                                            post_policy_base64)
-        post_policy.form_data.update({
+        form_data = {
             'policy': post_policy_base64,
             'x-amz-algorithm': _SIGN_V4_ALGORITHM,
             'x-amz-credential': credential_string,
             'x-amz-date': iso8601_date,
             'x-amz-signature': signature,
-        })
+        }
+        if self._session_token:
+            form_data['x-amz-security-token'] = self._session_token
+
+        post_policy.form_data.update(form_data)
         url_str = get_target_url(self._endpoint_url,
                                  bucket_name=post_policy.form_data['bucket'],
                                  bucket_region=region)
@@ -1779,7 +1792,9 @@ class Minio(object):
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
                           headers, self._access_key,
-                          self._secret_key, None)
+                          self._secret_key,
+                          self._session_token,
+                          None)
 
         response = self._http.urlopen(method, url,
                                       body=None,
@@ -1828,7 +1843,8 @@ class Minio(object):
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
                           fold_case_headers, self._access_key,
-                          self._secret_key, content_sha256)
+                          self._secret_key, self._session_token,
+                          content_sha256)
 
         response = self._http.urlopen(method, url,
                                       body=body,
