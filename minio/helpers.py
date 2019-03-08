@@ -665,6 +665,7 @@ def is_supported_header(key):
     supported_headers = [
 	   "cache-control",
 	   "content-encoding",
+	   "content-type",
 	   "content-disposition",
 	   "content-language",
 	   "x-amz-website-redirect-location",
