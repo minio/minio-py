@@ -127,8 +127,9 @@ class HeaderTests(TestCase):
                   'content-language':'fr'
                   }
         m = amzprefix_user_metadata(metadata)
-        self.assertTrue('X-Amz-Meta-hhh',m)
-        self.assertTrue('Content-Type',m)
-        self.assertTrue('x-amz-storage-class',m)
-        self.assertTrue('content-language',m)
-        self.assertTrue('X-Amz-Meta-amz-meta-setting',m)
+        self.assertTrue('Content-Type' in m)
+        self.assertTrue('content-language' in m)
+
+        self.assertTrue('X-Amz-Meta-hhh' in m)
+        self.assertTrue('x-amz-storage-class' in m)
+        self.assertTrue('X-Amz-Meta-amz-meta-setting' in m)
