@@ -26,7 +26,7 @@ This module contains core API parsers.
 import base64
 import hashlib
 import json
-from .error import (InvalidArgumentError, InvalidSizeError, InvalidXMLError, NoSuchBucketPolicy)
+from .error import (InvalidArgumentError, InvalidSizeError)
 
 class SSE_C(object):
 
@@ -34,10 +34,10 @@ class SSE_C(object):
         self.key = key
         if len(self.key) != 32:
             raise InvalidSizeError("SSE-C keys need to be 256 bit base64 encoded")
-    
+
     def type(self):
         return "SSE-C"
-    
+
     def marshal(self):
 
         b64key = base64.b64encode(self.key)
@@ -95,9 +95,9 @@ class SSE_KMS(object):
                 b64key = base64.b64encode(ctx_str)
                 header = {"X-Amz-Server-Side-Encryption-Context": b64key.decode()}
                 keys.update(header)
-        
+
         return keys
-        
+
 
 class SSE_S3(object):
     def type(self):
@@ -108,4 +108,3 @@ class SSE_S3(object):
             "X-Amz-Server-Side-Encryption":"AES256"
         }
         return keys
-    
