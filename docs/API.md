@@ -249,6 +249,7 @@ __Parameters__
 |``bucket_name`` | _string_ | Name of the bucket.|
 |``prefix``| _string_ |The prefix of the objects that should be listed.  Optional, default is None.|
 |``recursive``   | _bool_ |``True`` indicates recursive style listing and ``False`` indicates directory style listing delimited by '/'. Optional, default is False.|
+|``start_after``| _string_ | Starting listing after the specified path.  Optional, default is None.|
 
 __Return Value__
 
@@ -270,7 +271,7 @@ __Example__
 ```py
 # List all object paths in bucket that begin with my-prefixname.
 objects = minioClient.list_objects_v2('mybucket', prefix='my-prefixname',
-                              recursive=True)
+                          recursive=True, start_after='start-after-this-prefix')
 for obj in objects:
     print(obj.bucket_name, obj.object_name.encode('utf-8'), obj.last_modified,
           obj.etag, obj.size, obj.content_type)
