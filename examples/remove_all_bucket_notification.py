@@ -26,6 +26,6 @@ client = Minio('s3.amazonaws.com',
 
 try:
     # Remove all notification config for a bucket.
-    client.remove_all_bucket_notifications('my-bucketname')
+    client.remove_all_bucket_notification('my-bucketname')
 except ResponseError as err:
     print(err)

@@ -28,18 +28,18 @@ s3Client = Minio('s3.amazonaws.com',
 
 
 
-|Bucket operations | Object operations| Presigned operations | Bucket policy/notification operations
-|:---|:---|:---|:---|
-| [`make_bucket`](#make_bucket) | [`get_object`](#get_object) | [`presigned_get_object`](#presigned_get_object) | [`get_bucket_policy`](#get_bucket_policy) |
-| [`list_buckets`](#list_buckets) | [`put_object`](#put_object) | [`presigned_put_object`](#presigned_put_object) | [`set_bucket_policy`](#set_bucket_policy) |
-| [`bucket_exists`](#bucket_exists) | [`copy_object`](#copy_object) | [`presigned_post_policy`](#presigned_post_policy) | [`get_bucket_notification`](#get_bucket_notification) |
-| [`remove_bucket`](#remove_bucket) | [`stat_object`](#stat_object) | | [`set_bucket_notification`](#set_bucket_notification) |
-| [`list_objects`](#list_objects) | [`remove_object`](#remove_object) | | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
-| [`list_objects_v2`](#list_objects_v2) | [`remove_objects`](#remove_objects) | | [`listen_bucket_notification`](#listen_bucket_notification) |
-| [`list_incomplete_uploads`](#list_incomplete_uploads) | [`remove_incomplete_upload`](#remove_incomplete_upload) | | |
-| | [`fput_object`](#fput_object) | | |
-| | [`fget_object`](#fget_object) | | |
-| | [`get_partial_object`](#get_partial_object) | | |
+| Bucket operations                                     | Object operations                                       | Presigned operations                              | Bucket policy/notification operations                               |
+|:------------------------------------------------------|:--------------------------------------------------------|:--------------------------------------------------|:--------------------------------------------------------------------|
+| [`make_bucket`](#make_bucket)                         | [`get_object`](#get_object)                             | [`presigned_get_object`](#presigned_get_object)   | [`get_bucket_policy`](#get_bucket_policy)                           |
+| [`list_buckets`](#list_buckets)                       | [`put_object`](#put_object)                             | [`presigned_put_object`](#presigned_put_object)   | [`set_bucket_policy`](#set_bucket_policy)                           |
+| [`bucket_exists`](#bucket_exists)                     | [`copy_object`](#copy_object)                           | [`presigned_post_policy`](#presigned_post_policy) | [`get_bucket_notification`](#get_bucket_notification)               |
+| [`remove_bucket`](#remove_bucket)                     | [`stat_object`](#stat_object)                           |                                                   | [`set_bucket_notification`](#set_bucket_notification)               |
+| [`list_objects`](#list_objects)                       | [`remove_object`](#remove_object)                       |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
+| [`list_objects_v2`](#list_objects_v2)                 | [`remove_objects`](#remove_objects)                     |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
+| [`list_incomplete_uploads`](#list_incomplete_uploads) | [`remove_incomplete_upload`](#remove_incomplete_upload) |                                                   |                                                                     |
+|                                                       | [`fput_object`](#fput_object)                           |                                                   |                                                                     |
+|                                                       | [`fget_object`](#fget_object)                           |                                                   |                                                                     |
+|                                                       | [`get_partial_object`](#get_partial_object)             |                                                   |                                                                     |
 
 ## 1. Constructor
 
@@ -474,7 +474,7 @@ There is no return value. If there are errors from the target
 server/service, a `ResponseError` is thrown. If there are validation
 errors, `InvalidArgumentError` or `TypeError` may be thrown. The input
 configuration cannot be empty - to delete the notification
-configuration on a bucket, use the `remove_all_bucket_notifications()`
+configuration on a bucket, use the `remove_all_bucket_notification()`
 API.
 
 __Example__
@@ -544,8 +544,8 @@ except (ArgumentError, TypeError) as err:
     print(err)
 ```
 
-<a name="remove_all_bucket_notifications"></a>
-### remove_all_bucket_notifications(bucket_name)
+<a name="remove_all_bucket_notification"></a>
+### remove_all_bucket_notification(bucket_name)
 
 Remove all notifications configured on the bucket.
 
@@ -563,7 +563,7 @@ __Example__
 
 ```py
 # Remove all the notifications config for a bucket.
-minioClient.remove_all_bucket_notifications('mybucket')
+minioClient.remove_all_bucket_notification('mybucket')
 ```
 
 <a name="listen_bucket_notification"></a>
@@ -763,29 +763,30 @@ except ResponseError as err:
 ```
 
 <a name="put_object"></a>
-### put_object(bucket_name, object_name, data, length, content_type='application/octet-stream', metadata=None)
+### put_object(bucket_name, object_name, data, length, content_type='application/octet-stream', metadata=None,  progress=None, part_size=5*1024*1024)
 Add a new object to the object storage server. If provided metadata key is not one of the valid/supported metadata names, the metadata information is saved with prefix `X-Amz-Meta-` prepended to the original metadata key name.
 
 NOTE: Maximum object size supported by this API is 5TiB.
 
 __Parameters__
 
-|Param   |Type   |Description   |
-|:---|:---|:---|
-|``bucket_name``   |_string_   |Name of the bucket.   |
-|``object_name``   |_string_    |Name of the object.   |
-|``data``   |_io.RawIOBase_   |Any python object implementing io.RawIOBase. |
-|``length``   |_int_   |Total length of object.   |
-|``content_type``   |_string_ | Content type of the object. (optional, defaults to 'application/octet-stream').   |
-|``metadata``   |_dict_ | Any additional metadata. (optional, defaults to None). |
-|``sse`` |_dict_   |Server-Side Encryption headers (optional, defaults to None).   |
-|``progress`` |_subclass_of_threading_   |A progress object (optional, defaults to None).   |
+| Param            | Type                    | Description                                                                     |
+|:-----------------|:------------------------|:--------------------------------------------------------------------------------|
+| ``bucket_name``  | _string_                | Name of the bucket.                                                             |
+| ``object_name``  | _string_                | Name of the object.                                                             |
+| ``data``         | _io.RawIOBase_          | Any python object implementing io.RawIOBase.                                    |
+| ``length``       | _int_                   | Total length of object.                                                         |
+| ``content_type`` | _string_                | Content type of the object. (optional, defaults to 'application/octet-stream'). |
+| ``metadata``     | _dict_                  | Any additional metadata. (optional, defaults to None).                          |
+| ``sse``          | _dict_                  | Server-Side Encryption headers (optional, defaults to None).                    |
+| ``progress``     | _subclass_of_threading_ | A progress object (optional, defaults to None).                                 |
+| ``part_size``    | _int_                   | Multipart part size.                                                            |
 
 __Return Value__
 
-|Param   |Type   |Description   |
-|:---|:---|:---|
-|``etag``|_string_  |Object etag computed by the server.  |
+| Param    | Type     | Description                         |
+|:---------|:---------|:------------------------------------|
+| ``etag`` | _string_ | Object etag computed by the server. |
 
 __Example__
 
@@ -814,26 +815,27 @@ except ResponseError as err:
 ```
 
 <a name="fput_object"></a>
-### fput_object(bucket_name, object_name, file_path, content_type='application/octet-stream', metadata=None)
+### fput_object(bucket_name, object_name, file_path, content_type='application/octet-stream', metadata=None, progress=None, part_size=5*1024*1024)
 Uploads contents from a file, `file_path`, to `object_name`. If provided metadata key is not one of the valid/supported metadata names, the metadata information is saved with prefix `X-Amz-Meta-` prepended to the original metadata key name.
 
 __Parameters__
 
-|Param   |Type   |Description   |
-|:---|:---|:---|
-|``bucket_name``   |_string_  |Name of the bucket.   |
-|``object_name``   |_string_    |Name of the object.   |
-|``file_path``   |_string_ |Path on the local filesystem from which object data will be read. |
-|``content_type``   |_string_ | Content type of the object (optional, defaults to 'application/octet-stream'). |
-|``metadata``   |_dict_ | Any additional metadata (optional, defaults to None). |
-|``sse`` |_dict_   |Server-Side Encryption headers (optional, defaults to None).   |
-|``progress`` |_subclass_of_threading_   |A progress object (optional, defaults to None).   |
+| Param            | Type                    | Description                                                                    |
+|:-----------------|:------------------------|:-------------------------------------------------------------------------------|
+| ``bucket_name``  | _string_                | Name of the bucket.                                                            |
+| ``object_name``  | _string_                | Name of the object.                                                            |
+| ``file_path``    | _string_                | Path on the local filesystem from which object data will be read.              |
+| ``content_type`` | _string_                | Content type of the object (optional, defaults to 'application/octet-stream'). |
+| ``metadata``     | _dict_                  | Any additional metadata (optional, defaults to None).                          |
+| ``sse``          | _dict_                  | Server-Side Encryption headers (optional, defaults to None).                   |
+| ``progress``     | _subclass_of_threading_ | A progress object (optional, defaults to None).                                |
+| ``part_size``    | _int_                   | Multipart part size.                                                           |
 
 __Return Value__
 
-|Param   |Type   |Description   |
-|:---|:---|:---|
-|``etag``|_string_  |Object etag computed by the server.  |
+| Param    | Type     | Description                         |
+|:---------|:---------|:------------------------------------|
+| ``etag`` | _string_ | Object etag computed by the server. |
 
 __Example__
 
