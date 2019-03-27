@@ -439,7 +439,7 @@ notification = minioClient.get_bucket_notification('mybucket')
           * __Value__ (string) -- 指定规则适用的值。
 
 
-没有返回值。如果目标服务报错，会抛出`ResponseError`。如果有验证错误，会抛出`InvalidArgumentError`或者`TypeError`。输入参数的configuration不能为空 - 为了删除存储桶上的通知配置，参考`remove_all_bucket_notifications()` API。
+没有返回值。如果目标服务报错，会抛出`ResponseError`。如果有验证错误，会抛出`InvalidArgumentError`或者`TypeError`。输入参数的configuration不能为空 - 为了删除存储桶上的通知配置，参考`remove_all_bucket_notification()` API。
 
 __示例__
 
@@ -508,8 +508,8 @@ except (ArgumentError, TypeError) as err:
     print(err)
 ```
 
-<a name="remove_all_bucket_notifications"></a>
-### remove_all_bucket_notifications(bucket_name)
+<a name="remove_all_bucket_notification"></a>
+### remove_all_bucket_notification(bucket_name)
 
 删除存储桶上配置的所有通知。
 
@@ -526,7 +526,7 @@ __示例__
 
 ```py
 # Remove all the notifications config for a bucket.
-minioClient.remove_all_bucket_notifications('mybucket')
+minioClient.remove_all_bucket_notification('mybucket')
 ```
 
 <a name="listen_bucket_notification"></a>

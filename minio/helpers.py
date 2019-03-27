@@ -46,8 +46,10 @@ from .error import (InvalidBucketError, InvalidEndpointError,
 # Constants
 MAX_MULTIPART_COUNT = 10000 # 10000 parts
 MAX_MULTIPART_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
+MAX_PART_SIZE = 5 * 1024 * 1024 * 1024  # 5GiB
 MAX_POOL_SIZE = 10
 MIN_PART_SIZE = 5 * 1024 * 1024  # 5MiB
+DEFAULT_PART_SIZE = MIN_PART_SIZE # Currently its 5MiB
 
 _VALID_BUCKETNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\\.\\-]+[a-z0-9]$')
 _ALLOWED_HOSTNAME_REGEX = re.compile(
@@ -616,7 +618,7 @@ def get_md5_base64digest(content):
     return Hasher.md5(content).base64digest()
 
 
-def optimal_part_info(length):
+def optimal_part_info(length, part_size):
     """
     Calculate optimal part size for multipart uploads.
 
@@ -633,8 +635,8 @@ def optimal_part_info(length):
     # Use floats for part size for all calculations to avoid
     # overflows during float64 to int64 conversions.
     part_size_float = math.ceil(length/MAX_MULTIPART_COUNT)
-    part_size_float = (math.ceil(part_size_float/MIN_PART_SIZE)
-                       * MIN_PART_SIZE)
+    part_size_float = (math.ceil(part_size_float/part_size)
+                       * part_size)
     # Total parts count.
     total_parts_count = int(math.ceil(length/part_size_float))
     # Part size.

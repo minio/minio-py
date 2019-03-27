@@ -78,8 +78,11 @@ from .helpers import (get_target_url, is_non_empty_string,
                       mkdir_p, dump_http, amzprefix_user_metadata,
                       is_supported_header,is_amz_header)
 from .helpers import (MAX_MULTIPART_OBJECT_SIZE,
+                      MAX_PART_SIZE,
                       MAX_POOL_SIZE,
-                      MIN_PART_SIZE)
+                      MIN_PART_SIZE,
+                      DEFAULT_PART_SIZE,
+                      MAX_MULTIPART_COUNT)
 from .signer import (sign_v4, presign_v4,
                      generate_credential_string,
                      post_presign_signature)
@@ -541,7 +544,8 @@ class Minio(object):
 
     def fput_object(self, bucket_name, object_name, file_path,
                     content_type='application/octet-stream',
-                    metadata=None, sse=None, progress=None):
+                    metadata=None, sse=None, progress=None,
+                    part_size=DEFAULT_PART_SIZE):
         """
         Add a new object to the cloud storage server.
 
@@ -555,6 +559,7 @@ class Minio(object):
         :param metadata: Any additional metadata to be uploaded along
             with your PUT request.
         :param progress: A progress object
+        :param part_size: Multipart part size
         :return: etag
         """
 
@@ -562,7 +567,8 @@ class Minio(object):
         with open(file_path, 'rb') as file_data:
             file_size = os.stat(file_path).st_size
             return self.put_object(bucket_name, object_name, file_data,
-                                   file_size, content_type, metadata, sse, progress)
+                                   file_size, content_type, metadata, sse,
+                                   progress, part_size)
 
     def fget_object(self, bucket_name, object_name, file_path, request_headers=None, sse=None):
         """
@@ -751,7 +757,8 @@ class Minio(object):
 
     def put_object(self, bucket_name, object_name, data, length,
                    content_type='application/octet-stream',
-                   metadata=None, sse=None, progress=None):
+                   metadata=None, sse=None, progress=None,
+                   part_size=DEFAULT_PART_SIZE):
         """
         Add a new object to the cloud storage server.
 
@@ -775,6 +782,7 @@ class Minio(object):
         :param metadata: Any additional metadata to be uploaded along
             with your PUT request.
         :param progress: A progress object
+        :param part_size: Multipart part size
         :return: etag
         """
 
@@ -792,9 +800,18 @@ class Minio(object):
             raise ValueError(
                 'Invalid input data does not implement a callable read() method')
 
-        if length > MAX_MULTIPART_OBJECT_SIZE:
-            raise InvalidArgumentError('Input content size is bigger '
-                                       ' than allowed maximum of 5TiB.')
+        if length > (part_size * MAX_MULTIPART_COUNT):
+            raise InvalidArgumentError('Part size * max_parts(10000) is '
+                                       ' lesser than input length.')
+
+        if part_size < MIN_PART_SIZE:
+            raise InvalidArgumentError('Input part size is smaller '
+                                       ' than allowed minimum of 5MiB.')
+
+        if part_size > MAX_PART_SIZE:
+            raise InvalidArgumentError('Input part size is bigger '
+                                       ' than allowed maximum of 5GiB.')
+
         if not metadata:
             metadata = {}
 
@@ -803,10 +820,11 @@ class Minio(object):
         metadata['Content-Type'] = 'application/octet-stream' if \
             not content_type else content_type
 
-        if length > MIN_PART_SIZE:
+        if length > part_size:
             return self._stream_put_object(bucket_name, object_name,
                                            data, length, metadata=metadata,
-                                           sse=sse, progress=progress)
+                                           sse=sse, progress=progress,
+                                           part_size=part_size)
 
         current_data = data.read(length)
         if len(current_data) != length:
@@ -1550,7 +1568,8 @@ class Minio(object):
 
     def _stream_put_object(self, bucket_name, object_name,
                            data, content_size,
-                           metadata=None, sse=None, progress=None):
+                           metadata=None, sse=None,
+                           progress=None, part_size=MIN_PART_SIZE):
         """
         Streaming multipart upload operation.
 
@@ -1562,6 +1581,7 @@ class Minio(object):
         :param metadata: Any additional metadata to be uploaded along
            with your object.
         :param progress: A progress object
+        :param part_size: Multipart part size
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -1579,7 +1599,7 @@ class Minio(object):
 
         # Calculate optimal part info.
         total_parts_count, part_size, last_part_size = optimal_part_info(
-            content_size)
+            content_size, part_size)
 
         # Instantiate a thread pool with 3 worker threads
         pool = ThreadPool(_PARALLEL_UPLOADERS)
