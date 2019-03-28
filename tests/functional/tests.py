@@ -678,9 +678,10 @@ def validate_stat_data(st_obj, expected_size, expected_meta):
     if not received_etag or received_etag == '':
         raise ValueError('No Etag value is returned.')
 
-    if received_content_type != 'application/octet-stream':
+    # content_type by default can be either application/octet-stream or binary/octet-stream
+    if received_content_type != 'application/octet-stream' and received_content_type != 'binary/octet-stream':
         raise ValueError('Incorrect content type. Expected: ',
-                         "'application/octet-stream', received: ",
+                         "'application/octet-stream' or 'binary/octet-stream', received: ",
                           received_content_type)
 
     if received_size != expected_size:
