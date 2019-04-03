@@ -14,7 +14,7 @@ env:
 - ARCH=i686
 
 install:
-- pip install urllib3 certifi pytz pyflakes faker
+- pip install urllib3 certifi pytz pyflakes faker nose
 
 script:
 - pyflakes minio/*.py || true

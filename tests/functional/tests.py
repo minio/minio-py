@@ -181,6 +181,10 @@ def test_make_bucket_with_region(client, log_output):
     # default value for log_output.function attribute is;
     # log_output.function = "make_bucket(bucket_name, location)"
 
+    # Only test make bucket with region against AWS S3
+    if not is_s3(client):
+        return
+
     # Get a unique bucket_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     # A non-default location
@@ -229,36 +233,6 @@ def test_negative_make_bucket_invalid_name(client, log_output):
     log_output.function = 'make_bucket(bucket_name, location)'
     log_output.args['bucket_name'] = invalid_bucket_name_list
     print(log_output.json_report())
-
-def test_make_bucket_recreate(client, log_output):
-    # default value for log_output.function attribute is;
-    # log_output.function = "make_bucket(bucket_name, location)"
-
-    # Get a unique bucket_name
-    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
-    # s3 amazon has a bug and can let a bucket to be recreated for
-    # 'us-east-1' region, as opposed to the expected failure behavior.
-    # Until this issue is fixed by amazon, the following
-    # location manipulation will be used in our testing.
-    location = 'us-west-1' if is_s3(client) else 'us-east-1'
-    failed_as_expected = False
-    try:
-        client.make_bucket(bucket_name, location)
-        client.make_bucket(bucket_name, location)
-    except BucketAlreadyOwnedByYou as err:
-        # Expected this exception. Test passes
-        failed_as_expected = True
-        print(log_output.json_report())
-    except BucketAlreadyExists as err:
-        # Expected this exception. Test passes
-        failed_as_expected = True
-        print(log_output.json_report())
-    except Exception as err:
-        raise Exception(err)
-
-    if not failed_as_expected:
-        print(log_output.json_report("Recreating the same bucket SHOULD have failed!"))
-        exit()
 
 def test_list_buckets(client, log_output):
     # default value for log_output.function attribute is;
@@ -390,6 +364,42 @@ def test_copy_object_no_copy_condition(client, log_output, ssec_copy=None, ssec=
                            '/'+bucket_name+'/'+object_source, source_sse=ssec_copy, sse=ssec)
         st_obj = client.stat_object(bucket_name, object_copy, sse=ssec)
         validate_stat_data(st_obj, KB_1, {})
+    except Exception as err:
+        raise Exception(err)
+    finally:
+        try:
+            client.remove_object(bucket_name, object_source)
+            client.remove_object(bucket_name, object_copy)
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            raise Exception(err)
+    # Test passes
+    print(log_output.json_report())
+
+def test_copy_object_with_metadata(client, log_output):
+    # default value for log_output.function attribute is;
+    # log_output.function = "copy_object(bucket_name, object_name, object_source, metadata)"
+
+    # Get a unique bucket_name and object_name
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
+    object_name = uuid.uuid4().__str__()
+    log_output.args['object_source'] = object_source = object_name+'-source'
+    log_output.args['object_name'] = object_copy = object_name+'-copy'
+    log_output.args['metadata'] = metadata = {"testing-string": "string", "testing-int": 1}
+    try:
+        client.make_bucket(bucket_name)
+        # Upload a streaming object of 1MiB
+        KB_1 = 1024 # 1KiB.
+        KB_1_reader = LimitedRandomReader(KB_1)
+        client.put_object(bucket_name, object_source, KB_1_reader, KB_1)
+
+        # Perform a server side copy of an object
+        client.copy_object(bucket_name, object_copy,
+                           '/'+bucket_name+'/'+object_source,metadata=metadata)
+        # Verification
+        stat_obj = client.stat_object(bucket_name, object_copy)
+        expected_metadata = {'x-amz-meta-testing-int': '1', 'x-amz-meta-testing-string': 'string'}
+        validate_stat_data(stat_obj, KB_1, expected_metadata)
     except Exception as err:
         raise Exception(err)
     finally:
@@ -564,6 +574,11 @@ def test_copy_object_unmodified_since(client, log_output):
     # Test passes
     print(log_output.json_report())
 
+def normalize_metadata(meta_data):
+    norm_dict = {k.lower(): v for k, v in meta_data.items()}
+    return norm_dict
+
+
 def test_put_object(client, log_output, sse=None):
     # default value for log_output.function attribute is;
     # log_output.function = "put_object(bucket_name, object_name, data, length, content_type, metadata)"
@@ -595,13 +610,14 @@ def test_put_object(client, log_output, sse=None):
         # Stat on the uploaded object to check if it exists
         # Fetch saved stat metadata on a previously uploaded object with metadata.
         st_obj = client.stat_object(bucket_name, object_name+'-metadata', sse=sse)
-        if 'X-Amz-Meta-Testing' not in st_obj.metadata:
+        normalized_meta = normalize_metadata(st_obj.metadata)
+        if 'x-amz-meta-testing' not in normalized_meta:
             raise ValueError("Metadata key 'x-amz-meta-testing' not found")
-        value = st_obj.metadata['X-Amz-Meta-Testing']
+        value = normalized_meta['x-amz-meta-testing']
         if value != 'value':
             raise ValueError('Metadata key has unexpected'
                              ' value {0}'.format(value))
-        if 'X-Amz-Meta-Test-Key' not in st_obj.metadata:
+        if 'x-amz-meta-test-key' not in normalized_meta:
             raise ValueError("Metadata key 'x-amz-meta-test-key' not found")
     except Exception as err:
         raise Exception(err)
@@ -650,7 +666,7 @@ def validate_stat_data(st_obj, expected_size, expected_meta):
 
     received_modification_time = st_obj.last_modified
     received_etag = st_obj.etag
-    received_metadata = st_obj.metadata
+    received_metadata = normalize_metadata(st_obj.metadata)
     received_content_type = st_obj.content_type
     received_size = st_obj.size
     received_is_dir = st_obj.is_dir
@@ -710,7 +726,7 @@ def test_stat_object(client, log_output, sse=None):
         # Get the stat on the uploaded object
         st_obj = client.stat_object(bucket_name, object_name+'-metadata',sse=sse)
         # Verify the collected stat data.
-        validate_stat_data(st_obj, MB_11, metadata)
+        validate_stat_data(st_obj, MB_11, normalize_metadata(metadata))
     except Exception as err:
         raise Exception(err)
     finally:
@@ -891,7 +907,7 @@ def test_list_objects(client, log_output):
         client.put_object(bucket_name, object_name+"-2", MB_1_reader, MB_1)
         # List all object paths in bucket.
         log_output.args['recursive'] = is_recursive = True
-        objects = client.list_objects(bucket_name, None, is_recursive)
+        objects = client.list_objects(bucket_name, '', is_recursive)
         for obj in objects:
             _, _, _, _, _, _ = obj.bucket_name,\
                                obj.object_name,\
@@ -1065,7 +1081,7 @@ def test_list_objects_v2(client, log_output):
         client.put_object(bucket_name, object_name+"-2", MB_1_reader, MB_1)
         # List all object paths in bucket using V2 API.
         log_output.args['recursive'] = is_recursive = True
-        objects = client.list_objects_v2(bucket_name, None, is_recursive)
+        objects = client.list_objects_v2(bucket_name, '', is_recursive)
         for obj in objects:
             _, _, _, _, _, _ = obj.bucket_name,\
                                obj.object_name,\
@@ -1764,9 +1780,6 @@ def main():
             log_output =  LogOutput(client.make_bucket, 'test_negative_make_bucket_invalid_name')
             test_negative_make_bucket_invalid_name(client, log_output)
 
-            log_output =  LogOutput(client.make_bucket, 'test_make_bucket_recreate')
-            test_make_bucket_recreate(client, log_output)
-
             log_output =  LogOutput(client.list_buckets, 'test_list_buckets')
             test_list_buckets(client, log_output)
 
@@ -1792,6 +1805,9 @@ def main():
 
             log_output =  LogOutput(client.copy_object, 'test_copy_object_etag_match')
             test_copy_object_etag_match(client, log_output)
+
+            log_output =  LogOutput(client.copy_object, 'test_copy_object_with_metadata')
+            test_copy_object_with_metadata(client, log_output)
 
             log_output =  LogOutput(client.copy_object, 'test_copy_object_negative_etag_match')
             test_copy_object_negative_etag_match(client, log_output)

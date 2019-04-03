@@ -17,28 +17,28 @@
 from nose.tools import eq_, raises
 from unittest import TestCase
 
-from minio.helpers import optimal_part_info, MAX_MULTIPART_OBJECT_SIZE
+from minio.helpers import optimal_part_info, MAX_MULTIPART_OBJECT_SIZE, MIN_PART_SIZE
 from minio.error import InvalidArgumentError
 
 class TraceTest(TestCase):
     @raises(InvalidArgumentError)
     def test_input_size_wrong(self):
-        optimal_part_info(MAX_MULTIPART_OBJECT_SIZE + 1)
+        optimal_part_info(MAX_MULTIPART_OBJECT_SIZE + 1, MIN_PART_SIZE)
 
     def test_input_size_valid_maximum(self):
-        total_parts_count, part_size, last_part_size = optimal_part_info(MAX_MULTIPART_OBJECT_SIZE)
+        total_parts_count, part_size, last_part_size = optimal_part_info(MAX_MULTIPART_OBJECT_SIZE, MIN_PART_SIZE)
         eq_(total_parts_count, 9987)
         eq_(part_size, 550502400)
         eq_(last_part_size, 241172480)
 
     def test_input_size_valid(self):
-        total_parts_count, part_size, last_part_size = optimal_part_info(MAX_MULTIPART_OBJECT_SIZE/1024)
+        total_parts_count, part_size, last_part_size = optimal_part_info(MAX_MULTIPART_OBJECT_SIZE/1024, MIN_PART_SIZE)
         eq_(total_parts_count, 1024)
         eq_(part_size, 5242880)
         eq_(last_part_size, 5242880)
 
     def test_input_size_is_special_value(self):
-        total_parts_count, part_size, last_part_size = optimal_part_info(-1)
+        total_parts_count, part_size, last_part_size = optimal_part_info(-1, MIN_PART_SIZE)
         eq_(total_parts_count, 9987)
         eq_(part_size, 550502400)
         eq_(last_part_size, 241172480)
