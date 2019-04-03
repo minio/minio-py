@@ -49,7 +49,7 @@ MAX_MULTIPART_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
 MAX_POOL_SIZE = 10
 MIN_PART_SIZE = 5 * 1024 * 1024  # 5MiB
 
-_VALID_BUCKETNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\\.\\-]+[a-z0-9]$')
+_VALID_BUCKETNAME_REGEX = re.compile('^[a-zA-Z0-9][a-zA-Z0-9\\.\\-]+[a-z0-9]$')
 _ALLOWED_HOSTNAME_REGEX = re.compile(
     '^((?!-)[A-Z\\d-]{1,63}(?<!-)\\.)*((?!-)[A-Z\\d-]{1,63}(?<!-))$',
     re.IGNORECASE)

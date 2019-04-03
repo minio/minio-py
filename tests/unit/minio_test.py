@@ -26,7 +26,6 @@ from minio.helpers import (get_target_url, is_valid_bucket_name,
                            get_s3_region_from_endpoint)
 
 class ValidBucketName(TestCase):
-    @raises(InvalidBucketError)
     def test_bucket_name(self):
         is_valid_bucket_name('bucketName')
 
