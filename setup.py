@@ -1,4 +1,4 @@
-# Minio Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 Minio, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,11 +54,11 @@ tests_requires = [
 
 setup(
     name='minio',
-    description='Minio Python Library for Amazon S3 Compatible Cloud Storage for Python',
-    author='Minio, Inc.',
+    description='MinIO Python Library for Amazon S3 Compatible Cloud Storage for Python',
+    author='MinIO, Inc.',
     url='https://github.com/minio/minio-py',
     download_url='https://github.com/minio/minio-py',
-    author_email='dev@minio.io',
+    author_email='dev@min.io',
     version=version,
     package_dir={'minio': 'minio'},
     packages=packages,

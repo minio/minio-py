@@ -1,14 +1,14 @@
-# Python Client API Reference [![Slack](https://slack.minio.io/slack?type=svg)](https://slack.minio.io)
+# Python Client API Reference [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
 
-## Initialize Minio Client object.
+## Initialize MinIO Client object.
 
-## Minio
+## MinIO
 
 ```py
 from minio import Minio
 from minio.error import ResponseError
 
-minioClient = Minio('play.minio.io:9000',
+minioClient = Minio('play.min.io:9000',
                   access_key='Q3AM3UQ867SPQQA43P2F',
                   secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
                   secure=True)
@@ -43,7 +43,7 @@ s3Client = Minio('s3.amazonaws.com',
 
 ## 1. Constructor
 
-<a name="Minio"></a>
+<a name="MinIO"></a>
 ### Minio(endpoint, access_key=None, secret_key=None, secure=True, region=None, http_client=None)
 
 |   |
@@ -65,13 +65,13 @@ __Parameters__
 
 __Example__
 
-### Minio
+### MinIO
 
 ```py
 from minio import Minio
 from minio.error import ResponseError
 
-minioClient = Minio('play.minio.io:9000',
+minioClient = Minio('play.min.io:9000',
                     access_key='Q3AM3UQ867SPQQA43P2F',
                     secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
 ```
@@ -571,7 +571,7 @@ minioClient.remove_all_bucket_notification('mybucket')
 
 Listen for notifications on a bucket. Additionally one can provide
 filters for prefix, suffix and events. There is no prior set bucket notification
-needed to use this API. This is an Minio extension API where unique identifiers
+needed to use this API. This is an MinIO extension API where unique identifiers
 are registered and unregistered by the server automatically based on incoming
 requests.
 
@@ -1103,6 +1103,6 @@ print(' '.join(curl_cmd))
 
 ## 5. Explore Further
 
-- [Minio Golang Client SDK Quickstart Guide](https://docs.minio.io/docs/golang-client-quickstart-guide)
-- [Minio Java Client SDK Quickstart Guide](https://docs.minio.io/docs/java-client-quickstart-guide)
-- [Minio JavaScript Client SDK Quickstart Guide](https://docs.minio.io/docs/javascript-client-quickstart-guide)
+- [MinIO Golang Client SDK Quickstart Guide](https://docs.min.io/docs/golang-client-quickstart-guide)
+- [MinIO Java Client SDK Quickstart Guide](https://docs.min.io/docs/java-client-quickstart-guide)
+- [MinIO JavaScript Client SDK Quickstart Guide](https://docs.min.io/docs/javascript-client-quickstart-guide)

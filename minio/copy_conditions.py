@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Minio Python Library for Amazon S3 Compatible Cloud Storage, (C) 2016 Minio, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2016 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ minio.copy_conditions
 
 This module contains :class:`CopyConditions <CopyConditions>` implementation.
 
-:copyright: (c) 2016 by Minio, Inc.
+:copyright: (c) 2016 by MinIO, Inc.
 :license: Apache 2.0, see LICENSE for more details.
 
 """
