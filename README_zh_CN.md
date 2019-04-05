@@ -1,8 +1,8 @@
-# 适用于与Amazon S3兼容的云存储的Minio Python Library [![Slack](https://slack.minio.io/slack?type=svg)](https://slack.minio.io)
+# 适用于与Amazon S3兼容的云存储的MinIO Python Library [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
 
-Minio Python Client SDK提供简单的API来访问任何与Amazon S3兼容的对象存储服务。
+MinIO Python Client SDK提供简单的API来访问任何与Amazon S3兼容的对象存储服务。
 
-本文我们将学习如何安装Minio client SDK，并运行一个python的示例程序。对于完整的API以及示例，请参考[Python Client API Reference](https://docs.minio.io/docs/python-client-api-reference)。
+本文我们将学习如何安装MinIO client SDK，并运行一个python的示例程序。对于完整的API以及示例，请参考[Python Client API Reference](https://docs.min.io/docs/python-client-api-reference)。
 
 本文假设你已经有一个可运行的 [Python](https://www.python.org/downloads/)开发环境。
 
@@ -24,9 +24,9 @@ cd minio-py
 python setup.py install
 ```
 
-## 初始化Minio Client
+## 初始化MinIO Client
 
-Minio client需要以下4个参数来连接Minio对象存储服务。
+MinIO client需要以下4个参数来连接MinIO对象存储服务。
 
 | 参数     | 描述  |
 | :------- | :---- |
@@ -39,7 +39,7 @@ Minio client需要以下4个参数来连接Minio对象存储服务。
 from minio import Minio
 from minio.error import ResponseError
 
-minioClient = Minio('play.minio.io:9000',
+minioClient = Minio('play.min.io:9000',
                   access_key='Q3AM3UQ867SPQQA43P2F',
                   secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
                   secure=True)
@@ -47,20 +47,20 @@ minioClient = Minio('play.minio.io:9000',
 
 
 ## 示例-文件上传
-本示例连接到一个Minio对象存储服务，创建一个存储桶并上传一个文件到存储桶中。
+本示例连接到一个MinIO对象存储服务，创建一个存储桶并上传一个文件到存储桶中。
 
-我们在本示例中使用运行在 [https://play.minio.io:9000](https://play.minio.io:9000) 上的Minio服务，你可以用这个服务来开发和测试。示例中的访问凭据是公开的。
+我们在本示例中使用运行在 [https://play.min.io:9000](https://play.min.io:9000) 上的MinIO服务，你可以用这个服务来开发和测试。示例中的访问凭据是公开的。
 
 #### file-uploader.py
 
 ```py
-# 引入Minio包。
+# 引入MinIO包。
 from minio import Minio
 from minio.error import (ResponseError, BucketAlreadyOwnedByYou,
                          BucketAlreadyExists)
 
 # 使用endpoint、access key和secret key来初始化minioClient对象。
-minioClient = Minio('play.minio.io:9000',
+minioClient = Minio('play.min.io:9000',
                     access_key='Q3AM3UQ867SPQQA43P2F',
                     secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
                     secure=True)
@@ -93,51 +93,51 @@ mc ls play/maylogs/
 ## API文档
 
 完整的API文档在这里。
-* [完整API文档](https://docs.minio.io/docs/python-client-api-reference)
+* [完整API文档](https://docs.min.io/docs/python-client-api-reference)
 
 ### API文档 : 操作存储桶
 
-* [`make_bucket`](https://docs.minio.io/docs/python-client-api-reference#make_bucket)
-* [`list_buckets`](https://docs.minio.io/docs/python-client-api-reference#list_buckets)
-* [`bucket_exists`](https://docs.minio.io/docs/python-client-api-reference#bucket_exists)
-* [`remove_bucket`](https://docs.minio.io/docs/python-client-api-reference#remove_bucket)
-* [`list_objects`](https://docs.minio.io/docs/python-client-api-reference#list_objects)
-* [`list_objects_v2`](https://docs.minio.io/docs/python-client-api-reference#list_objects_v2)
-* [`list_incomplete_uploads`](https://docs.minio.io/docs/python-client-api-reference#list_incomplete_uploads)
+* [`make_bucket`](https://docs.min.io/docs/python-client-api-reference#make_bucket)
+* [`list_buckets`](https://docs.min.io/docs/python-client-api-reference#list_buckets)
+* [`bucket_exists`](https://docs.min.io/docs/python-client-api-reference#bucket_exists)
+* [`remove_bucket`](https://docs.min.io/docs/python-client-api-reference#remove_bucket)
+* [`list_objects`](https://docs.min.io/docs/python-client-api-reference#list_objects)
+* [`list_objects_v2`](https://docs.min.io/docs/python-client-api-reference#list_objects_v2)
+* [`list_incomplete_uploads`](https://docs.min.io/docs/python-client-api-reference#list_incomplete_uploads)
 
 ### API文档 : 存储桶策略
 
-* [`get_bucket_policy`](https://docs.minio.io/docs/python-client-api-reference#get_bucket_policy)
-* [`set_bucket_policy`](https://docs.minio.io/docs/python-client-api-reference#set_bucket_policy)
+* [`get_bucket_policy`](https://docs.min.io/docs/python-client-api-reference#get_bucket_policy)
+* [`set_bucket_policy`](https://docs.min.io/docs/python-client-api-reference#set_bucket_policy)
 
 ### API文档 : 存储桶通知
 
-* [`set_bucket_notification`](https://docs.minio.io/docs/python-client-api-reference#set_bucket_notification)
-* [`get_bucket_notification`](https://docs.minio.io/docs/python-client-api-reference#get_bucket_notification)
-* [`remove_all_bucket_notification`](https://docs.minio.io/docs/python-client-api-reference#remove_all_bucket_notification)
-* [`listen_bucket_notification`](https://docs.minio.io/docs/python-client-api-reference#listen_bucket_notification)
+* [`set_bucket_notification`](https://docs.min.io/docs/python-client-api-reference#set_bucket_notification)
+* [`get_bucket_notification`](https://docs.min.io/docs/python-client-api-reference#get_bucket_notification)
+* [`remove_all_bucket_notification`](https://docs.min.io/docs/python-client-api-reference#remove_all_bucket_notification)
+* [`listen_bucket_notification`](https://docs.min.io/docs/python-client-api-reference#listen_bucket_notification)
 
 ### API文档 : 操作文件对象
 
-* [`fput_object`](https://docs.minio.io/docs/python-client-api-reference#fput_object)
-* [`fget_object`](https://docs.minio.io/docs/python-client-api-reference#fget_object)
+* [`fput_object`](https://docs.min.io/docs/python-client-api-reference#fput_object)
+* [`fget_object`](https://docs.min.io/docs/python-client-api-reference#fget_object)
 
 ### API文档 : 操作对象
 
-* [`get_object`](https://docs.minio.io/docs/python-client-api-reference#get_object)
-* [`put_object`](https://docs.minio.io/docs/python-client-api-reference#put_object)
-* [`stat_object`](https://docs.minio.io/docs/python-client-api-reference#stat_object)
-* [`copy_object`](https://docs.minio.io/docs/python-client-api-reference#copy_object)
-* [`get_partial_object`](https://docs.minio.io/docs/python-client-api-reference#get_partial_object)
-* [`remove_object`](https://docs.minio.io/docs/python-client-api-reference#remove_object)
-* [`remove_objects`](https://docs.minio.io/docs/python-client-api-reference#remove_objects)
-* [`remove_incomplete_upload`](https://docs.minio.io/docs/python-client-api-reference#remove_incomplete_upload)
+* [`get_object`](https://docs.min.io/docs/python-client-api-reference#get_object)
+* [`put_object`](https://docs.min.io/docs/python-client-api-reference#put_object)
+* [`stat_object`](https://docs.min.io/docs/python-client-api-reference#stat_object)
+* [`copy_object`](https://docs.min.io/docs/python-client-api-reference#copy_object)
+* [`get_partial_object`](https://docs.min.io/docs/python-client-api-reference#get_partial_object)
+* [`remove_object`](https://docs.min.io/docs/python-client-api-reference#remove_object)
+* [`remove_objects`](https://docs.min.io/docs/python-client-api-reference#remove_objects)
+* [`remove_incomplete_upload`](https://docs.min.io/docs/python-client-api-reference#remove_incomplete_upload)
 
 ### API文档 : Presigned操作
 
-* [`presigned_get_object`](https://docs.minio.io/docs/python-client-api-reference#presigned_get_object)
-* [`presigned_put_object`](https://docs.minio.io/docs/python-client-api-reference#presigned_put_object)
-* [`presigned_post_policy`](https://docs.minio.io/docs/python-client-api-reference#presigned_post_policy)
+* [`presigned_get_object`](https://docs.min.io/docs/python-client-api-reference#presigned_get_object)
+* [`presigned_put_object`](https://docs.min.io/docs/python-client-api-reference#presigned_put_object)
+* [`presigned_post_policy`](https://docs.min.io/docs/python-client-api-reference#presigned_post_policy)
 
 ## 完整示例
 
@@ -186,8 +186,8 @@ mc ls play/maylogs/
 
 ## 了解更多
 
-* [完整文档](https://docs.minio.io)
-* [Minio Python SDK API文档](https://docs.minio.io/docs/python-client-api-reference)
+* [完整文档](https://docs.min.io)
+* [MinIO Python SDK API文档](https://docs.min.io/docs/python-client-api-reference)
 
 ## 贡献
 
