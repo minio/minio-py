@@ -1738,7 +1738,7 @@ def main():
             secret_key = 'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
             secure = True
 
-        client = MinIO(server_endpoint, access_key, secret_key, secure=secure)
+        client = Minio(server_endpoint, access_key, secret_key, secure=secure)
         # Check if we are running in the mint environment.
         data_dir = os.getenv('DATA_DIR')
         if data_dir is None:

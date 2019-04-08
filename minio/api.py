@@ -114,9 +114,9 @@ _MAX_EXPIRY_TIME = 604800 # 7 days in seconds
 _PARALLEL_UPLOADERS = 3
 
 
-class MinIO(object):
+class Minio(object):
     """
-    Constructs a :class:`MinIO <MinIO>`.
+    Constructs a :class:`Minio <Minio>`.
 
     Examples:
         client = Minio('play.min.io:9000')
@@ -136,7 +136,7 @@ class MinIO(object):
          location discovery.
     :param timeout: Set this value to control how long requests
          are allowed to run before being aborted.
-    :return: :class:`MinIO <MinIO>` object
+    :return: :class:`Minio <Minio>` object
     """
     def __init__(self, endpoint, access_key=None,
                  secret_key=None,
