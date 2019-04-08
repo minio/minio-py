@@ -15,7 +15,7 @@
 # limitations under the License.
 
 """
-This module implements a progress printer while communicate minio server
+This module implements a progress printer while communicating with MinIO server
 
 :copyright: (c) 2018 by MinIO, Inc.
 :license: Apache 2.0, see LICENSE for more details.
