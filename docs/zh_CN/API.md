@@ -1,14 +1,14 @@
-# Python Client API文档 [![Slack](https://slack.minio.io/slack?type=svg)](https://slack.minio.io)
+# Python Client API文档 [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
 
-## 初使化Minio Client对象。
+## 初使化MinIO Client对象。
 
-## Minio
+## MinIO
 
 ```py
 from minio import Minio
 from minio.error import ResponseError
 
-minioClient = Minio('play.minio.io:9000',
+minioClient = Minio('play.min.io:9000',
                   access_key='Q3AM3UQ867SPQQA43P2F',
                   secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
                   secure=True)
@@ -43,7 +43,7 @@ s3Client = Minio('s3.amazonaws.com',
 
 ## 1. 构造函数
 
-<a name="Minio"></a>
+<a name="MinIO"></a>
 ### Minio(endpoint, access_key=None, secret_key=None, secure=True, region=None, http_client=None)
 
 |   |
@@ -65,13 +65,13 @@ s3Client = Minio('s3.amazonaws.com',
 
 __示例__
 
-### Minio
+### MinIO
 
 ```py
 from minio import Minio
 from minio.error import ResponseError
 
-minioClient = Minio('play.minio.io:9000',
+minioClient = Minio('play.min.io:9000',
                     access_key='Q3AM3UQ867SPQQA43P2F',
                     secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
 ```
@@ -532,7 +532,7 @@ minioClient.remove_all_bucket_notification('mybucket')
 <a name="listen_bucket_notification"></a>
 ### listen_bucket_notification(bucket_name, prefix, suffix, events)
 
-监听存储桶上的通知，可以额外提供前缀、后缀和时间类型来进行过滤。使用该API前不需要先设置存储桶通知。这是一个Minio的扩展API，Minio Server会基于过来的请求使用唯一标识符自动注册或者注销。
+监听存储桶上的通知，可以额外提供前缀、后缀和时间类型来进行过滤。使用该API前不需要先设置存储桶通知。这是一个MinIO的扩展API，MinIO Server会基于过来的请求使用唯一标识符自动注册或者注销。
 
 当通知发生时，产生事件，调用者需要遍历读取这些事件。
 
@@ -1044,6 +1044,6 @@ print(' '.join(curl_cmd))
 
 ## 5. 了解更多
 
-- [Minio Golang Client SDK快速入门](https://docs.minio.io/docs/golang-client-quickstart-guide)
-- [Minio Java Client SDK快速入门](https://docs.minio.io/docs/java-client-quickstart-guide)
-- [Minio JavaScript Client SDK快速入门](https://docs.minio.io/docs/javascript-client-quickstart-guide)
+- [MinIO Golang Client SDK快速入门](https://docs.min.io/docs/golang-client-quickstart-guide)
+- [MinIO Java Client SDK快速入门](https://docs.min.io/docs/java-client-quickstart-guide)
+- [MinIO JavaScript Client SDK快速入门](https://docs.min.io/docs/javascript-client-quickstart-guide)

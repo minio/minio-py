@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Minio Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015, 2016, 2017 Minio, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015, 2016, 2017 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 # limitations under the License.
 
 """
-minio - Minio Python Library for Amazon S3 Compatible Cloud Storage
+minio - MinIO Python Library for Amazon S3 Compatible Cloud Storage
 ~~~~~~~~~~~~~~~~~~~~~
 
    >>> import minio
@@ -23,15 +23,15 @@ minio - Minio Python Library for Amazon S3 Compatible Cloud Storage
    >>> for bucket in minio.list_buckets():
    ...     print(bucket.name)
 
-:copyright: (c) 2015, 2016, 2017 by Minio, Inc.
+:copyright: (c) 2015, 2016, 2017 by MinIO, Inc.
 :license: Apache 2.0, see LICENSE for more details.
 """
 
 __title__ = 'minio-py'
-__author__ = 'Minio, Inc.'
+__author__ = 'MinIO, Inc.'
 __version__ = '4.0.14'
 __license__ = 'Apache 2.0'
-__copyright__ = 'Copyright 2015, 2016, 2017 Minio, Inc.'
+__copyright__ = 'Copyright 2015, 2016, 2017 MinIO, Inc.'
 
 from .api import Minio
 from .error import ResponseError

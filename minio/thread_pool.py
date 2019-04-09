@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Minio Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2017 Minio, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# 2017 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ minio.thread_pool
 This module implements a thread pool API to run several tasks
 in parallel. Tasks results can also be retrieved.
 
-:copyright: (c) 2017 by Minio, Inc.
+:copyright: (c) 2017 by MinIO, Inc.
 :license: Apache 2.0, see LICENSE for more details.
 
 """

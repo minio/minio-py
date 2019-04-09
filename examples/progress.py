@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Minio Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2018 Minio, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# 2018 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
 # limitations under the License.
 
 """
-This module implements a progress printer while communicate minio server
+This module implements a progress printer while communicating with MinIO server
 
-:copyright: (c) 2018 by Minio, Inc.
+:copyright: (c) 2018 by MinIO, Inc.
 :license: Apache 2.0, see LICENSE for more details.
 
 """

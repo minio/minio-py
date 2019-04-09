@@ -1,13 +1,13 @@
-Minio Python Library for Amazon S3 Compatible Cloud Storage |Gitter|
+MinIO Python Library for Amazon S3 Compatible Cloud Storage |Gitter|
 ========
 
-The Minio Python Client SDK provides simple APIs to access any Amazon S3
+The MinIO Python Client SDK provides simple APIs to access any Amazon S3
 compatible object storage server.
 
 This quickstart guide will show you how to install the client SDK and
 execute an example python program. For a complete list of APIs and
 examples, please take a look at the `Python Client API
-Reference <https://docs.minio.io/docs/python-client-api-reference>`__
+Reference <https://docs.min.io/docs/python-client-api-reference>`__
 documentation.
 
 This document assumes that you have a working
@@ -29,10 +29,10 @@ Download from source
     $ cd minio-py
     $ python setup.py install
 
-Initialize Minio Client
+Initialize MinIO Client
 -----------------------
 
-You need four items in order to connect to Minio object storage server.
+You need four items in order to connect to MinIO object storage server.
 
 .. csv-table::
    :header: "Params", "Description"
@@ -49,7 +49,7 @@ You need four items in order to connect to Minio object storage server.
     from minio import Minio
     from minio.error import ResponseError
 
-    minioClient = Minio('play.minio.io:9000',
+    minioClient = Minio('play.min.io:9000',
                       access_key='Q3AM3UQ867SPQQA43P2F',
                       secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
                       secure=True)
@@ -57,10 +57,10 @@ You need four items in order to connect to Minio object storage server.
 Quick Start Example - File Uploader
 -----------------------------------
 
-This example program connects to a Minio object storage server, makes a
+This example program connects to a MinIO object storage server, makes a
 bucket on the server and then uploads a file to the bucket.
 
-We will use the Minio server running at https://play.minio.io:9000 in
+We will use the MinIO server running at https://play.min.io:9000 in
 this example. Feel free to use this service for testing and development.
 Access credentials shown in this example are open to the public.
 
@@ -69,12 +69,12 @@ file-uploader.py
 
 .. code:: python
 
-    # Import Minio library.
+    # Import MinIO library.
     from minio import Minio
     from minio.error import ResponseError
 
     # Initialize minioClient with an endpoint and access/secret keys.
-    minioClient = Minio('play.minio.io:9000',
+    minioClient = Minio('play.min.io:9000',
                         access_key='Q3AM3UQ867SPQQA43P2F',
                         secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
                         secure=True)
@@ -110,42 +110,42 @@ API Reference
 -------------
 
 The full API Reference is available here. `Complete API
-Reference <https://docs.minio.io/docs/python-client-api-reference>`__
+Reference <https://docs.min.io/docs/python-client-api-reference>`__
 
 API Reference : Bucket Operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `make\_bucket <https://docs.minio.io/docs/python-client-api-reference#make_bucket>`__
--  `list\_buckets <https://docs.minio.io/docs/python-client-api-reference#list_buckets>`__
--  `bucket\_exists <https://docs.minio.io/docs/python-client-api-reference#bucket_exists>`__
--  `remove\_bucket <https://docs.minio.io/docs/python-client-api-reference#remove_bucket>`__
--  `list\_objects <https://docs.minio.io/docs/python-client-api-reference#list_objects>`__
--  `list\_incomplete\_uploads <https://docs.minio.io/docs/python-client-api-reference#list_incomplete_uploads>`__
--  `get\_bucket\_policy <https://docs.minio.io/docs/python-client-api-reference#get_bucket_policy>`__
--  `set\_bucket\_policy <https://docs.minio.io/docs/python-client-api-reference#set_bucket_policy>`__
+-  `make\_bucket <https://docs.min.io/docs/python-client-api-reference#make_bucket>`__
+-  `list\_buckets <https://docs.min.io/docs/python-client-api-reference#list_buckets>`__
+-  `bucket\_exists <https://docs.min.io/docs/python-client-api-reference#bucket_exists>`__
+-  `remove\_bucket <https://docs.min.io/docs/python-client-api-reference#remove_bucket>`__
+-  `list\_objects <https://docs.min.io/docs/python-client-api-reference#list_objects>`__
+-  `list\_incomplete\_uploads <https://docs.min.io/docs/python-client-api-reference#list_incomplete_uploads>`__
+-  `get\_bucket\_policy <https://docs.min.io/docs/python-client-api-reference#get_bucket_policy>`__
+-  `set\_bucket\_policy <https://docs.min.io/docs/python-client-api-reference#set_bucket_policy>`__
 
 API Reference : File Object Operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `fput\_object <https://docs.minio.io/docs/python-client-api-reference#fput_object>`__
--  `fget\_object <https://docs.minio.io/docs/python-client-api-reference#fget_object>`__
+-  `fput\_object <https://docs.min.io/docs/python-client-api-reference#fput_object>`__
+-  `fget\_object <https://docs.min.io/docs/python-client-api-reference#fget_object>`__
 
 API Reference : Object Operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `get\_object <https://docs.minio.io/docs/python-client-api-reference#get_object>`__
--  `get\_partial\_object <https://docs.minio.io/docs/python-client-api-reference#get_partial_object>`__
--  `put\_object <https://docs.minio.io/docs/python-client-api-reference#put_object>`__
--  `stat\_object <https://docs.minio.io/docs/python-client-api-reference#stat_object>`__
--  `remove\_object <https://docs.minio.io/docs/python-client-api-reference#remove_object>`__
--  `remove\_incomplete\_upload <https://docs.minio.io/docs/python-client-api-reference#remove_incomplete_upload>`__
+-  `get\_object <https://docs.min.io/docs/python-client-api-reference#get_object>`__
+-  `get\_partial\_object <https://docs.min.io/docs/python-client-api-reference#get_partial_object>`__
+-  `put\_object <https://docs.min.io/docs/python-client-api-reference#put_object>`__
+-  `stat\_object <https://docs.min.io/docs/python-client-api-reference#stat_object>`__
+-  `remove\_object <https://docs.min.io/docs/python-client-api-reference#remove_object>`__
+-  `remove\_incomplete\_upload <https://docs.min.io/docs/python-client-api-reference#remove_incomplete_upload>`__
 
 API Reference : Presigned Operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `presigned\_get\_object <https://docs.minio.io/docs/python-client-api-reference#presigned_get_object>`__
--  `presigned\_put_object <https://docs.minio.io/docs/python-client-api-reference#presigned_put_object>`__
--  `presigned\_post\_policy <https://docs.minio.io/docs/python-client-api-reference#presigned_post_policy>`__
+-  `presigned\_get\_object <https://docs.min.io/docs/python-client-api-reference#presigned_get_object>`__
+-  `presigned\_put_object <https://docs.min.io/docs/python-client-api-reference#presigned_put_object>`__
+-  `presigned\_post\_policy <https://docs.min.io/docs/python-client-api-reference#presigned_post_policy>`__
 
 Full Examples
 -------------
@@ -186,9 +186,9 @@ Full Examples : Presigned Operations
 Explore Further
 ---------------
 
--  `Complete Documentation <https://docs.minio.io>`__
--  `Minio Python SDK API
-   Reference <https://docs.minio.io/docs/python-client-api-reference>`__
+-  `Complete Documentation <https://docs.min.io>`__
+-  `MinIO Python SDK API
+   Reference <https://docs.min.io/docs/python-client-api-reference>`__
 
 Contribute
 ----------
@@ -198,7 +198,7 @@ Contribute
 |PYPI| |Build Status| |Build status|
 
 .. |Gitter| image:: https://badges.gitter.im/Join%20Chat.svg
-   :target: https://gitter.im/Minio/minio?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+   :target: https://gitter.im/MinIO/minio?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 .. |PYPI| image:: https://img.shields.io/pypi/v/minio.svg
    :target: https://pypi.python.org/pypi/minio
 .. |Build Status| image:: https://travis-ci.org/minio/minio-py.svg

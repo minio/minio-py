@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Minio Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 Minio, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ minio.signer
 
 This module implements all helpers for AWS Signature version '4' support.
 
-:copyright: (c) 2015 by Minio, Inc.
+:copyright: (c) 2015 by MinIO, Inc.
 :license: Apache 2.0, see LICENSE for more details.
 
 """

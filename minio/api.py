@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Minio Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2015, 2016, 2017 Minio, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# 2015, 2016, 2017 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ minio.api
 
 This module implements the API.
 
-:copyright: (c) 2015, 2016, 2017 by Minio, Inc.
+:copyright: (c) 2015, 2016, 2017 by MinIO, Inc.
 :license: Apache 2.0, see LICENSE for more details.
 
 """
@@ -99,8 +99,8 @@ _COMMENTS = '({0}; {1})'
 # App info format.
 _APP_INFO = '{0}/{1}'
 
-# Minio (OS; ARCH) LIB/VER APP/VER .
-_DEFAULT_USER_AGENT = 'Minio {0} {1}'.format(
+# MinIO (OS; ARCH) LIB/VER APP/VER .
+_DEFAULT_USER_AGENT = 'MinIO {0} {1}'.format(
     _COMMENTS.format(platform.system(),
                      platform.machine()),
     _APP_INFO.format(__title__,
@@ -119,11 +119,11 @@ class Minio(object):
     Constructs a :class:`Minio <Minio>`.
 
     Examples:
-        client = Minio('play.minio.io:9000')
+        client = Minio('play.min.io:9000')
         client = Minio('s3.amazonaws.com', 'ACCESS_KEY', 'SECRET_KEY')
 
         # To override auto bucket location discovery.
-        client = Minio('play.minio.io:9000', 'ACCESS_KEY', 'SECRET_KEY',
+        client = Minio('play.min.io:9000', 'ACCESS_KEY', 'SECRET_KEY',
                        region='us-east-1')
 
     :param endpoint: Hostname of the cloud storage server.
@@ -201,7 +201,7 @@ class Minio(object):
         Sets your application name and version to
         default user agent in the following format.
 
-              Minio (OS; ARCH) LIB/VER APP/VER
+              MinIO (OS; ARCH) LIB/VER APP/VER
 
         Example:
             client.set_app_info('my_app', '1.0.2')
@@ -360,7 +360,7 @@ class Minio(object):
 
         try:
             self._url_open('HEAD', bucket_name=bucket_name)
-        # If the bucket has not been created yet, Minio will return a "NoSuchBucket" error.
+        # If the bucket has not been created yet, MinIO will return a "NoSuchBucket" error.
         except NoSuchBucket:
             return False
         except ResponseError:
@@ -518,7 +518,7 @@ class Minio(object):
         url_components = urlsplit(self._endpoint_url)
         if url_components.hostname == 's3.amazonaws.com':
             raise InvalidArgumentError(
-                'Listening for event notifications on a bucket is a Minio '
+                'Listening for event notifications on a bucket is a MinIO '
                 'specific extension to bucket notification API. It is not '
                 'supported by Amazon S3')
 
