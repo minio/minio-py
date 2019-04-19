@@ -162,11 +162,6 @@ The full API Reference is available here.
 * [set_bucket_policy.py](https://github.com/minio/minio-py/blob/master/examples/set_bucket_policy.py)
 * [get_bucket_policy.py](https://github.com/minio/minio-py/blob/master/examples/get_bucket_policy.py)
 
-#### Full Examples: Bucket policy Operations
-
-* [set_bucket_policy.py](https://github.com/minio/minio-py/blob/master/examples/set_bucket_policy.py)
-* [get_bucket_policy.py](https://github.com/minio/minio-py/blob/master/examples/get_bucket_policy.py)
-
 #### Full Examples: Bucket notification Operations
 
 * [set_bucket_notification.py](https://github.com/minio/minio-py/blob/master/examples/set_bucket_notification.py)
