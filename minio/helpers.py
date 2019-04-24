@@ -632,11 +632,15 @@ def optimal_part_info(length, part_size):
         raise InvalidArgumentError('Input content size is bigger '
                                    ' than allowed maximum of 5TiB.')
 
-    # Use floats for part size for all calculations to avoid
-    # overflows during float64 to int64 conversions.
-    part_size_float = math.ceil(length/MAX_MULTIPART_COUNT)
-    part_size_float = (math.ceil(part_size_float/part_size)
-                       * part_size)
+    # honor user configured size
+    if part_size != MIN_PART_SIZE:
+        part_size_float = float(part_size)
+    else:
+        # Use floats for part size for all calculations to avoid
+        # overflows during float64 to int64 conversions.
+        part_size_float = math.ceil(length/MAX_MULTIPART_COUNT)
+        part_size_float = (math.ceil(part_size_float/part_size)
+                        * part_size)
     # Total parts count.
     total_parts_count = int(math.ceil(length/part_size_float))
     # Part size.

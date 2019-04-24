@@ -22,22 +22,40 @@ from minio.error import InvalidArgumentError
 
 class TraceTest(TestCase):
     @raises(InvalidArgumentError)
-    def test_input_size_wrong(self):
+    def test_input_size_wrong_default(self):
         optimal_part_info(MAX_MULTIPART_OBJECT_SIZE + 1, MIN_PART_SIZE)
 
-    def test_input_size_valid_maximum(self):
+    def test_configured_input_size_valid_maximum(self):
+        total_parts_count, part_size, last_part_size = optimal_part_info(MAX_MULTIPART_OBJECT_SIZE, 1024*1024*1000)
+        eq_(total_parts_count, 5243)
+        eq_(part_size, 1048576000)
+        eq_(last_part_size, 922746880)
+
+    def test_configured_input_size_valid(self):
+        total_parts_count, part_size, last_part_size = optimal_part_info(MAX_MULTIPART_OBJECT_SIZE/1024, 64*1024*1024)
+        eq_(total_parts_count, 80)
+        eq_(part_size, 67108864)
+        eq_(last_part_size, 67108864)
+
+    def test_configured_input_size_is_special_value(self):
+        total_parts_count, part_size, last_part_size = optimal_part_info(-1, 1024*1024*1000)
+        eq_(total_parts_count, 5243)
+        eq_(part_size, 1048576000)
+        eq_(last_part_size, 922746880)
+
+    def test_input_size_valid_maximum_default(self):
         total_parts_count, part_size, last_part_size = optimal_part_info(MAX_MULTIPART_OBJECT_SIZE, MIN_PART_SIZE)
         eq_(total_parts_count, 9987)
         eq_(part_size, 550502400)
         eq_(last_part_size, 241172480)
 
-    def test_input_size_valid(self):
+    def test_input_size_valid_default(self):
         total_parts_count, part_size, last_part_size = optimal_part_info(MAX_MULTIPART_OBJECT_SIZE/1024, MIN_PART_SIZE)
         eq_(total_parts_count, 1024)
         eq_(part_size, 5242880)
         eq_(last_part_size, 5242880)
 
-    def test_input_size_is_special_value(self):
+    def test_input_size_is_special_value_default(self):
         total_parts_count, part_size, last_part_size = optimal_part_info(-1, MIN_PART_SIZE)
         eq_(total_parts_count, 9987)
         eq_(part_size, 550502400)
