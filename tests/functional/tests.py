@@ -1213,7 +1213,16 @@ def test_presigned_get_object_expiry_5sec(client, log_output):
         presigned_get_object_url = client.presigned_get_object(bucket_name,
                                                                object_name,
                                                        timedelta(seconds=5))
+
+        log_output.args['presigned_get_object_url'] = presigned_get_object_url
+
         response = _http.urlopen('GET', presigned_get_object_url)
+
+        log_output.args['response.status'] = response.status
+        log_output.args['response.reason'] = response.reason
+        log_output.args['response.headers'] = json.dumps(response.headers.__dict__)
+        log_output.args['response._body'] = response._body.decode('utf-8')
+
         if response.status != 200:
             raise ResponseError(response,
                                 'GET',
@@ -1222,6 +1231,12 @@ def test_presigned_get_object_expiry_5sec(client, log_output):
         # Wait for 5 seconds for the presigned url to expire
         time.sleep(5)
         response = _http.urlopen('GET', presigned_get_object_url)
+
+        log_output.args['response.status-2'] = response.status
+        log_output.args['response.reason-2'] = response.reason
+        log_output.args['response.headers-2'] = json.dumps(response.headers.__dict__)
+        log_output.args['response._body-2'] = response._body.decode('utf-8')
+
         # Success with an expired url is considered to be a failure
         if response.status == 200:
             raise ValueError('Presigned get url failed to expire!')
@@ -1262,9 +1277,21 @@ def test_presigned_get_object_response_headers(client, log_output):
                                                                object_name,
                                                       timedelta(seconds=5),
                                                           response_headers)
+        log_output.args['presigned_get_object_url'] = presigned_get_object_url
+
         response = _http.urlopen('GET', presigned_get_object_url)
         returned_content_type = response.headers['Content-Type']
         returned_content_language = response.headers['Content-Language']
+
+        log_output.args['response.status'] = response.status
+        log_output.args['response.reason'] = response.reason
+        log_output.args['response.headers'] = json.dumps(response.headers.__dict__)
+        log_output.args['response._body'] = response._body.decode('utf-8')
+        log_output.args['returned_content_type'] = returned_content_type
+        log_output.args['content_type'] = content_type
+        log_output.args['returned_content_language'] = returned_content_language
+        log_output.args['content_language'] = content_language
+
         if response.status != 200 or returned_content_type != content_type or\
            returned_content_language != content_language:
             raise ResponseError(response,
