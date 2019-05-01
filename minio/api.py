@@ -1413,7 +1413,7 @@ class Minio(object):
             ('eq', '$x-amz-credential', credential_string),
         ]
         if self._session_token:
-            policy.add(('eq', '$x-amz-security-token', self._session_token))
+            policy.append(('eq', '$x-amz-security-token', self._session_token))
 
         post_policy_base64 = post_policy.base64(extras=policy)
         signature = post_presign_signature(date, region,
