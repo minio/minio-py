@@ -32,7 +32,7 @@ with open('minio/__init__.py', 'r') as fd:
     version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
                         fd.read(), re.MULTILINE).group(1)
 
-with open('README.rst', 'r', 'utf-8') as f:
+with open('README.md', 'r', 'utf-8') as f:
     readme = f.read()
 
 packages = [
@@ -60,6 +60,7 @@ setup(
     download_url='https://github.com/minio/minio-py',
     author_email='dev@min.io',
     version=version,
+    long_description_content_type='text/markdown',
     package_dir={'minio': 'minio'},
     packages=packages,
     install_requires=requires,
@@ -79,6 +80,6 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
     long_description=readme,
-    package_data={'': ['LICENSE', 'README.rst']},
+    package_data={'': ['LICENSE', 'README.md']},
     include_package_data=True,
 )
