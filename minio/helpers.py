@@ -53,7 +53,7 @@ DEFAULT_PART_SIZE = MIN_PART_SIZE # Currently its 5MiB
 
 _VALID_BUCKETNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\\.\\-]+[a-z0-9]$')
 _ALLOWED_HOSTNAME_REGEX = re.compile(
-    '^((?!-)(?!_)[A-Z\_\\d-]{1,63}(?<!-)(?<!_)\\.)*((?!_)(?!-)[A-Z\_\\d-]{1,63}(?<!-)(?<!_))$',
+    '^((?!-)(?!_)[A-Z_\\d-]{1,63}(?<!-)(?<!_)\\.)*((?!_)(?!-)[A-Z_\\d-]{1,63}(?<!-)(?<!_))$',
     re.IGNORECASE)
 
 _EXTRACT_REGION_REGEX = re.compile('s3[.-]?(.+?).amazonaws.com')
