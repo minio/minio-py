@@ -637,7 +637,7 @@ def test_negative_put_object_with_path_segment(client, log_output):
 
     # Get a unique bucket_name and object_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
-    log_output.args['object_name'] = object_name = "/a/b/c/" + uuid.uuid4().__str__()
+    log_output.args['object_name'] = object_name = "a/b/c/" + uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
         log_output.args['length'] = 0 # Keep 0 bytes body to check for error.
@@ -661,6 +661,37 @@ def test_negative_put_object_with_path_segment(client, log_output):
         client.remove_bucket(bucket_name)
     # Test passes
     print(log_output.json_report())
+
+def test_negative_put_object_with_prefix_slash_object_name(client, log_output):
+    # default value for log_output.function attribute is;
+    # log_output.function = "put_object(bucket_name, object_name, data, length, content_type, metadata)"
+
+    # Get a unique bucket_name and object_name
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
+    log_output.args['object_name'] = object_name = "/a/b/c/" + uuid.uuid4().__str__()
+    try:
+        client.make_bucket(bucket_name)
+        log_output.args['length'] = 0 # Keep 0 bytes body to check for error.
+        log_output.args['data'] = ''
+        client.put_object(bucket_name,
+                          object_name,
+                          io.BytesIO(b''), 0)
+    except ResponseError as err:
+        if err.code != 'XMinioObjectNameWithPrefixSlash':
+            raise err
+    except Exception as err:
+        raise err
+    finally:
+        try:
+            client.remove_object(bucket_name, object_name)
+        except ResponseError as err:
+            if err.code != 'XMinioObjectNameWithPrefixSlash':
+                raise err
+        except Exception as err:
+            raise err
+        client.remove_bucket(bucket_name)
+    # Test passes
+    print(log_output.json_report())    
 
 def validate_stat_data(st_obj, expected_size, expected_meta):
 
@@ -1858,7 +1889,10 @@ def main():
                 test_put_object(client, log_output, sse=ssec)
 
             log_output =  LogOutput(client.put_object, 'test_negative_put_object_with_path_segment')
-            test_negative_put_object_with_path_segment(client, log_output)
+            test_negative_put_object_with_path_segment(client, log_output)            
+
+            log_output =  LogOutput(client.put_object, 'test_negative_put_object_with_prefix_slash_object_name')
+            test_negative_put_object_with_prefix_slash_object_name(client, log_output)
 
             log_output =  LogOutput(client.stat_object, 'test_stat_object')
             test_stat_object(client, log_output)
