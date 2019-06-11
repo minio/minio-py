@@ -25,6 +25,10 @@ This module contains :class:`CopyConditions <CopyConditions>` implementation.
 """
 
 import collections
+try:
+    collectionsAbc = collections.abc
+except AttributeError:
+    collectionsAbc = collections
 from .helpers import is_non_empty_string
 
 # CopyCondition explanation:
@@ -36,7 +40,7 @@ from .helpers import is_non_empty_string
 #      key: "x-amz-copy-if-modified-since",
 #      value: "Tue, 15 Nov 1994 12:45:26 GMT",
 #
-class CopyConditions(collections.MutableMapping):
+class CopyConditions(collectionsAbc.MutableMapping):
     """
     A :class:`CopyConditions <CopyConditions>` collection of
        supported CopyObject conditions.
