@@ -28,8 +28,12 @@ from __future__ import absolute_import
 # if math.ceil returns an integer and devide two integers returns a float, calculate
 # part size will cause errors, so make sure division integers returns a float.
 from __future__ import division
-import io
 
+from __future__ import unicode_literals
+# future_str is unicode or str in both Python 2 and 3
+from builtins import str as future_str
+
+import io
 import collections
 import base64
 import hashlib
@@ -654,6 +658,16 @@ def optimal_part_info(length, part_size):
 def amzprefix_user_metadata(metadata):
     m = dict()
     for k,v in metadata.items():
+       # Check if metadata value has US-ASCII encoding since it is
+       # the only one supported by HTTP headers. This will show a better
+       # exception message when users pass unsupported characters
+       # in metadata values.
+       try:
+            if isinstance(v, future_str):
+                 v.encode('us-ascii')
+       except UnicodeEncodeError:
+            raise ValueError('Metadata supports only US-ASCII characters.')
+
        if is_amz_header(k) or is_supported_header(k) or is_storageclass_header(k):
             m[k] = v
        else:
