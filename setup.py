@@ -40,6 +40,7 @@ packages = [
 ]
 
 requires = [
+    'future',
     'urllib3',
     'pytz',
     'certifi',
