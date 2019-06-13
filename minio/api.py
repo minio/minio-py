@@ -90,9 +90,11 @@ from .signer import (_UNSIGNED_PAYLOAD, _SIGN_V4_ALGORITHM)
 from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_complete_multipart_upload,
                           xml_marshal_bucket_notifications,
-                          xml_marshal_delete_objects)
+                          xml_marshal_delete_objects,
+                          xml_marshal_select)
 from .fold_case_dict import FoldCaseDict
 from .thread_pool import ThreadPool
+from .select_object_reader import SelectObjectReader
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
@@ -234,6 +236,44 @@ class Minio(object):
         Disable HTTP trace.
         """
         self._trace_output_stream = None
+
+    # Select Object Content
+    def select_object_content(self, bucket_name, object_name, opts):
+        """
+        Executes SQL requests on objects having data in CSV, JSON
+        or Parquet formats.
+
+        Examples:
+            data = client.select_object_content('foo', 'test.csv', options)
+
+        :param bucket_name: Bucket to read object from
+        :param object_name: Name of object to read
+        :param options: Options for select object
+        """
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+
+        content = xml_marshal_select(opts)
+        url_values = dict()
+        url_values["select"] = ""
+        url_values["select-type"] = "2"
+
+        headers = {
+            'Content-Length': str(len(content)),
+            'Content-Md5': get_md5_base64digest(content)
+        }
+        content_sha256_hex = get_sha256_hexdigest(content)
+        response = self._url_open(
+            'POST',
+            bucket_name=bucket_name,
+            object_name=object_name,
+            query=url_values,
+            headers=headers,
+            body=content,
+            content_sha256=content_sha256_hex,
+            preload_content=False)
+
+        return SelectObjectReader(response)
 
     # Bucket level
     def make_bucket(self, bucket_name, location='us-east-1'):

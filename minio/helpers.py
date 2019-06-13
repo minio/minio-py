@@ -48,12 +48,23 @@ from .error import (InvalidBucketError, InvalidEndpointError,
                     InvalidArgumentError)
 
 # Constants
-MAX_MULTIPART_COUNT = 10000 # 10000 parts
+MAX_MULTIPART_COUNT = 10000  # 10000 parts
 MAX_MULTIPART_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
 MAX_PART_SIZE = 5 * 1024 * 1024 * 1024  # 5GiB
 MAX_POOL_SIZE = 10
 MIN_PART_SIZE = 5 * 1024 * 1024  # 5MiB
-DEFAULT_PART_SIZE = MIN_PART_SIZE # Currently its 5MiB
+DEFAULT_PART_SIZE = MIN_PART_SIZE  # Currently its 5MiB
+
+
+# Select Object Content
+READ_SIZE_SELECT = 32 * 1024  # Buffer size
+SQL = 'SQL'  # Value for ExpressionType
+EVENT_RECORDS = 'Records'  # Event Type is Records
+EVENT_PROGRESS = 'Progress'  # Event Type Progress
+EVENT_STATS = 'Stats'  # Event Type Stats
+EVENT = 'event'  # Message Type is event
+EVENT_END = 'End'  # Event Type is End
+ERROR = 'error'  # Message Type is error
 
 _VALID_BUCKETNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\\.\\-]+[a-z0-9]$')
 _ALLOWED_HOSTNAME_REGEX = re.compile(
