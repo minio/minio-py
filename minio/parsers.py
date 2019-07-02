@@ -59,6 +59,15 @@ class S3Element(object):
     def __init__(self, root_name, element):
         self.root_name = root_name
         self.element = element
+        if '{{{}}}'.format(_S3_NS['s3']) in element.tag:
+            self._ns = _S3_NS
+        else:
+            self._ns = None
+
+    def _format_path(self, path):
+        if self._ns is None:
+            return path
+        return 's3:{}'.format(path)
 
     @classmethod
     def fromstring(cls, root_name, data):
@@ -83,14 +92,14 @@ class S3Element(object):
         """
         return [
             S3Element(self.root_name, elem)
-            for elem in self.element.findall('s3:{}'.format(name), _S3_NS)
+            for elem in self.element.findall(self._format_path(name), self._ns)
         ]
 
     def find(self, name):
         """Similar to ElementTree.Element.find()
 
         """
-        elt = self.element.find('s3:{}'.format(name), _S3_NS)
+        elt = self.element.find(self._format_path(name), self._ns)
         return S3Element(self.root_name, elt) if elt is not None else None
 
     def get_child_text(self, name, strict=True):
@@ -101,14 +110,14 @@ class S3Element(object):
         """
         if strict:
             try:
-                return self.element.find('s3:{}'.format(name), _S3_NS).text
+                return self.element.find(self._format_path(name), self._ns).text
             except _ETREE_EXCEPTIONS as error:
                 raise InvalidXMLError(
                     ('Invalid XML provided for "{}" - erroring tag <{}>. '
                      'Message: {}').format(self.root_name, name, error.message)
                 )
         else:
-            return self.element.findtext('s3:{}'.format(name), None, _S3_NS)
+            return self.element.findtext(self._format_path(name), None, self._ns)
 
     def get_urldecoded_elem_text(self, name, strict=True):
         """Like self.get_child_text(), but also performs urldecode() on the
