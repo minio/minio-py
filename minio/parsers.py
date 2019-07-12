@@ -360,6 +360,10 @@ def _iso8601_to_localized_time(date_string):
     :param date_string: iso8601 formatted date string.
     :return: :class:`datetime.datetime`
     """
+
+    # Handle timestamps with and without fractional seconds. Some non-AWS
+    # vendors (e.g. Dell EMC ECS) are not consistent about always providing
+    # fractional seconds.
     try:
         parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
     except ValueError:
