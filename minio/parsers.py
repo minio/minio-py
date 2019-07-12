@@ -360,7 +360,10 @@ def _iso8601_to_localized_time(date_string):
     :param date_string: iso8601 formatted date string.
     :return: :class:`datetime.datetime`
     """
-    parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
+    try:
+        parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
+    except ValueError:
+        parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%SZ')
     localized_time = pytz.utc.localize(parsed_date)
     return localized_time
 
