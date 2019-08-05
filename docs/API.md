@@ -8,7 +8,7 @@
 from minio import Minio
 from minio.error import ResponseError
 
-minioClient = Minio('play.min.io:9000',
+minioClient = Minio('play.min.io',
                   access_key='Q3AM3UQ867SPQQA43P2F',
                   secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
                   secure=True)
@@ -71,7 +71,7 @@ __Example__
 from minio import Minio
 from minio.error import ResponseError
 
-minioClient = Minio('play.min.io:9000',
+minioClient = Minio('play.min.io',
                     access_key='Q3AM3UQ867SPQQA43P2F',
                     secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
 ```

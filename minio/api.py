@@ -119,11 +119,11 @@ class Minio(object):
     Constructs a :class:`Minio <Minio>`.
 
     Examples:
-        client = Minio('play.min.io:9000')
+        client = Minio('play.min.io')
         client = Minio('s3.amazonaws.com', 'ACCESS_KEY', 'SECRET_KEY')
 
         # To override auto bucket location discovery.
-        client = Minio('play.min.io:9000', 'ACCESS_KEY', 'SECRET_KEY',
+        client = Minio('play.min.io', 'ACCESS_KEY', 'SECRET_KEY',
                        region='us-east-1')
 
     :param endpoint: Hostname of the cloud storage server.
