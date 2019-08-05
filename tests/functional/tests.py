@@ -1758,9 +1758,9 @@ def main():
         access_key = os.getenv('ACCESS_KEY', 'Q3AM3UQ867SPQQA43P2F')
         secret_key = os.getenv('SECRET_KEY',
                                'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
-        server_endpoint = os.getenv('SERVER_ENDPOINT', 'play.min.io:9000')
+        server_endpoint = os.getenv('SERVER_ENDPOINT', 'play.min.io')
         secure = os.getenv('ENABLE_HTTPS', '1') == '1'
-        if server_endpoint == 'play.min.io:9000':
+        if server_endpoint == 'play.min.io':
             access_key = 'Q3AM3UQ867SPQQA43P2F'
             secret_key = 'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
             secure = True
