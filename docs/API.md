@@ -40,6 +40,7 @@ s3Client = Minio('s3.amazonaws.com',
 |                                                       | [`fput_object`](#fput_object)                           |                                                   |                                                                     |
 |                                                       | [`fget_object`](#fget_object)                           |                                                   |                                                                     |
 |                                                       | [`get_partial_object`](#get_partial_object)             |                                                   |                                                                     |
+|                                                       | [`select_object_content`](#select_object_content)       |                                                   |                                                                     |
 
 ## 1. Constructor
 
@@ -666,6 +667,79 @@ try:
             file_data.write(d)
 except ResponseError as err:
     print(err)
+```
+
+<a name="select_object_content"></a>
+### select_object_content(self, bucket_name, object_name, options)
+Select object content filters the contents of object based on a simple structured query language (SQL).
+
+__Parameters__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``bucket_name``   |_string_   |Name of the bucket.   |
+|``object_name``   |_string_   |Name of the object.   |
+|``options`` | _SelectObjectReader_ | Query Options   |
+
+
+__Return Value__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``obj``| _SelectObjectReader_  |Select_object_reader object.  |
+
+
+
+__Example__
+
+
+```py
+client = Minio('s3.amazonaws.com',
+               access_key='YOUR-ACCESSKEY',
+               secret_key='YOUR-SECRETKEY')
+
+options = SelectObjectOptions(
+    expression=" select * from s3object",
+    input_serialization=InputSerialization(
+        compression_type="NONE",
+        csv=CSVInput(FileHeaderInfo="USE",
+                     RecordDelimiter="\n",
+                     FieldDelimiter=",",
+                     QuoteCharacter='"',
+                     QuoteEscapeCharacter='"',
+                     Comments="#",
+                     AllowQuotedRecordDelimiter="FALSE",
+                     ),
+        ),
+
+    output_serialization=OutputSerialization(
+        csv=CSVOutput(QuoteFields="ASNEEDED",
+                      RecordDelimiter="\n",
+                      FieldDelimiter=",",
+                      QuoteCharacter='"',
+                      QuoteEscapeCharacter='"',)
+                      ),
+    request_progress=RequestProgress(
+        enabled="FLASE"
+        )
+    )
+
+try:
+    data = client.select_object_content('my-bucket', 'my-object', options)
+
+    # Get the records
+    with open('my-record-file', 'w') as record_data:
+        for d in data.stream(10*1024):
+            record_data.write(d)
+
+    # Get the stats
+    print(data.stats())
+
+except CRCValidationError as err:
+    print(err)
+except ResponseError as err:
+    print(err)
+
 ```
 
 <a name="fget_object"></a>
