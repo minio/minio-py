@@ -73,6 +73,7 @@ _ALLOWED_HOSTNAME_REGEX = re.compile(
 
 _EXTRACT_REGION_REGEX = re.compile('s3[.-]?(.+?).amazonaws.com')
 
+
 def get_s3_region_from_endpoint(endpoint):
     """
     Extracts and returns an AWS S3 region from an endpoint
@@ -96,6 +97,7 @@ def get_s3_region_from_endpoint(endpoint):
 
     # No regex matches return None.
     return None
+
 
 def dump_http(method, url, request_headers, response, output_stream):
     """
@@ -144,6 +146,7 @@ def dump_http(method, url, request_headers, response, output_stream):
     # End header.
     output_stream.write('---------END-HTTP---------\n')
 
+
 def mkdir_p(path):
     """
     Recursively creates parent and sub directories.
@@ -157,6 +160,7 @@ def mkdir_p(path):
             pass
         else:
             raise
+
 
 class PartMetadata(object):
     """
@@ -172,6 +176,7 @@ class PartMetadata(object):
         self.md5_hex = md5_hex
         self.sha256_hex = sha256_hex
         self.size = size
+
 
 def read_full(data, size):
     """
@@ -198,6 +203,7 @@ def read_full(data, size):
 
     return chunk.getvalue()
 
+
 AWS_S3_ENDPOINT_MAP = {
     'us-east-1': 's3.amazonaws.com',
     'us-east-2': 's3-us-east-2.amazonaws.com',
@@ -216,8 +222,10 @@ AWS_S3_ENDPOINT_MAP = {
     'cn-north-1': 's3.cn-north-1.amazonaws.com.cn'
 }
 
+
 def get_s3_endpoint(region):
     return AWS_S3_ENDPOINT_MAP.get(region, 's3.amazonaws.com')
+
 
 def get_target_url(endpoint_url, bucket_name=None, object_name=None,
                    bucket_region='us-east-1', query=None):
@@ -320,6 +328,7 @@ def is_valid_endpoint(endpoint):
 
     return True
 
+
 def is_virtual_host(endpoint_url, bucket_name):
     """
     Check to see if the ``bucket_name`` can be part of virtual host
@@ -340,6 +349,7 @@ def is_virtual_host(endpoint_url, bucket_name):
         if host in parsed_url.netloc:
             return True
     return False
+
 
 def is_valid_bucket_name(bucket_name):
     """
@@ -386,6 +396,7 @@ def is_non_empty_string(input_string):
 
     return True
 
+
 def is_valid_policy_type(policy):
     """
     Validate if policy is type str
@@ -406,6 +417,7 @@ def is_valid_policy_type(policy):
 
     return True
 
+
 def is_valid_bucket_notification_config(notifications):
     """
     Validate the notifications config structure
@@ -423,20 +435,21 @@ def is_valid_bucket_notification_config(notifications):
             'notifications configuration may not be empty'
         )
 
-    VALID_NOTIFICATION_KEYS = set([
-        "TopicConfigurations",
-        "QueueConfigurations",
-        "CloudFunctionConfigurations",
-    ])
+    VALID_NOTIFICATION_KEYS = {
+        'TopicConfigurations',
+        'QueueConfigurations',
+        'CloudFunctionConfigurations'
+    }
 
-    VALID_SERVICE_CONFIG_KEYS = set([
+    VALID_SERVICE_CONFIG_KEYS = {
         'Id',
         'Arn',
         'Events',
-        'Filter',
-    ])
+        'Filter'
+    }
 
-    NOTIFICATION_EVENTS = set([
+    NOTIFICATION_EVENTS = {
+        's3:ObjectAccessed:*',
         's3:ReducedRedundancyLostObject',
         's3:ObjectCreated:*',
         's3:ObjectCreated:Put',
@@ -445,8 +458,8 @@ def is_valid_bucket_notification_config(notifications):
         's3:ObjectCreated:CompleteMultipartUpload',
         's3:ObjectRemoved:*',
         's3:ObjectRemoved:Delete',
-        's3:ObjectRemoved:DeleteMarkerCreated',
-    ])
+        's3:ObjectRemoved:DeleteMarkerCreated'
+    }
 
     for key, value in notifications.items():
         # check if key names are valid
@@ -536,6 +549,7 @@ def is_valid_bucket_notification_config(notifications):
 
     return True
 
+
 def is_valid_sse_c_object(sse=None):
     """
     Validate the SSE object and type
@@ -544,6 +558,7 @@ def is_valid_sse_c_object(sse=None):
     """
     if sse and sse.type() != "SSE-C":
             raise InvalidArgumentError("Required type SSE-C object to be passed")
+
 
 def is_valid_sse_object(sse):
     """
@@ -554,6 +569,7 @@ def is_valid_sse_object(sse):
     if sse and sse.type() != "SSE-C" and sse.type() != "SSE-KMS" and sse.type() != "SSE-S3":
         raise InvalidArgumentError("unsuported type of sse argument in put_object")
 
+
 def is_valid_source_sse_object(sse):
     """
     Validate the SSE object and type
@@ -562,6 +578,7 @@ def is_valid_source_sse_object(sse):
     """
     if sse and sse.type() != "copy_SSE-C":
         raise InvalidArgumentError("Required type copy_SSE-C object to be passed")
+
 
 def encode_object_name(object_name):
     """
@@ -572,6 +589,7 @@ def encode_object_name(object_name):
     """
     is_non_empty_string(object_name)
     return urlencode(object_name)
+
 
 class Hasher(object):
     """
@@ -664,6 +682,7 @@ def optimal_part_info(length, part_size):
     last_part_size = length - int(total_parts_count-1)*part_size
     return total_parts_count, part_size, last_part_size
 
+
 # return a new metadata dictionary where user defined metadata keys
 # are prefixed by "x-amz-meta-"
 def amzprefix_user_metadata(metadata):
@@ -684,6 +703,7 @@ def amzprefix_user_metadata(metadata):
        else:
             m["X-Amz-Meta-" + k] = v
     return m
+
 
 # returns true if amz s3 system defined metadata
 def is_amz_header(key):
