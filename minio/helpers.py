@@ -450,6 +450,8 @@ def is_valid_bucket_notification_config(notifications):
 
     NOTIFICATION_EVENTS = {
         's3:ObjectAccessed:*',
+        's3:ObjectAccessed:Get',
+        's3:ObjectAccessed:Head',
         's3:ReducedRedundancyLostObject',
         's3:ObjectCreated:*',
         's3:ObjectCreated:Put',
