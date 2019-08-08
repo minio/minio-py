@@ -20,8 +20,8 @@
 from minio import Minio
 
 client = Minio('play.min.io',
-               access_key='Q3AM3UQ867SPQQA43P2F',
-               secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
+               access_key='YOUR-ACCESSKEYID',
+               secret_key='YOUR-SECRETACCESSKEY')
 
 # Put a file with default content-type.
 events = client.listen_bucket_notification('my-bucket', 'my-prefix/',
