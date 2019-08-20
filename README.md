@@ -45,7 +45,7 @@ You need four items in order to connect to MinIO object storage server.
 from minio import Minio
 from minio.error import ResponseError
 
-minioClient = Minio('play.min.io:9000',
+minioClient = Minio('play.min.io',
                   access_key='Q3AM3UQ867SPQQA43P2F',
                   secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
                   secure=True)
@@ -55,7 +55,7 @@ minioClient = Minio('play.min.io:9000',
 ## Quick Start Example - File Uploader
 This example program connects to a MinIO object storage server, makes a bucket on the server and then uploads a file to the bucket.
 
-We will use the MinIO server running at [https://play.min.io:9000](https://play.min.io:9000) in this example. Feel free to use this service for testing and development. Access credentials shown in this example are open to the public.
+We will use the MinIO server running at [https://play.min.io](https://play.min.io) in this example. Feel free to use this service for testing and development. Access credentials shown in this example are open to the public.
 
 #### file-uploader.py
 
@@ -66,7 +66,7 @@ from minio.error import (ResponseError, BucketAlreadyOwnedByYou,
                          BucketAlreadyExists)
 
 # Initialize minioClient with an endpoint and access/secret keys.
-minioClient = Minio('play.min.io:9000',
+minioClient = Minio('play.min.io',
                     access_key='Q3AM3UQ867SPQQA43P2F',
                     secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
                     secure=True)

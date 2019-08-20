@@ -90,9 +90,11 @@ from .signer import (_UNSIGNED_PAYLOAD, _SIGN_V4_ALGORITHM)
 from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_complete_multipart_upload,
                           xml_marshal_bucket_notifications,
-                          xml_marshal_delete_objects)
+                          xml_marshal_delete_objects,
+                          xml_marshal_select)
 from .fold_case_dict import FoldCaseDict
 from .thread_pool import ThreadPool
+from .select_object_reader import SelectObjectReader
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
@@ -119,11 +121,11 @@ class Minio(object):
     Constructs a :class:`Minio <Minio>`.
 
     Examples:
-        client = Minio('play.min.io:9000')
+        client = Minio('play.min.io')
         client = Minio('s3.amazonaws.com', 'ACCESS_KEY', 'SECRET_KEY')
 
         # To override auto bucket location discovery.
-        client = Minio('play.min.io:9000', 'ACCESS_KEY', 'SECRET_KEY',
+        client = Minio('play.min.io', 'ACCESS_KEY', 'SECRET_KEY',
                        region='us-east-1')
 
     :param endpoint: Hostname of the cloud storage server.
@@ -234,6 +236,44 @@ class Minio(object):
         Disable HTTP trace.
         """
         self._trace_output_stream = None
+
+    # Select Object Content
+    def select_object_content(self, bucket_name, object_name, opts):
+        """
+        Executes SQL requests on objects having data in CSV, JSON
+        or Parquet formats.
+
+        Examples:
+            data = client.select_object_content('foo', 'test.csv', options)
+
+        :param bucket_name: Bucket to read object from
+        :param object_name: Name of object to read
+        :param options: Options for select object
+        """
+        is_valid_bucket_name(bucket_name)
+        is_non_empty_string(object_name)
+
+        content = xml_marshal_select(opts)
+        url_values = dict()
+        url_values["select"] = ""
+        url_values["select-type"] = "2"
+
+        headers = {
+            'Content-Length': str(len(content)),
+            'Content-Md5': get_md5_base64digest(content)
+        }
+        content_sha256_hex = get_sha256_hexdigest(content)
+        response = self._url_open(
+            'POST',
+            bucket_name=bucket_name,
+            object_name=object_name,
+            query=url_values,
+            headers=headers,
+            body=content,
+            content_sha256=content_sha256_hex,
+            preload_content=False)
+
+        return SelectObjectReader(response)
 
     # Bucket level
     def make_bucket(self, bucket_name, location='us-east-1'):
@@ -907,7 +947,7 @@ class Minio(object):
             for obj in objects:
                 yield obj
 
-    def list_objects_v2(self, bucket_name, prefix='', recursive=False):
+    def list_objects_v2(self, bucket_name, prefix='', recursive=False, start_after=''):
         """
         List objects in the given bucket using the List objects V2 API.
 
@@ -939,6 +979,13 @@ class Minio(object):
             # hello/world/1
             # hello/world/2
 
+
+            objects = minio.list_objects_v2('foo', recursive=True,
+                                          start_after='hello/world/1')
+            for current_object in objects:
+                print(current_object)
+            # hello/world/2
+
         :param bucket_name: Bucket to list objects from
         :param prefix: String specifying objects returned must begin with
         :param recursive: If yes, returns all objects for a specified prefix
@@ -950,9 +997,13 @@ class Minio(object):
         if prefix is None:
             prefix = ''
 
+        if start_after is None:
+            start_after = ''
+
         # Initialize query parameters.
         query = {
             'list-type': '2',
+            'start-after': start_after,
             'prefix': prefix
         }
 
