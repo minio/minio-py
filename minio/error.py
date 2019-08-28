@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015, 2016, 2017 MinIO, Inc.
+# (C) 2015-2019 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -263,7 +263,7 @@ class ResponseError(MinioError):
 
 
 # Common error responses listed here
-# http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.htmlRESTErrorResponses
+# http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#RESTErrorResponses
 
 class KnownResponseError(MinioError):
     def __init__(self, response_error, **kwargs):
