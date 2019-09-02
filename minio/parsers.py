@@ -69,7 +69,7 @@ class S3Element(object):
         :return: Returns an S3Element.
         """
         try:
-            return cls(root_name, cElementTree.fromstring(data))
+            return cls(root_name, cElementTree.fromstring(data.strip()))
         except _ETREE_EXCEPTIONS as error:
             raise InvalidXMLError(
                 '"{}" XML is not parsable. Message: {}'.format(
