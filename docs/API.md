@@ -690,7 +690,6 @@ __Return Value__
 |``obj``| _SelectObjectReader_  |Select_object_reader object.  |
 
 
-
 __Example__
 
 
@@ -736,7 +735,7 @@ try:
     # Get the stats
     print(data.stats())
 
-except CRCValidationError as err:
+except SelectCRCValidationError as err:
     print(err)
 except ResponseError as err:
     print(err)

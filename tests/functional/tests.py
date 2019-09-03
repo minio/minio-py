@@ -16,13 +16,13 @@
 # limitations under the License.
 
 from __future__ import division
+from __future__ import absolute_import
 
 import os
 import io
 import csv
 import sys
 
-from io import BytesIO
 from sys import exit
 import uuid
 import shutil
@@ -44,10 +44,10 @@ from minio import Minio, PostPolicy, CopyConditions
 from minio.error import (APINotImplemented, NoSuchBucketPolicy, ResponseError,
                          PreconditionFailed, BucketAlreadyOwnedByYou,
                          BucketAlreadyExists, InvalidBucketError)
-from minio.select_object_options import (SelectObjectOptions, CSVInput,
-                                         RequestProgress, InputSerialization,
-                                         OutputSerialization, CSVOutput)
-from minio.select_object_reader import (calculate_crc)
+from minio.select.options import (SelectObjectOptions, CSVInput,
+                                  RequestProgress, InputSerialization,
+                                  OutputSerialization, CSVOutput)
+from minio.select.helpers import (calculate_crc)
 
 from minio.sse import SSE_C
 from minio.sse import copy_SSE_C
@@ -291,8 +291,8 @@ def test_select_object_content(client, log_output):
     try:
         client.make_bucket(bucket_name)
         content = io.BytesIO(b"col1,col2,col3\none,two,three\nX,Y,Z\n")
-        expected_crc = calculate_crc(content.getbuffer())
-        client.put_object(bucket_name, csvfile, content, content.getbuffer().nbytes)
+        expected_crc = calculate_crc(content.getvalue())
+        client.put_object(bucket_name, csvfile, content, len(content.getvalue()))
 
         options = SelectObjectOptions(
             expression="select * from s3object",
@@ -319,11 +319,11 @@ def test_select_object_content(client, log_output):
         )
         data = client.select_object_content(bucket_name, csvfile, options)
         # Get the records
-        records = ""
+        records = io.BytesIO()
         for d in data.stream(10*1024):
-            records += d
-        generated_crc = calculate_crc(str.encode(records))
+            records.write(d.encode('utf-8'))
 
+        generated_crc = calculate_crc(records.getvalue())
         if expected_crc != generated_crc:
             raise ValueError('Data mismatch Expected : "col1,col2,col3\none,two,three\nX,Y,Z\n"',
                              'Received {}', records)
@@ -2062,10 +2062,8 @@ def main():
             log_output = LogOutput(client.get_bucket_notification, 'test_get_bucket_notification')
             test_get_bucket_notification(client, log_output)
 
-            # getBuffer() of io.BytesIO is supported in Python3.
-            if sys.version_info.major == 3:
-                log_output = LogOutput(client.select_object_content, 'test_select_object_content')
-                test_select_object_content(client, log_output)
+            log_output = LogOutput(client.select_object_content, 'test_select_object_content')
+            test_select_object_content(client, log_output)
 
         else:
             # Quick mode tests
@@ -2114,10 +2112,8 @@ def main():
             log_output = LogOutput(client.copy_object, 'test_copy_object_no_copy_condition')
             test_copy_object_no_copy_condition(client, log_output)
 
-            # getBuffer() of io.BytesIO is supported in Python3.
-            if sys.version_info.major == 3:
-                log_output = LogOutput(client.select_object_content, 'test_select_object_content')
-                test_select_object_content(client, log_output)
+            log_output = LogOutput(client.select_object_content, 'test_select_object_content')
+            test_select_object_content(client, log_output)
 
             if secure:
                 log_output = LogOutput(client.copy_object, 'test_copy_object_with_sse')

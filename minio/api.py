@@ -77,8 +77,7 @@ from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_bucket_notification_config, is_valid_policy_type,
                       mkdir_p, dump_http, amzprefix_user_metadata,
                       is_supported_header,is_amz_header)
-from .helpers import (MAX_MULTIPART_OBJECT_SIZE,
-                      MAX_PART_SIZE,
+from .helpers import (MAX_PART_SIZE,
                       MAX_POOL_SIZE,
                       MIN_PART_SIZE,
                       DEFAULT_PART_SIZE,
@@ -94,7 +93,7 @@ from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_select)
 from .fold_case_dict import FoldCaseDict
 from .thread_pool import ThreadPool
-from .select_object_reader import SelectObjectReader
+from .select import SelectObjectReader
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
