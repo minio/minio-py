@@ -15,15 +15,17 @@
 # limitations under the License.
 
 """
+minio.select.options
+~~~~~~~~~~~~~~~
 
-This module creates the request for Select
+This module implements the SelectOption definition for SelectObject API.
 
 :copyright: (c) 2019 by MinIO, Inc.
 :license: Apache 2.0, see LICENSE for more details.
 
 """
-from .helpers import (SQL)
 
+from .helpers import (SQL)
 
 class CSVInput:
     """
@@ -40,7 +42,6 @@ class CSVInput:
         self.QuoteEscapeCharacter = QuoteEscapeCharacter
         self.Comments = Comments
         self.AllowQuotedRecordDelimiter = AllowQuotedRecordDelimiter
-
 
 class JSONInput:
     """

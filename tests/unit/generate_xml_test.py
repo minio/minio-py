@@ -21,13 +21,12 @@ from minio.definitions import UploadPart
 from minio.xml_marshal import (xml_marshal_bucket_constraint,
                                xml_marshal_complete_multipart_upload,
                                xml_marshal_select)
-from minio.select_object_options import (SelectObjectOptions,
-                                         CSVInput,
-                                         RequestProgress,
-                                         InputSerialization,
-                                         OutputSerialization,
-                                         CSVOutput)
-
+from minio.select.options import (SelectObjectOptions,
+                                  CSVInput,
+                                  RequestProgress,
+                                  InputSerialization,
+                                  OutputSerialization,
+                                  CSVOutput)
 
 class GenerateRequestTest(TestCase):
     def test_generate_bucket_constraint(self):

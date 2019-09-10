@@ -17,12 +17,12 @@
 
 from minio import Minio
 from minio.error import ResponseError
-from minio.select_object_reader import CRCValidationError
-from minio.select_object_options import (SelectObjectOptions, CSVInput,
-                                         JSONInput, RequestProgress,
-                                         ParquetInput, InputSerialization,
-                                         OutputSerialization, CSVOutput,
-                                         JsonOutput)
+from minio.select.errors import SelectCRCValidationError, SelectMessageError
+from minio.select.options import (SelectObjectOptions, CSVInput,
+                                  JSONInput, RequestProgress,
+                                  ParquetInput, InputSerialization,
+                                  OutputSerialization, CSVOutput,
+                                  JsonOutput)
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEY',
@@ -71,7 +71,11 @@ try:
     # Get the stats
     print(data.stats())
 
-except CRCValidationError as err:
+except SelectMessageError as err:
     print(err)
+
+except SelectCRCValidationError as err:
+    print(err)
+
 except ResponseError as err:
     print(err)
