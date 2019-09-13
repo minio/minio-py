@@ -251,7 +251,9 @@ def generate_canonical_request(method, parsed_url, headers, signed_headers, cont
     :param headers: HTTP header dictionary.
     :param content_sha256: Content sha256 hexdigest string.
     """
-    lines = [method, parsed_url.path, parsed_url.query]
+    # Use url encoded path with ~ as an exception
+    parsed_url_path = parsed_url.path.replace("%7E", "~")
+    lines = [method, parsed_url_path, parsed_url.query]
 
     # Headers added to canonical request.
     header_lines = []
