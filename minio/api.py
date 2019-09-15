@@ -663,13 +663,13 @@ class Minio(object):
 
             # Verify if we wrote data properly.
             if total_written < content_size:
-                msg = 'Data written {0} bytes is smaller than the' \
+                msg = 'Data written {0} bytes is smaller than the ' \
                       'specified size {1} bytes'.format(total_written,
                                                         content_size)
                 raise InvalidSizeError(msg)
 
             if total_written > content_size:
-                msg = 'Data written {0} bytes is in excess than the' \
+                msg = 'Data written {0} bytes is in excess than the ' \
                       'specified size {1} bytes'.format(total_written,
                                                         content_size)
                 raise InvalidSizeError(msg)
