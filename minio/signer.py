@@ -96,7 +96,7 @@ def presign_v4(method, url, access_key, secret_key, session_token=None,
 
     parsed_url = urlsplit(url)
     content_hash_hex = _UNSIGNED_PAYLOAD
-    host = parsed_url.netloc
+    host = remove_default_port(parsed_url)
     headers['Host'] = host
     iso8601Date = request_date.strftime("%Y%m%dT%H%M%SZ")
 
@@ -208,7 +208,7 @@ def sign_v4(method, url, region, headers=None,
         # with no payload, calculate sha256 for 0 length data.
         content_sha256 = get_sha256_hexdigest('')
 
-    host = parsed_url.netloc
+    host = remove_default_port(parsed_url)
     headers['Host'] = host
 
     date = datetime.utcnow()
@@ -355,3 +355,10 @@ def generate_authorization_header(access_key, date, region,
                    'SignedHeaders=' + signed_headers_string + ',',
                    'Signature=' + signature]
     return ' '.join(auth_header)
+
+def remove_default_port(parsed_url):
+    if parsed_url.port is 80 or 443:
+        host = parsed_url.hostname
+    else:
+        host = parsed_url.netloc
+    return host
