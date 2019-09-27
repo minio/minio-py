@@ -34,18 +34,13 @@ from datetime import datetime
 import pytz
 
 # minio specific.
-from .error import (InvalidXMLError, MultiDeleteError)
+from .error import (ETREE_EXCEPTIONS, InvalidXMLError, MultiDeleteError)
 from .compat import urldecode
 from .definitions import (Object, Bucket, IncompleteUpload,
                           UploadPart, MultipartUploadResult,
                           CopyObjectResult)
 from .xml_marshal import (NOTIFICATIONS_ARN_FIELDNAME_MAP)
 
-
-if hasattr(cElementTree, 'ParseError'):
-    _ETREE_EXCEPTIONS = (ParseError, AttributeError, ValueError, TypeError)
-else:
-    _ETREE_EXCEPTIONS = (SyntaxError, AttributeError, ValueError, TypeError)
 
 _S3_NS = {'s3' : 'http://s3.amazonaws.com/doc/2006-03-01/'}
 
@@ -70,10 +65,10 @@ class S3Element(object):
         """
         try:
             return cls(root_name, cElementTree.fromstring(data.strip()))
-        except _ETREE_EXCEPTIONS as error:
+        except ETREE_EXCEPTIONS as error:
             raise InvalidXMLError(
                 '"{}" XML is not parsable. Message: {}'.format(
-                    root_name, error.message
+                    root_name, error
                 )
             )
 
@@ -102,10 +97,10 @@ class S3Element(object):
         if strict:
             try:
                 return self.element.find('s3:{}'.format(name), _S3_NS).text
-            except _ETREE_EXCEPTIONS as error:
+            except ETREE_EXCEPTIONS as error:
                 raise InvalidXMLError(
                     ('Invalid XML provided for "{}" - erroring tag <{}>. '
-                     'Message: {}').format(self.root_name, name, error.message)
+                     'Message: {}').format(self.root_name, name, error)
                 )
         else:
             return self.element.findtext('s3:{}'.format(name), None, _S3_NS)
