@@ -357,7 +357,13 @@ def generate_authorization_header(access_key, date, region,
     return ' '.join(auth_header)
 
 def remove_default_port(parsed_url):
-    if parsed_url.port is 80 or 443:
+    default_ports = {
+        'http': 80,
+        'https': 443
+    }
+    if any(parsed_url.scheme == scheme and parsed_url.port == port
+           for scheme, port in default_ports.items()):
+        # omit default port (i.e. 80 or 443)
         host = parsed_url.hostname
     else:
         host = parsed_url.netloc
