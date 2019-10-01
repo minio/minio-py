@@ -29,14 +29,9 @@ from xml.etree import cElementTree
 from xml.etree.cElementTree import ParseError
 
 if hasattr(cElementTree, 'ParseError'):
-    ## ParseError seems to not have .message like other
-    ## exceptions. Add dynamically new attribute carrying
-    ## value from message.
-    if not hasattr(ParseError, 'message'):
-        setattr(ParseError, 'message', ParseError.msg)
-    _ETREE_EXCEPTIONS = (ParseError, AttributeError, ValueError, TypeError)
+    ETREE_EXCEPTIONS = (ParseError, AttributeError, ValueError, TypeError)
 else:
-    _ETREE_EXCEPTIONS = (SyntaxError, AttributeError, ValueError, TypeError)
+    ETREE_EXCEPTIONS = (SyntaxError, AttributeError, ValueError, TypeError)
 
 
 class MinioError(Exception):
@@ -178,9 +173,9 @@ class ResponseError(MinioError):
             raise ValueError('response data has no body.')
         try:
             root = cElementTree.fromstring(self._response.data)
-        except _ETREE_EXCEPTIONS as error:
+        except ETREE_EXCEPTIONS as error:
             raise InvalidXMLError('"Error" XML is not parsable. '
-                                  'Message: {0}'.format(error.message))
+                                  'Message: {0}'.format(error))
         for attribute in root:
             if attribute.tag == 'Code':
                 self.code = attribute.text
