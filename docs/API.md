@@ -383,7 +383,7 @@ policy_read_only = {"Version":"2012-10-17",
                     ]}
 
 
-minioClient.set_bucket_policy('mybucket', policy_read_only)
+minioClient.set_bucket_policy('mybucket', json.dumps(policy_read_only))
 ```
 
 <a name="get_bucket_notification"></a>
