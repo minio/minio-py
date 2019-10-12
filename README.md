@@ -80,12 +80,13 @@ except BucketAlreadyExists as err:
        pass
 except ResponseError as err:
        raise
-else:
-        # Put an object 'pumaserver_debug.log' with contents from 'pumaserver_debug.log'.
-        try:
-               minioClient.fput_object('maylogs', 'pumaserver_debug.log', '/tmp/pumaserver_debug.log')
-        except ResponseError as err:
-               print(err)
+
+# Put an object 'pumaserver_debug.log' with contents from 'pumaserver_debug.log'.
+try:
+       minioClient.fput_object('maylogs', 'pumaserver_debug.log', '/tmp/pumaserver_debug.log')
+except ResponseError as err:
+       print(err)
+        
 ```
 
 #### Run file-uploader
