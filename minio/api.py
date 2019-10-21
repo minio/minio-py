@@ -331,7 +331,8 @@ class Minio(object):
                           headers, self._access_key,
                           self._secret_key,
                           self._session_token,
-                          content_sha256_hex)
+                          content_sha256_hex,
+                          datetime.utcnow())
 
         response = self._http.urlopen(method, url,
                                       body=content,
@@ -370,7 +371,7 @@ class Minio(object):
                           headers, self._access_key,
                           self._secret_key,
                           self._session_token,
-                          None)
+                          None, datetime.utcnow())
 
         response = self._http.urlopen(method, url,
                                       body=None,
@@ -1864,7 +1865,7 @@ class Minio(object):
                           headers, self._access_key,
                           self._secret_key,
                           self._session_token,
-                          None)
+                          None, datetime.utcnow())
 
         response = self._http.urlopen(method, url,
                                       body=None,
@@ -1914,7 +1915,7 @@ class Minio(object):
         headers = sign_v4(method, url, region,
                           fold_case_headers, self._access_key,
                           self._secret_key, self._session_token,
-                          content_sha256)
+                          content_sha256, datetime.utcnow())
 
         response = self._http.urlopen(method, url,
                                       body=body,
