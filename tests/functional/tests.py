@@ -22,6 +22,7 @@ import os
 import io
 import csv
 import sys
+import tempfile
 
 from sys import exit
 import uuid
@@ -895,22 +896,25 @@ def test_fget_object(client, log_output, sse=None):
     # default value for log_output.function attribute is;
     # log_output.function = "fget_object(bucket_name, object_name, file_path, request_headers)"
 
+    tmpfd, tmpfile = tempfile.mkstemp()
+    os.close(tmpfd)
+
     # Get a unique bucket_name and object_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
-    log_output.args['file_path'] = newfile_f = 'newfile-f 新'
+    log_output.args['file_path'] = tmpfile
     try:
         MB_1 = 1024*1024  # 1MiB.
         MB_1_reader = LimitedRandomReader(MB_1)
         client.make_bucket(bucket_name)
         client.put_object(bucket_name, object_name, MB_1_reader, MB_1, sse=sse)
         # Get/Download a full object and save locally at path
-        client.fget_object(bucket_name, object_name, newfile_f, sse=sse)
+        client.fget_object(bucket_name, object_name, tmpfile, sse=sse)
     except Exception as err:
         raise Exception(err)
     finally:
         try:
-            os.remove(newfile_f)
+            os.remove(tmpfile)
             client.remove_object(bucket_name, object_name)
             client.remove_bucket(bucket_name)
         except Exception as err:

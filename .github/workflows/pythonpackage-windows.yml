@@ -1,0 +1,52 @@
+name: Python package
+
+on:
+  pull_request:
+    branches:
+    - master
+  push:
+    branches:
+    - master
+
+jobs:
+  build:
+    name: Test on python ${{ matrix.python-version }} and ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      max-parallel: 3
+      matrix:
+        python-version: [2.7, 3.6, 3.7]
+        os: [windows-latest]
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install urllib3 certifi pytz pyflakes faker nose
+    - name: Test with nosetests
+      run: |
+        $ErrorActionPreference = 'continue'
+        pyflakes minio/*.py
+        python setup.py install
+        python setup.py nosetests
+    - name: Test with functional tests
+      env:
+        MINT_MODE: full
+        SERVER_ENDPOINT: localhost:9000
+        ACCESS_KEY: minio
+        SECRET_KEY: minio123
+        ENABLE_HTTPS: 1
+        MINIO_ACCESS_KEY: minio
+        MINIO_SECRET_KEY: minio123
+      run: |
+          New-Item -ItemType Directory -Path "$env:temp/minio-config/certs/"
+          Copy-Item -Path tests\certs\* -Destination "$env:temp/minio-config/certs/"
+          Invoke-WebRequest -Uri https://dl.min.io/server/minio/release/windows-amd64/minio.exe -OutFile $HOME/minio.exe
+          Start-Process -NoNewWindow -FilePath "$HOME/minio.exe" -ArgumentList "-C", "$env:temp/minio-config", "server", "$env:temp/fs"
+          $env:SSL_CERT_FILE = "$env:temp/minio-config/certs/public.crt"
+          python tests/functional/tests.py
