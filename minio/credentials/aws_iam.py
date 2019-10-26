@@ -17,7 +17,6 @@
 import os, json, urllib3, datetime
 from .credentials import Provider, Value, Expiry
 
-
 class IAM(Provider):
 
     iam_security_creds_path = '/latest/meta-data/iam/security-credentials'
@@ -42,7 +41,7 @@ class IAM(Provider):
         url = self._endpoint + self.iam_security_creds_path
         res = self._http_client.urlopen('GET', url)
         if res['status'] != 200:
-            #TODO: how to handle errors
+            #TODO how to handle errors crete new error in minio.errors.py?
             raise
         creds = res['data'].split('\n')
         return creds
@@ -51,7 +50,7 @@ class IAM(Provider):
         url = self._endpoint + self.iam_security_creds_path + "/" + creds_name
         res = self._http_client.urlopen('GET', url)
         if res['status'] != 200:
-            #TODO how to handle errors
+            #TODO how to handle errors crete new error in minio.errors.py?
             raise
 
         data = json.loads(res['data'])
@@ -77,5 +76,6 @@ class IAM(Provider):
             secret_key=role_creds['SecretAccessKey'],
             session_token=role_creds['Token']
         )
+
     def is_expired(self):
         return self._expiry.is_expired()

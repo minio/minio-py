@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import os
 
 from .credentials import Provider, Value
@@ -41,4 +42,3 @@ class EnvMinio(Provider):
 
     def is_expired(self):
         return not self._retrieved
-

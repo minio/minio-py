@@ -70,6 +70,3 @@ class Credentials(object):
 
     def is_expired(self):
         return self._forceRefresh or self._provider.is_expired()
-
-
-
