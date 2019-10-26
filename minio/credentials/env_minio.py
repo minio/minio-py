@@ -33,6 +33,7 @@ class EnvMinio(Provider):
         #TODO: What to do with signers?
 
         self._retrieved = True
+        
         return Value(
             access_key=id,
             secret_key=secret

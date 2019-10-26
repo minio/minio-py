@@ -78,7 +78,3 @@ class ChainProviderTest(TestCase):
         )
         # is_expired should be True before retrieve()
         eq_(chain.is_expired(), True)
-
-                
-
-

@@ -54,7 +54,6 @@ class Credentials(object):
         self._creds = None
         self._forceRefresh = forceRefresh
         self._provider = provider
-
     def get(self):
         if self.is_expired():
             try:

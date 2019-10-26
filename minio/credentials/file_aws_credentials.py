@@ -63,4 +63,3 @@ class FileAWSCredentials(Provider):
 
     def is_expired(self):
         return not self._retrieved
-
