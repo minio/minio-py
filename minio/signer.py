@@ -173,7 +173,8 @@ def sign_v4(method, url, region, headers=None,
             access_key=None,
             secret_key=None,
             session_token=None,
-            content_sha256=None):
+            content_sha256=None,
+            request_datetime=None):
     """
     Signature version 4.
 
@@ -188,6 +189,7 @@ def sign_v4(method, url, region, headers=None,
     :param session_token: Optional session token, set
        only for temporary credentials.
     :param content_sha256: Optional body sha256.
+    :param request_datetime: Optional request date/time
     """
 
     # If no access key or secret key is provided return headers.
@@ -211,8 +213,10 @@ def sign_v4(method, url, region, headers=None,
     host = remove_default_port(parsed_url)
     headers['Host'] = host
 
-    date = datetime.utcnow()
-    headers['X-Amz-Date'] = date.strftime("%Y%m%dT%H%M%SZ")
+    if request_datetime is None:
+        request_datetime = datetime.utcnow()
+
+    headers['X-Amz-Date'] = request_datetime.strftime("%Y%m%dT%H%M%SZ")
     headers['X-Amz-Content-Sha256'] = content_sha256
     if session_token:
         headers['X-Amz-Security-Token'] = session_token
@@ -226,14 +230,14 @@ def sign_v4(method, url, region, headers=None,
                                                signed_headers,
                                                content_sha256)
 
-    string_to_sign = generate_string_to_sign(date, region,
+    string_to_sign = generate_string_to_sign(request_datetime, region,
                                              canonical_req)
-    signing_key = generate_signing_key(date, region, secret_key)
+    signing_key = generate_signing_key(request_datetime, region, secret_key)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
 
     authorization_header = generate_authorization_header(access_key,
-                                                         date,
+                                                         request_datetime,
                                                          region,
                                                          signed_headers,
                                                          signature)
@@ -253,7 +257,8 @@ def generate_canonical_request(method, parsed_url, headers, signed_headers, cont
     """
     # Should not encode ~. Decode it back if present.
     parsed_url_path = parsed_url.path.replace("%7E", "~")
-    lines = [method, parsed_url_path, parsed_url.query]
+    parsed_url_query = parsed_url.query.replace("%7E", "~")
+    lines = [method, parsed_url_path, parsed_url_query]
 
     # Headers added to canonical request.
     header_lines = []

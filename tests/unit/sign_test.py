@@ -22,10 +22,11 @@ import pytz as pytz
 
 from minio.signer import (generate_canonical_request, generate_string_to_sign,
                           generate_signing_key, generate_authorization_header,
-                          presign_v4)
+                          presign_v4, sign_v4)
 from minio.error import InvalidArgumentError
 from minio.compat import urlsplit, urlencode, queryencode
 from minio.fold_case_dict import FoldCaseDict
+from minio.helpers import get_target_url
 
 empty_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 dt = datetime(2015, 6, 20, 1, 2, 3, 0, pytz.utc)
@@ -115,6 +116,14 @@ class PresignURLTest(TestCase):
     @raises(InvalidArgumentError)
     def test_presigned_invalid_expires(self):
         presign_v4('GET', 'http://localhost:9000/hello', None, None, region=None, headers={}, expires=0)
+
+class SignV4Test(TestCase):
+    def test_signv4(self):
+        # Construct target url.
+        url = get_target_url('http://localhost:9000', bucket_name='testbucket',
+             object_name='~testobject', bucket_region='us-east-1', query={'partID': '1', 'uploadID': '~abcd'})
+        hdrs = sign_v4('PUT', url, 'us-east-1', access_key='minio', secret_key='minio123', request_datetime=dt)
+        eq_(hdrs['Authorization'], 'AWS4-HMAC-SHA256 Credential=minio/20150620/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=a2f4546f647981732bd90dfa5a7599c44dca92f44bea48ecc7565df06032c25b')
 
 class UnicodeEncodeTest(TestCase):
     def test_unicode_urlencode(self):
