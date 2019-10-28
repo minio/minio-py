@@ -33,9 +33,9 @@ class CredentialsTest(TestCase):
             secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
             session_token=None
         )
-        eq_(creds._access_key, expected_creds._access_key)
-        eq_(creds._secret_key, expected_creds._secret_key)
-        eq_(creds._session_token, expected_creds._session_token)
+        eq_(creds.access_key, expected_creds.access_key)
+        eq_(creds.secret_key, expected_creds.secret_key)
+        eq_(creds.session_token, expected_creds.session_token)
         # is_expired should be False after get
         eq_(credentials.is_expired(), False)
     

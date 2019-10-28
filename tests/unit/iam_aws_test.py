@@ -45,6 +45,6 @@ class TestIAMAWS(TestCase):
         provider = IAM()
         # retrieve credentials
         creds = provider.retrieve()
-        eq_(creds._access_key, "accessKey")
-        eq_(creds._secret_key, "secret")
-        eq_(creds._session_token, "token")
+        eq_(creds.access_key, "accessKey")
+        eq_(creds.secret_key, "secret")
+        eq_(creds.session_token, "token")

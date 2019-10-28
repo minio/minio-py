@@ -42,9 +42,9 @@ class EnvAWSTest(TestCase):
             secret_key="secret",
             session_token="token"
         )
-        eq_(creds._access_key, expected_creds._access_key)
-        eq_(creds._secret_key, expected_creds._secret_key)
-        eq_(creds._session_token, expected_creds._session_token)
+        eq_(creds.access_key, expected_creds.access_key)
+        eq_(creds.secret_key, expected_creds.secret_key)
+        eq_(creds.session_token, expected_creds.session_token)
         # assert expired true for retrieved credentials
         eq_(provider.is_expired(), False)
 
@@ -66,8 +66,8 @@ class EnvAWSTest(TestCase):
             secret_key="secret",
             session_token=None
         )
-        eq_(creds._access_key, expected_creds._access_key)
-        eq_(creds._secret_key, expected_creds._secret_key)
-        eq_(creds._session_token, expected_creds._session_token)
+        eq_(creds.access_key, expected_creds.access_key)
+        eq_(creds.secret_key, expected_creds.secret_key)
+        eq_(creds.session_token, expected_creds.session_token)
         # assert expired true for retrieved credentials
         eq_(provider.is_expired(), False)

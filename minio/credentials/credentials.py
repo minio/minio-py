@@ -19,9 +19,9 @@ from datetime import datetime, timedelta
 
 class Value(object):
     def __init__(self, access_key=None, secret_key=None, session_token=None):
-        self._access_key = access_key
-        self._secret_key = secret_key
-        self._session_token = session_token
+        self.access_key = access_key
+        self.secret_key = secret_key
+        self.session_token = session_token
 
         #TODO No signature type in python. How should signatures be handled
         self._signer_type = None

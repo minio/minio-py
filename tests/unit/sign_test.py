@@ -26,6 +26,7 @@ from minio.signer import (generate_canonical_request, generate_string_to_sign,
 from minio.error import InvalidArgumentError
 from minio.compat import urlsplit, urlencode, queryencode
 from minio.fold_case_dict import FoldCaseDict
+from minio.credentials import Credentials, Static
 
 empty_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 dt = datetime(2015, 6, 20, 1, 2, 3, 0, pytz.utc)
@@ -110,11 +111,17 @@ class AuthorizationHeaderTest(TestCase):
 class PresignURLTest(TestCase):
     @raises(InvalidArgumentError)
     def test_presigned_no_access_key(self):
-        presign_v4('GET', 'http://localhost:9000/hello', None, None)
+        credentials = Credentials(
+            provider=Static()
+        )
+        presign_v4('GET', 'http://localhost:9000/hello', credentials, None)
 
     @raises(InvalidArgumentError)
     def test_presigned_invalid_expires(self):
-        presign_v4('GET', 'http://localhost:9000/hello', None, None, region=None, headers={}, expires=0)
+        credentials = Credentials(
+            provider=Static()
+        )
+        presign_v4('GET', 'http://localhost:9000/hello', credentials, region=None, headers={}, expires=0)
 
 class UnicodeEncodeTest(TestCase):
     def test_unicode_urlencode(self):

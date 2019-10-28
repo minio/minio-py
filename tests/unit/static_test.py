@@ -34,8 +34,8 @@ class StaticTest(TestCase):
             access_key='UXHW',
             secret_key='SECRET'
         )
-        eq_(creds._access_key, expected_creds._access_key)
-        eq_(creds._secret_key, expected_creds._secret_key)
+        eq_(creds.access_key, expected_creds.access_key)
+        eq_(creds.secret_key, expected_creds.secret_key)
         # static is_expired is always False
         eq_(provider.is_expired(), False)
 
@@ -46,13 +46,9 @@ class StaticTest(TestCase):
         eq_(provider.is_expired(), False)
         # retrieve credentials
         creds = provider.retrieve()
-        expected_creds = Value(
-            access_key='',
-            secret_key='',
-            session_token=''    
-        )
-        eq_(creds._access_key, expected_creds._access_key)
-        eq_(creds._secret_key, expected_creds._secret_key)
-        eq_(creds._session_token, expected_creds._session_token)
+        expected_creds = Value()
+        eq_(creds.access_key, expected_creds.access_key)
+        eq_(creds.secret_key, expected_creds.secret_key)
+        eq_(creds.session_token, expected_creds.session_token)
         # static is_expired is always False
         eq_(provider.is_expired(), False)

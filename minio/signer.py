@@ -58,7 +58,7 @@ def post_presign_signature(date, region, secret_key, policy_str):
     return signature
 
 
-def presign_v4(method, url, access_key, secret_key, session_token=None,
+def presign_v4(method, url, credentials,
                region=None, headers=None, expires=None, response_headers=None,
                request_date=None):
     """
@@ -66,10 +66,7 @@ def presign_v4(method, url, access_key, secret_key, session_token=None,
 
     :param method: Method to be presigned examples 'PUT', 'GET'.
     :param url: URL to be presigned.
-    :param access_key: Access key id for your AWS s3 account.
-    :param secret_key: Secret access key for your AWS s3 account.
-    :param session_token: Session token key set only for temporary
-       access credentials.
+    :param credentials: Credentials object with your AWS s3 account info.
     :param region: region of the bucket, it is optional.
     :param headers: any additional HTTP request headers to
        be presigned, it is optional.
@@ -79,7 +76,7 @@ def presign_v4(method, url, access_key, secret_key, session_token=None,
     """
 
     # Validate input arguments.
-    if not access_key or not secret_key:
+    if not credentials.get().access_key or not credentials.get().secret_key:
         raise InvalidArgumentError('Invalid access_key and secret_key.')
 
     if region is None:
@@ -104,13 +101,13 @@ def presign_v4(method, url, access_key, secret_key, session_token=None,
     # Construct queries.
     query = {}
     query['X-Amz-Algorithm'] = _SIGN_V4_ALGORITHM
-    query['X-Amz-Credential'] = generate_credential_string(access_key,
+    query['X-Amz-Credential'] = generate_credential_string(credentials.get().access_key,
                                                            request_date,
                                                            region)
     query['X-Amz-Date'] = iso8601Date
     query['X-Amz-Expires'] = str(expires)
-    if session_token:
-        query['X-Amz-Security-Token'] = session_token
+    if credentials.get().session_token is not None:
+        query['X-Amz-Security-Token'] = credentials.get().session_token
 
     signed_headers = get_signed_headers(headers_to_sign)
     query['X-Amz-SignedHeaders'] = ';'.join(signed_headers)
@@ -149,7 +146,8 @@ def presign_v4(method, url, access_key, secret_key, session_token=None,
                                                    content_hash_hex)
     string_to_sign = generate_string_to_sign(request_date, region,
                                              canonical_request)
-    signing_key = generate_signing_key(request_date, region, secret_key)
+    signing_key = generate_signing_key(request_date, region, 
+                                       credentials.get().secret_key)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
     new_parsed_url = urlsplit(new_url + "&X-Amz-Signature="+signature)
@@ -170,9 +168,7 @@ def get_signed_headers(headers):
 
 
 def sign_v4(method, url, region, headers=None,
-            access_key=None,
-            secret_key=None,
-            session_token=None,
+            credentials=None,
             content_sha256=None):
     """
     Signature version 4.
@@ -181,17 +177,12 @@ def sign_v4(method, url, region, headers=None,
     :param url: Final url which needs to be signed.
     :param region: Region should be set to bucket region.
     :param headers: Optional headers for the method.
-    :param access_key: Optional access key, if not
-       specified no signature is needed.
-    :param secret_key: Optional secret key, if not
-       specified no signature is needed.
-    :param session_token: Optional session token, set
-       only for temporary credentials.
+    :param credentials: Optional Credentials object with your AWS s3 account info.
     :param content_sha256: Optional body sha256.
     """
 
     # If no access key or secret key is provided return headers.
-    if not access_key or not secret_key:
+    if not credentials.get().access_key or not credentials.get().secret_key:
         return headers
 
     if headers is None:
@@ -214,8 +205,8 @@ def sign_v4(method, url, region, headers=None,
     date = datetime.utcnow()
     headers['X-Amz-Date'] = date.strftime("%Y%m%dT%H%M%SZ")
     headers['X-Amz-Content-Sha256'] = content_sha256
-    if session_token:
-        headers['X-Amz-Security-Token'] = session_token
+    if credentials.get().session_token is not None:
+        headers['X-Amz-Security-Token'] = credentials.get().session_token
 
     headers_to_sign = headers
 
@@ -228,11 +219,11 @@ def sign_v4(method, url, region, headers=None,
 
     string_to_sign = generate_string_to_sign(date, region,
                                              canonical_req)
-    signing_key = generate_signing_key(date, region, secret_key)
+    signing_key = generate_signing_key(date, region, credentials.get().secret_key)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
 
-    authorization_header = generate_authorization_header(access_key,
+    authorization_header = generate_authorization_header(credentials.get().access_key,
                                                          date,
                                                          region,
                                                          signed_headers,

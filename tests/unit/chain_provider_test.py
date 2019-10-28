@@ -45,9 +45,9 @@ class ChainProviderTest(TestCase):
         # retireve provider (env_aws) has priority
         creds = chain.retrieve()
         # assert provider credentials
-        eq_(creds._access_key, "access_aws")
-        eq_(creds._secret_key, "secret_aws")
-        eq_(creds._session_token, "token_aws")
+        eq_(creds.access_key, "access_aws")
+        eq_(creds.secret_key, "secret_aws")
+        eq_(creds.session_token, "token_aws")
         # assert is_expired
         eq_(chain.is_expired(), False)
         
