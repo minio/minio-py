@@ -39,11 +39,13 @@ class FileMinioClient(Provider):
                 self._alias = "s3"
         
         self._retrieved = False
+
         config = open(self._filename, 'r')
         doc = json.load(config)
         creds = doc['hosts'][self._alias]
+        
         self._retrieved = True
-        # TODO: What to do with signers
+
         return Value(
             access_key=creds['accessKey'],
             secret_key=creds['secretKey']

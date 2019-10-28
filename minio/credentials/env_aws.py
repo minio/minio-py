@@ -34,8 +34,6 @@ class EnvAWS(Provider):
         if secret == "":
             secret = os.environ.get('AWS_SECRET_KEY')
 
-        #TODO: What to do with signers?
-
         self.retrieved = True
         return Value(
             access_key=access_key,

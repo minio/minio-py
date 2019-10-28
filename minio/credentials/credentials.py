@@ -23,9 +23,6 @@ class Value(object):
         self.secret_key = secret_key
         self.session_token = session_token
 
-        #TODO No signature type in python. How should signatures be handled
-        self._signer_type = None
-
 class Provider(abc.ABC):
     @abc.abstractmethod
     def retrieve(self):

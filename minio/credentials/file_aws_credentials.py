@@ -52,8 +52,6 @@ class FileAWSCredentials(Provider):
             #TODO: How to handle errors
             pass
 
-        #TODO: What to do with signers?
-
         self._retrieved = True
 
         return Value(
