@@ -924,7 +924,6 @@ class Minio(object):
 
         # Initialize query parameters.
         query = {
-            'max-keys': '1000',
             'prefix': prefix
         }
 
@@ -1218,7 +1217,6 @@ class Minio(object):
         # Initialize query parameters.
         query = {
             'uploads': '',
-            'max-uploads': '1000',
             'prefix': prefix
         }
 
@@ -1275,7 +1273,6 @@ class Minio(object):
 
         query = {
             'uploadId': upload_id,
-            'max-parts': '1000'
         }
 
         is_truncated = True
