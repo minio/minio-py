@@ -38,6 +38,7 @@ with open('README.md', 'r', 'utf-8') as f:
 packages = [
     'minio',
     'minio.select',
+    'minio.credentials'
 ]
 
 requires = [
