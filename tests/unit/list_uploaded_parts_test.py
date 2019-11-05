@@ -51,7 +51,7 @@ class ListPartsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('GET',
-                         'https://localhost:9000/bucket/key?max-parts=1000&uploadId=upload_id',
+                         'https://localhost:9000/bucket/key?uploadId=upload_id',
                          {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data))
 
         client = Minio('localhost:9000')
@@ -98,7 +98,7 @@ class ListPartsTest(TestCase):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('GET',
-                                                  'https://localhost:9000/bucket/key?max-parts=1000&uploadId=upload_id',
+                                                  'https://localhost:9000/bucket/key?uploadId=upload_id',
                                                   {'User-Agent': _DEFAULT_USER_AGENT}, 200,
                                                   content=mock_data))
         client = Minio('localhost:9000')
@@ -179,7 +179,7 @@ class ListPartsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('GET',
-                         'https://localhost:9000/bucket/key?max-parts=1000&uploadId=upload_id',
+                         'https://localhost:9000/bucket/key?uploadId=upload_id',
                          {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data1))
 
 
@@ -190,7 +190,7 @@ class ListPartsTest(TestCase):
         for part in part_iter:
             mock_server.mock_add_request(
                 MockResponse('GET',
-                             'https://localhost:9000/bucket/key?max-parts=1000&part-number-marker=2&uploadId=upload_id',
+                             'https://localhost:9000/bucket/key?part-number-marker=2&uploadId=upload_id',
                              {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data2))
             parts.append(part)
         eq_(4, len(parts))

@@ -341,9 +341,10 @@ class Minio(object):
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
-                          headers, 
+                          headers,
                           self._credentials,
-                          content_sha256_hex)
+                          content_sha256_hex,
+                          datetime.utcnow())
 
         response = self._http.urlopen(method, url,
                                       body=content,
@@ -379,9 +380,9 @@ class Minio(object):
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
-                          headers, 
+                          headers,
                           self._credentials,
-                          None)
+                          None, datetime.utcnow())
 
         response = self._http.urlopen(method, url,
                                       body=None,
@@ -934,7 +935,6 @@ class Minio(object):
 
         # Initialize query parameters.
         query = {
-            'max-keys': '1000',
             'prefix': prefix
         }
 
@@ -1228,7 +1228,6 @@ class Minio(object):
         # Initialize query parameters.
         query = {
             'uploads': '',
-            'max-uploads': '1000',
             'prefix': prefix
         }
 
@@ -1285,7 +1284,6 @@ class Minio(object):
 
         query = {
             'uploadId': upload_id,
-            'max-parts': '1000'
         }
 
         is_truncated = True
@@ -1870,9 +1868,9 @@ class Minio(object):
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
-                          headers, 
+                          headers,
                           self._credentials,
-                          None)
+                          None, datetime.utcnow())
 
         response = self._http.urlopen(method, url,
                                       body=None,
@@ -1920,9 +1918,9 @@ class Minio(object):
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
-                          fold_case_headers, 
+                          fold_case_headers,
                           self._credentials,
-                          content_sha256)
+                          content_sha256, datetime.utcnow())
 
         response = self._http.urlopen(method, url,
                                       body=body,
