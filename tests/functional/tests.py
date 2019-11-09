@@ -1307,7 +1307,7 @@ def test_presigned_get_object_default_expiry(client, log_output):
     print(log_output.json_report())
 
 
-def test_presigned_get_object_expiry_5sec(client, log_output):
+def test_presigned_get_object_expiry(client, log_output):
     # default value for log_output.function attribute is;
     # log_output.function = "presigned_get_object(bucket_name, object_name, expires, response_headers)"
 
@@ -1327,7 +1327,7 @@ def test_presigned_get_object_expiry_5sec(client, log_output):
 
         presigned_get_object_url = client.presigned_get_object(bucket_name,
                                                                object_name,
-                                                               timedelta(seconds=5))
+                                                               timedelta(seconds=120))
 
         log_output.args['presigned_get_object_url'] = presigned_get_object_url
 
@@ -1343,8 +1343,13 @@ def test_presigned_get_object_expiry_5sec(client, log_output):
                                 'GET',
                                 bucket_name,
                                 object_name).get_exception()
-        # Wait for 5 seconds for the presigned url to expire
-        time.sleep(5)
+
+        presigned_get_object_url = client.presigned_get_object(bucket_name,
+                                                               object_name,
+                                                               timedelta(seconds=1))
+
+        # Wait for 2 seconds for the presigned url to expire
+        time.sleep(2)
         response = _http.urlopen('GET', presigned_get_object_url)
 
         log_output.args['response.status-2'] = response.status
@@ -1391,7 +1396,7 @@ def test_presigned_get_object_response_headers(client, log_output):
                             'response-content-language': content_language}
         presigned_get_object_url = client.presigned_get_object(bucket_name,
                                                                object_name,
-                                                               timedelta(seconds=5),
+                                                               timedelta(seconds=120),
                                                                response_headers)
         log_output.args['presigned_get_object_url'] = presigned_get_object_url
 
@@ -1465,7 +1470,7 @@ def test_presigned_put_object_default_expiry(client, log_output):
     print(log_output.json_report())
 
 
-def test_presigned_put_object_expiry_5sec(client, log_output):
+def test_presigned_put_object_expiry(client, log_output):
     # default value for log_output.function attribute is;
     # log_output.function = "presigned_put_object(bucket_name, object_name, expires)"
 
@@ -1483,9 +1488,9 @@ def test_presigned_put_object_expiry_5sec(client, log_output):
 
         presigned_put_object_url = client.presigned_put_object(bucket_name,
                                                                object_name,
-                                                               timedelta(seconds=5))
-        # Wait for 5 seconds for the presigned url to expire
-        time.sleep(5)
+                                                               timedelta(seconds=1))
+        # Wait for 2 seconds for the presigned url to expire
+        time.sleep(2)
         response = _http.urlopen('PUT',
                                  presigned_put_object_url,
                                  LimitedRandomReader(KB_1))
@@ -2036,8 +2041,8 @@ def main():
             log_output = LogOutput(client.presigned_get_object, 'test_presigned_get_object_default_expiry')
             test_presigned_get_object_default_expiry(client, log_output)
 
-            log_output = LogOutput(client.presigned_get_object, 'test_presigned_get_object_expiry_5sec')
-            test_presigned_get_object_expiry_5sec(client, log_output)
+            log_output = LogOutput(client.presigned_get_object, 'test_presigned_get_object_expiry')
+            test_presigned_get_object_expiry(client, log_output)
 
             log_output = LogOutput(client.presigned_get_object, 'test_presigned_get_object_response_headers')
             test_presigned_get_object_response_headers(client, log_output)
@@ -2045,8 +2050,8 @@ def main():
             log_output = LogOutput(client.presigned_put_object, 'test_presigned_put_object_default_expiry')
             test_presigned_put_object_default_expiry(client, log_output)
 
-            log_output = LogOutput(client.presigned_put_object, 'test_presigned_put_object_expiry_5sec')
-            test_presigned_put_object_expiry_5sec(client, log_output)
+            log_output = LogOutput(client.presigned_put_object, 'test_presigned_put_object_expiry')
+            test_presigned_put_object_expiry(client, log_output)
 
             log_output = LogOutput(client.presigned_post_policy, 'test_presigned_post_policy')
             test_presigned_post_policy(client, log_output)
