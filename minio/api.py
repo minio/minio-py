@@ -163,8 +163,10 @@ class Minio(object):
 
         # Default is a secured connection.
         endpoint_url = 'https://' + endpoint
+        accelerate_endpoint_url = 'https://s3-accelerate.amazonaws.com'
         if not secure:
             endpoint_url = 'http://' + endpoint
+            accelerate_endpoint_url = 'http://s3-accelerate.amazonaws.com'
 
         # Parse url endpoints.
         url_components = urlsplit(endpoint_url)
@@ -182,6 +184,8 @@ class Minio(object):
         self._session_token = session_token
         self._user_agent = _DEFAULT_USER_AGENT
         self._trace_output_stream = None
+        self._enable_s3_accelerate = False
+        self._accelerate_endpoint_url = accelerate_endpoint_url
 
         # Set credentials if possible
 
@@ -197,7 +201,7 @@ class Minio(object):
                         IamEc2MetaData(),
                     ]
                 )
-            ) 
+            )
 
         # Load CA certificates from SSL_CERT_FILE file if set
         ca_certs = os.environ.get('SSL_CERT_FILE')
@@ -258,6 +262,24 @@ class Minio(object):
         Disable HTTP trace.
         """
         self._trace_output_stream = None
+
+    # S3 Transfer Accelerate
+    def use_s3_accelerate(self, value):
+        # Parse url
+        parsed_url = urlsplit(self._endpoint_url)
+
+        # Get new host, scheme.
+        scheme = parsed_url.scheme
+        host = parsed_url.netloc
+
+        # Strip 80/443 ports since curl & browsers do not
+        # send them in Host header.
+        if (scheme == 'http' and parsed_url.port == 80) or\
+        (scheme == 'https' and parsed_url.port == 443):
+            host = parsed_url.hostname
+
+        if 's3.amazonaws.com' in host:
+            self._enable_s3_accelerate = value is True
 
     # Select Object Content
     def select_object_content(self, bucket_name, object_name, opts):
@@ -1376,7 +1398,11 @@ class Minio(object):
                                        ' {0} secs'.format(_MAX_EXPIRY_TIME))
 
         region = self._get_bucket_region(bucket_name)
-        url = get_target_url(self._endpoint_url,
+        endpoint_url = self._endpoint_url
+        if self._enable_s3_accelerate:
+            endpoint_url = self._accelerate_endpoint_url
+
+        url = get_target_url(endpoint_url,
                              bucket_name=bucket_name,
                              object_name=object_name,
                              bucket_region=region)
