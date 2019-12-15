@@ -672,6 +672,58 @@ def normalize_metadata(meta_data):
     return norm_dict
 
 
+def test_put_object_without_length(client, log_output, sse=None):
+    # default value for log_output.function attribute is;
+    # log_output.function = "put_object(bucket_name, object_name, data, length, content_type, metadata)"
+
+    # Get a unique bucket_name and object_name
+    log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
+    log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
+    try:
+        client.make_bucket(bucket_name)
+        # Put/Upload a streaming object of 1MiB
+        log_output.args['length'] = MB_1 = 1024*1024  # 1MiB.
+        MB_1_reader = LimitedRandomReader(MB_1)
+        log_output.args['data'] = 'LimitedRandomReader(MB_1)'
+        client.put_object(bucket_name, object_name, MB_1_reader, sse=sse)
+        client.stat_object(bucket_name, object_name, sse=sse)
+        # Put/Upload a streaming object of 11MiB
+        log_output.args['length'] = MB_11 = 11*1024*1024  # 11MiB.
+        MB_11_reader = LimitedRandomReader(MB_11)
+        log_output.args['data'] = 'LimitedRandomReader(MB_11)'
+        log_output.args['metadata'] = metadata = {'x-amz-meta-testing': 'value', 'test-key': 'value2'}
+        log_output.args['content_type'] = content_type = 'application/octet-stream'
+        client.put_object(bucket_name,
+                          object_name+'-metadata',
+                          MB_11_reader,
+                          content_type=content_type,
+                          metadata=metadata,
+                          sse=sse)
+        # Stat on the uploaded object to check if it exists
+        # Fetch saved stat metadata on a previously uploaded object with metadata.
+        st_obj = client.stat_object(bucket_name, object_name+'-metadata', sse=sse)
+        normalized_meta = normalize_metadata(st_obj.metadata)
+        if 'x-amz-meta-testing' not in normalized_meta:
+            raise ValueError("Metadata key 'x-amz-meta-testing' not found")
+        value = normalized_meta['x-amz-meta-testing']
+        if value != 'value':
+            raise ValueError('Metadata key has unexpected'
+                             ' value {0}'.format(value))
+        if 'x-amz-meta-test-key' not in normalized_meta:
+            raise ValueError("Metadata key 'x-amz-meta-test-key' not found")
+    except Exception as err:
+        raise Exception(err)
+    finally:
+        try:
+            client.remove_object(bucket_name, object_name)
+            client.remove_object(bucket_name, object_name+'-metadata')
+            client.remove_bucket(bucket_name)
+        except Exception as err:
+            raise Exception(err)
+    # Test passes
+    print(log_output.json_report())
+
+
 def test_put_object(client, log_output, sse=None):
     # default value for log_output.function attribute is;
     # log_output.function = "put_object(bucket_name, object_name, data, length, content_type, metadata)"
@@ -1985,6 +2037,9 @@ def main():
             log_output = LogOutput(client.put_object, 'test_put_object')
             test_put_object(client, log_output)
 
+            log_output = LogOutput(client.put_object, 'test_put_object_without_length')
+            test_put_object_without_length(client, log_output)
+
             if secure:
                 log_output = LogOutput(client.put_object, 'test_put_object_with_SSE-C')
                 test_put_object(client, log_output, sse=ssec)
@@ -2084,6 +2139,9 @@ def main():
 
             log_output = LogOutput(client.put_object, 'test_put_object')
             test_put_object(client, log_output)
+
+            log_output = LogOutput(client.put_object, 'test_put_object_without_length')
+            test_put_object_without_length(client, log_output)
 
             if secure:
                 log_output = LogOutput(client.put_object, 'test_put_object_with_SSE-C')
