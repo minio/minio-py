@@ -27,10 +27,11 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install urllib3 certifi pytz pyflakes faker nose
+        pip install urllib3 certifi pytz pylint isort faker nose
     - name: Test with nosetests
       run: |
-        pyflakes minio/*.py || true
+        isort -c -rc minio || true
+        pylint minio/*.py || true
         python setup.py install
         python setup.py nosetests
     - name: Test with functional tests
