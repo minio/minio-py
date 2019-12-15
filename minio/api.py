@@ -30,6 +30,7 @@ This module implements the API.
 from __future__ import absolute_import
 import platform
 from threading import Thread
+from concurrent.futures import ThreadPoolExecutor
 
 from datetime import datetime, timedelta
 
@@ -44,6 +45,7 @@ try:
 except ImportError:
     JSONDecodeError = ValueError
 
+
 # Dependencies
 import urllib3
 import certifi
@@ -55,6 +57,7 @@ from .compat import (urlsplit, queryencode,
                      range, basestring)
 from .error import (ResponseError, NoSuchBucket, AccessDenied,
                     InvalidArgumentError, InvalidSizeError, InvalidXMLError)
+
 from .definitions import Object, UploadPart
 from .parsers import (parse_list_buckets,
                       parse_list_objects,
@@ -76,7 +79,8 @@ from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_source_sse_object,
                       is_valid_bucket_notification_config, is_valid_policy_type,
                       mkdir_p, dump_http, amzprefix_user_metadata,
-                      is_supported_header,is_amz_header)
+                      is_supported_header,is_amz_header,
+                      read_complete_file_in_chunks)
 from .helpers import (MAX_PART_SIZE,
                       MAX_POOL_SIZE,
                       MIN_PART_SIZE,
@@ -92,7 +96,6 @@ from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_delete_objects,
                           xml_marshal_select)
 from .fold_case_dict import FoldCaseDict
-from .thread_pool import ThreadPool
 from .select import SelectObjectReader
 
 # Comment format.
@@ -1645,59 +1648,47 @@ class Minio(object):
         total_uploaded = 0
         uploaded_parts = {}
 
-        # Calculate optimal part info.
-        total_parts_count, part_size, last_part_size = optimal_part_info(
-            content_size, part_size)
-
-        # Instantiate a thread pool with 3 worker threads
-        pool = ThreadPool(_PARALLEL_UPLOADERS)
-        pool.start_parallel()
-
-        # Generate new parts and upload <= current_part_size until
-        # part_number reaches total_parts_count calculated for the
-        # given size. Additionally part_manager() also provides
+        # Generate new parts and upload <= part_size until
+        # length is reached. Additionally part_manager() also provides
         # md5digest and sha256digest for the partitioned data.
-        for part_number in range(1, total_parts_count + 1):
-            current_part_size = (part_size if part_number < total_parts_count
-                                 else last_part_size)
+        with ThreadPoolExecutor(max_workers=_PARALLEL_UPLOADERS) as pool:
+            try:
+                for part_number, etag, total_read in pool.map(
+                    self._upload_part_routine,
+                    (
+                        (
+                            bucket_name,
+                            object_name,
+                            upload_id,
+                            part_number,
+                            part_data,
+                            sse,
+                            progress,
+                        )
+                        for part_number, part_data in enumerate(
+                            read_complete_file_in_chunks(data, part_size),
+                            start=1,
+                        )
+                    ),
+                ):
+                    uploaded_parts[part_number] = UploadPart(
+                        bucket_name,
+                        object_name,
+                        upload_id,
+                        part_number,
+                        etag,
+                        None,
+                        total_read,
+                    )
 
-            part_data = read_full(data, current_part_size)
-            pool.add_task(self._upload_part_routine, (bucket_name, object_name, upload_id,
-                                                      part_number, part_data, sse, progress))
-
-        try:
-            upload_result = pool.result()
-        except:
-            # Any exception that occurs sends an abort on the
-            # on-going multipart operation.
-            self._remove_incomplete_upload(bucket_name,
-                                           object_name,
-                                           upload_id)
-            raise
-
-        # Update uploaded_parts with the part uploads result
-        # and check total uploaded data.
-        while not upload_result.empty():
-            part_number, etag, total_read = upload_result.get()
-            uploaded_parts[part_number] = UploadPart(bucket_name,
-                                                     object_name,
-                                                     upload_id,
-                                                     part_number,
-                                                     etag,
-                                                     None,
-                                                     total_read)
-
-            total_uploaded += total_read
-
-        if total_uploaded != content_size:
-            msg = 'Data uploaded {0} is not equal input size ' \
-                  '{1}'.format(total_uploaded, content_size)
-            # cleanup incomplete upload upon incorrect upload
-            # automatically
-            self._remove_incomplete_upload(bucket_name,
-                                           object_name,
-                                           upload_id)
-            raise InvalidSizeError(msg)
+                    total_uploaded += total_read
+            except:
+                # Any exception that occurs sends an abort on the
+                # on-going multipart operation.
+                self._remove_incomplete_upload(
+                    bucket_name, object_name, upload_id
+                )
+                raise
 
         # Complete all multipart transactions if possible.
         try:

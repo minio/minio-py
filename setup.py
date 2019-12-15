@@ -42,6 +42,7 @@ packages = [
 
 requires = [
     'future;python_version<"3.0"',
+    'futures;python_version<"3.0"',
     'urllib3',
     'pytz',
     'certifi',

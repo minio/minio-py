@@ -187,6 +187,21 @@ def read_full(data, size):
 
     return chunk.getvalue()
 
+
+def read_complete_file_in_chunks(data, size):
+    """
+    read complete file in chunks
+    """
+    content = read_full(data, size)
+    read_size = len(content)
+    yield content
+
+    while read_size >= size:
+        content = read_full(data, size)
+        read_size = len(content)
+        yield content
+
+
 AWS_S3_ENDPOINT_MAP = {
     'us-east-1': 's3.amazonaws.com',
     'us-east-2': 's3-us-east-2.amazonaws.com',
