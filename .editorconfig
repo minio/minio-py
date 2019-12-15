@@ -1,0 +1,22 @@
+# http://editorconfig.org
+
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true
+charset = utf-8
+end_of_line = lf
+multi_line_output=3
+include_trailing_comma=True
+force_grid_wrap=0
+use_parentheses=True
+max_line_length=79
+
+[LICENSE]
+insert_final_newline = false
+
+[Makefile]
+indent_style = tab
