@@ -51,6 +51,9 @@ def xml_marshal_bucket_constraint(region):
 
 
 def xml_marshal_select(opts):
+    """
+    Return bytes from xml
+    """
     root = s3_xml.Element("SelectObjectContentRequest")
     expression = s3_xml.SubElement(root, "Expression")
     expression.text = opts.expression
@@ -131,7 +134,9 @@ def xml_marshal_select(opts):
     return data.getvalue()
 
 
-def xml_marshal_complete_multipart_upload(uploaded_parts):
+def xml_marshal_complete_multipart_upload(
+    uploaded_parts,
+):  # pylint: disable=invalid-name
     """
     Marshal's complete multipart upload request based on *uploaded_parts*.
 
@@ -153,7 +158,9 @@ def xml_marshal_complete_multipart_upload(uploaded_parts):
     return data.getvalue()
 
 
-def xml_marshal_bucket_notifications(notifications):
+def xml_marshal_bucket_notifications(
+    notifications,
+):  # pylint: disable=invalid-name
     """
     Marshals the notifications structure for sending to S3 compatible storage
 

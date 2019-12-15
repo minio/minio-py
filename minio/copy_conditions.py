@@ -29,9 +29,9 @@ import collections
 from .helpers import is_non_empty_string
 
 try:
-    collectionsAbc = collections.abc
+    collectionsAbc = collections.abc  # pylint: disable=invalid-name
 except AttributeError:
-    collectionsAbc = collections
+    collectionsAbc = collections  # pylint: disable=invalid-name
 
 # CopyCondition explanation:
 # http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectCOPY.html
@@ -75,24 +75,28 @@ class CopyConditions(collectionsAbc.MutableMapping):
 
     def set_match_etag(self, etag):
         """
+        Set amazon header to match etag
         """
         is_non_empty_string(etag)
         self._store["X-Amz-Copy-Source-If-Match"] = etag
 
     def set_match_etag_except(self, etag):
         """
+        Set amazon header to not match etag
         """
         is_non_empty_string(etag)
         self._store["X-Amz-Copy-Source-If-None-Match"] = etag
 
     def set_unmodified_since(self, mod_time):
         """
+        Set amazon header to check unmodified timestamp
         """
         time = mod_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
         self._store["X-Amz-Copy-Source-If-Unmodified-Since"] = time
 
     def set_modified_since(self, mod_time):
         """
+        Set amazon header to check modified timestamp
         """
         time = mod_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
         self._store["X-Amz-Copy-Source-If-Modified-Since"] = time

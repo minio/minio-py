@@ -109,7 +109,7 @@ def presign_v4(
     content_hash_hex = _UNSIGNED_PAYLOAD
     host = remove_default_port(parsed_url)
     headers["Host"] = host
-    iso8601Date = request_date.strftime("%Y%m%dT%H%M%SZ")
+    iso_8601_date = request_date.strftime("%Y%m%dT%H%M%SZ")
 
     headers_to_sign = headers
     # Construct queries.
@@ -118,7 +118,7 @@ def presign_v4(
     query["X-Amz-Credential"] = generate_credential_string(
         access_key, request_date, region
     )
-    query["X-Amz-Date"] = iso8601Date
+    query["X-Amz-Date"] = iso_8601_date
     query["X-Amz-Expires"] = str(expires)
     if session_token:
         query["X-Amz-Security-Token"] = session_token
@@ -389,6 +389,9 @@ def generate_authorization_header(
 
 
 def remove_default_port(parsed_url):
+    """
+    Remove default ports(http: 80, https: 443) from url
+    """
     default_ports = {"http": 80, "https": 443}
     if any(
         parsed_url.scheme == scheme and parsed_url.port == port

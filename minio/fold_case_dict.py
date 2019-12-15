@@ -26,20 +26,29 @@ This module implements a case insensitive dictionary.
 
 
 class FoldCaseDict(dict):
+    """
+    a case insensitive dictionary
+    """
+
+    # pylint: disable=dangerous-default-value,super-init-not-called
     def __init__(self, dictionary={}):
         self._data = self.__create(dictionary)
 
     def __create(self, value):
+        """
+        initialize internal data structure
+        """
         if isinstance(value, dict):
             data = {}
+            # pylint: disable=invalid-name
+            # its common enough to use k, v as key, value shortcut
             for k, v in value.items():
                 if isinstance(v, dict):
                     data[k.lower()] = FoldCaseDict(self.__create(v))
                 else:
                     data[k.lower()] = v
             return data
-        else:
-            return value
+        return value
 
     def __getitem__(self, item):
         return self._data[item.lower()]
@@ -76,45 +85,74 @@ class FoldCaseDict(dict):
     def get(self, key, default=None):
         if not key.lower() in self:
             return default
-        else:
-            return self[key]
+        return self[key]
 
     def has_key(self, key):
+        """
+        check if the key is in dict
+
+        :param key: Key
+        """
         return key.lower() in self
 
     def items(self):
+        # pylint: disable=unnecessary-comprehension
+        # we want to return a list not a iterable, its how
+        # python2 handles it
         return [(k, v) for k, v in self.iteritems()]
 
     def keys(self):
+        # pylint: disable=unnecessary-comprehension
+        # we want to return a list not a iterable, its how
+        # python2 handles it
         return [k for k in self.iterkeys()]
 
     def values(self):
+        # pylint: disable=unnecessary-comprehension
+        # we want to return a list not a iterable, its how
+        # python2 handles it
         return [v for v in self.itervalues()]
 
     def iteritems(self):
+        """
+        Return an iterator over the dictionary’s (key, value) pairs.
+        """
+        # pylint: disable=invalid-name
+        # its common enough to use k, v as key, value shortcut
         for k, v in self._data.items():
             yield k, v
 
     def iterkeys(self):
-        for k, v in self._data.items():
+        """
+        Return an iterator over the dictionary’s keys.
+        """
+        # pylint: disable=invalid-name
+        # its common enough to use k, v as key, value shortcut
+        for k, _ in self._data.items():
             yield k
 
     def itervalues(self):
-        for k, v in self._data.items():
+        """
+        Return an iterator over the dictionary’s values.
+        """
+        # pylint: disable=invalid-name
+        # its common enough to use k, v as key, value shortcut
+        for _, v in self._data.items():
             yield v
 
     def update(self, dictionary):
-        if not (
-            isinstance(dictionary, dict)
-            or isinstance(dictionary, FoldCaseDict)
-        ):
+        if not isinstance(dictionary, (dict, FoldCaseDict)):
             raise TypeError
 
+        # pylint: disable=invalid-name
+        # its common enough to use k, v as key, value shortcut
         for k, v in dictionary.items():
             self[k] = v
 
     def copy(self):
         copy_dict = FoldCaseDict()
+        # pylint: disable=invalid-name
+        # its common enough to use k, v as key, value shortcut
         for k, v in self._data.items():
             copy_dict[k] = v
         return copy_dict

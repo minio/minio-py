@@ -56,8 +56,6 @@ class InvalidEndpointError(MinioError):
     InvalidEndpointError is raised when input endpoint URL is invalid.
     """
 
-    pass
-
 
 class InvalidBucketError(MinioError):
     """
@@ -66,8 +64,6 @@ class InvalidBucketError(MinioError):
     NOTE: Bucket names are validated based on Amazon S3 requirements.
     """
 
-    pass
-
 
 class InvalidArgumentError(MinioError):
     """
@@ -75,15 +71,11 @@ class InvalidArgumentError(MinioError):
     argument is received by the callee.
     """
 
-    pass
-
 
 class InvalidSizeError(MinioError):
     """
     InvalidSizeError is raised when an unexpected size mismatch occurs.
     """
-
-    pass
 
 
 class InvalidXMLError(MinioError):
@@ -91,8 +83,6 @@ class InvalidXMLError(MinioError):
     InvalidXMLError is raised when an unexpected XML tag or
     a missing tag is found during parsing.
     """
-
-    pass
 
 
 class MultiDeleteError(object):
@@ -156,8 +146,7 @@ class ResponseError(MinioError):
         exception = known_errors.get(self.code)
         if exception:
             return exception(self)
-        else:
-            return self
+        return self
 
     def _handle_error_response(self, bucket_name=None):
         """
@@ -183,6 +172,7 @@ class ResponseError(MinioError):
             raise ValueError("response data has no body.")
         try:
             root = cElementTree.fromstring(self._response.data)
+        # pylint: disable=catching-non-exception
         except ETREE_EXCEPTIONS as error:
             raise InvalidXMLError(
                 '"Error" XML is not parsable. ' "Message: {0}".format(error)
@@ -203,6 +193,7 @@ class ResponseError(MinioError):
         # Set amz headers.
         self._set_amz_headers()
 
+    # pylint: disable=invalid-name
     def _set_error_response_without_body(self, bucket_name=None):
         """
         Sets all the error response fields from response headers.
@@ -274,6 +265,7 @@ class ResponseError(MinioError):
 
 # Common error responses listed here
 # http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#RESTErrorResponses
+# pylint: disable=missing-class-docstring
 
 
 class KnownResponseError(MinioError):
@@ -687,6 +679,7 @@ class UserKeyMustBeSpecified(KnownResponseError):
     )
 
 
+# pylint: disable=invalid-name
 known_errors = {
     "AccessDenied": AccessDenied,
     "AcccountProblem": AccountProblem,

@@ -29,9 +29,7 @@ from __future__ import absolute_import
 
 import io
 import sys
-from binascii import crc32
 from xml.etree import cElementTree
-from xml.etree.cElementTree import ParseError
 
 from .errors import SelectCRCValidationError, SelectMessageError
 from .helpers import (
@@ -40,7 +38,6 @@ from .helpers import (
     EVENT_CONT,
     EVENT_CONTENT_TYPE,
     EVENT_END,
-    EVENT_PROGRESS,
     EVENT_RECORDS,
     EVENT_STATS,
     byte_int,
@@ -111,22 +108,26 @@ class SelectObjectReader(object):
         self.stat = {}
         self.prog = {}
 
-    def readable(self):
+    def readable(
+        self,
+    ):  # pylint: disable=missing-function-docstring,no-self-use
         return True
 
-    def writeable(self):
+    def writeable(
+        self,
+    ):  # pylint: disable=missing-function-docstring,no-self-use
         return False
 
-    def close(self):
+    def close(self):  # pylint: disable=missing-function-docstring
         self.response.close()
 
-    def stats(self):
+    def stats(self):  # pylint: disable=missing-function-docstring
         return self.stat
 
-    def progress(self):
+    def progress(self):  # pylint: disable=missing-function-docstring
         return self.prog
 
-    def __extract_message(self):
+    def __extract_message(self):  # pylint: disable=too-many-branches
         """
         Process the response sent from server.
         https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectSELECTContent.html
@@ -180,7 +181,8 @@ class SelectObjectReader(object):
                 + header_map["error-message"]
                 + '"'
             )
-        elif header_map["message-type"] == EVENT:
+
+        if header_map["message-type"] == EVENT:
             if event_type == EVENT_END:
                 pass
             elif event_type == EVENT_CONT:
@@ -191,9 +193,9 @@ class SelectObjectReader(object):
                     raise SelectMessageError(
                         "Unrecognized content-type {0}".format(content_type)
                     )
-                else:
-                    payload_bytes = self.response.read(payload_length)
-                    self.stat = _parse_stats(payload_bytes)
+
+                payload_bytes = self.response.read(payload_length)
+                self.stat = _parse_stats(payload_bytes)
 
             elif event_type == EVENT_RECORDS:
                 payload_bytes = self.response.read(payload_length)

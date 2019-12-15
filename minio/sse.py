@@ -30,6 +30,9 @@ import json
 from .error import InvalidArgumentError, InvalidSizeError
 
 
+# Classes are similar to constants so we do not want to check some pylint
+# checks
+# pylint: disable=invalid-name,missing-class-docstring,missing-function-docstring,no-self-use
 class SSE_C(object):
     def __init__(self, key):
         self.key = key

@@ -39,13 +39,17 @@ from threading import Thread
 
 # Dependencies
 import certifi
-import urllib3
-
 import dateutil.parser
+import urllib3
 
 # Internal imports
 from . import __title__, __version__
-from .compat import basestring, queryencode, range, urlsplit
+from .compat import (  # pylint:disable=redefined-builtin
+    basestring,
+    queryencode,
+    range,
+    urlsplit,
+)
 from .definitions import Object, UploadPart
 from .error import (
     AccessDenied,
@@ -138,6 +142,8 @@ _MAX_EXPIRY_TIME = 604800  # 7 days in seconds
 _PARALLEL_UPLOADERS = 3
 
 
+# code is python2 compatible
+# pylint: disable=useless-object-inheritance,too-many-public-methods
 class Minio(object):
     """
     Constructs a :class:`Minio <Minio>`.
@@ -182,7 +188,8 @@ class Minio(object):
             http_client, urllib3.poolmanager.PoolManager
         ):
             raise InvalidArgumentError(
-                "HTTP client should be of instance `urllib3.poolmanager.PoolManager`"
+                "HTTP client should be of instance "
+                "`urllib3.poolmanager.PoolManager`"
             )
 
         # Default is a secured connection.
@@ -329,7 +336,8 @@ class Minio(object):
         region = "us-east-1"
         if self._region:
             region = self._region
-            # Validate if caller requested bucket location is same as current region
+            # Validate if caller requested bucket location is same as current
+            # region
             if self._region != location:
                 raise InvalidArgumentError(
                     "Configured region {0}, requested"
@@ -444,10 +452,11 @@ class Minio(object):
 
         try:
             self._url_open("HEAD", bucket_name=bucket_name)
-        # If the bucket has not been created yet, MinIO will return a "NoSuchBucket" error.
+        # If the bucket has not been created yet, MinIO will return a
+        # "NoSuchBucket" error.
         except NoSuchBucket:
             return False
-        except ResponseError:
+        except ResponseError:  # pylint: disable=try-except-raise
             raise
         return True
 
@@ -477,6 +486,11 @@ class Minio(object):
         return response.data
 
     def delete_bucket_policy(self, bucket_name):
+        """
+        Delete bucket policy of given bucket name.
+
+        :param bucket_name: Bucket name.
+        """
         self._url_open("DELETE", bucket_name=bucket_name, query={"policy": ""})
 
     def set_bucket_policy(self, bucket_name, policy):
@@ -570,6 +584,7 @@ class Minio(object):
             content_sha256=content_sha256_hex,
         )
 
+    # pylint: disable=dangerous-default-value
     def listen_bucket_notification(
         self,
         bucket_name,
@@ -696,7 +711,8 @@ class Minio(object):
         :param bucket_name: Bucket to read object from.
         :param object_name: Name of the object to read.
         :param file_path: Local file path to save the object.
-        :param request_headers: Any additional headers to be added with GET request.
+        :param request_headers: Any additional headers to be added with GET
+            request.
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
@@ -786,7 +802,8 @@ class Minio(object):
 
         :param bucket_name: Bucket to read object from
         :param object_name: Name of object to read
-        :param request_headers: Any additional headers to be added with GET request.
+        :param request_headers: Any additional headers to be added with GET
+            request.
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
@@ -823,10 +840,11 @@ class Minio(object):
         :param bucket_name: Bucket to retrieve object from
         :param object_name: Name of object to retrieve
         :param offset: Optional offset to retrieve bytes from.
-           Must be >= 0.
+            Must be >= 0.
         :param length: Optional number of bytes to retrieve.
-           Must be an integer.
-        :param request_headers: Any additional headers to be added with GET request.
+            Must be an integer.
+        :param request_headers: Any additional headers to be added with GET
+            request.
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
@@ -879,8 +897,8 @@ class Minio(object):
             headers["x-amz-metadata-directive"] = "REPLACE"
 
         if conditions:
-            for k, v in conditions.items():
-                headers[k] = v
+            for key, value in conditions.items():
+                headers[key] = value
 
         # Source argument to copy_object can only be of type copy_SSE_C
         if source_sse:
@@ -922,7 +940,13 @@ class Minio(object):
         Examples:
          file_stat = os.stat('hello.txt')
          with open('hello.txt', 'rb') as data:
-             minio.put_object('foo', 'bar', data, file_stat.st_size, 'text/plain')
+             minio.put_object(
+                'foo',
+                'bar',
+                data,
+                file_stat.st_size,
+                'text/plain',
+            )
 
         - For length lesser than 5MB put_object automatically
           does single Put operation.
@@ -953,7 +977,8 @@ class Minio(object):
 
         if not callable(getattr(data, "read")):
             raise ValueError(
-                "Invalid input data does not implement a callable read() method"
+                "Invalid input data does not implement a "
+                "callable read() method"
             )
 
         if length > (part_size * MAX_MULTIPART_COUNT):
@@ -1185,7 +1210,7 @@ class Minio(object):
         content_type = response.headers.get("content-type", "")
         last_modified = response.headers.get("last-modified")
 
-        ## Capture only custom metadata.
+        # Capture only custom metadata.
         custom_metadata = dict()
         for k in response.headers:
             if is_supported_header(k) or is_amz_header(k):
@@ -1336,7 +1361,7 @@ class Minio(object):
         :param bucket_name: Bucket to list incomplete uploads
         :param prefix: String specifying objects returned must begin with.
         :param recursive: If yes, returns all incomplete uploads for
-           a specified prefix.
+            a specified prefix.
         :return: An generator of incomplete uploads in alphabetical order.
         """
         is_valid_bucket_name(bucket_name)
@@ -1347,11 +1372,13 @@ class Minio(object):
         self, bucket_name, prefix="", recursive=False, is_aggregate_size=True
     ):
         """
-        List incomplete uploads list all previously uploaded incomplete multipart objects.
+        List incomplete uploads list all previously uploaded incomplete
+        multipart objects.
 
         :param bucket_name: Bucket name to list uploaded objects.
         :param prefix: String specifying objects returned must begin with.
-        :param recursive: If yes, returns all incomplete objects for a specified prefix.
+        :param recursive: If yes, returns all incomplete objects for a
+            specified prefix.
         :return: An generator of incomplete uploads in alphabetical order.
         """
         is_valid_bucket_name(bucket_name)
@@ -1392,6 +1419,7 @@ class Minio(object):
                     )
                 yield upload
 
+    # pylint: disable=invalid-name
     def _get_total_multipart_upload_size(
         self, bucket_name, object_name, upload_id
     ):
@@ -1797,6 +1825,11 @@ class Minio(object):
         return response.headers["etag"].replace('"', "")
 
     def _upload_part_routine(self, part_info):
+        """
+        Upload a specified part
+
+        :param part_info: Part
+        """
         (
             bucket_name,
             object_name,
@@ -1848,7 +1881,8 @@ class Minio(object):
         is_non_empty_string(object_name)
         if not callable(getattr(data, "read")):
             raise ValueError(
-                "Invalid input data does not implement a callable read() method"
+                "Invalid input data does not implement a callable read() "
+                "method"
             )
 
         # get upload id.
@@ -2213,10 +2247,10 @@ class Minio(object):
                 raise ResponseError(
                     response, method, bucket_name, object_name
                 ).get_exception()
-            else:
-                raise ValueError(
-                    "Unsupported method returned"
-                    " error: {0}".format(response.status)
-                )
+
+            raise ValueError(
+                "Unsupported method returned"
+                " error: {0}".format(response.status)
+            )
 
         return response

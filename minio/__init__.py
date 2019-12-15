@@ -33,6 +33,8 @@ __version__ = "5.0.6"
 __license__ = "Apache 2.0"
 __copyright__ = "Copyright 2015, 2016, 2017, 2018, 2019 MinIO, Inc."
 
+# pylint: disable=unused-import
+# its the main entry point of this library
 from .api import Minio
 from .copy_conditions import CopyConditions
 from .definitions import Bucket, Object

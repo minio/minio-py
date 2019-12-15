@@ -38,7 +38,7 @@ import os
 import re
 from builtins import str as future_str  # is unicode or str in Python 2 and 3
 
-from .compat import (
+from .compat import (  # pylint: disable=redefined-builtin
     _is_py2,
     _is_py3,
     basestring,
@@ -80,10 +80,10 @@ def get_s3_region_from_endpoint(endpoint):
     """
 
     # Extract region by regex search.
-    m = _EXTRACT_REGION_REGEX.search(endpoint)
-    if m:
+    match = _EXTRACT_REGION_REGEX.search(endpoint)
+    if match:
         # Regex matches, we have found a region.
-        region = m.group(1)
+        region = match.group(1)
         if region == "external-1":
             # Handle special scenario for us-east-1 URL.
             return "us-east-1"
@@ -118,11 +118,13 @@ def dump_http(method, url, request_headers, response, output_stream):
 
     output_stream.write("{0} {1} HTTP/1.1\n".format(method, http_path))
 
-    for k, v in list(request_headers.items()):
-        if k is "authorization":
+    for key, value in list(request_headers.items()):
+        if key == "authorization":
             # Redact signature header value from trace logs.
-            v = re.sub(r"Signature=([[0-9a-f]+)", "Signature=*REDACTED*", v)
-        output_stream.write("{0}: {1}\n".format(k.title(), v))
+            value = re.sub(
+                r"Signature=([[0-9a-f]+)", "Signature=*REDACTED*", value
+            )
+        output_stream.write("{0}: {1}\n".format(key.title(), value))
 
     # Write a new line.
     output_stream.write("\n")
@@ -131,8 +133,8 @@ def dump_http(method, url, request_headers, response, output_stream):
     output_stream.write("HTTP/1.1 {0}\n".format(response.status))
 
     # Dump all response headers recursively.
-    for k, v in list(response.getheaders().items()):
-        output_stream.write("{0}: {1}\n".format(k.title(), v))
+    for key, value in list(response.getheaders().items()):
+        output_stream.write("{0}: {1}\n".format(key.title(), value))
 
     # For all errors write all the available response body.
     if (
@@ -224,6 +226,9 @@ AWS_S3_ENDPOINT_MAP = {
 
 
 def get_s3_endpoint(region):
+    """
+    Return aws s3 endpoint
+    """
     return AWS_S3_ENDPOINT_MAP.get(region, "s3.amazonaws.com")
 
 
@@ -431,6 +436,7 @@ def is_valid_policy_type(policy):
     return True
 
 
+# pylint: disable=invalid-name,too-many-branches
 def is_valid_bucket_notification_config(notifications):
     """
     Validate the notifications config structure
@@ -651,22 +657,37 @@ class Hasher(object):
 
     @classmethod
     def md5(cls, data=""):
+        """
+        Return md5 hash of data
+        """
         return cls(data, hashlib.md5)
 
     @classmethod
     def sha256(cls, data=""):
+        """
+        Return sha256 hash of data
+        """
         return cls(data, hashlib.sha256)
 
     def update(self, data):
+        """
+        Return sha256 hash of data
+        """
         if isinstance(data, str):
             data = data.encode("utf-8")
         self.h.update(data)
 
     def hexdigest(self):
+        """
+        Return hexadecimal strings
+        """
         r = self.h.hexdigest()
         return r.decode("utf-8") if isinstance(r, bytes) else r
 
     def base64digest(self):
+        """
+        Return base64 digest
+        """
         r = base64.b64encode(self.h.digest())
         return r.decode("utf-8") if isinstance(r, bytes) else r
 
@@ -728,9 +749,11 @@ def optimal_part_info(length, part_size):
     return total_parts_count, part_size, last_part_size
 
 
-# return a new metadata dictionary where user defined metadata keys
-# are prefixed by "x-amz-meta-"
 def amzprefix_user_metadata(metadata):
+    """
+    return a new metadata dictionary where user defined metadata keys
+    are prefixed by "x-amz-meta-"
+    """
     m = dict()
     for k, v in metadata.items():
         # Check if metadata value has US-ASCII encoding since it is
@@ -754,8 +777,10 @@ def amzprefix_user_metadata(metadata):
     return m
 
 
-# returns true if amz s3 system defined metadata
 def is_amz_header(key):
+    """
+    returns true if amz s3 system defined metadata
+    """
     key = key.lower()
     return (
         key.startswith("x-amz-meta")
@@ -764,8 +789,10 @@ def is_amz_header(key):
     )
 
 
-# returns true if a standard supported header
 def is_supported_header(key):
+    """
+    returns true if a standard supported header
+    """
     ## Supported headers for object.
     supported_headers = [
         "cache-control",
@@ -779,6 +806,8 @@ def is_supported_header(key):
     return key.lower() in supported_headers
 
 
-# returns true if header is a storage class header
 def is_storageclass_header(key):
+    """
+    returns true if header is a storage class header
+    """
     return key.lower() == "x-amz-storage-class"

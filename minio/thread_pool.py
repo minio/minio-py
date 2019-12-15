@@ -57,8 +57,8 @@ class Worker(Thread):
                     func, args, kargs = task
                     result = func(*args, **kargs)
                     self.results_queue.put(result)
-                except Exception as e:
-                    self.exceptions_queue.put(e)
+                except Exception as exc:  # pylint: disable=broad-except
+                    self.exceptions_queue.put(exc)
             # Mark this task as done, whether an exception happened or not
             self.tasks_queue.task_done()
 

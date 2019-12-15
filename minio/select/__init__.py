@@ -25,7 +25,7 @@ __version__ = "0.0.1"
 __license__ = "Apache 2.0"
 __copyright__ = "Copyright 2019 MinIO, Inc."
 
-from .errors import *
-from .helpers import *
-from .options import *
-from .reader import *
+from .errors import *  # pylint: disable=unused-wildcard-import
+from .helpers import *  # pylint: disable=unused-wildcard-import
+from .options import *  # pylint: disable=unused-wildcard-import
+from .reader import *  # pylint: disable=unused-wildcard-import

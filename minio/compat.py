@@ -28,11 +28,12 @@ This module implements python 2.x and 3.x compatibility layer.
 import sys
 
 #: Python 2.x?
-_is_py2 = sys.version_info[0] == 2
+_is_py2 = sys.version_info[0] == 2  # pylint: disable=invalid-name
 
 #: Python 3.x?
-_is_py3 = sys.version_info[0] == 3
+_is_py3 = sys.version_info[0] == 3  # pylint: disable=invalid-name
 
+# pylint: disable=import-error,no-name-in-module,invalid-name,redefined-builtin,undefined-variable,self-assigning-variable,ungrouped-imports
 if _is_py2:
     from Queue import Queue
 

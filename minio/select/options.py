@@ -43,6 +43,7 @@ class CSVInput:
         Comments="#",
         AllowQuotedRecordDelimiter=False,
     ):
+        # pylint: disable=invalid-name
         self.FileHeaderInfo = FileHeaderInfo
         self.RecordDelimiter = RecordDelimiter
         self.FieldDelimiter = FieldDelimiter
@@ -58,6 +59,7 @@ class JSONInput:
     """
 
     def __init__(self, Type=None):
+        # pylint: disable=invalid-name
         self.Type = Type
 
 
@@ -93,6 +95,7 @@ class CSVOutput:
         QuoteCharacter='"',
         QuoteEscapeCharacter='"',
     ):
+        # pylint: disable=invalid-name
         self.QuoteFields = QuoteFields
         self.RecordDelimiter = RecordDelimiter
         self.FieldDelimiter = FieldDelimiter
@@ -106,6 +109,7 @@ class JsonOutput:
     """
 
     def __init__(self, RecordDelimiter="\n"):
+        # pylint: disable=invalid-name
         self.RecordDelimiter = RecordDelimiter
 
 

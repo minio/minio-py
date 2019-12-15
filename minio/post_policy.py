@@ -122,6 +122,9 @@ class PostPolicy(object):
         self._content_length_range = (min_length, max_length)
 
     def append_policy(self, condition, target, value):
+        """
+        Append Policy
+        """
         self.policies.append([condition, target, value])
 
     def _marshal_json(self, extras=()):
@@ -148,9 +151,13 @@ class PostPolicy(object):
         """
         Encode json into base64.
         """
-        s = self._marshal_json(extras=extras)
-        s_bytes = s if isinstance(s, bytes) else s.encode("utf-8")
-        b64enc = base64.b64encode(s_bytes)
+        json_str = self._marshal_json(extras=extras)
+        json_bytes = (
+            json_str
+            if isinstance(json_str, bytes)
+            else json_str.encode("utf-8")
+        )
+        b64enc = base64.b64encode(json_bytes)
         return b64enc.decode("utf-8") if isinstance(b64enc, bytes) else b64enc
 
     def is_valid(self):

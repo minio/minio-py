@@ -27,7 +27,6 @@ This module contains core API parsers.
 # standard.
 from datetime import datetime
 from xml.etree import cElementTree
-from xml.etree.cElementTree import ParseError
 
 # external dependencies.
 import pytz
@@ -69,7 +68,7 @@ class S3Element(object):
         """
         try:
             return cls(root_name, cElementTree.fromstring(data.strip()))
-        except ETREE_EXCEPTIONS as error:
+        except ETREE_EXCEPTIONS as error:  # pylint: disable=catching-non-exception
             raise InvalidXMLError(
                 '"{}" XML is not parsable. Message: {}'.format(
                     root_name, error
@@ -101,7 +100,7 @@ class S3Element(object):
         if strict:
             try:
                 return self.element.find("s3:{}".format(name), _S3_NS).text
-            except ETREE_EXCEPTIONS as error:
+            except ETREE_EXCEPTIONS as error:  # pylint: disable=catching-non-exception
                 raise InvalidXMLError(
                     (
                         'Invalid XML provided for "{}" - erroring tag <{}>. '
@@ -413,10 +412,13 @@ def parse_get_bucket_notification(data):
     return notifications
 
 
+# pylint: disable=invalid-name
 def _parse_add_notifying_service_config(
     data, notifications, service_key, service_xml_tag
 ):
-
+    """
+    parse notifying filter rule
+    """
     arn_elt_name = NOTIFICATIONS_ARN_FIELDNAME_MAP[service_xml_tag]
     config = []
     for service in data.findall(service_xml_tag):
