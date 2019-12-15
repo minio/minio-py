@@ -25,11 +25,13 @@ This module contains :class:`CopyConditions <CopyConditions>` implementation.
 """
 
 import collections
+
+from .helpers import is_non_empty_string
+
 try:
     collectionsAbc = collections.abc
 except AttributeError:
     collectionsAbc = collections
-from .helpers import is_non_empty_string
 
 # CopyCondition explanation:
 # http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectCOPY.html
@@ -51,6 +53,7 @@ class CopyConditions(collectionsAbc.MutableMapping):
         - x-amz-copy-source-if-modified-since
 
     """
+
     def __init__(self, *args, **kwargs):
         self._store = dict()
         self.update(dict(*args, **kwargs))  # use the free update to set keys
@@ -74,22 +77,22 @@ class CopyConditions(collectionsAbc.MutableMapping):
         """
         """
         is_non_empty_string(etag)
-        self._store['X-Amz-Copy-Source-If-Match'] = etag
+        self._store["X-Amz-Copy-Source-If-Match"] = etag
 
     def set_match_etag_except(self, etag):
         """
         """
         is_non_empty_string(etag)
-        self._store['X-Amz-Copy-Source-If-None-Match'] = etag
+        self._store["X-Amz-Copy-Source-If-None-Match"] = etag
 
     def set_unmodified_since(self, mod_time):
         """
         """
-        time = mod_time.strftime('%a, %d %b %Y %H:%M:%S GMT')
-        self._store['X-Amz-Copy-Source-If-Unmodified-Since'] = time
+        time = mod_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
+        self._store["X-Amz-Copy-Source-If-Unmodified-Since"] = time
 
     def set_modified_since(self, mod_time):
         """
         """
-        time = mod_time.strftime('%a, %d %b %Y %H:%M:%S GMT')
-        self._store['X-Amz-Copy-Source-If-Modified-Since'] = time
+        time = mod_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
+        self._store["X-Amz-Copy-Source-If-Modified-Since"] = time

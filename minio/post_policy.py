@@ -26,11 +26,11 @@ This module contains :class:`PostPolicy <PostPolicy>` implementation.
 """
 
 import base64
-import json
 import datetime
+import json
 
-from .helpers import (is_non_empty_string, is_valid_bucket_name)
 from .error import InvalidArgumentError
+from .helpers import is_non_empty_string, is_valid_bucket_name
 
 
 # Policy explanation:
@@ -40,14 +40,15 @@ class PostPolicy(object):
     A :class:`PostPolicy <PostPolicy>` object for constructing
        Amazon S3 POST policy JSON string.
     """
+
     def __init__(self):
         self._expiration = None
         self._content_length_range = tuple()
         # publicly accessible
         self.policies = []
         self.form_data = dict()
-        self.bucket_name = ''
-        self.key = ''
+        self.bucket_name = ""
+        self.key = ""
 
     def set_expires(self, time):
         """
@@ -67,8 +68,8 @@ class PostPolicy(object):
         """
         is_non_empty_string(key)
 
-        self.policies.append(('eq', '$key', key))
-        self.form_data['key'] = key
+        self.policies.append(("eq", "$key", key))
+        self.form_data["key"] = key
         self.key = key
 
     def set_key_startswith(self, key_startswith):
@@ -79,8 +80,8 @@ class PostPolicy(object):
         """
         is_non_empty_string(key_startswith)
 
-        self.policies.append(('starts-with', '$key', key_startswith))
-        self.form_data['key'] = key_startswith
+        self.policies.append(("starts-with", "$key", key_startswith))
+        self.form_data["key"] = key_startswith
 
     def set_bucket_name(self, bucket_name):
         """
@@ -90,8 +91,8 @@ class PostPolicy(object):
         """
         is_valid_bucket_name(bucket_name)
 
-        self.policies.append(('eq', '$bucket', bucket_name))
-        self.form_data['bucket'] = bucket_name
+        self.policies.append(("eq", "$bucket", bucket_name))
+        self.form_data["bucket"] = bucket_name
         self.bucket_name = bucket_name
 
     def set_content_type(self, content_type):
@@ -100,8 +101,8 @@ class PostPolicy(object):
 
         :param content_type: set content type name.
         """
-        self.policies.append(('eq', '$Content-Type', content_type))
-        self.form_data['Content-Type'] = content_type
+        self.policies.append(("eq", "$Content-Type", content_type))
+        self.form_data["Content-Type"] = content_type
 
     def set_content_length_range(self, min_length, max_length):
         """
@@ -111,10 +112,10 @@ class PostPolicy(object):
         :param min_length: Minimum length limit for content size.
         :param max_length: Maximum length limit for content size.
         """
-        err_msg = ('Min-length ({}) must be <= Max-length ({}), '
-                   'and they must be non-negative.').format(
-                       min_length, max_length
-                   )
+        err_msg = (
+            "Min-length ({}) must be <= Max-length ({}), "
+            "and they must be non-negative."
+        ).format(min_length, max_length)
         if min_length > max_length or min_length < 0 or max_length < 0:
             raise ValueError(err_msg)
 
@@ -130,12 +131,12 @@ class PostPolicy(object):
         policies = self.policies[:]
         policies.extend(extras)
         if self._content_length_range:
-            policies.append(['content-length-range'] +
-                            list(self._content_length_range))
+            policies.append(
+                ["content-length-range"] + list(self._content_length_range)
+            )
 
         policy_stmt = {
-            "expiration": self._expiration.strftime(
-                "%Y-%m-%dT%H:%M:%S.000Z"),
+            "expiration": self._expiration.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
         }
 
         if len(policies) > 0:
@@ -148,19 +149,21 @@ class PostPolicy(object):
         Encode json into base64.
         """
         s = self._marshal_json(extras=extras)
-        s_bytes = s if isinstance(s, bytes) else s.encode('utf-8')
+        s_bytes = s if isinstance(s, bytes) else s.encode("utf-8")
         b64enc = base64.b64encode(s_bytes)
-        return b64enc.decode('utf-8') if isinstance(b64enc, bytes) else b64enc
+        return b64enc.decode("utf-8") if isinstance(b64enc, bytes) else b64enc
 
     def is_valid(self):
         """
         Validate for required parameters.
         """
         if not isinstance(self._expiration, datetime.datetime):
-            raise InvalidArgumentError('Expiration datetime must be specified.')
+            raise InvalidArgumentError(
+                "Expiration datetime must be specified."
+            )
 
-        if 'key' not in self.form_data:
-            raise InvalidArgumentError('object key must be specified.')
+        if "key" not in self.form_data:
+            raise InvalidArgumentError("object key must be specified.")
 
-        if 'bucket' not in self.form_data:
-            raise InvalidArgumentError('bucket name must be specified.')
+        if "bucket" not in self.form_data:
+            raise InvalidArgumentError("bucket name must be specified.")

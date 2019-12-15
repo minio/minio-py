@@ -25,16 +25,24 @@ This module implements the SelectOption definition for SelectObject API.
 
 """
 
-from .helpers import (SQL)
+from .helpers import SQL
+
 
 class CSVInput:
     """
     CSVInput: Input Format as CSV.
     """
-    def __init__(self, FileHeaderInfo=None, RecordDelimiter="\n",
-                 FieldDelimiter=",", QuoteCharacter='"',
-                 QuoteEscapeCharacter='"', Comments="#",
-                 AllowQuotedRecordDelimiter=False):
+
+    def __init__(
+        self,
+        FileHeaderInfo=None,
+        RecordDelimiter="\n",
+        FieldDelimiter=",",
+        QuoteCharacter='"',
+        QuoteEscapeCharacter='"',
+        Comments="#",
+        AllowQuotedRecordDelimiter=False,
+    ):
         self.FileHeaderInfo = FileHeaderInfo
         self.RecordDelimiter = RecordDelimiter
         self.FieldDelimiter = FieldDelimiter
@@ -43,10 +51,12 @@ class CSVInput:
         self.Comments = Comments
         self.AllowQuotedRecordDelimiter = AllowQuotedRecordDelimiter
 
+
 class JSONInput:
     """
     JSONInput: Input format as JSON.
     """
+
     def __init__(self, Type=None):
         self.Type = Type
 
@@ -61,6 +71,7 @@ class InputSerialization:
     """
     InputSerialization: nput Format.
     """
+
     def __init__(self, compression_type="NONE", csv=None, json=None, par=None):
         self.compression_type = compression_type
         self.csv_input = csv
@@ -73,9 +84,15 @@ class CSVOutput:
     CSVOutput: Output as CSV.
 
     """
-    def __init__(self, QuoteFields="ASNEEDED", RecordDelimiter="\n",
-                 FieldDelimiter=",", QuoteCharacter='"',
-                 QuoteEscapeCharacter='"'):
+
+    def __init__(
+        self,
+        QuoteFields="ASNEEDED",
+        RecordDelimiter="\n",
+        FieldDelimiter=",",
+        QuoteCharacter='"',
+        QuoteEscapeCharacter='"',
+    ):
         self.QuoteFields = QuoteFields
         self.RecordDelimiter = RecordDelimiter
         self.FieldDelimiter = FieldDelimiter
@@ -87,6 +104,7 @@ class JsonOutput:
     """
     JsonOutput- Output as JSON.
     """
+
     def __init__(self, RecordDelimiter="\n"):
         self.RecordDelimiter = RecordDelimiter
 
@@ -95,7 +113,8 @@ class OutputSerialization:
     """
     OutputSerialization: Output Format.
     """
-    def __init__(self,  csv=None, json=None):
+
+    def __init__(self, csv=None, json=None):
         self.csv_output = csv
         self.json_output = json
 
@@ -104,6 +123,7 @@ class RequestProgress:
     """
     RequestProgress: Sends progress message.
     """
+
     def __init__(self, enabled=False):
         self.enabled = enabled
 
@@ -112,10 +132,16 @@ class SelectObjectOptions:
     """
     SelectObjectOptions: Options for select object
     """
+
     expression_type = SQL
 
-    def __init__(self, expression, input_serialization,
-                 output_serialization, request_progress):
+    def __init__(
+        self,
+        expression,
+        input_serialization,
+        output_serialization,
+        request_progress,
+    ):
         self.expression = expression
         self.in_ser = input_serialization
         self.out_ser = output_serialization

@@ -28,34 +28,37 @@ This module implements the helper functions for SelectObject responses.
 import codecs
 from binascii import crc32
 
-SQL = 'SQL'  # Value for ExpressionType
-EVENT_RECORDS = 'Records'  # Event Type is Records
-EVENT_PROGRESS = 'Progress'  # Event Type Progress
-EVENT_STATS = 'Stats'  # Event Type Stats
-EVENT_CONT = 'Cont' # Event Type continue
-EVENT_END = 'End'  # Event Type is End
-EVENT_CONTENT_TYPE = "text/xml" # Event content xml type
-EVENT = 'event'  # Message Type is event
-ERROR = 'error'  # Message Type is error
+SQL = "SQL"  # Value for ExpressionType
+EVENT_RECORDS = "Records"  # Event Type is Records
+EVENT_PROGRESS = "Progress"  # Event Type Progress
+EVENT_STATS = "Stats"  # Event Type Stats
+EVENT_CONT = "Cont"  # Event Type continue
+EVENT_END = "End"  # Event Type is End
+EVENT_CONTENT_TYPE = "text/xml"  # Event content xml type
+EVENT = "event"  # Message Type is event
+ERROR = "error"  # Message Type is error
+
 
 def calculate_crc(value):
-    '''
+    """
     Returns the CRC using crc32
-    '''
-    return crc32(value) & 0xffffffff
+    """
+    return crc32(value) & 0xFFFFFFFF
+
 
 def validate_crc(current_value, expected_value):
-    '''
+    """
     Validate through CRC check
-    '''
+    """
     crc_current = calculate_crc(current_value)
     crc_expected = byte_int(expected_value)
     if crc_current == crc_expected:
         return True
     return False
 
+
 def byte_int(data_bytes):
-    '''
+    """
     Convert bytes to big-endian integer
-    '''
-    return int(codecs.encode(data_bytes, 'hex'), 16)
+    """
+    return int(codecs.encode(data_bytes, "hex"), 16)

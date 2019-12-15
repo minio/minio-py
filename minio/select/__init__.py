@@ -19,13 +19,13 @@
 :license: Apache 2.0, see LICENSE for more details.
 """
 
-__title__ = 'minio-py'
-__author__ = 'MinIO, Inc.'
-__version__ = '0.0.1'
-__license__ = 'Apache 2.0'
-__copyright__ = 'Copyright 2019 MinIO, Inc.'
+__title__ = "minio-py"
+__author__ = "MinIO, Inc."
+__version__ = "0.0.1"
+__license__ = "Apache 2.0"
+__copyright__ = "Copyright 2019 MinIO, Inc."
 
-from .reader import *
-from .helpers import *
 from .errors import *
+from .helpers import *
 from .options import *
+from .reader import *

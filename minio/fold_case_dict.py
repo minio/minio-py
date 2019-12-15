@@ -24,6 +24,7 @@ This module implements a case insensitive dictionary.
 
 """
 
+
 class FoldCaseDict(dict):
     def __init__(self, dictionary={}):
         self._data = self.__create(dictionary)
@@ -103,8 +104,10 @@ class FoldCaseDict(dict):
             yield v
 
     def update(self, dictionary):
-        if not (isinstance(dictionary, dict) or
-                isinstance(dictionary, FoldCaseDict)):
+        if not (
+            isinstance(dictionary, dict)
+            or isinstance(dictionary, FoldCaseDict)
+        ):
             raise TypeError
 
         for k, v in dictionary.items():

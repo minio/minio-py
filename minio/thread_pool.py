@@ -27,6 +27,7 @@ in parallel. Tasks results can also be retrieved.
 """
 
 from threading import Thread
+
 from .compat import queue
 
 
@@ -61,6 +62,7 @@ class Worker(Thread):
             # Mark this task as done, whether an exception happened or not
             self.tasks_queue.task_done()
 
+
 class ThreadPool:
     """ Pool of threads consuming tasks from a queue """
 
@@ -91,4 +93,3 @@ class ThreadPool:
         if not self.exceptions_queue.empty():
             raise self.exceptions_queue.get()
         return self.results_queue
-

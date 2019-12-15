@@ -25,12 +25,14 @@ This module implements the error classes for SelectObject responses.
 
 """
 
+
 class SelectMessageError(Exception):
-    '''
+    """
     Raised in case of message type 'error'
-    '''
+    """
+
 
 class SelectCRCValidationError(Exception):
-    '''
+    """
     Raised in case of CRC mismatch
-    '''
+    """

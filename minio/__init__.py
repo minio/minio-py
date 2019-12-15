@@ -27,14 +27,14 @@ minio - MinIO Python Library for Amazon S3 Compatible Cloud Storage
 :license: Apache 2.0, see LICENSE for more details.
 """
 
-__title__ = 'minio-py'
-__author__ = 'MinIO, Inc.'
-__version__ = '5.0.6'
-__license__ = 'Apache 2.0'
-__copyright__ = 'Copyright 2015, 2016, 2017, 2018, 2019 MinIO, Inc.'
+__title__ = "minio-py"
+__author__ = "MinIO, Inc."
+__version__ = "5.0.6"
+__license__ = "Apache 2.0"
+__copyright__ = "Copyright 2015, 2016, 2017, 2018, 2019 MinIO, Inc."
 
 from .api import Minio
-from .error import ResponseError
-from .post_policy import PostPolicy
 from .copy_conditions import CopyConditions
 from .definitions import Bucket, Object
+from .error import ResponseError
+from .post_policy import PostPolicy

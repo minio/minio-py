@@ -28,25 +28,30 @@ This module implements python 2.x and 3.x compatibility layer.
 import sys
 
 #: Python 2.x?
-_is_py2 = (sys.version_info[0] == 2)
+_is_py2 = sys.version_info[0] == 2
 
 #: Python 3.x?
-_is_py3 = (sys.version_info[0] == 3)
+_is_py3 = sys.version_info[0] == 3
 
 if _is_py2:
     from Queue import Queue
+
     queue = Queue
 
     from Queue import Empty
+
     queue_empty = Empty
 
     from urllib import quote
+
     _urlencode = quote
 
     from urllib import unquote
+
     urldecode = unquote
 
     import urlparse
+
     urlsplit = urlparse.urlsplit
     parse_qs = urlparse.parse_qs
 
@@ -63,18 +68,23 @@ if _is_py2:
     basestring = basestring
 elif _is_py3:
     from queue import Queue
+
     queue = Queue
 
     from queue import Empty
+
     queue_empty = Empty
 
     from urllib.request import quote
+
     _urlencode = quote
 
     from urllib.request import unquote
+
     urldecode = unquote
 
     import urllib.parse
+
     urlsplit = urllib.parse.urlsplit
     parse_qs = urllib.parse.parse_qs
 
@@ -93,6 +103,7 @@ elif _is_py3:
 
 numeric_types = (int, long, float)
 
+
 def urlencode(resource):
     """
     This implementation of urlencode supports all unicode characters
@@ -100,9 +111,10 @@ def urlencode(resource):
     :param: resource: Resource value to be url encoded.
     """
     if isinstance(resource, str):
-        return _urlencode(resource.encode('utf-8'))
+        return _urlencode(resource.encode("utf-8"))
 
     return _urlencode(resource)
+
 
 def queryencode(query):
     """
@@ -110,4 +122,4 @@ def queryencode(query):
 
     :param: query: Query value to be url encoded.
     """
-    return urlencode(query).replace('/', '%2F')
+    return urlencode(query).replace("/", "%2F")
