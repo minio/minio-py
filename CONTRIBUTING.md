@@ -16,5 +16,8 @@ $ python setup.py install
     - Fork it
     - Create your feature branch (git checkout -b my-new-feature)
     - Commit your changes (git commit -am 'Add some feature')
+    - Run [Black](https://github.com/psf/black) and correct related warnings
+    - Run [isort](https://github.com/timothycrosley/isort) and correct related warnings
+    - Run [pylint](https://github.com/PyCQA/pylint) and correct related warnings
     - Push to the branch (git push origin my-new-feature)
     - Create new Pull Request
