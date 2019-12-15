@@ -37,9 +37,8 @@ import platform
 from datetime import datetime, timedelta
 from threading import Thread
 
-import certifi
-
 # Dependencies
+import certifi
 import urllib3
 
 import dateutil.parser

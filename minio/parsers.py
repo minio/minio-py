@@ -24,15 +24,15 @@ This module contains core API parsers.
 
 """
 
-from datetime import datetime
-
 # standard.
+from datetime import datetime
 from xml.etree import cElementTree
 from xml.etree.cElementTree import ParseError
 
-# dependencies.
+# external dependencies.
 import pytz
 
+# minio specific.
 from .compat import urldecode
 from .definitions import (
     Bucket,
@@ -42,8 +42,6 @@ from .definitions import (
     Object,
     UploadPart,
 )
-
-# minio specific.
 from .error import ETREE_EXCEPTIONS, InvalidXMLError, MultiDeleteError
 from .xml_marshal import NOTIFICATIONS_ARN_FIELDNAME_MAP
 

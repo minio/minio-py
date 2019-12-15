@@ -36,9 +36,7 @@ import io
 import math
 import os
 import re
-
-# future_str is unicode or str in both Python 2 and 3
-from builtins import str as future_str
+from builtins import str as future_str  # is unicode or str in Python 2 and 3
 
 from .compat import (
     _is_py2,
