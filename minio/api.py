@@ -798,10 +798,18 @@ class Minio(object):
 
         return parse_copy_object(bucket_name, object_name, response.data)
 
-    def put_object(self, bucket_name, object_name, data, length,
-                   content_type='application/octet-stream',
-                   metadata=None, sse=None, progress=None,
-                   part_size=DEFAULT_PART_SIZE):
+    def put_object(
+        self,
+        bucket_name,
+        object_name,
+        data,
+        length=None,
+        content_type="application/octet-stream",
+        metadata=None,
+        sse=None,
+        progress=None,
+        part_size=DEFAULT_PART_SIZE,
+    ):
         """
         Add a new object to the cloud storage server.
 
@@ -843,9 +851,10 @@ class Minio(object):
             raise ValueError(
                 'Invalid input data does not implement a callable read() method')
 
-        if length > (part_size * MAX_MULTIPART_COUNT):
-            raise InvalidArgumentError('Part size * max_parts(10000) is '
-                                       ' lesser than input length.')
+        if not length is None and length > (part_size * MAX_MULTIPART_COUNT):
+            raise InvalidArgumentError(
+                "Part size * max_parts(10000) is " " lesser than input length."
+            )
 
         if part_size < MIN_PART_SIZE:
             raise InvalidArgumentError('Input part size is smaller '
@@ -863,14 +872,28 @@ class Minio(object):
         metadata['Content-Type'] = 'application/octet-stream' if \
             not content_type else content_type
 
-        if length > part_size:
-            return self._stream_put_object(bucket_name, object_name,
-                                           data, length, metadata=metadata,
-                                           sse=sse, progress=progress,
-                                           part_size=part_size)
+        current_data = []
+        iterable = iter(read_complete_file_in_chunks(data, part_size))
+        stream = False
+        try:
+            current_data.append(next(iterable))
+            stream = True
+        except StopIteration:
+            current_data = current_data[0]
 
-        current_data = data.read(length)
-        if len(current_data) != length:
+        if stream:
+            return self._stream_put_object(
+                bucket_name,
+                object_name,
+                itertools.chain(current_data, iterable),
+                content_size=length,
+                metadata=metadata,
+                sse=sse,
+                progress=progress,
+                part_size=part_size,
+            )
+
+        if not length is None and len(current_data) != length:
             raise InvalidArgumentError(
                 'Could not read {} bytes from data to upload'.format(length)
             )
@@ -1617,18 +1640,23 @@ class Minio(object):
 
         return part_number, etag, len(part_data)
 
-    def _stream_put_object(self, bucket_name, object_name,
-                           data, content_size,
-                           metadata=None, sse=None,
-                           progress=None, part_size=MIN_PART_SIZE):
+    def _stream_put_object(
+        self,
+        bucket_name,
+        object_name,
+        data,
+        content_size=None,
+        metadata=None,
+        sse=None,
+        progress=None,
+        part_size=MIN_PART_SIZE,
+    ):
         """
         Streaming multipart upload operation.
 
         :param bucket_name: Bucket name of the multipart upload.
         :param object_name: Object name of the multipart upload.
-        :param content_size: Total size of the content to be uploaded.
-        :param content_type: Content type of of the multipart upload.
-           Defaults to 'application/octet-stream'.
+        :param content_size: Content size to check the upload size
         :param metadata: Any additional metadata to be uploaded along
            with your object.
         :param progress: A progress object
@@ -1636,9 +1664,6 @@ class Minio(object):
         """
         is_valid_bucket_name(bucket_name)
         is_non_empty_string(object_name)
-        if not callable(getattr(data, 'read')):
-            raise ValueError(
-                'Invalid input data does not implement a callable read() method')
 
         # get upload id.
         upload_id = self._new_multipart_upload(bucket_name, object_name,
@@ -1651,8 +1676,8 @@ class Minio(object):
         # Generate new parts and upload <= part_size until
         # length is reached. Additionally part_manager() also provides
         # md5digest and sha256digest for the partitioned data.
-        with ThreadPoolExecutor(max_workers=_PARALLEL_UPLOADERS) as pool:
-            try:
+        try:
+            with ThreadPoolExecutor(max_workers=_PARALLEL_UPLOADERS) as pool:
                 for part_number, etag, total_read in pool.map(
                     self._upload_part_routine,
                     (
@@ -1665,10 +1690,7 @@ class Minio(object):
                             sse,
                             progress,
                         )
-                        for part_number, part_data in enumerate(
-                            read_complete_file_in_chunks(data, part_size),
-                            start=1,
-                        )
+                        for part_number, part_data in enumerate(data, start=1,)
                     ),
                 ):
                     uploaded_parts[part_number] = UploadPart(
@@ -1682,20 +1704,26 @@ class Minio(object):
                     )
 
                     total_uploaded += total_read
-            except:
-                # Any exception that occurs sends an abort on the
-                # on-going multipart operation.
-                self._remove_incomplete_upload(
-                    bucket_name, object_name, upload_id
+                    if total_uploaded + part_size > (
+                        part_size * MAX_MULTIPART_COUNT
+                    ):
+                        raise InvalidSizeError(
+                            "Part size * max_parts(10000) is "
+                            " lesser than input length."
+                        )
+            if not content_size is None and total_uploaded != content_size:
+                msg = (
+                    "Data uploaded {0} is not equal input size "
+                    "{1}".format(total_uploaded, content_size)
                 )
-                raise
+                # cleanup incomplete upload upon incorrect upload
+                # automatically
+                raise InvalidSizeError(msg)
 
-        # Complete all multipart transactions if possible.
-        try:
-            mpart_result = self._complete_multipart_upload(bucket_name,
-                                                           object_name,
-                                                           upload_id,
-                                                           uploaded_parts)
+            # Complete all multipart transactions if possible.
+            mpart_result = self._complete_multipart_upload(
+                bucket_name, object_name, upload_id, uploaded_parts
+            )
         except:
             # Any exception that occurs sends an abort on the
             # on-going multipart operation.
