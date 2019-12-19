@@ -94,8 +94,11 @@ from .xml_marshal import (xml_marshal_bucket_constraint,
 from .fold_case_dict import FoldCaseDict
 from .thread_pool import ThreadPool
 from .select import SelectObjectReader
-from .credentials import Static
-from .credentials import Credentials
+from .credentials import (Chain,
+                          Credentials,
+                          EnvAWS,
+                          EnvMinio,
+                          Static)
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
@@ -185,7 +188,13 @@ class Minio(object):
             self._credentials = credentials
         else:
             self._credentials = Credentials(
-                provider=Static(access_key, secret_key, session_token)
+                provider= Chain(
+                    providers=[
+                        Static(access_key, secret_key, session_token),
+                        EnvAWS(),
+                        EnvMinio(),
+                    ]
+                )
             )
             
 

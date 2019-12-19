@@ -40,7 +40,6 @@ class FileAWSCredentials(Provider):
                 self._profile = 'default'
 
         self._retrieved = False
-
         ini_profile = configparser.ConfigParser()
         ini_profile.read(self._filename)
         access_key = secret = session_token = ''
@@ -49,11 +48,12 @@ class FileAWSCredentials(Provider):
             secret = ini_profile.get(self._profile, 'aws_secret_access_key')
             session_token = ini_profile.get(self._profile, 'aws_session_token')
         except:
-            #TODO: How to handle errors
             pass
+        
+        if access_key == '' or secret == '':
+            return Value()
 
         self._retrieved = True
-
         return Value(
             access_key=access_key,
             secret_key=secret,

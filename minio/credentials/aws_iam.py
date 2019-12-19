@@ -16,8 +16,9 @@
 
 import os, json, urllib3, datetime
 from .credentials import Provider, Value, Expiry
+from minio.error import ResponseError
 
-class IAM(Provider):
+class IamEc2MetaData(Provider):
 
     iam_security_creds_path = '/latest/meta-data/iam/security-credentials'
 
@@ -41,8 +42,7 @@ class IAM(Provider):
         url = self._endpoint + self.iam_security_creds_path
         res = self._http_client.urlopen('GET', url)
         if res['status'] != 200:
-            #TODO how to handle errors crete new error in minio.errors.py?
-            raise
+            raise ResponseError(res)
         creds = res['data'].split('\n')
         return creds
 
@@ -50,21 +50,18 @@ class IAM(Provider):
         url = self._endpoint + self.iam_security_creds_path + "/" + creds_name
         res = self._http_client.urlopen('GET', url)
         if res['status'] != 200:
-            #TODO how to handle errors crete new error in minio.errors.py?
-            raise
+            raise ResponseError(res)
 
         data = json.loads(res['data'])
         if data['Code'] != 'Success':
-            #TODO how to handle errors crete new error in minio.errors.py?
-            raise
+            raise ResponseError(res)
 
         return data
 
     def retrieve(self):
         creds_list = self.request_cred_list()
         if len(creds_list) == 0:
-            #TODO how to handle errors crete new error in minio.errors.py?
-            raise
+            return Value()
 
         creds_name = creds_list[0]
         role_creds = self.request_cred(creds_name)

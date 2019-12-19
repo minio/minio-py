@@ -24,14 +24,13 @@ class Chain(Provider):
 
     def retrieve(self):
         for provider in self._providers:
-            #TODO: Go code collects provider's errors 
-            #      should python collect execptions?
             creds = provider.retrieve()
+            if ((creds.access_key is None or creds.access_key == "") and
+                (creds.secret_key is None or creds.secret_key == "")):
+                continue
             self._current = provider
             return creds
         self._current = None
-        #TODO: Go code returns erros when no provider is found
-        #      should python raise error?
         return Value()
 
     def is_expired(self):

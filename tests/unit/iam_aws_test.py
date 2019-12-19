@@ -17,10 +17,10 @@
 import mock
 import json
 from unittest import TestCase
-from minio.credentials.aws_iam import IAM
+from minio.credentials.aws_iam import IamEc2MetaData
 from nose.tools import eq_
 
-class TestIAMAWS(TestCase):
+class TestIamEc2MetaData(TestCase):
     @mock.patch('urllib3.PoolManager.urlopen')
     def test_iam(self, mock_connection):
         # get provider
@@ -42,7 +42,7 @@ class TestIAMAWS(TestCase):
             "data": request_cred_data
         }
         mock_connection.side_effect = [mock_cred_list, mock_request_cred]
-        provider = IAM()
+        provider = IamEc2MetaData()
         # retrieve credentials
         creds = provider.retrieve()
         eq_(creds.access_key, "accessKey")

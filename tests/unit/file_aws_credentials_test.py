@@ -108,6 +108,11 @@ class FileAWSCredentialsTest(TestCase):
         # is_expired should be False after retieve
         eq_(provider.is_expired(), False)
 
-    def test_file_aws_no_file(self):
-        # TODO: how to handle exceptions?
-        pass
+    def test_file_aws_no_creds(self):
+        # clear environment
+        os.environ.clear()
+        provider = FileAWSCredentials('minio/credentials/credentials.empty', 'no_token')
+        creds = provider.retrieve()
+        eq_(creds.access_key, None)
+        eq_(creds.secret_key, None)
+        eq_(creds.session_token, None)

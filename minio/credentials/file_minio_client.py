@@ -44,11 +44,14 @@ class FileMinioClient(Provider):
         doc = json.load(config)
         creds = doc['hosts'][self._alias]
         
+        access_key = creds['accessKey']
+        secret_key = creds['secretKey']
+
         self._retrieved = True
 
         return Value(
-            access_key=creds['accessKey'],
-            secret_key=creds['secretKey']
+            access_key=access_key,
+            secret_key=secret_key
         )
 
     def is_expired(self):

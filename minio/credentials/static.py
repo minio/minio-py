@@ -24,7 +24,6 @@ class Static(Provider):
         self._session_token = token
 
     def retrieve(self):
-        # TODO: How to handle annonymous?
         return Value(
             access_key=self._access_key,
             secret_key=self._secret_key,
