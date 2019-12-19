@@ -23,7 +23,7 @@ class Value(object):
         self.secret_key = secret_key
         self.session_token = session_token
 
-class Provider(abc.ABC):
+class Provider():
 
     __metaclass__ = ABCMeta
 
