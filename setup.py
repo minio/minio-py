@@ -47,6 +47,7 @@ requires = [
     'pytz',
     'certifi',
     'python-dateutil',
+    'configparser',
 ]
 
 tests_requires = [
