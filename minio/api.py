@@ -195,8 +195,7 @@ class Minio(object):
                         EnvMinio(),
                     ]
                 )
-            )
-            
+            ) 
 
         # Load CA certificates from SSL_CERT_FILE file if set
         ca_certs = os.environ.get('SSL_CERT_FILE')

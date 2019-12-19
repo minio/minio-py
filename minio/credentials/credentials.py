@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import abc
+from abc import ABCMeta, abstractmethod
 from datetime import datetime, timedelta
 
 class Value(object):
@@ -24,11 +24,14 @@ class Value(object):
         self.session_token = session_token
 
 class Provider(abc.ABC):
-    @abc.abstractmethod
+
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def retrieve(self):
         pass
 
-    @abc.abstractmethod
+    @abstractmethod
     def is_expired(self):
         pass
 
@@ -51,12 +54,12 @@ class Credentials(object):
         self._creds = None
         self._forceRefresh = forceRefresh
         self._provider = provider
+    
     def get(self):
         if self.is_expired():
             try:
                 creds = self._provider.retrieve()
             except:
-                # TODO: Create new error class to raise here?
                 raise
             self._creds = creds
             self._forceRefresh = False
