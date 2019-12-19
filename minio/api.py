@@ -658,8 +658,8 @@ class Minio(object):
         # Write to a temporary file "file_path.part.minio" before saving.
         file_part_path = file_path + stat.etag + '.part.minio'
 
-        # Open file in 'write+append' mode.
-        with open(file_part_path, 'ab') as file_part_data:
+        # Open file in 'overwrite' mode.
+        with open(file_part_path, 'wb') as file_part_data:
             # Save current file_part statinfo.
             file_statinfo = os.stat(file_part_path)
 

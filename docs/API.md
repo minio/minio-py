@@ -671,7 +671,7 @@ except ResponseError as err:
 ```
 
 <a name="select_object_content"></a>
-### select_object_content(self, bucket_name, object_name, options)
+### select_object_content(bucket_name, object_name, options)
 Select object content filters the contents of object based on a simple structured query language (SQL).
 
 __Parameters__
@@ -680,7 +680,7 @@ __Parameters__
 |:---|:---|:---|
 |``bucket_name``   |_string_   |Name of the bucket.   |
 |``object_name``   |_string_   |Name of the object.   |
-|``options`` | _SelectObjectReader_ | Query Options   |
+|``options`` | _SelectObjectOptions_ | Query Options   |
 
 
 __Return Value__
@@ -720,7 +720,7 @@ options = SelectObjectOptions(
                       QuoteEscapeCharacter='"',)
                       ),
     request_progress=RequestProgress(
-        enabled="FLASE"
+        enabled="FALSE"
         )
     )
 
