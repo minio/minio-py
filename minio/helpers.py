@@ -302,7 +302,7 @@ def is_valid_endpoint(endpoint):
         if u.scheme:
             raise InvalidEndpointError('Hostname cannot have a scheme.')
 
-        hostname = u.netloc.split(':')[0]
+        hostname = u.hostname
         if hostname is None:
             raise InvalidEndpointError('Hostname cannot be empty.')
 
