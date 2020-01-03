@@ -147,10 +147,10 @@ class Minio(object):
     def __init__(self, endpoint, access_key=None,
                  secret_key=None,
                  session_token=None,
-                 credentials=None,
                  secure=True,
                  region=None,
-                 http_client=None):
+                 http_client=None,
+                 credentials=None):
 
         # Validate endpoint.
         is_valid_endpoint(endpoint)

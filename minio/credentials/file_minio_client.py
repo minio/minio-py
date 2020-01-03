@@ -28,7 +28,7 @@ class FileMinioClient(Provider):
         self._retrieved = retrieved
 
     def retrieve(self):
-        if self._filename == "" or None:
+        if self._filename == "" or self._filename is None:
             home_dir = os.environ.get('HOME')
             self._filename = os.path.join(home_dir, '.mc', 'config.json')
             if sys.platform == 'win32':
