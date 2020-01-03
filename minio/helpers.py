@@ -288,10 +288,21 @@ def is_valid_endpoint(endpoint):
        otherwise.
     """
     try:
-        if urlsplit(endpoint).scheme:
+        if not '//' in endpoint:
+            # Having '//' in the beginning of the endpoint enforce
+            # urlsplit to consider the endpoint as a netloc according
+            # to this quote in docs.python.org/3/library/urllib.parse.html:
+            #    Following the syntax specifications in RFC 1808, urlparse
+            #    recognizes a netloc only if it is properly introduced by ‘//’.
+            #    Otherwise the input is presumed to be a relative URL and thus
+            #    to start with a path component.
+            endpoint = '//' + endpoint
+
+        u = urlsplit(endpoint)
+        if u.scheme:
             raise InvalidEndpointError('Hostname cannot have a scheme.')
 
-        hostname = endpoint.split(':')[0]
+        hostname = u.hostname
         if hostname is None:
             raise InvalidEndpointError('Hostname cannot be empty.')
 
