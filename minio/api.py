@@ -249,7 +249,7 @@ class Minio(object):
         :param object_name: Name of object to read
         :param options: Options for select object
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
         content = xml_marshal_select(opts)
@@ -292,7 +292,7 @@ class Minio(object):
         :param bucket_name: Bucket to create on server
         :param location: Location to create bucket on
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, True)
 
         # Default region for all requests.
         region = 'us-east-1'
@@ -396,7 +396,7 @@ class Minio(object):
         :param bucket_name: To test the existence and user access.
         :return: True on success.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
 
         try:
             self._url_open('HEAD', bucket_name=bucket_name)
@@ -413,7 +413,7 @@ class Minio(object):
 
         :param bucket_name: Bucket to remove
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         self._url_open('DELETE', bucket_name=bucket_name)
 
         # Make sure to purge bucket_name from region cache.
@@ -425,7 +425,7 @@ class Minio(object):
 
         :param bucket_name: Bucket name.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
 
         response = self._url_open("GET",
                                   bucket_name=bucket_name,
@@ -446,7 +446,7 @@ class Minio(object):
         """
         is_valid_policy_type(policy)
 
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
 
         headers = {
             'Content-Length': str(len(policy)),
@@ -466,7 +466,7 @@ class Minio(object):
 
         :param bucket_name: Bucket name.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
 
         response = self._url_open(
             "GET",
@@ -483,7 +483,7 @@ class Minio(object):
         :param bucket_name: Bucket name.
         :param notifications: Notifications structure
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_valid_bucket_notification_config(notifications)
 
         content = xml_marshal_bucket_notifications(notifications)
@@ -511,7 +511,7 @@ class Minio(object):
 
         :param bucket_name: Bucket name.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
 
         content_bytes = xml_marshal_bucket_notifications({})
         headers = {
@@ -545,7 +545,7 @@ class Minio(object):
         :param events: Enables notifications for specific event types.
              of events.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
 
         # If someone explicitly set prefix to None convert it to empty string.
         if prefix is None:
@@ -622,7 +622,7 @@ class Minio(object):
         :param file_path: Local file path to save the object.
         :param request_headers: Any additional headers to be added with GET request.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
         stat = self.stat_object(bucket_name, object_name, sse)
@@ -703,7 +703,7 @@ class Minio(object):
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
         return self._get_partial_object(bucket_name,
@@ -736,7 +736,7 @@ class Minio(object):
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
         return self._get_partial_object(bucket_name,
@@ -762,7 +762,7 @@ class Minio(object):
         :param metadata: Any user-defined metadata to be copied along with
         destination object.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
         is_non_empty_string(object_source)
 
@@ -827,7 +827,7 @@ class Minio(object):
         """
 
         is_valid_sse_object(sse)
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
         if progress:
@@ -914,7 +914,7 @@ class Minio(object):
         :param recursive: If yes, returns all objects for a specified prefix
         :return: An iterator of objects in alphabetical order.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
 
         # If someone explicitly set prefix to None convert it to empty string.
         if prefix is None:
@@ -990,7 +990,7 @@ class Minio(object):
         :param recursive: If yes, returns all objects for a specified prefix
         :return: An iterator of objects in alphabetical order.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
 
         # If someone explicitly set prefix to None convert it to empty string.
         if prefix is None:
@@ -1039,7 +1039,7 @@ class Minio(object):
             is_valid_sse_c_object(sse=sse)
             headers.update(sse.marshal())
 
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
         response = self._url_open('HEAD', bucket_name=bucket_name,
@@ -1069,7 +1069,7 @@ class Minio(object):
         :param object_name: Name of object to remove
         :return: None
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
         # No reason to store successful response, for errors
@@ -1115,7 +1115,7 @@ class Minio(object):
         object that had a delete error.
 
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         if isinstance(objects_iter, basestring):
             raise TypeError(
                 'objects_iter cannot be `str` or `bytes` instance. It must be '
@@ -1194,7 +1194,7 @@ class Minio(object):
            a specified prefix.
         :return: An generator of incomplete uploads in alphabetical order.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
 
         return self._list_incomplete_uploads(bucket_name, prefix, recursive)
 
@@ -1208,7 +1208,7 @@ class Minio(object):
         :param recursive: If yes, returns all incomplete objects for a specified prefix.
         :return: An generator of incomplete uploads in alphabetical order.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
 
         # If someone explicitly set prefix to None convert it to empty string.
         if prefix is None:
@@ -1267,7 +1267,7 @@ class Minio(object):
         :param object_name: Object name to list parts for.
         :param upload_id: Upload id of the previously uploaded object name.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
         is_non_empty_string(upload_id)
 
@@ -1303,7 +1303,7 @@ class Minio(object):
         :param object_name: Name of object to remove incomplete uploads
         :return: None
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
         recursive = True
@@ -1345,7 +1345,7 @@ class Minio(object):
                               current date.
         :return: Presigned put object url.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
         if expires.total_seconds() < 1 or \
@@ -1512,7 +1512,7 @@ class Minio(object):
 
         """
         is_valid_sse_c_object(sse=sse)
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
         headers = {}
@@ -1550,7 +1550,7 @@ class Minio(object):
            with your object.
         :param progress: A progress object
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
         # Accept only bytes - otherwise we need to know how to encode
@@ -1631,7 +1631,7 @@ class Minio(object):
         :param progress: A progress object
         :param part_size: Multipart part size
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
         if not callable(getattr(data, 'read')):
             raise ValueError(
@@ -1741,7 +1741,7 @@ class Minio(object):
         :param metadata: Additional new metadata for the new object.
         :return: Returns an upload id.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
         headers = {}
@@ -1767,7 +1767,7 @@ class Minio(object):
         :param upload_id: Upload id of the active multipart request.
         :param uploaded_parts: Key, Value dictionary of uploaded parts.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
         is_non_empty_string(upload_id)
 

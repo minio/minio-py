@@ -38,11 +38,11 @@ class BucketExists(TestCase):
     @raises(InvalidBucketError)
     def test_bucket_exists_invalid_name(self):
         client = Minio('localhost:9000')
-        client.bucket_exists('ABCD')
+        client.bucket_exists('AB*CD')
 
     @mock.patch('urllib3.PoolManager')
     @raises(ResponseError)
-    def test_bucket_exists_works(self, mock_connection):
+    def test_bucket_exists_bad_request(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(MockResponse('HEAD',
@@ -50,7 +50,7 @@ class BucketExists(TestCase):
                                                   {'User-Agent': _DEFAULT_USER_AGENT},
                                                   400))
         client = Minio('localhost:9000')
-        result = client.bucket_exists('hello')
+        client.bucket_exists('hello')
 
     @mock.patch('urllib3.PoolManager')
     def test_bucket_exists_works(self, mock_connection):

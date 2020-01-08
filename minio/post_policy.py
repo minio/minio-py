@@ -88,7 +88,7 @@ class PostPolicy(object):
 
         :param bucket_name: set bucket name.
         """
-        is_valid_bucket_name(bucket_name)
+        is_valid_bucket_name(bucket_name, False)
 
         self.policies.append(('eq', '$bucket', bucket_name))
         self.form_data['bucket'] = bucket_name

@@ -38,7 +38,7 @@ class StatObject(TestCase):
     @raises(InvalidBucketError)
     def test_remove_bucket_invalid_name(self):
         client = Minio('localhost:9000')
-        client.remove_object('ABCD', 'world')
+        client.remove_object('AB*CD', 'world')
 
     @mock.patch('urllib3.PoolManager')
     def test_remove_object_works(self, mock_connection):
