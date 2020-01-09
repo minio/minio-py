@@ -98,6 +98,7 @@ from .credentials import (Chain,
                           Credentials,
                           EnvAWS,
                           EnvMinio,
+                          IamEc2MetaData,
                           Static)
 
 # Comment format.
