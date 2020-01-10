@@ -194,6 +194,7 @@ class Minio(object):
                         Static(access_key, secret_key, session_token),
                         EnvAWS(),
                         EnvMinio(),
+                        IamEc2MetaData(),
                     ]
                 )
             ) 

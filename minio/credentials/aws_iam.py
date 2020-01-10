@@ -40,9 +40,12 @@ class IamEc2MetaData(Provider):
 
     def request_cred_list(self):
         url = self._endpoint + self.iam_security_creds_path
-        res = self._http_client.urlopen('GET', url)
-        if res['status'] != 200:
-            raise ResponseError(res)
+        try:
+            res = self._http_client.urlopen('GET', url)
+            if res['status'] != 200:
+                return []
+        except:
+            return []
         creds = res['data'].split('\n')
         return creds
 
@@ -50,7 +53,7 @@ class IamEc2MetaData(Provider):
         url = self._endpoint + self.iam_security_creds_path + "/" + creds_name
         res = self._http_client.urlopen('GET', url)
         if res['status'] != 200:
-            raise ResponseError(res)
+            raise ResponseError(res, 'GET')
 
         data = json.loads(res['data'])
         if data['Code'] != 'Success':
