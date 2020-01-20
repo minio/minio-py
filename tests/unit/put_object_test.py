@@ -15,6 +15,8 @@
 
 from unittest import TestCase
 from nose.tools import raises
+from mock import MagicMock
+from io import BytesIO
 
 from minio import Minio
 
@@ -38,3 +40,53 @@ class PutObjectTest(TestCase):
     def test_length_is_not_empty_string(self):
         client = Minio('localhost:9000')
         client.put_object('hello', ' \t \n ', -1, iter([1, 2, 3]))
+
+    def test_put_without_length(self):
+        client = Minio('localhost:9000')
+        mock_do_put_object = MagicMock()
+        client._do_put_object = mock_do_put_object
+        mock_stream_put_object = MagicMock()
+        client._stream_put_object = mock_stream_put_object
+
+        part_size = 5*1024*1024
+        content = b'b'*part_size
+        bucket_name = 'hello'
+        object_name = 'world'
+        testfile = BytesIO(content)
+        client.put_object(
+            bucket_name,
+            object_name,
+            testfile,
+            part_size=part_size,
+        )
+
+        mock_do_put_object.assert_called_once_with(
+            bucket_name,
+            object_name,
+            content,
+            part_size,
+            metadata={'Content-Type': 'application/octet-stream'},
+            sse=None,
+            progress=None,
+        )
+
+    def test_put_without_length_stream(self):
+        client = Minio('localhost:9000')
+        mock_do_put_object = MagicMock()
+        client._do_put_object = mock_do_put_object
+        mock_stream_put_object = MagicMock()
+        client._stream_put_object = mock_stream_put_object
+
+        part_size = 5*1024*1024
+        content = b"b"*(part_size+1)
+        bucket_name = "hello"
+        object_name = "world"
+        testfile = BytesIO(content)
+        client.put_object(
+            bucket_name,
+            object_name,
+            testfile,
+            part_size=part_size,
+        )
+
+        mock_stream_put_object.assert_called_once()
