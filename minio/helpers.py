@@ -196,7 +196,7 @@ def read_complete_file_in_chunks(data, size):
     read_size = len(content)
     yield content
 
-    while read_size >= size:
+    while read_size == size:
         content = read_full(data, size)
         read_size = len(content)
         yield content
