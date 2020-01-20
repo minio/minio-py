@@ -877,6 +877,10 @@ class Minio(object):
         stream = False
         try:
             current_data.append(next(iterable))
+            current_data.append(next(iterable)) # we have to read iterable two
+                                                # times to get a StopIteration
+                                                # if only part_size data is
+                                                # readable
             stream = True
         except StopIteration:
             current_data = current_data[0]

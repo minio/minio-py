@@ -199,7 +199,8 @@ def read_complete_file_in_chunks(data, size):
     while read_size == size:
         content = read_full(data, size)
         read_size = len(content)
-        yield content
+        if len(content) > 0:
+            yield content
 
 
 AWS_S3_ENDPOINT_MAP = {
