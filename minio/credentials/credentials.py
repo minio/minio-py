@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2015, 2016, 2017, 2018, 2019 MinIO, Inc.
+# 2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
