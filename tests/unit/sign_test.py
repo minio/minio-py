@@ -26,6 +26,7 @@ from minio.signer import (generate_canonical_request, generate_string_to_sign,
 from minio.error import InvalidArgumentError
 from minio.compat import urlsplit, urlencode, queryencode
 from minio.fold_case_dict import FoldCaseDict
+from minio.credentials import Credentials, Static
 from minio.helpers import get_target_url
 
 empty_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
@@ -111,18 +112,30 @@ class AuthorizationHeaderTest(TestCase):
 class PresignURLTest(TestCase):
     @raises(InvalidArgumentError)
     def test_presigned_no_access_key(self):
-        presign_v4('GET', 'http://localhost:9000/hello', None, None)
+        credentials = Credentials(
+            provider=Static()
+        )
+        presign_v4('GET', 'http://localhost:9000/hello', credentials, None)
 
     @raises(InvalidArgumentError)
     def test_presigned_invalid_expires(self):
-        presign_v4('GET', 'http://localhost:9000/hello', None, None, region=None, headers={}, expires=0)
+        credentials = Credentials(
+            provider=Static()
+        )
+        presign_v4('GET', 'http://localhost:9000/hello', credentials, region=None, headers={}, expires=0)
 
 class SignV4Test(TestCase):
     def test_signv4(self):
         # Construct target url.
+        credentials = Credentials(
+            provider=Static(
+                access_key='minio',
+                secret_key='minio123'
+            )
+        )
         url = get_target_url('http://localhost:9000', bucket_name='testbucket',
              object_name='~testobject', bucket_region='us-east-1', query={'partID': '1', 'uploadID': '~abcd'})
-        hdrs = sign_v4('PUT', url, 'us-east-1', access_key='minio', secret_key='minio123', request_datetime=dt)
+        hdrs = sign_v4('PUT', url, 'us-east-1', credentials=credentials, request_datetime=dt)
         eq_(hdrs['Authorization'], 'AWS4-HMAC-SHA256 Credential=minio/20150620/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=a2f4546f647981732bd90dfa5a7599c44dca92f44bea48ecc7565df06032c25b')
 
 class UnicodeEncodeTest(TestCase):

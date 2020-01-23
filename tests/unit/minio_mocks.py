@@ -57,6 +57,10 @@ class MockResponse(object):
     # dummy release connection call.
     def release_conn(self):
         return
+    
+    def __getitem__(self, key):
+        if key == "status":
+            return self.status
 
 class MockConnection(object):
     def __init__(self):
@@ -67,11 +71,13 @@ class MockConnection(object):
 
     # noinspection PyUnusedLocal
     def request(self, method, url, headers, redirect=False):
-        return_request = self.requests.pop(0)
+        # only pop off matching requests
+        return_request = self.requests[0]
         return_request.mock_verify(method, url, headers)
-        return return_request
+        return self.requests.pop(0)
+
 
     # noinspection PyRedeclaration,PyUnusedLocal,PyUnusedLocal
-    def urlopen(self, method, url, headers, preload_content=False, body=None,
+    def urlopen(self, method, url, headers={}, preload_content=False, body=None,
                 redirect=False):
         return self.request(method, url, headers)

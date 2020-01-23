@@ -94,6 +94,12 @@ from .xml_marshal import (xml_marshal_bucket_constraint,
 from .fold_case_dict import FoldCaseDict
 from .thread_pool import ThreadPool
 from .select import SelectObjectReader
+from .credentials import (Chain,
+                          Credentials,
+                          EnvAWS,
+                          EnvMinio,
+                          IamEc2MetaData,
+                          Static)
 
 # Comment format.
 _COMMENTS = '({0}; {1})'
@@ -144,7 +150,8 @@ class Minio(object):
                  session_token=None,
                  secure=True,
                  region=None,
-                 http_client=None):
+                 http_client=None,
+                 credentials=None):
 
         # Validate endpoint.
         is_valid_endpoint(endpoint)
@@ -175,6 +182,22 @@ class Minio(object):
         self._session_token = session_token
         self._user_agent = _DEFAULT_USER_AGENT
         self._trace_output_stream = None
+
+        # Set credentials if possible
+
+        if credentials is not None:
+            self._credentials = credentials
+        else:
+            self._credentials = Credentials(
+                provider= Chain(
+                    providers=[
+                        Static(access_key, secret_key, session_token),
+                        EnvAWS(),
+                        EnvMinio(),
+                        IamEc2MetaData(),
+                    ]
+                )
+            ) 
 
         # Load CA certificates from SSL_CERT_FILE file if set
         ca_certs = os.environ.get('SSL_CERT_FILE')
@@ -328,9 +351,8 @@ class Minio(object):
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
-                          headers, self._access_key,
-                          self._secret_key,
-                          self._session_token,
+                          headers,
+                          self._credentials,
                           content_sha256_hex,
                           datetime.utcnow())
 
@@ -368,9 +390,8 @@ class Minio(object):
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
-                          headers, self._access_key,
-                          self._secret_key,
-                          self._session_token,
+                          headers,
+                          self._credentials,
                           None, datetime.utcnow())
 
         response = self._http.urlopen(method, url,
@@ -1361,9 +1382,7 @@ class Minio(object):
                              bucket_region=region)
 
         return presign_v4(method, url,
-                          self._access_key,
-                          self._secret_key,
-                          session_token=self._session_token,
+                          credentials = self._credentials,
                           region=region,
                           expires=int(expires.total_seconds()),
                           response_headers=response_headers,
@@ -1452,7 +1471,7 @@ class Minio(object):
         date = datetime.utcnow()
         iso8601_date = date.strftime("%Y%m%dT%H%M%SZ")
         region = self._get_bucket_region(post_policy.form_data['bucket'])
-        credential_string = generate_credential_string(self._access_key,
+        credential_string = generate_credential_string(self._credentials.get().access_key,
                                                        date, region)
 
         policy = [
@@ -1465,7 +1484,7 @@ class Minio(object):
 
         post_policy_base64 = post_policy.base64(extras=policy)
         signature = post_presign_signature(date, region,
-                                           self._secret_key,
+                                           self._credentials.get().secret_key,
                                            post_policy_base64)
         form_data = {
             'policy': post_policy_base64,
@@ -1854,14 +1873,13 @@ class Minio(object):
             return self._region
 
         # For anonymous requests no need to get bucket location.
-        if self._access_key is None or self._secret_key is None:
+        if self._credentials.get().access_key is None or self._credentials.get().secret_key is None:
             return 'us-east-1'
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
-                          headers, self._access_key,
-                          self._secret_key,
-                          self._session_token,
+                          headers,
+                          self._credentials,
                           None, datetime.utcnow())
 
         response = self._http.urlopen(method, url,
@@ -1910,8 +1928,8 @@ class Minio(object):
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
-                          fold_case_headers, self._access_key,
-                          self._secret_key, self._session_token,
+                          fold_case_headers,
+                          self._credentials,
                           content_sha256, datetime.utcnow())
 
         response = self._http.urlopen(method, url,
