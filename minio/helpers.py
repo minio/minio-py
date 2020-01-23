@@ -116,7 +116,7 @@ def dump_http(method, url, request_headers, response, output_stream):
                                                     http_path))
 
     for k, v in list(request_headers.items()):
-        if k is 'authorization':
+        if k == 'authorization':
             # Redact signature header value from trace logs.
             v = re.sub(r'Signature=([[0-9a-f]+)', 'Signature=*REDACTED*', v)
         output_stream.write('{0}: {1}\n'.format(k.title(), v))
