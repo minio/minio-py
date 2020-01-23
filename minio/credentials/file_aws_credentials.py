@@ -33,7 +33,7 @@ class FileAWSCredentials(Provider):
             if self._filename == "" or self._filename is None:
                 home_dir = os.environ.get('HOME')
                 self._filename = os.path.join(home_dir, '.aws', 'credentials')
-        
+
         if self._profile == "" or self._profile is None:
             self._profile = os.environ.get('AWS_PROFILE')
             if self._profile == "" or self._profile is None:
@@ -49,7 +49,7 @@ class FileAWSCredentials(Provider):
             session_token = ini_profile.get(self._profile, 'aws_session_token')
         except:
             pass
-        
+
         if access_key == '' or secret == '':
             return Value()
 

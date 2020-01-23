@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015,2016 MinIO, Inc.
+# (C) 2015-2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ class MockResponse(object):
     # dummy release connection call.
     def release_conn(self):
         return
-    
+
     def __getitem__(self, key):
         if key == "status":
             return self.status

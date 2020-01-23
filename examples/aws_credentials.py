@@ -18,16 +18,16 @@
 # The default AWS metadata service can be found at:
 #   -> 169.254.169.254/latest/meta-data/iam/security-credentials
 #
-# If you wish to retieve credentials from a different place you can provide 
+# If you wish to retrieve credentials from a different place you can provide
 # the 'endpoint' paramater to the IamEc2MetaData credentials object
 
 from minio.credentials import IamEc2MetaData
 
 # Initialize Minio with IamEc2MetaData default credentials object
-client = Minio('s3.amazonaws.com', 
+client = Minio('s3.amazonaws.com',
                credentials=IamEc2MetaData())
 
-# Initialize Minio with IamEc2MetaData custom 
+# Initialize Minio with IamEc2MetaData custom
 
-client = Minio('s3.amazonaws.com', 
+client = Minio('s3.amazonaws.com',
                credentials=IamEc2MetaData(endpoint='custom.endpoint'))
