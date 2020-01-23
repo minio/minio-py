@@ -55,9 +55,15 @@ MAX_POOL_SIZE = 10
 MIN_PART_SIZE = 5 * 1024 * 1024  # 5MiB
 DEFAULT_PART_SIZE = MIN_PART_SIZE  # Currently its 5MiB
 
-_VALID_BUCKETNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\\.\\-]+[a-z0-9]$')
+_VALID_BUCKETNAME_REGEX = re.compile(
+    '^[A-Za-z0-9][A-Za-z0-9\\.\\-\\_\\:]{1,61}[A-Za-z0-9]$')
+_VALID_BUCKETNAME_STRICT_REGEX = re.compile(
+    '^[a-z0-9][a-z0-9\\.\\-]{1,61}[a-z0-9]$')
+_VALID_IP_ADDRESS = re.compile(
+    '^(\d+\.){3}\d+$')
 _ALLOWED_HOSTNAME_REGEX = re.compile(
-    '^((?!-)(?!_)[A-Z_\\d-]{1,63}(?<!-)(?<!_)\\.)*((?!_)(?!-)[A-Z_\\d-]{1,63}(?<!-)(?<!_))$',
+    '^((?!-)(?!_)[A-Z_\\d-]{1,63}(?<!-)(?<!_)\\.)*((?!_)(?!-)' +
+    '[A-Z_\\d-]{1,63}(?<!-)(?<!_))$',
     re.IGNORECASE)
 
 _EXTRACT_REGION_REGEX = re.compile('s3[.-]?(.+?).amazonaws.com')
@@ -328,7 +334,7 @@ def is_virtual_host(endpoint_url, bucket_name):
     :param endpoint_url: Endpoint url which will be used for virtual host.
     :param bucket_name: Bucket name to be validated against.
     """
-    is_valid_bucket_name(bucket_name)
+    is_valid_bucket_name(bucket_name, False)
 
     parsed_url = urlsplit(endpoint_url)
     # bucket_name can be valid but '.' in the hostname will fail
@@ -341,7 +347,7 @@ def is_virtual_host(endpoint_url, bucket_name):
             return True
     return False
 
-def is_valid_bucket_name(bucket_name):
+def is_valid_bucket_name(bucket_name, strict):
     """
     Check to see if the ``bucket_name`` complies with the
     restricted DNS naming conventions necessary to allow
@@ -351,16 +357,33 @@ def is_valid_bucket_name(bucket_name):
     :return: True if the bucket is valid. Raise :exc:`InvalidBucketError`
        otherwise.
     """
+    # Verify bucket name is not empty
+    bucket_name = str(bucket_name).strip()
+    if bucket_name == '':
+        raise InvalidBucketError('Bucket name cannot be empty.')
+
     # Verify bucket name length.
     if len(bucket_name) < 3:
         raise InvalidBucketError('Bucket name cannot be less than'
                                  ' 3 characters.')
     if len(bucket_name) > 63:
-        raise InvalidBucketError('Bucket name cannot be more than'
+        raise InvalidBucketError('Bucket name cannot be greater than'
                                  ' 63 characters.')
-    if '..' in bucket_name:
-        raise InvalidBucketError('Bucket name cannot have successive'
-                                 ' periods.')
+
+    match = _VALID_IP_ADDRESS.match(bucket_name)
+    if match:
+        raise InvalidBucketError('Bucket name cannot be an ip address')
+
+    unallowed_successive_chars = ['..', '.-', '-.']
+    if any(x in bucket_name for x in unallowed_successive_chars):
+        raise InvalidBucketError('Bucket name contains invalid '
+                'successive chars ' + str(unallowed_successive_chars) + '.')
+
+    if strict:
+        match = _VALID_BUCKETNAME_STRICT_REGEX.match(bucket_name)
+        if match is None or match.end() != len(bucket_name):
+            raise InvalidBucketError('Bucket name contains invalid '
+                                     'characters (strictly enforced).')
 
     match = _VALID_BUCKETNAME_REGEX.match(bucket_name)
     if match is None or match.end() != len(bucket_name):

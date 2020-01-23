@@ -38,7 +38,7 @@ class StatObject(TestCase):
     @raises(InvalidBucketError)
     def test_stat_object_invalid_name(self):
         client = Minio('localhost:9000')
-        client.stat_object('ABCD', 'world')
+        client.stat_object('AB#CD', 'world')
 
     @mock.patch('urllib3.PoolManager')
     def test_stat_object_works(self, mock_connection):

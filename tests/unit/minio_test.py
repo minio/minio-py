@@ -28,23 +28,23 @@ from minio.helpers import (get_target_url, is_valid_bucket_name,
 class ValidBucketName(TestCase):
     @raises(InvalidBucketError)
     def test_bucket_name(self):
-        is_valid_bucket_name('bucketName')
+        is_valid_bucket_name('bucketName=', False)
 
     @raises(InvalidBucketError)
     def test_bucket_name_invalid_characters(self):
-        is_valid_bucket_name('$$$bcuket')
+        is_valid_bucket_name('$$$bcuket', False)
 
     @raises(InvalidBucketError)
     def test_bucket_name_length(self):
-        is_valid_bucket_name('dd')
+        is_valid_bucket_name('dd', False)
 
     @raises(InvalidBucketError)
     def test_bucket_name_periods(self):
-        is_valid_bucket_name('dd..mybucket')
+        is_valid_bucket_name('dd..mybucket', False)
 
     @raises(InvalidBucketError)
     def test_bucket_name_begins_period(self):
-        is_valid_bucket_name('.ddmybucket')
+        is_valid_bucket_name('.ddmybucket', False)
 
 class GetURLTests(TestCase):
     def test_get_target_url_works(self):
