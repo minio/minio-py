@@ -18,7 +18,7 @@
 
 from minio.credentials import Chain, EnvAWS, EnvMinio, IamEc2MetaData
 
-client = Minio('s3.amazonaws.com', 
+client = Minio('s3.amazonaws.com',
                credentials=Chain(
                    providers=[
                        IamEc2MetaData(),

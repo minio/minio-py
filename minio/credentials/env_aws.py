@@ -29,7 +29,7 @@ class EnvAWS(Provider):
         access_key = os.environ.get('AWS_ACCESS_KEY_ID')
         if access_key == "":
             access_key = os.environ.get('AWS_ACCESS_KEY')
-        
+
         secret = os.environ.get('AWS_SECRET_ACCESS_KEY')
         if secret == "":
             secret = os.environ.get('AWS_SECRET_KEY')

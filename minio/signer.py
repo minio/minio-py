@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015-2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -146,7 +147,7 @@ def presign_v4(method, url, credentials,
                                                    content_hash_hex)
     string_to_sign = generate_string_to_sign(request_date, region,
                                              canonical_request)
-    signing_key = generate_signing_key(request_date, region, 
+    signing_key = generate_signing_key(request_date, region,
                                        credentials.get().secret_key)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()

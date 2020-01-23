@@ -37,13 +37,13 @@ class FileMinioClient(Provider):
             self._alias = os.environ.get('MINIO_ALIAS')
             if self._alias == "" or self._alias is None:
                 self._alias = "s3"
-        
+
         self._retrieved = False
 
         config = open(self._filename, 'r')
         doc = json.load(config)
         creds = doc['hosts'][self._alias]
-        
+
         access_key = creds['accessKey']
         secret_key = creds['secretKey']
 

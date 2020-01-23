@@ -32,7 +32,7 @@ class EnvMinio(Provider):
         secret = os.environ.get('MINIO_SECRET_KEY')
 
         self._retrieved = True
-        
+
         return Value(
             access_key=id,
             secret_key=secret
