@@ -15,7 +15,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [2.7, 3.6, 3.7]
+        python-version: [2.7, 3.6, 3.7, 3.8]
         os: [windows-latest]
 
     steps:
