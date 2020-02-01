@@ -144,6 +144,13 @@ class Minio(object):
     :param timeout: Set this value to control how long requests
          are allowed to run before being aborted.
     :return: :class:`Minio <Minio>` object
+
+    **NOTE on concurrent usage:** The `Minio` object is thread safe when using
+    the Python `threading` library. Specifically, it is **NOT** safe to share
+    it between multiple processes, for example when using
+    `multiprocessing.Pool`. The solution is simply to create a new `Minio`
+    object in each process, and not share it between processes.
+
     """
     def __init__(self, endpoint, access_key=None,
                  secret_key=None,
