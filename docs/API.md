@@ -64,6 +64,8 @@ __Parameters__
 | `region`  |_string_ | Set this value to override automatic bucket location discovery. (Optional defaults to `None`). |
 | `http_client` |_urllib3.poolmanager.PoolManager_ | Set this value to use custom http client instead of using default http client. (Optional defaults to `None`) |
 
+**NOTE on concurrent usage:** The `Minio` object is thread safe when using the Python `threading` library. Specifically, it is **NOT** safe to share it between multiple processes, for example when using `multiprocessing.Pool`. The solution is simply to create a new `Minio` object in each process, and not share it between processes.
+
 __Example__
 
 ### MinIO

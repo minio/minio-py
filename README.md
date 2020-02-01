@@ -51,6 +51,8 @@ minioClient = Minio('play.min.io',
                   secure=True)
 ```
 
+**NOTE on concurrent usage:** The `Minio` object is thread safe when using the Python `threading` library. Specifically, it is **NOT** safe to share it between multiple processes, for example when using `multiprocessing.Pool`. The solution is simply to create a new `Minio` object in each process, and not share it between processes.
+
 
 ## Quick Start Example - File Uploader
 This example program connects to a MinIO object storage server, makes a bucket on the server and then uploads a file to the bucket.
