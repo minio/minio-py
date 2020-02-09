@@ -60,7 +60,7 @@ _VALID_BUCKETNAME_REGEX = re.compile(
 _VALID_BUCKETNAME_STRICT_REGEX = re.compile(
     '^[a-z0-9][a-z0-9\\.\\-]{1,61}[a-z0-9]$')
 _VALID_IP_ADDRESS = re.compile(
-    '^(\d+\.){3}\d+$')
+    r'^(\d+\.){3}\d+$')
 _ALLOWED_HOSTNAME_REGEX = re.compile(
     '^((?!-)(?!_)[A-Z_\\d-]{1,63}(?<!-)(?<!_)\\.)*((?!_)(?!-)' +
     '[A-Z_\\d-]{1,63}(?<!-)(?<!_))$',
