@@ -38,7 +38,6 @@ import json
 import os
 import itertools
 
-
 try:
     from json.decoder import JSONDecodeError
 except ImportError:
@@ -76,7 +75,7 @@ from .helpers import (get_target_url, is_non_empty_string,
                       is_valid_source_sse_object,
                       is_valid_bucket_notification_config, is_valid_policy_type,
                       mkdir_p, dump_http, amzprefix_user_metadata,
-                      is_supported_header,is_amz_header)
+                      is_supported_header, is_amz_header)
 from .helpers import (MAX_PART_SIZE,
                       MAX_POOL_SIZE,
                       MIN_PART_SIZE,
@@ -90,7 +89,9 @@ from .xml_marshal import (xml_marshal_bucket_constraint,
                           xml_marshal_complete_multipart_upload,
                           xml_marshal_bucket_notifications,
                           xml_marshal_delete_objects,
-                          xml_marshal_select)
+                          xml_marshal_select,
+                          xml_marshal_bucket_encryption,
+                          xml_to_dict)
 from .fold_case_dict import FoldCaseDict
 from .thread_pool import ThreadPool
 from .select import SelectObjectReader
@@ -578,6 +579,85 @@ class Minio(object):
             content_sha256=content_sha256_hex
         )
 
+    # put_bucket_encryption sets default encryption configuration on an existing bucket.
+    def put_bucket_encryption(self, bucket_name, enc_config):
+        """
+        Set default encryption configuration on a given bucket.
+
+        :param bucket_name: Bucket name.
+        :param enc_config: Default encryption configuration in dictionary format.
+        """
+        is_valid_bucket_name(bucket_name, False)
+
+        # 'Rule' is a list, so we need to go through each one of
+        # its key/value pair and collect the encryption values.
+        rules = enc_config['ServerSideEncryptionConfiguration']['Rule']
+        rule_list = list()
+        if isinstance(rules, list):
+            for apply_enc in rules:
+                rule_list.append(apply_enc['ApplyServerSideEncryptionByDefault'])
+                # As soon as we get to the first default encryption setting,
+                # we break the loop. That is because, at this point, only
+                # a single 'Rule' entry is allowed/supported. This is a server
+                # side restriction and and it is validated on the server side.
+                break
+        elif isinstance(rules, dict):
+            # This check enables user to provide a single 'Rule' as a
+            # dictionary instead of a list.
+            # This is just an extra convenience.
+            rule_list.append(rules["ApplyServerSideEncryptionByDefault"])
+        else:
+            raise InvalidArgumentError(
+                'Encryption configuration must be a "dict" with a "list" type of "Rule"s'
+            )
+
+        enc_config_xml = xml_marshal_bucket_encryption(rules)
+
+        headers = {
+            'Content-Length': str(len(enc_config_xml)),
+            'Content-Md5': get_md5_base64digest(enc_config_xml)
+        }
+        content_sha256_hex = get_sha256_hexdigest(enc_config_xml)
+        self._url_open("PUT",
+                        bucket_name=bucket_name,
+                        query={"encryption": ""},
+                        headers=headers,
+                        body=enc_config_xml,
+                        content_sha256=content_sha256_hex
+                        )
+
+    def get_bucket_encryption(self, bucket_name):
+        """
+        Get default encryption configuration information on a given bucket.
+
+        :param bucket_name: Bucket name.
+        """
+        is_valid_bucket_name(bucket_name, False)
+
+        response = self._url_open(
+            "GET",
+            bucket_name=bucket_name,
+            query={"encryption": ""}
+        )
+        return xml_to_dict(response.data.decode('utf-8'))
+
+    def delete_bucket_encryption(self, bucket_name):
+        """
+        Remove default encryption configuration on a given bucket
+        This operation cannot be undone.
+        To set default encryption configuration on a bucket again,
+        you need to reuse ``set_bucket_encryption`` command.
+
+        :param bucket_name: Bucket name.
+        """
+        is_valid_bucket_name(bucket_name, False)
+
+        self._url_open(
+            'DELETE',
+            bucket_name=bucket_name,
+            query={"encryption": ""}
+        )
+
     def listen_bucket_notification(self, bucket_name, prefix='', suffix='',
                                    events=['s3:ObjectCreated:*',
                                            's3:ObjectRemoved:*',
@@ -727,7 +807,7 @@ class Minio(object):
 
         #Delete existing file to be compatible with Windows
         if os.path.exists(file_path):
-               os.remove(file_path)
+            os.remove(file_path)
         #Rename with destination file path
         os.rename(file_part_path, file_path)
 

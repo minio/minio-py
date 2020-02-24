@@ -29,9 +29,69 @@ from __future__ import absolute_import
 import io
 
 from xml.etree import ElementTree as s3_xml
+from collections import defaultdict
 
 _S3_NAMESPACE = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
+def xml_to_dict(in_xml):
+    # Converts xml to dict
+    elem = s3_xml.XML(in_xml)
+    return etree_to_dict(elem)
+
+def etree_to_dict(elem):
+    # Converts ElementTree object to dict
+    ns = '{' + _S3_NAMESPACE + '}'
+    elem.tag = elem.tag.replace(ns, '')
+
+    d = {elem.tag: {} if elem.attrib else None}
+    children = list(elem)
+    if children:
+        dd = defaultdict(list)
+        if children[0].tag.replace(ns, '') == 'Rule':
+            for dc in map(etree_to_dict, children):
+                for k, v in dc.items():
+                    dd[k].append([v])
+        else:
+            for dc in map(etree_to_dict, children):
+                for k, v in dc.items():
+                    dd[k].append(v)
+        d = {elem.tag: {k:v[0] if len(v) == 1 else v for k, v in dd.items()}}
+    if elem.attrib:
+        d[elem.tag].update(('@' + k, v) for k, v in elem.attrib.items())
+    if elem.text:
+        text = elem.text.strip()
+        if children or elem.attrib:
+            if text:
+                d[elem.tag]['#text'] = text
+        else:
+            d[elem.tag] = text
+    return d
+
+def xml_marshal_bucket_encryption(rules):
+    kms_key_val = ''
+    sse_alg_val = 'AES256'
+    root = s3_xml.Element('ServerSideEncryptionConfiguration')
+    for r in rules:
+        rule_xml = s3_xml.SubElement(root, 'Rule')
+        apply_xml = s3_xml.SubElement(rule_xml, 'ApplyServerSideEncryptionByDefault')
+        if 'KMSMasterKeyID' in r['ApplyServerSideEncryptionByDefault'].keys():
+            kms_key_val = r['ApplyServerSideEncryptionByDefault']['KMSMasterKeyID']
+        if 'SSEAlgorithm' in r['ApplyServerSideEncryptionByDefault'].keys():
+            sse_alg_val = r['ApplyServerSideEncryptionByDefault']['SSEAlgorithm']
+        if kms_key_val != '':
+            kms = s3_xml.SubElement(apply_xml, 'KMSMasterKeyID')
+            kms.text = kms_key_val
+        sse = s3_xml.SubElement(apply_xml, 'SSEAlgorithm')
+        sse.text = sse_alg_val
+        # 'break' the loop as soon as the first entry in the list is
+        # processed. That is because, 'Rule" list cannot have more than
+        # one entry for the time-being, even if there are more entries
+        # in the list. This is a server side restriction and it is
+        # validated on the server side.
+        break
+    data = io.BytesIO()
+    s3_xml.ElementTree(root).write(data, encoding=None, xml_declaration=False)
+    return data.getvalue()
 
 def xml_marshal_bucket_constraint(region):
     """

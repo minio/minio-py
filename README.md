@@ -127,6 +127,12 @@ The full API Reference is available here.
 * [`remove_all_bucket_notification`](https://docs.min.io/docs/python-client-api-reference#remove_all_bucket_notification)
 * [`listen_bucket_notification`](https://docs.min.io/docs/python-client-api-reference#listen_bucket_notification)
 
+### API Reference : Default bucket encryption configuration Operations
+
+* [`put_bucket_encryption`](https://docs.min.io/docs/python-client-api-reference#put_bucket_encryption)
+* [`get_bucket_encryption`](https://docs.min.io/docs/python-client-api-reference#get_bucket_encryption)
+* [`delete_bucket_encryption`](https://docs.min.io/docs/python-client-api-reference#delete_bucket_encryption)
+
 ### API Reference : File Object Operations
 
 * [`fput_object`](https://docs.min.io/docs/python-client-api-reference#fput_object)
@@ -171,6 +177,12 @@ The full API Reference is available here.
 * [get_bucket_notification.py](https://github.com/minio/minio-py/blob/master/examples/get_bucket_notification.py)
 * [remove_all_bucket_notification.py](https://github.com/minio/minio-py/blob/master/examples/remove_all_bucket_notification.py)
 * [listen_bucket_notification.py](https://github.com/minio/minio-py/blob/master/examples/listen_notification.py)
+
+#### Full Examples: Default bucket encryption configuration Operations
+
+* [put_bucket_encryption.py](https://github.com/minio/minio-py/blob/master/examples/put_bucket_encryption.py)
+* [get_bucket_encryption.py](https://github.com/minio/minio-py/blob/master/examples/get_bucket_encryption.py)
+* [delete_bucket_encryption.py](https://github.com/minio/minio-py/blob/master/examples/delete_bucket_encryption.py)
 
 #### Full Examples : File Object Operations
 

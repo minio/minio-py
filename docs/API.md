@@ -26,9 +26,7 @@ s3Client = Minio('s3.amazonaws.com',
                  secure=True)
 ```
 
-
-
-| Bucket operations                                     | Object operations                                       | Presigned operations                              | Bucket policy/notification operations                               |
+| Bucket operations                                     | Object operations                                       | Presigned operations                              | Bucket policy/notification/encryption operations                    |
 |:------------------------------------------------------|:--------------------------------------------------------|:--------------------------------------------------|:--------------------------------------------------------------------|
 | [`make_bucket`](#make_bucket)                         | [`get_object`](#get_object)                             | [`presigned_get_object`](#presigned_get_object)   | [`get_bucket_policy`](#get_bucket_policy)                           |
 | [`list_buckets`](#list_buckets)                       | [`put_object`](#put_object)                             | [`presigned_put_object`](#presigned_put_object)   | [`set_bucket_policy`](#set_bucket_policy)                           |
@@ -36,15 +34,16 @@ s3Client = Minio('s3.amazonaws.com',
 | [`remove_bucket`](#remove_bucket)                     | [`stat_object`](#stat_object)                           |                                                   | [`set_bucket_notification`](#set_bucket_notification)               |
 | [`list_objects`](#list_objects)                       | [`remove_object`](#remove_object)                       |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
 | [`list_objects_v2`](#list_objects_v2)                 | [`remove_objects`](#remove_objects)                     |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
-| [`list_incomplete_uploads`](#list_incomplete_uploads) | [`remove_incomplete_upload`](#remove_incomplete_upload) |                                                   |                                                                     |
-|                                                       | [`fput_object`](#fput_object)                           |                                                   |                                                                     |
-|                                                       | [`fget_object`](#fget_object)                           |                                                   |                                                                     |
+| [`list_incomplete_uploads`](#list_incomplete_uploads) | [`remove_incomplete_upload`](#remove_incomplete_upload) |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
+|                                                       | [`fput_object`](#fput_object)                           |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
+|                                                       | [`fget_object`](#fget_object)                           |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
 |                                                       | [`get_partial_object`](#get_partial_object)             |                                                   |                                                                     |
 |                                                       | [`select_object_content`](#select_object_content)       |                                                   |                                                                     |
 
 ## 1. Constructor
 
 <a name="MinIO"></a>
+
 ### Minio(endpoint, access_key=None, secret_key=None, secure=True, region=None, http_client=None)
 
 |   |
@@ -53,7 +52,6 @@ s3Client = Minio('s3.amazonaws.com',
 | Initializes a new client object.  |
 
 __Parameters__
-
 
 | Param  |  Type | Description  |
 |:---|:---|:---|
@@ -115,7 +113,9 @@ s3Client = Minio('s3.amazonaws.com',
 ## 2. Bucket operations
 
 <a name="make_bucket"></a>
+
 ### make_bucket(bucket_name, location='us-east-1')
+
 Creates a new bucket.
 
 __Parameters__
@@ -146,7 +146,9 @@ except ResponseError as err:
 ```
 
 <a name="list_buckets"></a>
+
 ### list_buckets()
+
 Lists all buckets.
 
 __Parameters__
@@ -166,7 +168,9 @@ for bucket in buckets:
 ```
 
 <a name="bucket_exists"></a>
+
 ### bucket_exists(bucket_name)
+
 Checks if a bucket exists.
 
 __Parameters__
@@ -185,7 +189,9 @@ except ResponseError as err:
 ```
 
 <a name="remove_bucket"></a>
+
 ### remove_bucket(bucket_name)
+
 Removes a bucket.
 
 __Parameters__
@@ -204,7 +210,9 @@ except ResponseError as err:
 ```
 
 <a name="list_objects"></a>
+
 ### list_objects(bucket_name, prefix=None, recursive=False)
+
 Lists objects in a bucket.
 
 __Parameters__
@@ -242,7 +250,9 @@ for obj in objects:
 ```
 
 <a name="list_objects_v2"></a>
+
 ### list_objects_v2(bucket_name, prefix=None, recursive=False)
+
 Lists objects in a bucket using the Version 2 API.
 
 __Parameters__
@@ -281,7 +291,9 @@ for obj in objects:
 ```
 
 <a name="list_incomplete_uploads"></a>
+
 ### list_incomplete_uploads(bucket_name, prefix, recursive=False)
+
 Lists partially uploaded objects in a bucket.
 
 __Parameters__
@@ -306,7 +318,6 @@ __Return Value__
 
 __Example__
 
-
 ```py
 # List all object paths in bucket that begin with my-prefixname.
 uploads = minioClient.list_incomplete_uploads('mybucket',
@@ -317,7 +328,9 @@ for obj in uploads:
 ```
 
 <a name="get_bucket_policy"></a>
+
 ### get_bucket_policy(bucket_name)
+
 Gets current policy of a bucket.
 
 __Parameters__
@@ -334,7 +347,6 @@ __Return Value__
 
 __Example__
 
-
 ```py
 # Get current policy of all object paths in bucket "mybucket".
 policy = minioClient.get_bucket_policy('mybucket')
@@ -342,6 +354,7 @@ print(policy)
 ```
 
 <a name="set_bucket_policy"></a>
+
 ### set_bucket_policy(bucket_name, policy)
 
 Set a bucket policy for a specified bucket.
@@ -353,9 +366,7 @@ __Parameters__
 |``bucket_name``  | _string_  |Name of the bucket.|
 |``Policy``   | _string_ | Bucket policy in JSON format.|
 
-
 __Example__
-
 
 ```py
 # Set bucket policy to read only to all object paths in bucket.
@@ -384,11 +395,11 @@ policy_read_only = {"Version":"2012-10-17",
                         }
                     ]}
 
-
 minioClient.set_bucket_policy('mybucket', json.dumps(policy_read_only))
 ```
 
 <a name="get_bucket_notification"></a>
+
 ### get_bucket_notification(bucket_name)
 
 Fetch the notifications configuration on a bucket.
@@ -407,7 +418,6 @@ __Return Value__
 
 __Example__
 
-
 ```py
 # Get the notifications configuration for a bucket.
 notification = minioClient.get_bucket_notification('mybucket')
@@ -416,6 +426,7 @@ notification = minioClient.get_bucket_notification('mybucket')
 ```
 
 <a name="set_bucket_notification"></a>
+
 ### set_bucket_notification(bucket_name, notification)
 
 Set notification configuration on a bucket.
@@ -473,7 +484,6 @@ The "service configuration item" alluded to above has the following structure:
           * __Value__ (string) -- Specify the value of the
             prefix/suffix to which the rule applies.
 
-
 There is no return value. If there are errors from the target
 server/service, a `ResponseError` is thrown. If there are validation
 errors, `InvalidArgumentError` or `TypeError` may be thrown. The input
@@ -482,7 +492,6 @@ configuration on a bucket, use the `remove_all_bucket_notification()`
 API.
 
 __Example__
-
 
 ```py
 notification = {
@@ -537,7 +546,6 @@ notification = {
     ]
 }
 
-
 try:
     minioClient.set_bucket_notification('mybucket', notification)
 except ResponseError as err:
@@ -549,6 +557,7 @@ except (ArgumentError, TypeError) as err:
 ```
 
 <a name="remove_all_bucket_notification"></a>
+
 ### remove_all_bucket_notification(bucket_name)
 
 Remove all notifications configured on the bucket.
@@ -564,13 +573,13 @@ the operation did not complete successfully.
 
 __Example__
 
-
 ```py
 # Remove all the notifications config for a bucket.
 minioClient.remove_all_bucket_notification('mybucket')
 ```
 
 <a name="listen_bucket_notification"></a>
+
 ### listen_bucket_notification(bucket_name, prefix, suffix, events)
 
 Listen for notifications on a bucket. Additionally one can provide
@@ -604,9 +613,93 @@ for event in events:
     print event
 ```
 
+<a name="get_bucket_encryption"></a>
+
+### get_bucket_encryption(bucket_name)
+
+Get default encryption configuration set on a bucket.
+
+__Parameters__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``bucket_name``   | _string_  |Name of the bucket.|
+
+__Return Value__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``encryption_configuration``    |  _dict_ | Default encryption configuration in dictionary format.|
+
+__Example__
+
+```py
+# Get the default encryption configuration set on bucket, "mybucket".
+encryption = minioClient.get_bucket_encryption('mybucket')
+print(encryption)
+```
+
+<a name="put_bucket_encryption"></a>
+
+### put_bucket_encryption(bucket_name, encryption_configuration)
+
+Put/Set default encryption configuration for a specified bucket.
+
+__Parameters__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``bucket_name``  | _string_  |Name of the bucket.|
+|``encryption_configuration``   | _dict_ | Default encryption configuration in dictionary format.|
+
+__Example__
+
+```py
+# Sample default encryption configuration
+ENC_CONFIG = {
+    'ServerSideEncryptionConfiguration':{
+        'Rule': [
+            {'ApplyServerSideEncryptionByDefault': {'SSEAlgorithm': 'AES256'}}
+        ]
+    }
+}
+try:
+    minioClient.put_bucket_encryption('mybucket', ENC_CONFIG)
+except ResponseError as err:
+    print(err)
+```
+
+<a name="delete_bucket_encryption"></a>
+
+### delete_bucket_encryption(bucket_name)
+
+Remove default encryption configuration on a bucket
+
+__Parameters__
+
+|Param   |Type   |Description   |
+|:---|:---|:---|
+|``bucket_name``   | _string_  |Name of the bucket.|
+
+There is no returned value. A `ResponseError` exception is thrown if
+the operation did not complete successfully.
+
+__Example__
+
+```py
+# Remove default encryption configuration set on bucket, "mybucket".
+try:
+    minioClient.delete_bucket_encryption('mybucket')
+except ResponseError as err:
+    print(err)
+```
+
 ## 3. Object operations
+
 <a name="get_object"></a>
+
 ### get_object(bucket_name, object_name, request_headers=None)
+
 Downloads an object.
 
 __Parameters__
@@ -626,7 +719,6 @@ __Return Value__
 
 __Example__
 
-
 ```py
 # Get a full object.
 try:
@@ -639,7 +731,9 @@ except ResponseError as err:
 ```
 
 <a name="get_partial_object"></a>
+
 ### get_partial_object(bucket_name, object_name, offset=0, length=0, request_headers=None)
+
 Downloads the specified range bytes of an object.
 
 __Parameters__
@@ -673,7 +767,9 @@ except ResponseError as err:
 ```
 
 <a name="select_object_content"></a>
+
 ### select_object_content(bucket_name, object_name, options)
+
 Select object content filters the contents of object based on a simple structured query language (SQL).
 
 __Parameters__
@@ -684,16 +780,13 @@ __Parameters__
 |``object_name``   |_string_   |Name of the object.   |
 |``options`` | _SelectObjectOptions_ | Query Options   |
 
-
 __Return Value__
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
 |``obj``| _SelectObjectReader_  |Select_object_reader object.  |
 
-
 __Example__
-
 
 ```py
 client = Minio('s3.amazonaws.com',
@@ -745,11 +838,12 @@ except ResponseError as err:
 ```
 
 <a name="fget_object"></a>
+
 ### fget_object(bucket_name, object_name, file_path, request_headers=None)
+
 Downloads and saves the object as a file in the local filesystem.
 
 __Parameters__
-
 
 |Param   |Type   |Description   |
 |:---|:---|:---|
@@ -784,7 +878,9 @@ except ResponseError as err:
 ```
 
 <a name="copy_object"></a>
+
 ### copy_object(bucket_name, object_name, object_source, copy_conditions=None, metadata=None)
+
  Copy a source object on object storage server to a new object.
 
  NOTE: Maximum object size supported by this API is 5GB.
@@ -800,7 +896,6 @@ __Parameters__
 |``source_sse`` |_dict_   |Server-Side Encryption headers for source object (optional, defaults to None).   |
 |``sse`` |_dict_   |Server-Side Encryption headers for destination object (optional, defaults to None).   |
 |``metadata`` |_dict_   |User defined metadata to be copied with the destination object (optional, defaults to None).   |
-
 
 __Example__
 
@@ -839,7 +934,9 @@ except ResponseError as err:
 ```
 
 <a name="put_object"></a>
+
 ### put_object(bucket_name, object_name, data, length, content_type='application/octet-stream', metadata=None,  progress=None, part_size=5*1024*1024)
+
 Add a new object to the object storage server. If provided metadata key is not one of the valid/supported metadata names, the metadata information is saved with prefix `X-Amz-Meta-` prepended to the original metadata key name.
 
 NOTE: Maximum object size supported by this API is 5TiB.
@@ -891,7 +988,9 @@ except ResponseError as err:
 ```
 
 <a name="fput_object"></a>
+
 ### fput_object(bucket_name, object_name, file_path, content_type='application/octet-stream', metadata=None, progress=None, part_size=5*1024*1024)
+
 Uploads contents from a file, `file_path`, to `object_name`. If provided metadata key is not one of the valid/supported metadata names, the metadata information is saved with prefix `X-Amz-Meta-` prepended to the original metadata key name.
 
 __Parameters__
@@ -935,7 +1034,9 @@ except ResponseError as err:
 ```
 
 <a name="stat_object"></a>
+
 ### stat_object(bucket_name, object_name)
+
 Gets metadata of an object. If provided metadata key is not one of the valid/supported metadata names when the object was put/fput, the metadata information is saved with prefix `X-Amz-Meta-` prepended to the original metadata key name. So, the metadata returned by stat_object api will be presented with the original metadata key name prepended with `X-Amz-Meta-`.
 
 __Parameters__
@@ -960,9 +1061,7 @@ __Return Value__
 |``obj.last_modified``|_time.time_  | modified time in UTC.|
 |``obj.metadata`` |_dict_ | Contains any additional metadata on the object. |
 
-
 __Example__
-
 
 ```py
 # Fetch stats on your object.
@@ -973,7 +1072,9 @@ except ResponseError as err:
 ```
 
 <a name="remove_object"></a>
+
 ### remove_object(bucket_name, object_name)
+
 Removes an object.
 
 __Parameters__
@@ -985,7 +1086,6 @@ __Parameters__
 
 __Example__
 
-
 ```py
 # Remove an object.
 try:
@@ -995,7 +1095,9 @@ except ResponseError as err:
 ```
 
 <a name="remove_objects"></a>
+
 ### remove_objects(bucket_name, objects_iter)
+
 Removes multiple objects in a bucket.
 
 __Parameters__
@@ -1031,7 +1133,6 @@ structure:
 
 __Example__
 
-
 ```py
 # Remove multiple objects in a single library call.
 try:
@@ -1045,7 +1146,9 @@ except ResponseError as err:
 ```
 
 <a name="remove_incomplete_upload"></a>
+
 ### remove_incomplete_upload(bucket_name, object_name)
+
 Removes a partially uploaded object.
 
 __Parameters__
@@ -1056,7 +1159,6 @@ __Parameters__
 |``object_name``   |_string_   |Name of the object.   |
 
 __Example__
-
 
 ```py
 # Remove an partially uploaded object.
@@ -1069,7 +1171,9 @@ except ResponseError as err:
 ## 4. Presigned operations
 
 <a name="presigned_get_object"></a>
+
 ### presigned_get_object(bucket_name, object_name, expires=timedelta(days=7))
+
 Generates a presigned URL for HTTP GET operations. Browsers/Mobile clients may point to this URL to directly download objects even if the bucket is private. This presigned URL can have an associated expiration time in seconds after which it is no longer operational. The default expiry is set to 7 days.
 
 __Parameters__
@@ -1084,7 +1188,6 @@ __Parameters__
 
 __Example__
 
-
 ```py
 from datetime import timedelta
 
@@ -1097,11 +1200,12 @@ except ResponseError as err:
 ```
 
 <a name="presigned_put_object"></a>
+
 ### presigned_put_object(bucket_name, object_name, expires=timedelta(days=7))
+
 Generates a presigned URL for HTTP PUT operations. Browsers/Mobile clients may point to this URL to upload objects directly to a bucket even if it is private. This presigned URL can have an associated expiration time in seconds after which it is no longer operational. The default expiry is set to 7 days.
 
 NOTE: you can upload to S3 only with specified object name.
-
 
 __Parameters__
 
@@ -1128,7 +1232,9 @@ except ResponseError as err:
 ```
 
 <a name="presigned_post_policy"></a>
+
 ### presigned_post_policy(PostPolicy)
+
 Allows setting policy conditions to a presigned URL for POST operations. Policies such as bucket name to receive object uploads, key name prefixes, expiry policy may be set.
 
 Create policy:
@@ -1164,7 +1270,6 @@ except ResponseError as err:
 ```
 
 POST your content from the command line using `curl`:
-
 
 ```py
 curl_str = 'curl -X POST {0}'.format(signed_form_data[0])
