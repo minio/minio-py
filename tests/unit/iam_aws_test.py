@@ -20,15 +20,13 @@ from unittest import TestCase
 from minio.credentials.aws_iam import IamEc2MetaData
 from nose.tools import eq_
 
-class TestIamEc2MetaData(TestCase):
-    @mock.patch('urllib3.PoolManager.urlopen')
-    def test_iam(self, mock_connection):
-        # get provider
-        mock_cred_list = {
-            "status" : 200,
-            "data" : "test-s3-full-access-for-minio-ec2"
-        }
-        request_cred_data = json.dumps({
+class CredListResponse(object):
+    status = 200
+    data = b'test-s3-full-access-for-minio-ec2'
+
+class CredsResponse(object):
+    status = 200
+    data = json.dumps({
             "Code" : 'Success',
             "Type" : 'AWS-HMAC',
             "AccessKeyId" : 'accessKey',
@@ -37,11 +35,12 @@ class TestIamEc2MetaData(TestCase):
             "Expiration" : '2014-12-16T01:51:37Z',
             "LastUpdated" : '2009-11-23T0:00:00Z'
         })
-        mock_request_cred = {
-            "status" : 200,
-            "data": request_cred_data
-        }
-        mock_connection.side_effect = [mock_cred_list, mock_request_cred]
+
+class TestIamEc2MetaData(TestCase):
+    @mock.patch('urllib3.PoolManager.urlopen')
+    def test_iam(self, mock_connection):
+        # get provider
+        mock_connection.side_effect = [CredListResponse(), CredsResponse()]
         provider = IamEc2MetaData()
         # retrieve credentials
         creds = provider.retrieve()
