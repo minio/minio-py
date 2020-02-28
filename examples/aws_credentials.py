@@ -21,13 +21,17 @@
 # If you wish to retrieve credentials from a different place you can provide
 # the 'endpoint' paramater to the IamEc2MetaData credentials object
 
-from minio.credentials import IamEc2MetaData
+from minio import Minio
+from minio.credentials import IamEc2MetaData, Credentials
 
 # Initialize Minio with IamEc2MetaData default credentials object
 client = Minio('s3.amazonaws.com',
-               credentials=IamEc2MetaData())
+               credentials=Credentials(
+                   provider=IamEc2MetaData()
+               ))
 
 # Initialize Minio with IamEc2MetaData custom
-
 client = Minio('s3.amazonaws.com',
-               credentials=IamEc2MetaData(endpoint='custom.endpoint'))
+               credentials=Credentials(
+                    provider=IamEc2MetaData(endpoint='custom.endpoint')
+               ))
