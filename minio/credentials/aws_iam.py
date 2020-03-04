@@ -47,7 +47,7 @@ class IamEc2MetaData(Provider):
         except:
             return None
         creds = res.data
-        return creds.decode("utf-8")
+        return creds.decode("utf-8").split('\n')
 
     def request_cred(self, creds_name):
         url = self._endpoint + self.iam_security_creds_path + "/" + creds_name
@@ -62,11 +62,12 @@ class IamEc2MetaData(Provider):
         return data
 
     def retrieve(self):
-        role_name = self.request_cred_list()
-        if role_name is None:
+        role_names = self.request_cred_list()
+        if not role_names:
             return Value()
 
-        role_creds = self.request_cred(role_name)
+        creds_name = role_names[0]
+        role_creds = self.request_cred(creds_name)
         expiration = datetime.datetime.strptime(role_creds['Expiration'], '%Y-%m-%dT%H:%M:%SZ')
         self._expiry.set_expiration(expiration, self.default_expiry_window)
 
