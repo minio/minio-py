@@ -42,31 +42,31 @@ class IamEc2MetaData(Provider):
         url = self._endpoint + self.iam_security_creds_path
         try:
             res = self._http_client.urlopen('GET', url)
-            if res['status'] != 200:
-                return []
+            if res.status != 200:
+                return None
         except:
-            return []
-        creds = res['data'].split('\n')
-        return creds
+            return None
+        creds = res.data
+        return creds.decode("utf-8").split('\n')
 
     def request_cred(self, creds_name):
         url = self._endpoint + self.iam_security_creds_path + "/" + creds_name
         res = self._http_client.urlopen('GET', url)
-        if res['status'] != 200:
+        if res.status != 200:
             raise ResponseError(res, 'GET')
 
-        data = json.loads(res['data'])
+        data = json.loads(res.data)
         if data['Code'] != 'Success':
             raise ResponseError(res)
 
         return data
 
     def retrieve(self):
-        creds_list = self.request_cred_list()
-        if len(creds_list) == 0:
+        role_names = self.request_cred_list()
+        if not role_names:
             return Value()
 
-        creds_name = creds_list[0]
+        creds_name = role_names[0]
         role_creds = self.request_cred(creds_name)
         expiration = datetime.datetime.strptime(role_creds['Expiration'], '%Y-%m-%dT%H:%M:%SZ')
         self._expiry.set_expiration(expiration, self.default_expiry_window)
