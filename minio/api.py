@@ -144,6 +144,8 @@ class Minio(object):
          location discovery.
     :param timeout: Set this value to control how long requests
          are allowed to run before being aborted.
+    :param cert_insecure: Set this value if you are using self signed certificate.
+        Default is False
     :return: :class:`Minio <Minio>` object
 
     **NOTE on concurrent usage:** The `Minio` object is thread safe when using
@@ -159,8 +161,8 @@ class Minio(object):
                  secure=True,
                  region=None,
                  http_client=None,
-                 credentials=None):
-
+                 credentials=None,
+                 cert_insecure=False):
         # Validate endpoint.
         is_valid_endpoint(endpoint)
 
@@ -211,6 +213,10 @@ class Minio(object):
                 )
             )
 
+        cert_reqs = 'CERT_REQUIRED'
+        if cert_insecure:
+            cert_reqs = 'CERT_NONE'
+
         # Load CA certificates from SSL_CERT_FILE file if set
         ca_certs = os.environ.get('SSL_CERT_FILE')
         if not ca_certs:
@@ -220,7 +226,7 @@ class Minio(object):
             self._http = urllib3.PoolManager(
                 timeout=urllib3.Timeout.DEFAULT_TIMEOUT,
                 maxsize=MAX_POOL_SIZE,
-                        cert_reqs='CERT_REQUIRED',
+                        cert_reqs=cert_reqs,
                         ca_certs=ca_certs,
                         retries=urllib3.Retry(
                             total=5,
