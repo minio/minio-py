@@ -31,8 +31,6 @@ import io
 import sys
 
 from binascii import crc32
-from xml.etree import cElementTree
-from xml.etree.cElementTree import ParseError
 
 from .helpers import (EVENT_RECORDS, EVENT_PROGRESS,
                       EVENT_STATS, EVENT_CONT,
@@ -41,6 +39,7 @@ from .helpers import (EVENT_RECORDS, EVENT_PROGRESS,
 
 from .helpers import (validate_crc, calculate_crc, byte_int)
 from .errors import (SelectMessageError, SelectCRCValidationError)
+from ..compat import cElementTree, ParseError
 
 def _extract_header(header_bytes):
     """

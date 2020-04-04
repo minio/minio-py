@@ -61,6 +61,9 @@ if _is_py2:
 
     ## Add missing imports
     basestring = basestring
+
+    from xml.etree import cElementTree
+    from xml.etree.cElementTree import ParseError
 elif _is_py3:
     from queue import Queue
     queue = Queue
@@ -90,6 +93,9 @@ elif _is_py3:
     bytes = bytes
     range = range
     str = str
+
+    from xml.etree import ElementTree as cElementTree
+    from xml.etree.ElementTree import ParseError
 
 numeric_types = (int, long, float)
 

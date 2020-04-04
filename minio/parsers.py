@@ -25,9 +25,6 @@ This module contains core API parsers.
 """
 
 # standard.
-from xml.etree import cElementTree
-from xml.etree.cElementTree import ParseError
-
 from datetime import datetime
 
 # dependencies.
@@ -35,7 +32,7 @@ import pytz
 
 # minio specific.
 from .error import (ETREE_EXCEPTIONS, InvalidXMLError, MultiDeleteError)
-from .compat import urldecode
+from .compat import cElementTree, ParseError, urldecode
 from .definitions import (Object, Bucket, IncompleteUpload,
                           UploadPart, MultipartUploadResult,
                           CopyObjectResult)

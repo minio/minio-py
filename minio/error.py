@@ -25,8 +25,7 @@ and API specific errors.
 :license: Apache 2.0, see LICENSE for more details.
 
 """
-from xml.etree import cElementTree
-from xml.etree.cElementTree import ParseError
+from .compat import cElementTree, ParseError
 
 if hasattr(cElementTree, 'ParseError'):
     ETREE_EXCEPTIONS = (ParseError, AttributeError, ValueError, TypeError)
