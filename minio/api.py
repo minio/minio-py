@@ -928,7 +928,7 @@ class Minio(object):
     def put_object(self, bucket_name, object_name, data, length,
                    content_type='application/octet-stream',
                    metadata=None, sse=None, progress=None,
-                   part_size=DEFAULT_PART_SIZE):
+                   part_size=DEFAULT_PART_SIZE,read_bytes=False):
         """
         Add a new object to the cloud storage server.
 
@@ -943,7 +943,7 @@ class Minio(object):
           does single Put operation.
         - For length larger than 5MB put_object automatically
           does resumable multipart operation.
-
+        :param read_bytes: if true, use directly bytes instead of data.read
         :param bucket_name: Bucket of new object.
         :param object_name: Name of new object.
         :param data: Contents to upload.
@@ -966,9 +966,12 @@ class Minio(object):
             # Set progress bar length and object name before upload
             progress.set_meta(total_length=length, object_name=object_name)
 
-        if not callable(getattr(data, 'read')):
+        if not read_bytes and not callable(getattr(data, 'read')):
             raise ValueError(
                 'Invalid input data does not implement a callable read() method')
+        if read_bytes:
+            if not isinstance(data, bytes):
+                raise InvalidArgumentError('data should be bytes')
 
         if length > (part_size * MAX_MULTIPART_COUNT):
             raise InvalidArgumentError('Part size * max_parts(10000) is '
@@ -989,6 +992,8 @@ class Minio(object):
 
         metadata['Content-Type'] = 'application/octet-stream' if \
             not content_type else content_type
+        if length > part_size and read_bytes:
+            raise InvalidArgumentError('partial upload not supported in read_bytes=True mode currently')
 
         if length > part_size:
             return self._stream_put_object(bucket_name, object_name,
@@ -996,7 +1001,7 @@ class Minio(object):
                                            sse=sse, progress=progress,
                                            part_size=part_size)
 
-        current_data = data.read(length)
+        current_data = data if read_bytes else data.read(length)
         if len(current_data) != length:
             raise InvalidArgumentError(
                 'Could not read {} bytes from data to upload'.format(length)
