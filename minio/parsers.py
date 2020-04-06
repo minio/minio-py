@@ -25,8 +25,8 @@ This module contains core API parsers.
 """
 
 # standard.
-from xml.etree import cElementTree
-from xml.etree.cElementTree import ParseError
+from xml.etree import ElementTree
+from xml.etree.ElementTree import ParseError
 
 from datetime import datetime
 
@@ -47,7 +47,7 @@ _S3_NS = {'s3' : 'http://s3.amazonaws.com/doc/2006-03-01/'}
 
 class S3Element(object):
     """S3 aware XML parsing class. Wraps a root element name and
-    cElementTree.Element instance. Provides S3 namespace aware parsing
+    ElementTree.Element instance. Provides S3 namespace aware parsing
     functions.
 
     """
@@ -64,7 +64,7 @@ class S3Element(object):
         :return: Returns an S3Element.
         """
         try:
-            return cls(root_name, cElementTree.fromstring(data.strip()))
+            return cls(root_name, ElementTree.fromstring(data.strip()))
         except ETREE_EXCEPTIONS as error:
             raise InvalidXMLError(
                 '"{}" XML is not parsable. Message: {}'.format(

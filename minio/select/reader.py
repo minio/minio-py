@@ -31,8 +31,8 @@ import io
 import sys
 
 from binascii import crc32
-from xml.etree import cElementTree
-from xml.etree.cElementTree import ParseError
+from xml.etree import ElementTree
+from xml.etree.ElementTree import ParseError
 
 from .helpers import (EVENT_RECORDS, EVENT_PROGRESS,
                       EVENT_STATS, EVENT_CONT,
@@ -76,7 +76,7 @@ def _parse_stats(stats):
     Parses stats XML and populates the stat dict.
     """
     stat = {}
-    for attribute in cElementTree.fromstring(stats):
+    for attribute in ElementTree.fromstring(stats):
         if attribute.tag == 'BytesScanned':
             stat['BytesScanned'] = attribute.text
         elif attribute.tag == 'BytesProcessed':

@@ -25,10 +25,10 @@ and API specific errors.
 :license: Apache 2.0, see LICENSE for more details.
 
 """
-from xml.etree import cElementTree
-from xml.etree.cElementTree import ParseError
+from xml.etree import ElementTree
+from xml.etree.ElementTree import ParseError
 
-if hasattr(cElementTree, 'ParseError'):
+if hasattr(ElementTree, 'ParseError'):
     ETREE_EXCEPTIONS = (ParseError, AttributeError, ValueError, TypeError)
 else:
     ETREE_EXCEPTIONS = (SyntaxError, AttributeError, ValueError, TypeError)
@@ -172,7 +172,7 @@ class ResponseError(MinioError):
         if len(self._response.data) == 0:
             raise ValueError('response data has no body.')
         try:
-            root = cElementTree.fromstring(self._response.data)
+            root = ElementTree.fromstring(self._response.data)
         except ETREE_EXCEPTIONS as error:
             raise InvalidXMLError('"Error" XML is not parsable. '
                                   'Message: {0}'.format(error))
