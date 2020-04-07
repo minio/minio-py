@@ -1495,7 +1495,7 @@ class Minio(object):
                              bucket_region=region)
 
         return presign_v4(method, url,
-                          credentials = self._credentials,
+                          credentials=self._credentials,
                           region=region,
                           expires=int(expires.total_seconds()),
                           response_headers=response_headers,
