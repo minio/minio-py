@@ -92,6 +92,7 @@ def presign_v4(method, url, credentials,
     if request_date is None:
         request_date = datetime.utcnow()
 
+    # If a sha256sum is known, add to headers to include with signature
     content_hash_hex = _UNSIGNED_PAYLOAD
     for k in headers.keys():
         if k.lower() == 'x-amz-content-sha256':
