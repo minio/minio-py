@@ -33,6 +33,7 @@ from datetime import datetime
 import pytz
 
 # minio specific.
+from .credentials import Value
 from .error import (ETREE_EXCEPTIONS, InvalidXMLError, MultiDeleteError)
 from .compat import unquote
 from .definitions import (Object, Bucket, IncompleteUpload,
@@ -41,7 +42,10 @@ from .definitions import (Object, Bucket, IncompleteUpload,
 from .xml_marshal import (NOTIFICATIONS_ARN_FIELDNAME_MAP)
 
 
-_S3_NS = {'s3': 'http://s3.amazonaws.com/doc/2006-03-01/'}
+_XML_NS = {
+    's3': 'http://s3.amazonaws.com/doc/2006-03-01/',
+    'sts': 'https://sts.amazonaws.com/doc/2011-06-15/'
+}
 
 
 class S3Element(object):
@@ -78,14 +82,14 @@ class S3Element(object):
         """
         return [
             S3Element(self.root_name, elem)
-            for elem in self.element.findall('s3:{}'.format(name), _S3_NS)
+            for elem in self.element.findall('s3:{}'.format(name), _XML_NS)
         ]
 
     def find(self, name):
         """Similar to ElementTree.Element.find()
 
         """
-        elt = self.element.find('s3:{}'.format(name), _S3_NS)
+        elt = self.element.find('s3:{}'.format(name), _XML_NS)
         return S3Element(self.root_name, elt) if elt else None
 
     def get_child_text(self, name, strict=True):
@@ -96,14 +100,14 @@ class S3Element(object):
         """
         if strict:
             try:
-                return self.element.find('s3:{}'.format(name), _S3_NS).text
+                return self.element.find('s3:{}'.format(name), _XML_NS).text
             except ETREE_EXCEPTIONS as error:
                 raise InvalidXMLError(
                     ('Invalid XML provided for "{}" - erroring tag <{}>. '
                      'Message: {}').format(self.root_name, name, error)
                 )
         else:
-            return self.element.findtext('s3:{}'.format(name), None, _S3_NS)
+            return self.element.findtext('s3:{}'.format(name), None, _XML_NS)
 
     def get_urldecoded_elem_text(self, name, strict=True):
         """Like self.get_child_text(), but also performs urldecode() on the
@@ -363,6 +367,12 @@ def _iso8601_to_localized_time(date_string):
     :return: :class:`datetime.datetime`
     """
 
+    parsed_date = _iso8601_to_utc_datetime(date_string)
+    localized_time = pytz.utc.localize(parsed_date)
+    return localized_time
+
+
+def _iso8601_to_utc_datetime(date_string):
     # Handle timestamps with and without fractional seconds. Some non-AWS
     # vendors (e.g. Dell EMC ECS) are not consistent about always providing
     # fractional seconds.
@@ -370,8 +380,8 @@ def _iso8601_to_localized_time(date_string):
         parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
     except ValueError:
         parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%SZ')
-    localized_time = pytz.utc.localize(parsed_date)
-    return localized_time
+    return parsed_date
+
 
 
 def parse_get_bucket_notification(data):
@@ -452,3 +462,26 @@ def parse_multi_object_delete_response(data):
                          errtag.get_child_text('Message'))
         for errtag in root.findall('Error')
     ]
+
+
+def parse_assume_role(data):
+    """
+    Parser for assume role response.
+
+    :param data: Response data for STS assume role.
+    :return: A 2-tuple containing:
+        - a :class:`~minio.credentials.Value` instance with the temporary credentials.
+        - A :class:`DateTime` instance of when the credentials expire.
+    """
+    root = ElementTree.fromstring(data)
+    credentials_elem = root.find("sts:AssumeRoleResult", _XML_NS).find("sts:Credentials", _XML_NS)
+
+    access_key = credentials_elem.find("sts:AccessKeyId", _XML_NS).text
+    secret_key = credentials_elem.find("sts:SecretAccessKey", _XML_NS).text
+    session_token = credentials_elem.find("sts:SessionToken", _XML_NS).text
+
+    expiry_str = credentials_elem.find("sts:Expiration", _XML_NS).text
+    # convert expiry as datetime object
+    expiry = _iso8601_to_utc_datetime(expiry_str)
+
+    return Value(access_key, secret_key, session_token), expiry
