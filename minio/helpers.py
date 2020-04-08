@@ -42,7 +42,7 @@ import os
 import errno
 import math
 
-from .compat import (urlsplit, urlencode, queryencode,
+from .compat import (urlsplit, _quote, queryencode,
                      str, bytes, basestring, _is_py3, _is_py2)
 from .error import (InvalidBucketError, InvalidEndpointError,
                     InvalidArgumentError)
@@ -599,7 +599,7 @@ def encode_object_name(object_name):
     :return: URL encoded input object name.
     """
     is_non_empty_string(object_name)
-    return urlencode(object_name)
+    return _quote(object_name)
 
 class Hasher(object):
     """

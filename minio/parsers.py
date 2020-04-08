@@ -35,7 +35,7 @@ import pytz
 
 # minio specific.
 from .error import (ETREE_EXCEPTIONS, InvalidXMLError, MultiDeleteError)
-from .compat import urldecode
+from .compat import unquote
 from .definitions import (Object, Bucket, IncompleteUpload,
                           UploadPart, MultipartUploadResult,
                           CopyObjectResult)
@@ -112,7 +112,7 @@ class S3Element(object):
         """
         text = self.get_child_text(name, strict)
         # strictness is already enforced above.
-        return urldecode(text) if text is not None else None
+        return unquote(text) if text is not None else None
 
     def get_etag_elem(self, strict=True):
         """Fetches an 'ETag' child element suitably processed.

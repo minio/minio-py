@@ -41,10 +41,8 @@ if _is_py2:
     queue_empty = Empty
 
     from urllib import quote
-    _urlencode = quote
 
     from urllib import unquote
-    urldecode = unquote
 
     import urlparse
     urlsplit = urlparse.urlsplit
@@ -69,10 +67,8 @@ elif _is_py3:
     queue_empty = Empty
 
     from urllib.request import quote
-    _urlencode = quote
 
     from urllib.request import unquote
-    urldecode = unquote
 
     import urllib.parse
     urlsplit = urllib.parse.urlsplit
@@ -93,16 +89,19 @@ elif _is_py3:
 
 numeric_types = (int, long, float)
 
-def urlencode(resource):
+
+# Note earlier versions of minio.compat exposed urllib.quote as urlencode
+def _quote(resource):
     """
-    This implementation of urlencode supports all unicode characters
+    This implementation of urllib.quote supports all unicode characters
 
     :param: resource: Resource value to be url encoded.
     """
     if isinstance(resource, str):
-        return _urlencode(resource.encode('utf-8'))
+        return quote(resource.encode('utf-8'))
 
-    return _urlencode(resource)
+    return quote(resource)
+
 
 def queryencode(query):
     """
@@ -110,4 +109,4 @@ def queryencode(query):
 
     :param: query: Query value to be url encoded.
     """
-    return urlencode(query).replace('/', '%2F')
+    return _quote(query).replace('/', '%2F')
