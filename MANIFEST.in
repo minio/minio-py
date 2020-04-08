@@ -1,5 +1,11 @@
 include LICENSE README*
 recursive-include docs *.md
 recursive-include examples *.py
-recursive-include tests *.py *.sh
-include minio/credentials/*.sample
+recursive-include tests *.py *.sh *.crt *.key
+recursive-include minio/credentials *.empty *.sample
+
+prune .github
+prune Makefile
+prune pylintrc
+prune CONTRIBUTING.md
+prune MAINTAINERS.md
