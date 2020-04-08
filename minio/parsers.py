@@ -30,15 +30,14 @@ from xml.etree import ElementTree
 from datetime import datetime
 
 # dependencies.
-import pytz
 
 # minio specific.
-from .credentials import Value
 from .error import (ETREE_EXCEPTIONS, InvalidXMLError, MultiDeleteError)
 from .compat import unquote
 from .definitions import (Object, Bucket, IncompleteUpload,
                           UploadPart, MultipartUploadResult,
                           CopyObjectResult)
+from .helpers import _iso8601_to_utc_datetime
 from .xml_marshal import (NOTIFICATIONS_ARN_FIELDNAME_MAP)
 
 
@@ -134,7 +133,7 @@ class S3Element(object):
         """Parse a time XML child element.
 
         """
-        return _iso8601_to_localized_time(self.get_child_text(name))
+        return _iso8601_to_utc_datetime(self.get_child_text(name))
 
     def text(self):
         """Fetch the current node's text
@@ -359,31 +358,6 @@ def parse_location_constraint(data):
     return root.text()
 
 
-def _iso8601_to_localized_time(date_string):
-    """
-    Convert iso8601 date string into UTC time.
-
-    :param date_string: iso8601 formatted date string.
-    :return: :class:`datetime.datetime`
-    """
-
-    parsed_date = _iso8601_to_utc_datetime(date_string)
-    localized_time = pytz.utc.localize(parsed_date)
-    return localized_time
-
-
-def _iso8601_to_utc_datetime(date_string):
-    # Handle timestamps with and without fractional seconds. Some non-AWS
-    # vendors (e.g. Dell EMC ECS) are not consistent about always providing
-    # fractional seconds.
-    try:
-        parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
-    except ValueError:
-        parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%SZ')
-    return parsed_date
-
-
-
 def parse_get_bucket_notification(data):
     """
     Parser for a get_bucket_notification response from S3.
@@ -462,26 +436,3 @@ def parse_multi_object_delete_response(data):
                          errtag.get_child_text('Message'))
         for errtag in root.findall('Error')
     ]
-
-
-def parse_assume_role(data):
-    """
-    Parser for assume role response.
-
-    :param data: Response data for STS assume role.
-    :return: A 2-tuple containing:
-        - a :class:`~minio.credentials.Value` instance with the temporary credentials.
-        - A :class:`DateTime` instance of when the credentials expire.
-    """
-    root = ElementTree.fromstring(data)
-    credentials_elem = root.find("sts:AssumeRoleResult", _XML_NS).find("sts:Credentials", _XML_NS)
-
-    access_key = credentials_elem.find("sts:AccessKeyId", _XML_NS).text
-    secret_key = credentials_elem.find("sts:SecretAccessKey", _XML_NS).text
-    session_token = credentials_elem.find("sts:SessionToken", _XML_NS).text
-
-    expiry_str = credentials_elem.find("sts:Expiration", _XML_NS).text
-    # convert expiry as datetime object
-    expiry = _iso8601_to_utc_datetime(expiry_str)
-
-    return Value(access_key, secret_key, session_token), expiry
