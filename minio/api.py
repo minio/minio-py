@@ -71,11 +71,12 @@ from .helpers import (get_target_url, is_non_empty_string,
                       get_sha256_hexdigest, get_md5_base64digest,
                       optimal_part_info,
                       is_valid_bucket_name, read_full,
-                      get_s3_region_from_endpoint, is_valid_sse_object, is_valid_sse_c_object,
-                      is_valid_source_sse_object,
-                      is_valid_bucket_notification_config, is_valid_policy_type,
-                      mkdir_p, dump_http, amzprefix_user_metadata,
-                      is_supported_header, is_amz_header)
+                      get_s3_region_from_endpoint, is_valid_sse_object,
+                      is_valid_sse_c_object, is_valid_source_sse_object,
+                      is_valid_bucket_notification_config,
+                      is_valid_policy_type, mkdir_p, dump_http,
+                      amzprefix_user_metadata, is_supported_header,
+                      is_amz_header)
 from .helpers import (MAX_PART_SIZE,
                       MAX_POOL_SIZE,
                       MIN_PART_SIZE,
@@ -166,9 +167,13 @@ class Minio(object):
         is_valid_endpoint(endpoint)
 
         # Validate http client has correct base class.
-        if http_client and not isinstance(http_client, urllib3.poolmanager.PoolManager):
+        if http_client and not isinstance(
+                http_client,
+                urllib3.poolmanager.PoolManager):
             raise InvalidArgumentError(
-                'HTTP client should be of instance `urllib3.poolmanager.PoolManager`')
+                'HTTP client should be of instance'
+                ' `urllib3.poolmanager.PoolManager`'
+            )
 
         # Default is a secured connection.
         endpoint_url = 'https://' + endpoint
@@ -352,7 +357,8 @@ class Minio(object):
         region = 'us-east-1'
         if self._region:
             region = self._region
-            # Validate if caller requested bucket location is same as current region
+            # Validate if caller requested bucket location is same as current
+            # region
             if self._region != location:
                 raise InvalidArgumentError("Configured region {0}, requested"
                                            " {1}".format(self._region,
@@ -438,7 +444,8 @@ class Minio(object):
         try:
             return parse_list_buckets(response.data)
         except InvalidXMLError:
-            if self._endpoint_url.endswith("s3.amazonaws.com") and (not self._access_key or not self._secret_key):
+            if self._endpoint_url.endswith("s3.amazonaws.com") and (
+                    not self._access_key or not self._secret_key):
                 raise AccessDenied(response)
 
     def bucket_exists(self, bucket_name):
@@ -452,7 +459,7 @@ class Minio(object):
 
         try:
             self._url_open('HEAD', bucket_name=bucket_name)
-        # If the bucket has not been created yet, MinIO will return a "NoSuchBucket" error.
+        # If bucket has not been created yet, MinIO returns NoSuchBucket error.
         except NoSuchBucket:
             return False
         except ResponseError:
@@ -580,13 +587,15 @@ class Minio(object):
             content_sha256=content_sha256_hex
         )
 
-    # put_bucket_encryption sets default encryption configuration on an existing bucket.
+    # put_bucket_encryption sets default encryption configuration on an
+    # existing bucket.
     def put_bucket_encryption(self, bucket_name, enc_config):
         """
         Set default encryption configuration on a given bucket.
 
         :param bucket_name: Bucket name.
-        :param enc_config: Default encryption configuration in dictionary format.
+        :param enc_config: Default encryption configuration in dictionary
+                           format.
         """
         is_valid_bucket_name(bucket_name, False)
 
@@ -610,7 +619,8 @@ class Minio(object):
             rule_list.append(rules["ApplyServerSideEncryptionByDefault"])
         else:
             raise InvalidArgumentError(
-                'Encryption configuration must be a "dict" with a "list" type of "Rule"s'
+                'Encryption configuration must be a "dict" with a "list"'
+                ' type of "Rule"s'
             )
 
         enc_config_xml = xml_marshal_bucket_encryption(rules)
@@ -742,7 +752,8 @@ class Minio(object):
                                    file_size, content_type, metadata, sse,
                                    progress, part_size)
 
-    def fget_object(self, bucket_name, object_name, file_path, request_headers=None, sse=None):
+    def fget_object(self, bucket_name, object_name, file_path,
+                    request_headers=None, sse=None):
         """
         Retrieves an object from a bucket and writes at file_path.
 
@@ -752,7 +763,8 @@ class Minio(object):
         :param bucket_name: Bucket to read object from.
         :param object_name: Name of the object to read.
         :param file_path: Local file path to save the object.
-        :param request_headers: Any additional headers to be added with GET request.
+        :param request_headers: Any additional headers to be added with GET
+                                request.
         """
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
@@ -776,11 +788,13 @@ class Minio(object):
             file_statinfo = os.stat(file_part_path)
 
             # Get partial object.
-            response = self._get_partial_object(bucket_name, object_name,
-                                                offset=file_statinfo.st_size,
-                                                length=0,
-                                                request_headers=request_headers,
-                                                sse=sse)
+            response = self._get_partial_object(
+                bucket_name, object_name,
+                offset=file_statinfo.st_size,
+                length=0,
+                request_headers=request_headers,
+                sse=sse
+            )
 
             # Save content_size to verify if we wrote more data.
             content_size = int(response.headers['content-length'])
@@ -816,7 +830,8 @@ class Minio(object):
         # Return the stat
         return stat
 
-    def get_object(self, bucket_name, object_name, request_headers=None, sse=None):
+    def get_object(self, bucket_name, object_name, request_headers=None,
+                   sse=None):
         """
         Retrieves an object from a bucket.
 
@@ -831,7 +846,8 @@ class Minio(object):
 
         :param bucket_name: Bucket to read object from
         :param object_name: Name of object to read
-        :param request_headers: Any additional headers to be added with GET request.
+        :param request_headers: Any additional headers to be added with GET
+                                request.
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
@@ -843,7 +859,8 @@ class Minio(object):
                                         request_headers=request_headers,
                                         sse=sse)
 
-    def get_partial_object(self, bucket_name, object_name, offset=0, length=0, request_headers=None, sse=None):
+    def get_partial_object(self, bucket_name, object_name, offset=0, length=0,
+                           request_headers=None, sse=None):
         """
         Retrieves an object from a bucket.
 
@@ -864,7 +881,8 @@ class Minio(object):
            Must be >= 0.
         :param length: Optional number of bytes to retrieve.
            Must be an integer.
-        :param request_headers: Any additional headers to be added with GET request.
+        :param request_headers: Any additional headers to be added with GET
+                                request.
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
@@ -939,7 +957,8 @@ class Minio(object):
         Examples:
          file_stat = os.stat('hello.txt')
          with open('hello.txt', 'rb') as data:
-             minio.put_object('foo', 'bar', data, file_stat.st_size, 'text/plain')
+             minio.put_object('foo', 'bar', data, file_stat.st_size,
+                              'text/plain')
 
         - For length lesser than 5MB put_object automatically
           does single Put operation.
@@ -970,7 +989,8 @@ class Minio(object):
 
         if not callable(getattr(data, 'read')):
             raise ValueError(
-                'Invalid input data does not implement a callable read() method')
+                'Invalid input data does not implement'
+                ' a callable read() method')
 
         if length > (part_size * MAX_MULTIPART_COUNT):
             raise InvalidArgumentError('Part size * max_parts(10000) is '
@@ -1073,12 +1093,15 @@ class Minio(object):
                                       bucket_name=bucket_name,
                                       query=query,
                                       headers=headers)
-            objects, is_truncated, marker = parse_list_objects(response.data,
-                                                               bucket_name=bucket_name)
+            objects, is_truncated, marker = parse_list_objects(
+                response.data,
+                bucket_name=bucket_name
+            )
             for obj in objects:
                 yield obj
 
-    def list_objects_v2(self, bucket_name, prefix='', recursive=False, start_after=''):
+    def list_objects_v2(self, bucket_name, prefix='', recursive=False,
+                        start_after=''):
         """
         List objects in the given bucket using the List objects V2 API.
 
@@ -1333,11 +1356,13 @@ class Minio(object):
     def _list_incomplete_uploads(self, bucket_name, prefix='',
                                  recursive=False, is_aggregate_size=True):
         """
-        List incomplete uploads list all previously uploaded incomplete multipart objects.
+        List incomplete uploads list all previously uploaded incomplete
+        multipart objects.
 
         :param bucket_name: Bucket name to list uploaded objects.
         :param prefix: String specifying objects returned must begin with.
-        :param recursive: If yes, returns all incomplete objects for a specified prefix.
+        :param recursive: If yes, returns all incomplete objects for a
+                          specified prefix.
         :return: An generator of incomplete uploads in alphabetical order.
         """
         is_valid_bucket_name(bucket_name, False)
@@ -1586,8 +1611,8 @@ class Minio(object):
         date = datetime.utcnow()
         iso8601_date = date.strftime("%Y%m%dT%H%M%SZ")
         region = self._get_bucket_region(post_policy.form_data['bucket'])
-        credential_string = generate_credential_string(self._credentials.get().access_key,
-                                                       date, region)
+        credential_string = generate_credential_string(
+            self._credentials.get().access_key, date, region)
 
         policy = [
             ('eq', '$x-amz-date', iso8601_date),
@@ -1619,7 +1644,8 @@ class Minio(object):
 
     # All private functions below.
     def _get_partial_object(self, bucket_name, object_name,
-                            offset=0, length=0, request_headers=None, sse=None):
+                            offset=0, length=0, request_headers=None,
+                            sse=None):
         """Retrieves an object from a bucket.
 
         Optionally takes an offset and length of data to retrieve.
@@ -1769,7 +1795,9 @@ class Minio(object):
         is_non_empty_string(object_name)
         if not callable(getattr(data, 'read')):
             raise ValueError(
-                'Invalid input data does not implement a callable read() method')
+                'Invalid input data does not implement'
+                ' a callable read() method'
+            )
 
         # get upload id.
         upload_id = self._new_multipart_upload(bucket_name, object_name,
@@ -1796,8 +1824,9 @@ class Minio(object):
                                  else last_part_size)
 
             part_data = read_full(data, current_part_size)
-            pool.add_task(self._upload_part_routine, (bucket_name, object_name, upload_id,
-                                                      part_number, part_data, sse, progress))
+            pool.add_task(self._upload_part_routine, (
+                bucket_name, object_name, upload_id, part_number, part_data,
+                sse, progress))
 
         try:
             upload_result = pool.result()
@@ -1988,7 +2017,8 @@ class Minio(object):
             return self._region
 
         # For anonymous requests no need to get bucket location.
-        if self._credentials.get().access_key is None or self._credentials.get().secret_key is None:
+        if not (self._credentials.get().access_key and
+                self._credentials.get().secret_key):
             return 'us-east-1'
 
         # Get signature headers if any.
