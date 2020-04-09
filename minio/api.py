@@ -116,7 +116,7 @@ _DEFAULT_USER_AGENT = 'MinIO {0} {1}'.format(
 
 
 # Duration of 7 days in seconds
-_MAX_EXPIRY_TIME = 604800 # 7 days in seconds
+_MAX_EXPIRY_TIME = 604800  # 7 days in seconds
 
 # Number of parallel workers which upload parts
 _PARALLEL_UPLOADERS = 3
@@ -153,6 +153,7 @@ class Minio(object):
     object in each process, and not share it between processes.
 
     """
+
     def __init__(self, endpoint, access_key=None,
                  secret_key=None,
                  session_token=None,
@@ -166,8 +167,8 @@ class Minio(object):
 
         # Validate http client has correct base class.
         if http_client and not isinstance(http_client, urllib3.poolmanager.PoolManager):
-            raise InvalidArgumentError('HTTP client should be of instance `urllib3.poolmanager.PoolManager`')
-
+            raise InvalidArgumentError(
+                'HTTP client should be of instance `urllib3.poolmanager.PoolManager`')
 
         # Default is a secured connection.
         endpoint_url = 'https://' + endpoint
@@ -201,7 +202,7 @@ class Minio(object):
             self._credentials = credentials
         else:
             self._credentials = Credentials(
-                provider= Chain(
+                provider=Chain(
                     providers=[
                         Static(access_key, secret_key, session_token),
                         EnvAWS(),
@@ -220,13 +221,13 @@ class Minio(object):
             self._http = urllib3.PoolManager(
                 timeout=urllib3.Timeout.DEFAULT_TIMEOUT,
                 maxsize=MAX_POOL_SIZE,
-                        cert_reqs='CERT_REQUIRED',
-                        ca_certs=ca_certs,
-                        retries=urllib3.Retry(
-                            total=5,
-                            backoff_factor=0.2,
-                            status_forcelist=[500, 502, 503, 504]
-                        )
+                cert_reqs='CERT_REQUIRED',
+                ca_certs=ca_certs,
+                retries=urllib3.Retry(
+                    total=5,
+                    backoff_factor=0.2,
+                    status_forcelist=[500, 502, 503, 504]
+                )
             )
         else:
             self._http = http_client
@@ -283,7 +284,7 @@ class Minio(object):
         # Strip 80/443 ports since curl & browsers do not
         # send them in Host header.
         if (scheme == 'http' and parsed_url.port == 80) or\
-        (scheme == 'https' and parsed_url.port == 443):
+                (scheme == 'https' and parsed_url.port == 443):
             host = parsed_url.hostname
 
         if 's3.amazonaws.com' in host:
@@ -485,8 +486,8 @@ class Minio(object):
 
     def delete_bucket_policy(self, bucket_name):
         self._url_open("DELETE",
-                        bucket_name=bucket_name,
-                        query={"policy": ""})
+                       bucket_name=bucket_name,
+                       query={"policy": ""})
 
     def set_bucket_policy(self, bucket_name, policy):
         """
@@ -505,11 +506,11 @@ class Minio(object):
         }
         content_sha256_hex = get_sha256_hexdigest(policy)
         self._url_open("PUT",
-                        bucket_name=bucket_name,
-                        query={"policy": ""},
-                        headers=headers,
-                        body=policy,
-                        content_sha256=content_sha256_hex)
+                       bucket_name=bucket_name,
+                       query={"policy": ""},
+                       headers=headers,
+                       body=policy,
+                       content_sha256=content_sha256_hex)
 
     def get_bucket_notification(self, bucket_name):
         """
@@ -595,7 +596,8 @@ class Minio(object):
         rule_list = list()
         if isinstance(rules, list):
             for apply_enc in rules:
-                rule_list.append(apply_enc['ApplyServerSideEncryptionByDefault'])
+                rule_list.append(
+                    apply_enc['ApplyServerSideEncryptionByDefault'])
                 # As soon as we get to the first default encryption setting,
                 # we break the loop. That is because, at this point, only
                 # a single 'Rule' entry is allowed/supported. This is a server
@@ -619,12 +621,12 @@ class Minio(object):
         }
         content_sha256_hex = get_sha256_hexdigest(enc_config_xml)
         self._url_open("PUT",
-                        bucket_name=bucket_name,
-                        query={"encryption": ""},
-                        headers=headers,
-                        body=enc_config_xml,
-                        content_sha256=content_sha256_hex
-                        )
+                       bucket_name=bucket_name,
+                       query={"encryption": ""},
+                       headers=headers,
+                       body=enc_config_xml,
+                       content_sha256=content_sha256_hex
+                       )
 
     def get_bucket_encryption(self, bucket_name):
         """
@@ -805,10 +807,10 @@ class Minio(object):
                                                         content_size)
                 raise InvalidSizeError(msg)
 
-        #Delete existing file to be compatible with Windows
+        # Delete existing file to be compatible with Windows
         if os.path.exists(file_path):
             os.remove(file_path)
-        #Rename with destination file path
+        # Rename with destination file path
         os.rename(file_part_path, file_path)
 
         # Return the stat
@@ -912,7 +914,7 @@ class Minio(object):
             is_valid_source_sse_object(source_sse)
             headers.update(source_sse.marshal())
 
-        #Destination argument to copy_object cannot be of type copy_SSE_C
+        # Destination argument to copy_object cannot be of type copy_SSE_C
         if sse:
             is_valid_sse_object(sse)
             headers.update(sse.marshal())
@@ -1180,7 +1182,7 @@ class Minio(object):
         content_type = response.headers.get('content-type', '')
         last_modified = response.headers.get('last-modified')
 
-        ## Capture only custom metadata.
+        # Capture only custom metadata.
         custom_metadata = dict()
         for k in response.headers:
             if is_supported_header(k) or is_amz_header(k):
@@ -1446,11 +1448,11 @@ class Minio(object):
                                                upload.upload_id)
 
     def presigned_url(self, method,
-                    bucket_name,
-                    object_name,
-                    expires=timedelta(days=7),
-                    response_headers=None,
-                    request_date=None):
+                      bucket_name,
+                      object_name,
+                      expires=timedelta(days=7),
+                      response_headers=None,
+                      request_date=None):
         """
         Presigns a method on an object and provides a url
 
@@ -1495,7 +1497,7 @@ class Minio(object):
                              bucket_region=region)
 
         return presign_v4(method, url,
-                          credentials = self._credentials,
+                          credentials=self._credentials,
                           region=region,
                           expires=int(expires.total_seconds()),
                           response_headers=response_headers,
@@ -1661,10 +1663,10 @@ class Minio(object):
             headers.update(sse.marshal())
 
         return self._url_open('GET',
-                               bucket_name=bucket_name,
-                               object_name=object_name,
-                               headers=headers,
-                               preload_content=False)
+                              bucket_name=bucket_name,
+                              object_name=object_name,
+                              headers=headers,
+                              preload_content=False)
 
     def _do_put_object(self, bucket_name, object_name, part_data,
                        part_size, upload_id='', part_number=0,
@@ -1738,7 +1740,7 @@ class Minio(object):
 
     def _upload_part_routine(self, part_info):
         bucket_name, object_name, upload_id, \
-                part_number, part_data, sse, progress = part_info
+            part_number, part_data, sse, progress = part_info
         # Initiate multipart put.
         etag = self._do_put_object(bucket_name, object_name, part_data,
                                    len(part_data), upload_id,
