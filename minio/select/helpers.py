@@ -50,11 +50,7 @@ def validate_crc(current_value, expected_value):
     '''
     Validate through CRC check
     '''
-    crc_current = calculate_crc(current_value)
-    crc_expected = byte_int(expected_value)
-    if crc_current == crc_expected:
-        return True
-    return False
+    return calculate_crc(current_value) == byte_int(expected_value)
 
 
 def byte_int(data_bytes):

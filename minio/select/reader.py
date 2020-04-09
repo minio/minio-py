@@ -30,14 +30,10 @@ from __future__ import absolute_import
 import io
 import sys
 
-from binascii import crc32
 from xml.etree import ElementTree
-from xml.etree.ElementTree import ParseError
 
-from .helpers import (EVENT_RECORDS, EVENT_PROGRESS,
-                      EVENT_STATS, EVENT_CONT,
-                      EVENT, EVENT_CONTENT_TYPE,
-                      EVENT_END, ERROR)
+from .helpers import (EVENT_RECORDS, EVENT_STATS,
+                      EVENT, EVENT_CONTENT_TYPE, ERROR)
 
 from .helpers import (validate_crc, calculate_crc, byte_int)
 from .errors import (SelectMessageError, SelectCRCValidationError)
@@ -55,22 +51,22 @@ def _extract_header(header_bytes):
         header_name_byte_length = byte_int(
             header_bytes[header_byte_parsed:header_byte_parsed+1])
         header_byte_parsed += 1
-        header_name = \
-            header_bytes[header_byte_parsed:
-                         header_byte_parsed+header_name_byte_length]
+        header_name = header_bytes[
+            header_byte_parsed:header_byte_parsed+header_name_byte_length
+        ]
         header_byte_parsed += header_name_byte_length
         # Header Value Type is of 1 bytes and is skipped
         header_byte_parsed += 1
-        value_string_byte_length = \
-            byte_int(header_bytes[header_byte_parsed:
-                                  header_byte_parsed+2])
+        value_string_byte_length = byte_int(
+            header_bytes[header_byte_parsed:header_byte_parsed+2]
+        )
         header_byte_parsed += 2
-        header_value = \
-            header_bytes[header_byte_parsed:
-                         header_byte_parsed+value_string_byte_length]
+        header_value = header_bytes[
+            header_byte_parsed:header_byte_parsed+value_string_byte_length
+        ]
         header_byte_parsed += value_string_byte_length
-        header_map[header_name.decode("utf-8").lstrip(":")] = \
-            header_value.decode("utf-8").lstrip(":")
+        header_map[header_name.decode(
+            "utf-8").lstrip(":")] = header_value.decode("utf-8").lstrip(":")
     return header_map
 
 
@@ -126,12 +122,12 @@ class SelectObjectReader(object):
 
         crc_bytes = io.BytesIO()
         total_bytes_len = self.response.read(4)
-        if len(total_bytes_len) == 0:
+        if not total_bytes_len:
             return {}
 
         total_length = byte_int(total_bytes_len)
         header_bytes_len = self.response.read(4)
-        if len(header_bytes_len) == 0:
+        if not header_bytes_len:
             return {}
 
         header_len = byte_int(header_bytes_len)
@@ -150,7 +146,7 @@ class SelectObjectReader(object):
         crc_bytes.write(prelude_bytes_crc)
 
         header_bytes = self.response.read(header_len)
-        if len(header_bytes) == 0:
+        if not header_bytes:
             raise SelectMessageError(
                 "Premature truncation of select message header" +
                 ", server is sending corrupt message?")
@@ -161,40 +157,36 @@ class SelectObjectReader(object):
         payload_length = total_length - header_len - int(16)
         payload_bytes = b''
         event_type = header_map["event-type"]
+
         if header_map["message-type"] == ERROR:
             raise SelectMessageError(
                 header_map["error-code"] + ":\"" +
                 header_map["error-message"] + "\"")
-        elif header_map["message-type"] == EVENT:
-            if event_type == EVENT_END:
-                pass
-            elif event_type == EVENT_CONT:
-                pass
-            elif event_type == EVENT_STATS:
-                content_type = header_map["content-type"]
-                if content_type != EVENT_CONTENT_TYPE:
-                    raise SelectMessageError(
-                        "Unrecognized content-type {0}".format(content_type))
-                else:
-                    payload_bytes = self.response.read(payload_length)
-                    self.stat = _parse_stats(payload_bytes)
 
-            elif event_type == EVENT_RECORDS:
-                payload_bytes = self.response.read(payload_length)
-        else:
+        if header_map["message-type"] != EVENT:
             raise SelectMessageError(
                 "Unrecognized message-type {0}".format(
                     header_map["message-type"])
             )
 
+        if event_type == EVENT_STATS:
+            content_type = header_map["content-type"]
+            if content_type != EVENT_CONTENT_TYPE:
+                raise SelectMessageError(
+                    "Unrecognized content-type {0}".format(content_type))
+
+            payload_bytes = self.response.read(payload_length)
+            self.stat = _parse_stats(payload_bytes)
+        elif event_type == EVENT_RECORDS:
+            payload_bytes = self.response.read(payload_length)
+
         crc_bytes.write(payload_bytes)
 
         message_crc = self.response.read(4)
-        if len(message_crc) == 0:
+        if not message_crc:
             return {}
 
-        if not validate_crc(crc_bytes.getvalue(),
-                            message_crc):
+        if not validate_crc(crc_bytes.getvalue(), message_crc):
             raise SelectCRCValidationError(
                 {"Checksum Mismatch, MessageCRC of " +
                  str(calculate_crc(crc_bytes.getvalue())) +
@@ -213,13 +205,12 @@ class SelectObjectReader(object):
         caller should call self.close() to close the stream.
         """
         while not self.response.isclosed():
-            if len(self.remaining_bytes) == 0:
+            if not self.remaining_bytes:
                 message = self.__extract_message()
-                if EVENT_RECORDS in message:
-                    self.remaining_bytes = message.get(EVENT_RECORDS, b'')
-                else:
-                    # For all other events continue
+                if EVENT_RECORDS not in message:
                     continue
+
+                self.remaining_bytes = message.get(EVENT_RECORDS, b'')
 
             result = self.remaining_bytes
             if num_bytes < len(self.remaining_bytes):
