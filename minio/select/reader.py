@@ -42,6 +42,7 @@ from .helpers import (EVENT_RECORDS, EVENT_PROGRESS,
 from .helpers import (validate_crc, calculate_crc, byte_int)
 from .errors import (SelectMessageError, SelectCRCValidationError)
 
+
 def _extract_header(header_bytes):
     """
     populates the header map after reading the header in bytes
@@ -51,7 +52,8 @@ def _extract_header(header_bytes):
     # While loop ends when all the headers present are read
     # header contains multipe headers
     while header_byte_parsed < len(header_bytes):
-        header_name_byte_length = byte_int(header_bytes[header_byte_parsed:header_byte_parsed+1])
+        header_name_byte_length = byte_int(
+            header_bytes[header_byte_parsed:header_byte_parsed+1])
         header_byte_parsed += 1
         header_name = \
             header_bytes[header_byte_parsed:
@@ -71,6 +73,7 @@ def _extract_header(header_bytes):
             header_value.decode("utf-8").lstrip(":")
     return header_map
 
+
 def _parse_stats(stats):
     """
     Parses stats XML and populates the stat dict.
@@ -86,12 +89,14 @@ def _parse_stats(stats):
 
     return stat
 
+
 class SelectObjectReader(object):
     """
     SelectObjectReader returns a Reader that upon read
     returns queried data, but stops when the response ends.
     LimitedRandomReader is compatible with BufferedIOBase.
     """
+
     def __init__(self, response):
         self.response = response
         self.remaining_bytes = bytes()
@@ -147,7 +152,7 @@ class SelectObjectReader(object):
         header_bytes = self.response.read(header_len)
         if len(header_bytes) == 0:
             raise SelectMessageError(
-                "Premature truncation of select message header"+
+                "Premature truncation of select message header" +
                 ", server is sending corrupt message?")
 
         crc_bytes.write(header_bytes)
@@ -158,7 +163,7 @@ class SelectObjectReader(object):
         event_type = header_map["event-type"]
         if header_map["message-type"] == ERROR:
             raise SelectMessageError(
-                header_map["error-code"] + ":\"" + \
+                header_map["error-code"] + ":\"" +
                 header_map["error-message"] + "\"")
         elif header_map["message-type"] == EVENT:
             if event_type == EVENT_END:
@@ -178,7 +183,8 @@ class SelectObjectReader(object):
                 payload_bytes = self.response.read(payload_length)
         else:
             raise SelectMessageError(
-                "Unrecognized message-type {0}".format(header_map["message-type"])
+                "Unrecognized message-type {0}".format(
+                    header_map["message-type"])
             )
 
         crc_bytes.write(payload_bytes)
