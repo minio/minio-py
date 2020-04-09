@@ -176,22 +176,10 @@ class Minio(object):
             )
 
         # Default is a secured connection.
-        endpoint_url = 'https://' + endpoint
-        accelerate_endpoint_url = 'https://s3-accelerate.amazonaws.com'
-        if not secure:
-            endpoint_url = 'http://' + endpoint
-            accelerate_endpoint_url = 'http://s3-accelerate.amazonaws.com'
-
-        # Parse url endpoints.
-        url_components = urlsplit(endpoint_url)
-
-        # Extract region if possible from endpoint.
-        if not region:
-            region = get_s3_region_from_endpoint(endpoint)
-
-        self._region = region
+        scheme = 'https://' if secure else 'http://'
+        self._region = region or get_s3_region_from_endpoint(endpoint)
         self._region_map = dict()
-        self._endpoint_url = url_components.geturl()
+        self._endpoint_url = urlsplit(scheme + endpoint).geturl()
         self._is_ssl = secure
         self._access_key = access_key
         self._secret_key = secret_key
@@ -199,43 +187,31 @@ class Minio(object):
         self._user_agent = _DEFAULT_USER_AGENT
         self._trace_output_stream = None
         self._enable_s3_accelerate = False
-        self._accelerate_endpoint_url = accelerate_endpoint_url
-
-        # Set credentials if possible
-
-        if credentials is not None:
-            self._credentials = credentials
-        else:
-            self._credentials = Credentials(
-                provider=Chain(
-                    providers=[
-                        Static(access_key, secret_key, session_token),
-                        EnvAWS(),
-                        EnvMinio(),
-                        IamEc2MetaData(),
-                    ]
-                )
+        self._accelerate_endpoint_url = scheme + 's3-accelerate.amazonaws.com'
+        self._credentials = credentials or Credentials(
+            provider=Chain(
+                providers=[
+                    Static(access_key, secret_key, session_token),
+                    EnvAWS(),
+                    EnvMinio(),
+                    IamEc2MetaData(),
+                ]
             )
+        )
 
         # Load CA certificates from SSL_CERT_FILE file if set
-        ca_certs = os.environ.get('SSL_CERT_FILE')
-        if not ca_certs:
-            ca_certs = certifi.where()
-
-        if not http_client:
-            self._http = urllib3.PoolManager(
-                timeout=urllib3.Timeout.DEFAULT_TIMEOUT,
-                maxsize=MAX_POOL_SIZE,
-                cert_reqs='CERT_REQUIRED',
-                ca_certs=ca_certs,
-                retries=urllib3.Retry(
-                    total=5,
-                    backoff_factor=0.2,
-                    status_forcelist=[500, 502, 503, 504]
-                )
+        ca_certs = os.environ.get('SSL_CERT_FILE') or certifi.where()
+        self._http = http_client or urllib3.PoolManager(
+            timeout=urllib3.Timeout.DEFAULT_TIMEOUT,
+            maxsize=MAX_POOL_SIZE,
+            cert_reqs='CERT_REQUIRED',
+            ca_certs=ca_certs,
+            retries=urllib3.Retry(
+                total=5,
+                backoff_factor=0.2,
+                status_forcelist=[500, 502, 503, 504]
             )
-        else:
-            self._http = http_client
+        )
 
     # Set application information.
     def set_app_info(self, app_name, app_version):
@@ -288,8 +264,8 @@ class Minio(object):
 
         # Strip 80/443 ports since curl & browsers do not
         # send them in Host header.
-        if (scheme == 'http' and parsed_url.port == 80) or\
-                (scheme == 'https' and parsed_url.port == 443):
+        if (scheme == 'http' and parsed_url.port == 80) or (
+                scheme == 'https' and parsed_url.port == 443):
             host = parsed_url.hostname
 
         if 's3.amazonaws.com' in host:
@@ -312,10 +288,10 @@ class Minio(object):
         is_non_empty_string(object_name)
 
         content = xml_marshal_select(opts)
-        url_values = dict()
-        url_values["select"] = ""
-        url_values["select-type"] = "2"
-
+        url_values = {
+            "select": "",
+            "select-type": "2",
+        }
         headers = {
             'Content-Length': str(len(content)),
             'Content-Md5': get_md5_base64digest(content)
@@ -354,15 +330,13 @@ class Minio(object):
         is_valid_bucket_name(bucket_name, True)
 
         # Default region for all requests.
-        region = 'us-east-1'
-        if self._region:
-            region = self._region
-            # Validate if caller requested bucket location is same as current
-            # region
-            if self._region != location:
-                raise InvalidArgumentError("Configured region {0}, requested"
-                                           " {1}".format(self._region,
-                                                         location))
+        region = self._region or 'us-east-1'
+        # Validate if caller requested bucket location is same as current
+        # region
+        if self._region and self._region != location:
+            raise InvalidArgumentError(
+                "Configured region {0}, requested {1}".format(
+                    self._region, location))
 
         method = 'PUT'
         # Set user agent once before the request.
@@ -372,10 +346,9 @@ class Minio(object):
         if location and location != 'us-east-1':
             content = xml_marshal_bucket_constraint(location)
             headers['Content-Length'] = str(len(content))
+            headers['Content-Md5'] = get_md5_base64digest(content)
 
         content_sha256_hex = get_sha256_hexdigest(content)
-        if content:
-            headers['Content-Md5'] = get_md5_base64digest(content)
 
         # In case of Amazon S3.  The make bucket issued on already
         # existing bucket would fail with 'AuthorizationMalformed'
@@ -420,10 +393,7 @@ class Minio(object):
         headers = {'User-Agent': self._user_agent}
 
         # default for all requests.
-        region = 'us-east-1'
-        # region is set then use the region.
-        if self._region:
-            region = self._region
+        region = self._region or 'us-east-1'
 
         # Get signature headers if any.
         headers = sign_v4(method, url, region,
@@ -602,27 +572,6 @@ class Minio(object):
         # 'Rule' is a list, so we need to go through each one of
         # its key/value pair and collect the encryption values.
         rules = enc_config['ServerSideEncryptionConfiguration']['Rule']
-        rule_list = list()
-        if isinstance(rules, list):
-            for apply_enc in rules:
-                rule_list.append(
-                    apply_enc['ApplyServerSideEncryptionByDefault'])
-                # As soon as we get to the first default encryption setting,
-                # we break the loop. That is because, at this point, only
-                # a single 'Rule' entry is allowed/supported. This is a server
-                # side restriction and and it is validated on the server side.
-                break
-        elif isinstance(rules, dict):
-            # This check enables user to provide a single 'Rule' as a
-            # dictionary instead of a list.
-            # This is just an extra convenience.
-            rule_list.append(rules["ApplyServerSideEncryptionByDefault"])
-        else:
-            raise InvalidArgumentError(
-                'Encryption configuration must be a "dict" with a "list"'
-                ' type of "Rule"s'
-            )
-
         enc_config_xml = xml_marshal_bucket_encryption(rules)
 
         headers = {
@@ -690,12 +639,10 @@ class Minio(object):
         is_valid_bucket_name(bucket_name, False)
 
         # If someone explicitly set prefix to None convert it to empty string.
-        if prefix is None:
-            prefix = ''
+        prefix = prefix or ''
 
         # If someone explicitly set suffix to None convert it to empty string.
-        if suffix is None:
-            suffix = ''
+        suffix = suffix or ''
 
         url_components = urlsplit(self._endpoint_url)
         if url_components.hostname == 's3.amazonaws.com':
@@ -718,7 +665,7 @@ class Minio(object):
                         if hasattr(line, 'decode'):
                             line = line.decode('utf-8')
                         event = json.loads(line)
-                        if event['Records'] is not None:
+                        if event['Records']:
                             yield event
             except JSONDecodeError:
                 response.close()
@@ -810,15 +757,13 @@ class Minio(object):
 
             # Verify if we wrote data properly.
             if total_written < content_size:
-                msg = 'Data written {0} bytes is smaller than the ' \
-                      'specified size {1} bytes'.format(total_written,
-                                                        content_size)
+                msg = ('Data written {0} bytes is smaller than the specified'
+                       ' size {1} bytes').format(total_written, content_size)
                 raise InvalidSizeError(msg)
 
             if total_written > content_size:
-                msg = 'Data written {0} bytes is in excess than the ' \
-                      'specified size {1} bytes'.format(total_written,
-                                                        content_size)
+                msg = ('Data written {0} bytes is in excess than the specified'
+                       ' size {1} bytes').format(total_written, content_size)
                 raise InvalidSizeError(msg)
 
         # Delete existing file to be compatible with Windows
@@ -919,13 +864,12 @@ class Minio(object):
         headers = {}
 
         # Preserving the user-defined metadata in headers
-        if metadata is not None:
+        if metadata:
             headers = amzprefix_user_metadata(metadata)
             headers["x-amz-metadata-directive"] = "REPLACE"
 
         if conditions:
-            for k, v in conditions.items():
-                headers[k] = v
+            headers.update(conditions)
 
         # Source argument to copy_object can only be of type copy_SSE_C
         if source_sse:
@@ -1008,9 +952,7 @@ class Minio(object):
             metadata = {}
 
         metadata = amzprefix_user_metadata(metadata)
-
-        metadata['Content-Type'] = 'application/octet-stream' if \
-            not content_type else content_type
+        metadata['Content-Type'] = content_type or 'application/octet-stream'
 
         if length > part_size:
             return self._stream_put_object(bucket_name, object_name,
@@ -1069,8 +1011,7 @@ class Minio(object):
         is_valid_bucket_name(bucket_name, False)
 
         # If someone explicitly set prefix to None convert it to empty string.
-        if prefix is None:
-            prefix = ''
+        prefix = prefix or ''
 
         method = 'GET'
 
@@ -1148,11 +1089,8 @@ class Minio(object):
         is_valid_bucket_name(bucket_name, False)
 
         # If someone explicitly set prefix to None convert it to empty string.
-        if prefix is None:
-            prefix = ''
-
-        if start_after is None:
-            start_after = ''
+        prefix = prefix or ''
+        start_after = start_after or ''
 
         # Initialize query parameters.
         query = {
@@ -1168,7 +1106,7 @@ class Minio(object):
         continuation_token = None
         is_truncated = True
         while is_truncated:
-            if continuation_token is not None:
+            if continuation_token:
                 query['continuation-token'] = continuation_token
             response = self._url_open(method='GET',
                                       bucket_name=bucket_name,
@@ -1307,8 +1245,7 @@ class Minio(object):
                 # clear batch for next set of items
                 obj_batch = []
 
-    def list_incomplete_uploads(self, bucket_name, prefix='',
-                                recursive=False):
+    def list_incomplete_uploads(self, bucket_name, prefix='', recursive=False):
         """
         List all in-complete uploads for a given bucket.
 
@@ -1368,8 +1305,7 @@ class Minio(object):
         is_valid_bucket_name(bucket_name, False)
 
         # If someone explicitly set prefix to None convert it to empty string.
-        if prefix is None:
-            prefix = ''
+        prefix = prefix or ''
 
         # Initialize query parameters.
         query = {
@@ -1463,9 +1399,8 @@ class Minio(object):
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
-        recursive = True
         uploads = self._list_incomplete_uploads(bucket_name, object_name,
-                                                recursive,
+                                                recursive=True,
                                                 is_aggregate_size=False)
         for upload in uploads:
             if object_name == upload.object_name:
@@ -1505,11 +1440,11 @@ class Minio(object):
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
-        if expires.total_seconds() < 1 or \
-           expires.total_seconds() > _MAX_EXPIRY_TIME:
-            raise InvalidArgumentError('Expires param valid values'
-                                       ' are between 1 sec to'
-                                       ' {0} secs'.format(_MAX_EXPIRY_TIME))
+        if (expires.total_seconds() < 1 or
+                expires.total_seconds() > _MAX_EXPIRY_TIME):
+            raise InvalidArgumentError(
+                'Expires param valid values are between 1 sec to'
+                ' {0} secs'.format(_MAX_EXPIRY_TIME))
 
         region = self._get_bucket_region(bucket_name)
         endpoint_url = self._endpoint_url
@@ -1675,15 +1610,11 @@ class Minio(object):
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
-        headers = {}
-        if request_headers:
-            headers = request_headers
+        headers = request_headers or {}
 
-        if offset != 0 or length != 0:
-            request_range = '{}-{}'.format(
-                offset, "" if length == 0 else offset + length - 1
-            )
-            headers['Range'] = 'bytes=' + request_range
+        if offset or length:
+            headers['Range'] = 'bytes={}-{}'.format(
+                offset, offset + length - 1 if length else "")
 
         if sse:
             headers.update(sse.marshal())
@@ -1723,10 +1654,9 @@ class Minio(object):
         }
 
         md5_base64 = ''
-        sha256_hex = ''
+        sha256_hex = _UNSIGNED_PAYLOAD
         if self._is_ssl:
             md5_base64 = get_md5_base64digest(part_data)
-            sha256_hex = _UNSIGNED_PAYLOAD
         else:
             sha256_hex = get_sha256_hexdigest(part_data)
 
@@ -1765,8 +1695,8 @@ class Minio(object):
         return response.headers['etag'].replace('"', '')
 
     def _upload_part_routine(self, part_info):
-        bucket_name, object_name, upload_id, \
-            part_number, part_data, sse, progress = part_info
+        (bucket_name, object_name, upload_id, part_number,
+         part_data, sse, progress) = part_info
         # Initiate multipart put.
         etag = self._do_put_object(bucket_name, object_name, part_data,
                                    len(part_data), upload_id,
@@ -1984,19 +1914,10 @@ class Minio(object):
         :return: Region of bucket name.
         """
 
-        # Region set in constructor, return right here.
-        if self._region:
-            return self._region
-
-        # get bucket location for Amazon S3.
-        region = 'us-east-1'  # default to US standard.
-        if bucket_name in self._region_map:
-            region = self._region_map[bucket_name]
-        else:
+        region = self._region or self._region_map.get(bucket_name)
+        if not region:
             region = self._get_bucket_location(bucket_name)
             self._region_map[bucket_name] = region
-
-        # Success.
         return region
 
     def _get_bucket_location(self, bucket_name):
@@ -2006,12 +1927,6 @@ class Minio(object):
         :param bucket_name: Fetches location of the Bucket name.
         :return: location of bucket name is returned.
         """
-        method = 'GET'
-        url = self._endpoint_url + '/' + bucket_name + '?location='
-        headers = {}
-        # default for all requests.
-        region = 'us-east-1'
-
         # Region is set override.
         if self._region:
             return self._region
@@ -2021,9 +1936,12 @@ class Minio(object):
                 self._credentials.get().secret_key):
             return 'us-east-1'
 
+        method = 'GET'
+        url = self._endpoint_url + '/' + bucket_name + '?location='
+
         # Get signature headers if any.
-        headers = sign_v4(method, url, region,
-                          headers,
+        headers = sign_v4(method, url, "us-east-1",
+                          {},
                           self._credentials,
                           None, datetime.utcnow())
 
@@ -2060,8 +1978,7 @@ class Minio(object):
 
         # Set user agent once before executing the request.
         fold_case_headers['User-Agent'] = self._user_agent
-        for header in headers:
-            fold_case_headers[header] = headers[header]
+        fold_case_headers.update(headers)
 
         # Get bucket region.
         region = self._get_bucket_region(bucket_name)
@@ -2086,8 +2003,7 @@ class Minio(object):
             dump_http(method, url, fold_case_headers, response,
                       self._trace_output_stream)
 
-        if response.status != 200 and response.status != 204 \
-           and response.status != 206:
+        if response.status not in [200, 204, 206]:
             # Upon any response error invalidate the region cache
             # proactively for the bucket name.
             self._delete_bucket_region(bucket_name)
@@ -2097,21 +2013,13 @@ class Minio(object):
             if not preload_content:
                 response.release_conn()
 
-            supported_methods = [
-                'HEAD',
-                'GET',
-                'POST',
-                'PUT',
-                'DELETE'
-            ]
-
-            if method in supported_methods:
+            if method in ['DELETE', 'GET', 'HEAD', 'POST', 'PUT']:
                 raise ResponseError(response,
                                     method,
                                     bucket_name,
                                     object_name).get_exception()
-            else:
-                raise ValueError('Unsupported method returned'
-                                 ' error: {0}'.format(response.status))
+
+            raise ValueError('Unsupported method returned'
+                             ' error: {0}'.format(response.status))
 
         return response
