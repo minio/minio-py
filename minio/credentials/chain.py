@@ -26,15 +26,11 @@ class Chain(Provider):
     def retrieve(self):
         for provider in self._providers:
             creds = provider.retrieve()
-            if ((creds.access_key is None or creds.access_key == "") and
-                    (creds.secret_key is None or creds.secret_key == "")):
-                continue
-            self._current = provider
-            return creds
+            if creds.access_key and creds.secret_key:
+                self._current = provider
+                return creds
         self._current = None
         return Value()
 
     def is_expired(self):
-        if self._current == None:
-            return True
-        return self._current.is_expired()
+        return self._current.is_expired() if self._current else True

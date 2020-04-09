@@ -23,23 +23,15 @@ from .credentials import Provider, Value
 class FileAWSCredentials(Provider):
     def __init__(self, filename=None, profile=None, retrieved=False):
         super(Provider, self).__init__()
-        self._filename = filename
-        self._profile = profile
+        self._filename = (
+            filename or
+            os.environ.get('AWS_SHARED_CREDENTIALS_FILE') or
+            os.path.join(os.environ.get('HOME'), '.aws', 'credentials')
+        )
+        self._profile = profile or os.environ.get('AWS_PROFILE') or "default"
         self._retrieved = retrieved
 
     def retrieve(self):
-
-        if self._filename == "" or self._filename is None:
-            self._filename = os.environ.get('AWS_SHARED_CREDENTIALS_FILE')
-            if self._filename == "" or self._filename is None:
-                home_dir = os.environ.get('HOME')
-                self._filename = os.path.join(home_dir, '.aws', 'credentials')
-
-        if self._profile == "" or self._profile is None:
-            self._profile = os.environ.get('AWS_PROFILE')
-            if self._profile == "" or self._profile is None:
-                self._profile = 'default'
-
         self._retrieved = False
         ini_profile = configparser.ConfigParser()
         ini_profile.read(self._filename)
@@ -51,14 +43,15 @@ class FileAWSCredentials(Provider):
         except:
             pass
 
-        if access_key == '' or secret == '':
-            return Value()
+        if access_key and secret:
+            self._retrieved = True
+            return Value(
+                access_key=access_key,
+                secret_key=secret,
+                session_token=session_token)
 
-        self._retrieved = True
-        return Value(
-            access_key=access_key,
-            secret_key=secret,
-            session_token=session_token)
+        return Value()
+
 
     def is_expired(self):
         return not self._retrieved

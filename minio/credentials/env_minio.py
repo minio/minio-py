@@ -27,15 +27,12 @@ class EnvMinio(Provider):
 
     def retrieve(self):
         self._retrieved = False
-
-        id = os.environ.get('MINIO_ACCESS_KEY')
-
+        access_key = os.environ.get('MINIO_ACCESS_KEY')
         secret = os.environ.get('MINIO_SECRET_KEY')
-
         self._retrieved = True
 
         return Value(
-            access_key=id,
+            access_key=access_key,
             secret_key=secret
         )
 

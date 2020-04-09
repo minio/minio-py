@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import configparser
 import os
 import json
 import sys
@@ -25,21 +24,16 @@ from .credentials import Provider, Value
 class FileMinioClient(Provider):
     def __init__(self, filename=None, alias=None, retrieved=False):
         super(Provider, self).__init__()
-        self._filename = filename
-        self._alias = alias
+        self._filename = (
+            filename or
+            os.path.join(os.environ.get('HOME'),
+                         'mc' if sys.platform == 'win32' else '.mc',
+                         'config.json')
+        )
+        self._alias = alias or os.environ.get('MINIO_ALIAS') or "s3"
         self._retrieved = retrieved
 
     def retrieve(self):
-        if self._filename == "" or self._filename is None:
-            home_dir = os.environ.get('HOME')
-            self._filename = os.path.join(home_dir, '.mc', 'config.json')
-            if sys.platform == 'win32':
-                self._filename = os.path.join(home_dir, 'mc', 'config.json')
-        if self._alias == "" or self._alias is None:
-            self._alias = os.environ.get('MINIO_ALIAS')
-            if self._alias == "" or self._alias is None:
-                self._alias = "s3"
-
         self._retrieved = False
 
         config = open(self._filename, 'r')

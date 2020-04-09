@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import json
 import urllib3
 import datetime
@@ -23,16 +22,12 @@ from minio.error import ResponseError
 
 
 class IamEc2MetaData(Provider):
-
     iam_security_creds_path = '/latest/meta-data/iam/security-credentials'
-
     default_expiry_window = datetime.timedelta(minutes=5)
 
     def __init__(self, endpoint=None):
         super(Provider, self).__init__()
-        if endpoint == "" or endpoint is None:
-            endpoint = "http://169.254.169.254"
-        self._endpoint = endpoint
+        self._endpoint = endpoint or "http://169.254.169.254"
         self._expiry = Expiry()
         self._http_client = urllib3.PoolManager(
             retries=urllib3.Retry(
