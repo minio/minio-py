@@ -15,10 +15,12 @@
 # limitations under the License.
 
 import configparser
-import os, json
+import os
+import json
 import sys
 
 from .credentials import Provider, Value
+
 
 class FileMinioClient(Provider):
     def __init__(self, filename=None, alias=None, retrieved=False):

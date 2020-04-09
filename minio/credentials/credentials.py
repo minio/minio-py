@@ -17,11 +17,13 @@
 from abc import ABCMeta, abstractmethod
 from datetime import datetime, timedelta
 
+
 class Value(object):
     def __init__(self, access_key=None, secret_key=None, session_token=None):
         self.access_key = access_key
         self.secret_key = secret_key
         self.session_token = session_token
+
 
 class Provider(object):
 
@@ -34,6 +36,7 @@ class Provider(object):
     @abstractmethod
     def is_expired(self):
         pass
+
 
 class Expiry(object):
     def __init__(self):
@@ -48,6 +51,7 @@ class Expiry(object):
         if self._expiration is None:
             return True
         return self._expiration < datetime.now()
+
 
 class Credentials(object):
     def __init__(self, forceRefresh=True, provider=None):

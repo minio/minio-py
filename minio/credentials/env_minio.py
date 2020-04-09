@@ -19,6 +19,7 @@ import os
 
 from .credentials import Provider, Value
 
+
 class EnvMinio(Provider):
     def __init__(self, retrieved=False):
         super(Provider, self).__init__()

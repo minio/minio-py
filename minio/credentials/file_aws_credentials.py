@@ -19,6 +19,7 @@ import configparser
 
 from .credentials import Provider, Value
 
+
 class FileAWSCredentials(Provider):
     def __init__(self, filename=None, profile=None, retrieved=False):
         super(Provider, self).__init__()

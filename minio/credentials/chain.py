@@ -16,6 +16,7 @@
 
 from .credentials import Provider, Value
 
+
 class Chain(Provider):
     def __init__(self, providers):
         super(Provider, self).__init__()
@@ -26,7 +27,7 @@ class Chain(Provider):
         for provider in self._providers:
             creds = provider.retrieve()
             if ((creds.access_key is None or creds.access_key == "") and
-                (creds.secret_key is None or creds.secret_key == "")):
+                    (creds.secret_key is None or creds.secret_key == "")):
                 continue
             self._current = provider
             return creds
