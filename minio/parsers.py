@@ -42,7 +42,7 @@ from .definitions import (Object, Bucket, IncompleteUpload,
 from .xml_marshal import (NOTIFICATIONS_ARN_FIELDNAME_MAP)
 
 
-_S3_NS = {'s3' : 'http://s3.amazonaws.com/doc/2006-03-01/'}
+_S3_NS = {'s3': 'http://s3.amazonaws.com/doc/2006-03-01/'}
 
 
 class S3Element(object):
@@ -51,6 +51,7 @@ class S3Element(object):
     functions.
 
     """
+
     def __init__(self, root_name, element):
         self.root_name = root_name
         self.element = element
@@ -163,6 +164,7 @@ def parse_multipart_upload_result(data):
         root.get_etag_elem()
     )
 
+
 def parse_copy_object(bucket_name, object_name, data):
     """
     Parser for copy object response.
@@ -177,6 +179,7 @@ def parse_copy_object(bucket_name, object_name, data):
         root.get_etag_elem(),
         root.get_localized_time_elem('LastModified')
     )
+
 
 def parse_list_buckets(data):
     """
@@ -193,6 +196,7 @@ def parse_list_buckets(data):
         for buckets in root.findall('Buckets')
         for bucket in buckets.findall('Bucket')
     ]
+
 
 def _parse_objects_from_xml_elts(bucket_name, contents, common_prefixes):
     """Internal function that extracts objects and common prefixes from
@@ -216,6 +220,7 @@ def _parse_objects_from_xml_elts(bucket_name, contents, common_prefixes):
     ]
 
     return objects, object_dirs
+
 
 def parse_list_objects(data, bucket_name):
     """
@@ -269,6 +274,7 @@ def parse_list_objects_v2(data, bucket_name):
     )
 
     return objects + object_dirs, is_truncated, continuation_token
+
 
 def parse_list_multipart_uploads(data, bucket_name):
     """
@@ -328,6 +334,7 @@ def parse_list_parts(data, bucket_name, object_name, upload_id):
 
     return parts, is_truncated, part_marker
 
+
 def parse_new_multipart_upload(data):
     """
     Parser for new multipart upload response.
@@ -338,6 +345,7 @@ def parse_new_multipart_upload(data):
     root = S3Element.fromstring('InitiateMultipartUploadResult', data)
     return root.get_child_text('UploadId')
 
+
 def parse_location_constraint(data):
     """
     Parser for location constraint response.
@@ -347,6 +355,7 @@ def parse_location_constraint(data):
     """
     root = S3Element.fromstring('BucketLocationConstraintResult', data)
     return root.text()
+
 
 def _iso8601_to_localized_time(date_string):
     """
@@ -365,6 +374,7 @@ def _iso8601_to_localized_time(date_string):
         parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%SZ')
     localized_time = pytz.utc.localize(parsed_date)
     return localized_time
+
 
 def parse_get_bucket_notification(data):
     """
@@ -390,6 +400,7 @@ def parse_get_bucket_notification(data):
 
     return notifications
 
+
 def _parse_add_notifying_service_config(data, notifications, service_key,
                                         service_xml_tag):
 
@@ -411,7 +422,7 @@ def _parse_add_notifying_service_config(data, notifications, service_key,
                             'Value': xml_filter_rule.get_child_text('Value'),
                         }
                         for xml_filter_rule in xml_filter_rules.findall(
-                                './S3Key/FilterRule')
+                            './S3Key/FilterRule')
                     ]
                 }
             }
@@ -425,6 +436,7 @@ def _parse_add_notifying_service_config(data, notifications, service_key,
         notifications[service_key] = config
 
     return notifications
+
 
 def parse_multi_object_delete_response(data):
     """Parser for Multi-Object Delete API response.
