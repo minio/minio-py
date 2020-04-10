@@ -40,6 +40,7 @@ class PostPolicy(object):
     A :class:`PostPolicy <PostPolicy>` object for constructing
        Amazon S3 POST policy JSON string.
     """
+
     def __init__(self):
         self._expiration = None
         self._content_length_range = tuple()
@@ -114,7 +115,7 @@ class PostPolicy(object):
         err_msg = ('Min-length ({}) must be <= Max-length ({}), '
                    'and they must be non-negative.').format(
                        min_length, max_length
-                   )
+        )
         if min_length > max_length or min_length < 0 or max_length < 0:
             raise ValueError(err_msg)
 
@@ -157,7 +158,8 @@ class PostPolicy(object):
         Validate for required parameters.
         """
         if not isinstance(self._expiration, datetime.datetime):
-            raise InvalidArgumentError('Expiration datetime must be specified.')
+            raise InvalidArgumentError(
+                'Expiration datetime must be specified.')
 
         if 'key' not in self.form_data:
             raise InvalidArgumentError('object key must be specified.')
