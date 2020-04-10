@@ -67,9 +67,9 @@ class Object(object):
         self.metadata = metadata
 
     def __str__(self):
-        string_format = '<Object: bucket_name: {0} object_name: {1}' \
-                        ' last_modified: {2} etag: {3} size: {4}' \
-                        ' content_type: {5}, is_dir: {6}, metadata: {7}>'
+        string_format = ('<Object: bucket_name: {0} object_name: {1}'
+                         ' last_modified: {2} etag: {3} size: {4}'
+                         ' content_type: {5}, is_dir: {6}, metadata: {7}>')
         return string_format.format(self.bucket_name,
                                     self.object_name.encode('utf-8'),
                                     self.last_modified,
@@ -177,9 +177,9 @@ class UploadPart(object):
         self.size = size
 
     def __str__(self):
-        string_format = '<UploadPart: bucket_name: {0} object_name: {1}' \
-                        ' upload_id: {2} part_number: {3} etag: {4}' \
-                        ' last_modified: {5} size: {6}>'
+        string_format = ('<UploadPart: bucket_name: {0} object_name: {1}'
+                         ' upload_id: {2} part_number: {3} etag: {4}'
+                         ' last_modified: {5} size: {6}>')
         return string_format.format(self.bucket_name,
                                     self.object_name,
                                     self.upload_id,
