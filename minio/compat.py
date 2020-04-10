@@ -63,6 +63,9 @@ elif _is_py3:
     queue_empty = Empty
 
     from urllib.parse import quote, unquote, urlsplit, parse_qs
+    unquote = unquote  # to get rid of F401
+    urlsplit = urlsplit  # to get rid of F401
+    parse_qs = parse_qs  # to get rid of F401
 
     # Create types to compat with py2.
     builtin_range = range
@@ -76,8 +79,6 @@ elif _is_py3:
     bytes = bytes
     range = range
     str = str
-
-numeric_types = (int, long, float)
 
 
 # Note earlier versions of minio.compat exposed urllib.quote as urlencode
