@@ -114,8 +114,7 @@ class PostPolicy(object):
         """
         err_msg = ('Min-length ({}) must be <= Max-length ({}), '
                    'and they must be non-negative.').format(
-                       min_length, max_length
-        )
+                       min_length, max_length)
         if min_length > max_length or min_length < 0 or max_length < 0:
             raise ValueError(err_msg)
 
@@ -135,11 +134,10 @@ class PostPolicy(object):
                             list(self._content_length_range))
 
         policy_stmt = {
-            "expiration": self._expiration.strftime(
-                "%Y-%m-%dT%H:%M:%S.000Z"),
+            "expiration": self._expiration.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
         }
 
-        if len(policies) > 0:
+        if policies:
             policy_stmt["conditions"] = policies
 
         return json.dumps(policy_stmt)
