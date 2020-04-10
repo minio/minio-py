@@ -42,6 +42,7 @@ _SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'
 # Hardcoded S3 header value for X-Amz-Content-Sha256
 _UNSIGNED_PAYLOAD = u'UNSIGNED-PAYLOAD'
 
+
 def post_presign_signature(date, region, secret_key, policy_str):
     """
     Calculates signature version '4' for POST policy string.
@@ -155,7 +156,6 @@ def presign_v4(method, url, credentials,
     return new_parsed_url.geturl()
 
 
-
 def get_signed_headers(headers):
     """
     Get signed headers.
@@ -224,7 +224,8 @@ def sign_v4(method, url, region, headers=None,
 
     string_to_sign = generate_string_to_sign(request_datetime, region,
                                              canonical_req)
-    signing_key = generate_signing_key(request_datetime, region, credentials.get().secret_key)
+    signing_key = generate_signing_key(
+        request_datetime, region, credentials.get().secret_key)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
 
@@ -352,6 +353,7 @@ def generate_authorization_header(access_key, date, region,
                    'SignedHeaders=' + signed_headers_string + ',',
                    'Signature=' + signature]
     return ' '.join(auth_header)
+
 
 def remove_default_port(parsed_url):
     default_ports = {
