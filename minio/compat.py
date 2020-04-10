@@ -40,13 +40,9 @@ if _is_py2:
     from Queue import Empty
     queue_empty = Empty
 
-    from urllib import quote
+    from urllib import quote, unquote
 
-    from urllib import unquote
-
-    import urlparse
-    urlsplit = urlparse.urlsplit
-    parse_qs = urlparse.parse_qs
+    from urlparse import urlsplit, parse_qs
 
     ## Create missing types.
     bytes = str
@@ -66,13 +62,7 @@ elif _is_py3:
     from queue import Empty
     queue_empty = Empty
 
-    from urllib.request import quote
-
-    from urllib.request import unquote
-
-    import urllib.parse
-    urlsplit = urllib.parse.urlsplit
-    parse_qs = urllib.parse.parse_qs
+    from urllib.parse import quote, unquote, urlsplit, parse_qs
 
     ## Create types to compat with py2.
     builtin_range = range
