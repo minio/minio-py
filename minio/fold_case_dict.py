@@ -30,34 +30,31 @@ class FoldCaseDict(dict):
         self._data = self.__create(dictionary)
 
     def __create(self, value):
-        if isinstance(value, dict):
-            data = {}
-            for k, v in value.items():
-                if isinstance(v, dict):
-                    data[k.lower()] = FoldCaseDict(self.__create(v))
-                else:
-                    data[k.lower()] = v
-            return data
-        else:
+        if not isinstance(value, dict):
             return value
 
-    def __getitem__(self, item):
-        return self._data[item.lower()]
+        data = {}
+        for k, v in value.items():
+            data[k.lower()] = FoldCaseDict(v) if isinstance(v, dict) else v
+        return data
 
-    def __contains__(self, item):
-        return item.lower() in self._data
+    def __getitem__(self, key):
+        return self._data.__getitem__(key.lower())
+
+    def __contains__(self, key):
+        return self._data.__contains__(key.lower())
 
     def __setitem__(self, key, value):
-        self._data[key.lower()] = self.__create(value)
+        self._data.__setitem__(key.lower(), self.__create(value))
 
     def __delitem__(self, key):
-        del self._data[key.lower()]
+        self._data.__delitem__(key.lower())
 
     def __iter__(self):
-        return (k for k in self._data.keys())
+        return self._data.__iter__()
 
     def __len__(self):
-        return len(self._data)
+        return self._data.__len__()
 
     def __eq__(self, other):
         if isinstance(other, dict):
@@ -67,61 +64,55 @@ class FoldCaseDict(dict):
         else:
             raise NotImplementedError
 
-        # Compare insensitively
-        return self.items() == other.items()
+        return self._data.__eq__(other._data)
 
     def __repr__(self):
-        return str(self._data)
+        return self._data.__repr__()
 
     def get(self, key, default=None):
-        if not key.lower() in self:
-            return default
-        else:
-            return self[key]
+        return self._data.get(key.lower(), default)
 
     def has_key(self, key):
-        return key.lower() in self
+        return self._data.has_key(key.lower())
 
     def items(self):
-        return [(k, v) for k, v in self.iteritems()]
+        return self._data.items()
 
     def keys(self):
-        return [k for k in self.iterkeys()]
+        return self._data.keys()
 
     def values(self):
-        return [v for v in self.itervalues()]
+        return self._data.values()
 
     def iteritems(self):
-        for k, v in self._data.items():
-            yield k, v
+        return self._data.iteritems()
 
     def iterkeys(self):
-        for k, v in self._data.items():
+        for k in self._data.keys():
             yield k
 
     def itervalues(self):
-        for k, v in self._data.items():
+        for v in self._data.values():
             yield v
 
     def update(self, dictionary):
-        if not (isinstance(dictionary, dict) or
-                isinstance(dictionary, FoldCaseDict)):
+        if isinstance(dictionary, dict):
+            dictionary = FoldCaseDict(dictionary)
+        elif isinstance(dictionary, FoldCaseDict):
+            pass
+        else:
             raise TypeError
 
-        for k, v in dictionary.items():
-            self[k] = v
+        self._data.update(dictionary._data)
 
     def copy(self):
-        copy_dict = FoldCaseDict()
-        for k, v in self._data.items():
-            copy_dict[k] = v
-        return copy_dict
+        return FoldCaseDict(self._data.copy())
 
     def clear(self):
         self._data = {}
 
     def pop(self, key):
-        return self._data.pop(key)
+        return self._data.pop(key.lower())
 
     def popitem(self):
         return self._data.popitem()
