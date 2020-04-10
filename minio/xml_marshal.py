@@ -33,10 +33,12 @@ from collections import defaultdict
 
 _S3_NAMESPACE = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
+
 def xml_to_dict(in_xml):
     # Converts xml to dict
     elem = s3_xml.XML(in_xml)
     return etree_to_dict(elem)
+
 
 def etree_to_dict(elem):
     # Converts ElementTree object to dict
@@ -55,7 +57,7 @@ def etree_to_dict(elem):
             for dc in map(etree_to_dict, children):
                 for k, v in dc.items():
                     dd[k].append(v)
-        d = {elem.tag: {k:v[0] if len(v) == 1 else v for k, v in dd.items()}}
+        d = {elem.tag: {k: v[0] if len(v) == 1 else v for k, v in dd.items()}}
     if elem.attrib:
         d[elem.tag].update(('@' + k, v) for k, v in elem.attrib.items())
     if elem.text:
@@ -67,13 +69,15 @@ def etree_to_dict(elem):
             d[elem.tag] = text
     return d
 
+
 def xml_marshal_bucket_encryption(rules):
     kms_key_val = ''
     sse_alg_val = 'AES256'
     root = s3_xml.Element('ServerSideEncryptionConfiguration')
     for r in rules:
         rule_xml = s3_xml.SubElement(root, 'Rule')
-        apply_xml = s3_xml.SubElement(rule_xml, 'ApplyServerSideEncryptionByDefault')
+        apply_xml = s3_xml.SubElement(
+            rule_xml, 'ApplyServerSideEncryptionByDefault')
         if 'KMSMasterKeyID' in r['ApplyServerSideEncryptionByDefault'].keys():
             kms_key_val = r['ApplyServerSideEncryptionByDefault']['KMSMasterKeyID']
         if 'SSEAlgorithm' in r['ApplyServerSideEncryptionByDefault'].keys():
@@ -93,6 +97,7 @@ def xml_marshal_bucket_encryption(rules):
     s3_xml.ElementTree(root).write(data, encoding=None, xml_declaration=False)
     return data.getvalue()
 
+
 def xml_marshal_bucket_constraint(region):
     """
     Marshal's bucket constraint based on *region*.
@@ -100,7 +105,8 @@ def xml_marshal_bucket_constraint(region):
     :param region: Region name of a given bucket.
     :return: Marshalled XML data.
     """
-    root = s3_xml.Element('CreateBucketConfiguration', {'xmlns': _S3_NAMESPACE})
+    root = s3_xml.Element('CreateBucketConfiguration',
+                          {'xmlns': _S3_NAMESPACE})
     location_constraint = s3_xml.SubElement(root, 'LocationConstraint')
     location_constraint.text = region
     data = io.BytesIO()
@@ -117,7 +123,8 @@ def xml_marshal_select(opts):
     input_serialization = s3_xml.SubElement(root, 'InputSerialization')
 
     if opts.in_ser.csv_input is not None:
-        compression_type = s3_xml.SubElement(input_serialization, 'CompressionType')
+        compression_type = s3_xml.SubElement(
+            input_serialization, 'CompressionType')
         compression_type.text = opts.in_ser.compression_type
         csv = s3_xml.SubElement(input_serialization, 'CSV')
         file_header_info = s3_xml.SubElement(csv, 'FileHeaderInfo')
@@ -132,18 +139,21 @@ def xml_marshal_select(opts):
         quote_escape_character.text = opts.in_ser.csv_input.QuoteEscapeCharacter
         comments = s3_xml.SubElement(csv, 'Comments')
         comments.text = opts.in_ser.csv_input.Comments
-        allow_quoted_record_delimiter = s3_xml.SubElement(csv, 'AllowQuotedRecordDelimiter')
+        allow_quoted_record_delimiter = s3_xml.SubElement(
+            csv, 'AllowQuotedRecordDelimiter')
         allow_quoted_record_delimiter.text = opts.in_ser.csv_input.AllowQuotedRecordDelimiter.lower()
 
     if opts.in_ser.json_input is not None:
-        compression_type = s3_xml.SubElement(input_serialization, 'CompressionType')
+        compression_type = s3_xml.SubElement(
+            input_serialization, 'CompressionType')
         compression_type.text = opts.in_ser.compression_type
         json = s3_xml.SubElement(input_serialization, 'JSON')
         type_input = s3_xml.SubElement(json, 'Type')
         type_input.text = opts.in_ser.json_input.Type
 
     if opts.in_ser.parquet_input is not None:
-        compression_type = s3_xml.SubElement(input_serialization, 'CompressionType')
+        compression_type = s3_xml.SubElement(
+            input_serialization, 'CompressionType')
         compression_type.text = opts.in_ser.compression_type
         s3_xml.SubElement(input_serialization, 'Parquet')
 
@@ -264,7 +274,8 @@ def xml_marshal_bucket_notifications(notifications):
 
     :return: Marshalled XML data
     """
-    root = s3_xml.Element('NotificationConfiguration', {'xmlns': _S3_NAMESPACE})
+    root = s3_xml.Element('NotificationConfiguration',
+                          {'xmlns': _S3_NAMESPACE})
     _add_notification_config_to_xml(
         root,
         'TopicConfiguration',
@@ -284,6 +295,7 @@ def xml_marshal_bucket_notifications(notifications):
     data = io.BytesIO()
     s3_xml.ElementTree(root).write(data, encoding=None, xml_declaration=False)
     return data.getvalue()
+
 
 NOTIFICATIONS_ARN_FIELDNAME_MAP = {
     'TopicConfiguration': 'Topic',
