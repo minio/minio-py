@@ -55,8 +55,7 @@ class CopyConditions(collectionsAbc.MutableMapping):
     """
 
     def __init__(self, *args, **kwargs):
-        self._store = dict()
-        self.update(dict(*args, **kwargs))  # use the free update to set keys
+        self._store = dict(*args, **kwargs)
 
     def __getitem__(self, key):
         return self._store[key]
