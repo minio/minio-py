@@ -45,7 +45,7 @@ class Worker(Thread):
         """ Continously receive tasks and execute them """
         while True:
             task = self.tasks_queue.get()
-            if task is None:
+            if not task:
                 self.tasks_queue.task_done()
                 break
             # No exception detected in any thread,
@@ -60,6 +60,7 @@ class Worker(Thread):
                     self.exceptions_queue.put(e)
             # Mark this task as done, whether an exception happened or not
             self.tasks_queue.task_done()
+
 
 class ThreadPool:
     """ Pool of threads consuming tasks from a queue """
@@ -91,4 +92,3 @@ class ThreadPool:
         if not self.exceptions_queue.empty():
             raise self.exceptions_queue.get()
         return self.results_queue
-
