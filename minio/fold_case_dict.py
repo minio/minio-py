@@ -24,6 +24,7 @@ This module implements a case insensitive dictionary.
 
 """
 
+
 class FoldCaseDict(dict):
     def __init__(self, dictionary={}):
         self._data = self.__create(dictionary)
