@@ -71,28 +71,22 @@ def etree_to_dict(elem):
 
 
 def xml_marshal_bucket_encryption(rules):
-    kms_key_val = ''
-    sse_alg_val = 'AES256'
     root = s3_xml.Element('ServerSideEncryptionConfiguration')
-    for r in rules:
-        rule_xml = s3_xml.SubElement(root, 'Rule')
-        apply_xml = s3_xml.SubElement(
-            rule_xml, 'ApplyServerSideEncryptionByDefault')
-        if 'KMSMasterKeyID' in r['ApplyServerSideEncryptionByDefault'].keys():
-            kms_key_val = r['ApplyServerSideEncryptionByDefault']['KMSMasterKeyID']
-        if 'SSEAlgorithm' in r['ApplyServerSideEncryptionByDefault'].keys():
-            sse_alg_val = r['ApplyServerSideEncryptionByDefault']['SSEAlgorithm']
-        if kms_key_val != '':
-            kms = s3_xml.SubElement(apply_xml, 'KMSMasterKeyID')
-            kms.text = kms_key_val
+
+    if rules:
+        # As server supports only one rule, the first rule is taken due to
+        # no validation is done at server side.
+        apply_xml = s3_xml.SubElement(s3_xml.SubElement(root, 'Rule'),
+                                      'ApplyServerSideEncryptionByDefault')
         sse = s3_xml.SubElement(apply_xml, 'SSEAlgorithm')
-        sse.text = sse_alg_val
-        # 'break' the loop as soon as the first entry in the list is
-        # processed. That is because, 'Rule" list cannot have more than
-        # one entry for the time-being, even if there are more entries
-        # in the list. This is a server side restriction and it is
-        # validated on the server side.
-        break
+        sse.text = rules[0]['ApplyServerSideEncryptionByDefault'].get(
+            'SSEAlgorithm', 'AES256')
+        kms_text = rules[0]['ApplyServerSideEncryptionByDefault'].get(
+            'KMSMasterKeyID')
+        if kms_text:
+            kms = s3_xml.SubElement(apply_xml, 'KMSMasterKeyID')
+            kms.text = kms_text
+
     data = io.BytesIO()
     s3_xml.ElementTree(root).write(data, encoding=None, xml_declaration=False)
     return data.getvalue()
