@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,8 +27,6 @@ This module contains core API parsers.
 
 # standard.
 from xml.etree import ElementTree
-from xml.etree.ElementTree import ParseError
-
 from datetime import datetime
 
 # dependencies.
@@ -87,7 +86,7 @@ class S3Element(object):
 
         """
         elt = self.element.find('s3:{}'.format(name), _S3_NS)
-        return S3Element(self.root_name, elt) if elt is not None else None
+        return S3Element(self.root_name, elt) if elt else None
 
     def get_child_text(self, name, strict=True):
         """Extract text of a child element. If strict, and child element is
@@ -213,8 +212,7 @@ def _parse_objects_from_xml_elts(bucket_name, contents, common_prefixes):
     ]
 
     object_dirs = [
-        Object(bucket_name, dir_elt.text(), None, '',
-               0, is_dir=True)
+        Object(bucket_name, dir_elt.text(), None, '', 0, is_dir=True)
         for dirs_elt in common_prefixes
         for dir_elt in dirs_elt.findall('Prefix')
     ]
