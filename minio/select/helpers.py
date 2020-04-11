@@ -32,11 +32,12 @@ SQL = 'SQL'  # Value for ExpressionType
 EVENT_RECORDS = 'Records'  # Event Type is Records
 EVENT_PROGRESS = 'Progress'  # Event Type Progress
 EVENT_STATS = 'Stats'  # Event Type Stats
-EVENT_CONT = 'Cont' # Event Type continue
+EVENT_CONT = 'Cont'  # Event Type continue
 EVENT_END = 'End'  # Event Type is End
-EVENT_CONTENT_TYPE = "text/xml" # Event content xml type
+EVENT_CONTENT_TYPE = "text/xml"  # Event content xml type
 EVENT = 'event'  # Message Type is event
 ERROR = 'error'  # Message Type is error
+
 
 def calculate_crc(value):
     '''
@@ -44,15 +45,13 @@ def calculate_crc(value):
     '''
     return crc32(value) & 0xffffffff
 
+
 def validate_crc(current_value, expected_value):
     '''
     Validate through CRC check
     '''
-    crc_current = calculate_crc(current_value)
-    crc_expected = byte_int(expected_value)
-    if crc_current == crc_expected:
-        return True
-    return False
+    return calculate_crc(current_value) == byte_int(expected_value)
+
 
 def byte_int(data_bytes):
     '''
