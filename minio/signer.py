@@ -60,8 +60,8 @@ def post_presign_signature(date, region, secret_key, policy_str):
 
 
 def presign_v4(method, url, credentials,
-               region=None, headers=None, expires=None, response_headers=None,
-               request_date=None):
+               region=None, headers=None, expires=None,
+               response_headers=None, request_date=None):
     """
     Calculates signature version '4' for regular presigned URLs.
 
@@ -92,8 +92,15 @@ def presign_v4(method, url, credentials,
     if request_date is None:
         request_date = datetime.utcnow()
 
-    parsed_url = urlsplit(url)
+    # If a sha256sum is known, add to headers to include with signature
     content_hash_hex = _UNSIGNED_PAYLOAD
+    for k in headers.keys():
+        if k.lower() == 'x-amz-content-sha256':
+            content_hash_hex = headers.get(k, _UNSIGNED_PAYLOAD)
+            del headers[k]
+            break
+
+    parsed_url = urlsplit(url)
     host = remove_default_port(parsed_url)
     headers['Host'] = host
     iso8601Date = request_date.strftime("%Y%m%dT%H%M%SZ")
