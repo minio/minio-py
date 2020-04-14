@@ -32,6 +32,7 @@ class Bucket(object):
     :param name: Bucket name.
     :param created: Bucket creation date.
     """
+
     def __init__(self, name, created):
         self.name = name
         self.creation_date = created
@@ -53,6 +54,7 @@ class Object(object):
     :param is_dir: Optional parameter differentiating object prefixes.
     :param metadata: Optional parameter contains all the custom metadata.
     """
+
     def __init__(self, bucket_name, object_name, last_modified, etag, size,
                  content_type=None, is_dir=False, metadata=None):
         self.bucket_name = bucket_name
@@ -65,9 +67,9 @@ class Object(object):
         self.metadata = metadata
 
     def __str__(self):
-        string_format = '<Object: bucket_name: {0} object_name: {1}' \
-                        ' last_modified: {2} etag: {3} size: {4}' \
-                        ' content_type: {5}, is_dir: {6}, metadata: {7}>'
+        string_format = ('<Object: bucket_name: {0} object_name: {1}'
+                         ' last_modified: {2} etag: {3} size: {4}'
+                         ' content_type: {5}, is_dir: {6}, metadata: {7}>')
         return string_format.format(self.bucket_name,
                                     self.object_name.encode('utf-8'),
                                     self.last_modified,
@@ -75,6 +77,7 @@ class Object(object):
                                     self.content_type,
                                     self.is_dir,
                                     self.metadata)
+
 
 class MultipartUploadResult(object):
     """
@@ -86,6 +89,7 @@ class MultipartUploadResult(object):
     :param location: Object uploaded location.
     :param etag: Object final etag.
     """
+
     def __init__(self, bucket_name, object_name, location, etag):
         self.bucket_name = bucket_name
         self.object_name = object_name
@@ -98,6 +102,7 @@ class MultipartUploadResult(object):
         return string_format.format(self.bucket_name, self.object_name,
                                     self.location, self.etag)
 
+
 class CopyObjectResult(object):
     """
     A complete copy object operation metadata.
@@ -108,6 +113,7 @@ class CopyObjectResult(object):
     :param etag: ETag saved on the server computed for object_name.
     :param last_modified: Object when it was last modified on server.
     """
+
     def __init__(self, bucket_name, object_name, etag, last_modified):
         self.bucket_name = bucket_name
         self.object_name = object_name
@@ -120,6 +126,7 @@ class CopyObjectResult(object):
         return string_format.format(self.bucket_name, self.object_name,
                                     self.etag, self.last_modified)
 
+
 class IncompleteUpload(object):
     """
     A partially uploaded object's metadata
@@ -130,6 +137,7 @@ class IncompleteUpload(object):
     :param upload_id: Partially uploaded object's upload id.
     :param initiated: Date when the multipart was initiated.
     """
+
     def __init__(self, bucket_name, object_name, upload_id, initiated):
         self.bucket_name = bucket_name
         self.object_name = object_name
@@ -157,6 +165,7 @@ class UploadPart(object):
     :last_modified: Last modified time of the part.
     :size: Size of the part.
     """
+
     def __init__(self, bucket_name, object_name, upload_id, part_number, etag,
                  last_modified, size):
         self.bucket_name = bucket_name
@@ -168,9 +177,9 @@ class UploadPart(object):
         self.size = size
 
     def __str__(self):
-        string_format = '<UploadPart: bucket_name: {0} object_name: {1}' \
-                        ' upload_id: {2} part_number: {3} etag: {4}' \
-                        ' last_modified: {5} size: {6}>'
+        string_format = ('<UploadPart: bucket_name: {0} object_name: {1}'
+                         ' upload_id: {2} part_number: {3} etag: {4}'
+                         ' last_modified: {5} size: {6}>')
         return string_format.format(self.bucket_name,
                                     self.object_name,
                                     self.upload_id,
