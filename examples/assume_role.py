@@ -47,6 +47,8 @@ credentials_provider = AssumeRoleProvider(client, Policy=restricted_upload_polic
 temp_creds = Credentials(provider=credentials_provider)
 
 # User can access the credentials for e.g. serialization
+print("Retrieved temporary credentials:")
+print(temp_creds.get().access_key)
 print(temp_creds.get().secret_key)
 
 # Initialize Minio client with the temporary credentials
