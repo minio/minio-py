@@ -68,7 +68,7 @@ class AssumeRoleProvider(Provider):
                                  self._minio_client._credentials,
                                  content_sha256=content_sha256_hex,
                                  request_datetime=datetime.utcnow(),
-                                 service='sts'
+                                 service_name='sts'
                                  )
         response = self._minio_client._http.urlopen(self.method, url,
                                                     body=content,
@@ -86,23 +86,4 @@ class AssumeRoleProvider(Provider):
 
     def is_expired(self):
         return self._expiry.is_expired()
-
-
-def assume_role(mc, RoleArn=None, RoleSessionName=None, Policy=None, DurationSeconds=None):
-    """"
-    Generate temporary credentials using AssumeRole STS API.
-
-    API documentation:
-     - https://github.com/minio/minio/blob/master/docs/sts/assume-role.md
-     - https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html
-
-    :param minio_client: Minio client needed to get endpoint, and credentials for the assume role request.
-    :param RoleArn: RoleArn is ignored by MinIO, but is required by boto and AWS STS.
-    :param RoleSessionName: RoleSessionName is ignored by MinIO, but is required by boto and AWS STS.
-    :param Policy: Optional policy dict.
-    :param DurationSeconds: Number of seconds the assume role credentials will remain valid.
-    :return Credentials
-    """
-    credentials_provider = AssumeRoleProvider(mc, RoleArn, RoleSessionName, Policy, DurationSeconds)
-    return Credentials(provider=credentials_provider)
 

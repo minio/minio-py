@@ -12,19 +12,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# Note: YOUR-ACCESSKEYID and YOUR-SECRETACCESSKEY are
-# dummy values, please replace them with original values.
-import io
+#
+# Notes:
+#  - You cannot use root user credentials to call AssumeRole.
+#  - YOUR-ACCESSKEYID and YOUR-SECRETACCESSKEY are
+#    dummy values, please replace them with original values.
 
 from minio import Minio
-from minio.credentials.assume_role import assume_role
+from minio.credentials import AssumeRoleProvider, Credentials
 
 client = Minio('localhost:9000',
-              # access_key='YOUR-ACCESSKEYID',
-              # secret_key='YOUR-SECRETACCESSKEY')
-                access_key='newuser',
-               secret_key='newuser123', region='us-east-1', secure=False)
+               access_key='YOUR-ACCESSKEYID',
+               secret_key='YOUR-SECRETACCESSKEY',
+               region='us-east-1', secure=False)
 
 restricted_upload_policy = """{
   "Version": "2012-10-17",
@@ -43,13 +43,11 @@ restricted_upload_policy = """{
 } 
 """
 
+credentials_provider = AssumeRoleProvider(client, Policy=restricted_upload_policy)
+temp_creds = Credentials(provider=credentials_provider)
 
-temp_creds = assume_role(client, Policy=restricted_upload_policy)
-
-print(temp_creds)
+# User can access the credentials for e.g. serialization
 print(temp_creds.get().secret_key)
 
+# Initialize Minio client with the temporary credentials
 restricted_client = Minio('localhost:9000', credentials=temp_creds, region='us-east-1', secure=False)
-
-restricted_client.put_object('uploads', '2020/testobject', io.BytesIO(b'data'), length=4)
-
