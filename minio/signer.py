@@ -301,7 +301,8 @@ def generate_signing_key(date, region, secret_key, service_name=_DEFAULT_SERVICE
     key2 = hmac.new(key1, formatted_date.encode('utf-8'),
                     hashlib.sha256).digest()
     key3 = hmac.new(key2, region.encode('utf-8'), hashlib.sha256).digest()
-    key4 = hmac.new(key3, service_name.encode('utf-8'), hashlib.sha256).digest()
+    key4 = hmac.new(key3, service_name.encode(
+        'utf-8'), hashlib.sha256).digest()
 
     return hmac.new(key4, 'aws4_request'.encode('utf-8'),
                     hashlib.sha256).digest()
@@ -349,7 +350,8 @@ def generate_authorization_header(access_key, date, region,
     :param service_name: Optional service to sign request for.
     """
     signed_headers_string = ';'.join(signed_headers)
-    credential = generate_credential_string(access_key, date, region, service_name)
+    credential = generate_credential_string(
+        access_key, date, region, service_name)
     auth_header = [_SIGN_V4_ALGORITHM, 'Credential=' + credential + ',',
                    'SignedHeaders=' + signed_headers_string + ',',
                    'Signature=' + signature]
