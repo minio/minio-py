@@ -28,15 +28,36 @@ This module contains the simple wrappers for XML marshaller's.
 from __future__ import absolute_import
 import io
 
-from xml.etree import ElementTree as s3_xml
+import xml.etree.ElementTree as ET
 from collections import defaultdict
 
 _S3_NAMESPACE = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
+
+def Element(tag, with_namespace=False):
+    if with_namespace:
+        return ET.Element(tag, {'xmlns': _S3_NAMESPACE})
+    return ET.Element(tag)
+
+
+def SubElement(parent, tag, text=None):
+    subElement = ET.SubElement(parent, tag)
+    if text is not None:
+        subElement.text = text
+    return subElement
+
+
+def get_xml_data(element):
+    data = io.BytesIO()
+    ET.ElementTree(element).write(data, encoding=None, xml_declaration=False)
+    return data.getvalue()
+
+
 def xml_to_dict(in_xml):
     # Converts xml to dict
-    elem = s3_xml.XML(in_xml)
+    elem = ET.XML(in_xml)
     return etree_to_dict(elem)
+
 
 def etree_to_dict(elem):
     # Converts ElementTree object to dict
@@ -55,7 +76,7 @@ def etree_to_dict(elem):
             for dc in map(etree_to_dict, children):
                 for k, v in dc.items():
                     dd[k].append(v)
-        d = {elem.tag: {k:v[0] if len(v) == 1 else v for k, v in dd.items()}}
+        d = {elem.tag: {k: v[0] if len(v) == 1 else v for k, v in dd.items()}}
     if elem.attrib:
         d[elem.tag].update(('@' + k, v) for k, v in elem.attrib.items())
     if elem.text:
@@ -67,31 +88,25 @@ def etree_to_dict(elem):
             d[elem.tag] = text
     return d
 
+
 def xml_marshal_bucket_encryption(rules):
-    kms_key_val = ''
-    sse_alg_val = 'AES256'
-    root = s3_xml.Element('ServerSideEncryptionConfiguration')
-    for r in rules:
-        rule_xml = s3_xml.SubElement(root, 'Rule')
-        apply_xml = s3_xml.SubElement(rule_xml, 'ApplyServerSideEncryptionByDefault')
-        if 'KMSMasterKeyID' in r['ApplyServerSideEncryptionByDefault'].keys():
-            kms_key_val = r['ApplyServerSideEncryptionByDefault']['KMSMasterKeyID']
-        if 'SSEAlgorithm' in r['ApplyServerSideEncryptionByDefault'].keys():
-            sse_alg_val = r['ApplyServerSideEncryptionByDefault']['SSEAlgorithm']
-        if kms_key_val != '':
-            kms = s3_xml.SubElement(apply_xml, 'KMSMasterKeyID')
-            kms.text = kms_key_val
-        sse = s3_xml.SubElement(apply_xml, 'SSEAlgorithm')
-        sse.text = sse_alg_val
-        # 'break' the loop as soon as the first entry in the list is
-        # processed. That is because, 'Rule" list cannot have more than
-        # one entry for the time-being, even if there are more entries
-        # in the list. This is a server side restriction and it is
-        # validated on the server side.
-        break
-    data = io.BytesIO()
-    s3_xml.ElementTree(root).write(data, encoding=None, xml_declaration=False)
-    return data.getvalue()
+    root = Element('ServerSideEncryptionConfiguration')
+
+    if rules:
+        # As server supports only one rule, the first rule is taken due to
+        # no validation is done at server side.
+        apply_element = SubElement(SubElement(root, 'Rule'),
+                                   'ApplyServerSideEncryptionByDefault')
+        SubElement(apply_element, 'SSEAlgorithm',
+                   rules[0]['ApplyServerSideEncryptionByDefault'].get(
+                       'SSEAlgorithm', 'AES256'))
+        kms_text = rules[0]['ApplyServerSideEncryptionByDefault'].get(
+            'KMSMasterKeyID')
+        if kms_text:
+            SubElement(apply_element, 'KMSMasterKeyID', kms_text)
+
+    return get_xml_data(root)
+
 
 def xml_marshal_bucket_constraint(region):
     """
@@ -100,79 +115,61 @@ def xml_marshal_bucket_constraint(region):
     :param region: Region name of a given bucket.
     :return: Marshalled XML data.
     """
-    root = s3_xml.Element('CreateBucketConfiguration', {'xmlns': _S3_NAMESPACE})
-    location_constraint = s3_xml.SubElement(root, 'LocationConstraint')
-    location_constraint.text = region
-    data = io.BytesIO()
-    s3_xml.ElementTree(root).write(data, encoding=None, xml_declaration=False)
-    return data.getvalue()
+    root = Element('CreateBucketConfiguration', with_namespace=True)
+    SubElement(root, 'LocationConstraint', region)
+    return get_xml_data(root)
 
 
 def xml_marshal_select(opts):
-    root = s3_xml.Element('SelectObjectContentRequest')
-    expression = s3_xml.SubElement(root, 'Expression')
-    expression.text = opts.expression
-    expression_type = s3_xml.SubElement(root, 'ExpressionType')
-    expression_type.text = 'SQL'
-    input_serialization = s3_xml.SubElement(root, 'InputSerialization')
+    root = Element('SelectObjectContentRequest')
+    SubElement(root, 'Expression', opts.expression)
+    SubElement(root, 'ExpressionType', 'SQL')
 
-    if opts.in_ser.csv_input is not None:
-        compression_type = s3_xml.SubElement(input_serialization, 'CompressionType')
-        compression_type.text = opts.in_ser.compression_type
-        csv = s3_xml.SubElement(input_serialization, 'CSV')
-        file_header_info = s3_xml.SubElement(csv, 'FileHeaderInfo')
-        file_header_info.text = opts.in_ser.csv_input.FileHeaderInfo
-        record_delimiter = s3_xml.SubElement(csv, 'RecordDelimiter')
-        record_delimiter.text = opts.in_ser.csv_input.RecordDelimiter
-        field_delimiter = s3_xml.SubElement(csv, 'FieldDelimiter')
-        field_delimiter.text = opts.in_ser.csv_input.FieldDelimiter
-        quote_character = s3_xml.SubElement(csv, 'QuoteCharacter')
-        quote_character.text = opts.in_ser.csv_input.QuoteCharacter
-        quote_escape_character = s3_xml.SubElement(csv, 'QuoteEscapeCharacter')
-        quote_escape_character.text = opts.in_ser.csv_input.QuoteEscapeCharacter
-        comments = s3_xml.SubElement(csv, 'Comments')
-        comments.text = opts.in_ser.csv_input.Comments
-        allow_quoted_record_delimiter = s3_xml.SubElement(csv, 'AllowQuotedRecordDelimiter')
-        allow_quoted_record_delimiter.text = opts.in_ser.csv_input.AllowQuotedRecordDelimiter.lower()
+    input_serialization = SubElement(root, 'InputSerialization')
+    SubElement(input_serialization, 'CompressionType',
+               opts.in_ser.compression_type)
 
-    if opts.in_ser.json_input is not None:
-        compression_type = s3_xml.SubElement(input_serialization, 'CompressionType')
-        compression_type.text = opts.in_ser.compression_type
-        json = s3_xml.SubElement(input_serialization, 'JSON')
-        type_input = s3_xml.SubElement(json, 'Type')
-        type_input.text = opts.in_ser.json_input.Type
+    if opts.in_ser.csv_input:
+        csv = SubElement(input_serialization, 'CSV')
+        SubElement(csv, 'FileHeaderInfo', opts.in_ser.csv_input.FileHeaderInfo)
+        SubElement(csv, 'RecordDelimiter',
+                   opts.in_ser.csv_input.RecordDelimiter)
+        SubElement(csv, 'FieldDelimiter', opts.in_ser.csv_input.FieldDelimiter)
+        SubElement(csv, 'QuoteCharacter', opts.in_ser.csv_input.QuoteCharacter)
+        SubElement(csv, 'QuoteEscapeCharacter',
+                   opts.in_ser.csv_input.QuoteEscapeCharacter)
+        SubElement(csv, 'Comments', opts.in_ser.csv_input.Comments)
+        SubElement(csv, 'AllowQuotedRecordDelimiter',
+                   opts.in_ser.csv_input.AllowQuotedRecordDelimiter.lower())
 
-    if opts.in_ser.parquet_input is not None:
-        compression_type = s3_xml.SubElement(input_serialization, 'CompressionType')
-        compression_type.text = opts.in_ser.compression_type
-        s3_xml.SubElement(input_serialization, 'Parquet')
+    if opts.in_ser.json_input:
+        SubElement(SubElement(input_serialization, 'JSON'), 'Type',
+                   opts.in_ser.json_input.Type)
 
-    output_serialization = s3_xml.SubElement(root, 'OutputSerialization')
-    if opts.out_ser.csv_output is not None:
-        csv = s3_xml.SubElement(output_serialization, 'CSV')
-        quote_field = s3_xml.SubElement(csv, 'QuoteFields')
-        quote_field.text = opts.out_ser.csv_output.QuoteFields
-        record_delimiter = s3_xml.SubElement(csv, 'RecordDelimiter')
-        record_delimiter.text = opts.out_ser.csv_output.RecordDelimiter
-        field_delimiter = s3_xml.SubElement(csv, 'FieldDelimiter')
-        field_delimiter.text = opts.out_ser.csv_output.FieldDelimiter
-        quote_character = s3_xml.SubElement(csv, 'QuoteCharacter')
-        quote_character.text = opts.out_ser.csv_output.QuoteCharacter
-        quote_escape_character = s3_xml.SubElement(csv, 'QuoteEscapeCharacter')
-        quote_escape_character.text = opts.out_ser.csv_output.QuoteEscapeCharacter
+    if opts.in_ser.parquet_input:
+        SubElement(input_serialization, 'Parquet')
 
-    if opts.out_ser.json_output is not None:
-        json = s3_xml.SubElement(output_serialization, 'JSON')
-        record_delimiter = s3_xml.SubElement(json, 'RecordDelimiter')
-        record_delimiter.text = opts.out_ser.json_output.RecordDelimiter
+    output_serialization = SubElement(root, 'OutputSerialization')
+    if opts.out_ser.csv_output:
+        csv = SubElement(output_serialization, 'CSV')
+        SubElement(csv, 'QuoteFields', opts.out_ser.csv_output.QuoteFields)
+        SubElement(csv, 'RecordDelimiter',
+                   opts.out_ser.csv_output.RecordDelimiter)
+        SubElement(csv, 'FieldDelimiter',
+                   opts.out_ser.csv_output.FieldDelimiter)
+        SubElement(csv, 'QuoteCharacter',
+                   opts.out_ser.csv_output.QuoteCharacter)
+        SubElement(csv, 'QuoteEscapeCharacter',
+                   opts.out_ser.csv_output.QuoteEscapeCharacter)
 
-    request_progress = s3_xml.SubElement(root, 'RequestProgress')
-    enabled = s3_xml.SubElement(request_progress, 'Enabled')
-    enabled.text = opts.req_progress.enabled.lower()
+    if opts.out_ser.json_output:
+        SubElement(SubElement(output_serialization, 'JSON'), 'RecordDelimiter',
+                   opts.out_ser.json_output.RecordDelimiter)
 
-    data = io.BytesIO()
-    s3_xml.ElementTree(root).write(data, encoding=None, xml_declaration=False)
-    return data.getvalue()
+    SubElement(SubElement(root, 'RequestProgress'), 'Enabled',
+               opts.req_progress.enabled.lower())
+
+    return get_xml_data(root)
 
 
 def xml_marshal_complete_multipart_upload(uploaded_parts):
@@ -182,18 +179,13 @@ def xml_marshal_complete_multipart_upload(uploaded_parts):
     :param uploaded_parts: List of all uploaded parts, ordered by part number.
     :return: Marshalled XML data.
     """
-    root = s3_xml.Element('CompleteMultipartUpload', {'xmlns': _S3_NAMESPACE})
+    root = Element('CompleteMultipartUpload', with_namespace=True)
     for uploaded_part in uploaded_parts:
-        part_number = uploaded_part.part_number
-        part = s3_xml.SubElement(root, 'Part')
-        part_num = s3_xml.SubElement(part, 'PartNumber')
-        part_num.text = str(part_number)
-        etag = s3_xml.SubElement(part, 'ETag')
-        etag.text = '"' + uploaded_part.etag + '"'
-        data = io.BytesIO()
-        s3_xml.ElementTree(root).write(data, encoding=None,
-                                       xml_declaration=False)
-    return data.getvalue()
+        part = SubElement(root, 'Part')
+        SubElement(part, 'PartNumber', str(uploaded_part.part_number))
+        SubElement(part, 'ETag', '"' + uploaded_part.etag + '"')
+
+    return get_xml_data(root)
 
 
 def xml_marshal_bucket_notifications(notifications):
@@ -264,7 +256,7 @@ def xml_marshal_bucket_notifications(notifications):
 
     :return: Marshalled XML data
     """
-    root = s3_xml.Element('NotificationConfiguration', {'xmlns': _S3_NAMESPACE})
+    root = Element('NotificationConfiguration', with_namespace=True)
     _add_notification_config_to_xml(
         root,
         'TopicConfiguration',
@@ -281,9 +273,8 @@ def xml_marshal_bucket_notifications(notifications):
         notifications.get('CloudFunctionConfigurations', [])
     )
 
-    data = io.BytesIO()
-    s3_xml.ElementTree(root).write(data, encoding=None, xml_declaration=False)
-    return data.getvalue()
+    return get_xml_data(root)
+
 
 NOTIFICATIONS_ARN_FIELDNAME_MAP = {
     'TopicConfiguration': 'Topic',
@@ -299,33 +290,25 @@ def _add_notification_config_to_xml(node, element_name, configs):
 
     """
     for config in configs:
-        config_node = s3_xml.SubElement(node, element_name)
+        config_node = SubElement(node, element_name)
 
         if 'Id' in config:
-            id_node = s3_xml.SubElement(config_node, 'Id')
-            id_node.text = config['Id']
+            SubElement(config_node, 'Id', config['Id'])
 
-        arn_node = s3_xml.SubElement(
-            config_node,
-            NOTIFICATIONS_ARN_FIELDNAME_MAP[element_name]
-        )
-        arn_node.text = config['Arn']
+        SubElement(config_node, NOTIFICATIONS_ARN_FIELDNAME_MAP[element_name],
+                   config['Arn'])
 
         for event in config['Events']:
-            event_node = s3_xml.SubElement(config_node, 'Event')
-            event_node.text = event
+            SubElement(config_node, 'Event', event)
 
         filter_rules = config.get('Filter', {}).get(
             'Key', {}).get('FilterRules', [])
         if filter_rules:
-            filter_node = s3_xml.SubElement(config_node, 'Filter')
-            s3key_node = s3_xml.SubElement(filter_node, 'S3Key')
+            s3key_node = SubElement(SubElement(config_node, 'Filter'), 'S3Key')
             for filter_rule in filter_rules:
-                filter_rule_node = s3_xml.SubElement(s3key_node, 'FilterRule')
-                name_node = s3_xml.SubElement(filter_rule_node, 'Name')
-                name_node.text = filter_rule['Name']
-                value_node = s3_xml.SubElement(filter_rule_node, 'Value')
-                value_node.text = filter_rule['Value']
+                filter_rule_node = SubElement(s3key_node, 'FilterRule')
+                SubElement(filter_rule_node, 'Name', filter_rule['Name'])
+                SubElement(filter_rule_node, 'Value', filter_rule['Value'])
     return node
 
 
@@ -336,21 +319,15 @@ def xml_marshal_delete_objects(object_names):
     :param object_names: List of object keys to be deleted.
     :return: Serialized XML string for multi-object delete request body.
     """
-    root = s3_xml.Element('Delete')
+    root = Element('Delete')
 
     # use quiet mode in the request - this causes the S3 Server to
     # limit its response to only object keys that had errors during
     # the delete operation.
-    quiet = s3_xml.SubElement(root, 'Quiet')
-    quiet.text = "true"
+    SubElement(root, 'Quiet', "true")
 
     # add each object to the request.
     for object_name in object_names:
-        object_elt = s3_xml.SubElement(root, 'Object')
-        key_elt = s3_xml.SubElement(object_elt, 'Key')
-        key_elt.text = object_name
+        SubElement(SubElement(root, 'Object'), 'Key', object_name)
 
-    # return the marshalled xml.
-    data = io.BytesIO()
-    s3_xml.ElementTree(root).write(data, encoding=None, xml_declaration=False)
-    return data.getvalue()
+    return get_xml_data(root)
