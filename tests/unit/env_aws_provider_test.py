@@ -21,6 +21,7 @@ from minio.credentials.env_aws import EnvAWS
 from minio.credentials.credentials import Value
 from nose.tools import eq_
 
+
 class EnvAWSTest(TestCase):
 
     def test_env_aws_retrieve(self):

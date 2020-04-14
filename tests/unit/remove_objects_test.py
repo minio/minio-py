@@ -25,6 +25,7 @@ from minio.error import InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
 
+
 class RemoveObjectsTest(TestCase):
     @raises(TypeError)
     def test_object_is_non_string_iterable_1(self):

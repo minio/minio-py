@@ -24,6 +24,7 @@ from minio.api import _DEFAULT_USER_AGENT
 
 from .minio_mocks import MockResponse, MockConnection
 
+
 class ListIncompleteUploadsTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_empty_list_uploads_test(self, mock_connection):
@@ -48,7 +49,8 @@ class ListIncompleteUploadsTest(TestCase):
                          'https://localhost:9000/bucket/?prefix=&uploads=',
                          {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data))
         client = Minio('localhost:9000')
-        upload_iter = client._list_incomplete_uploads('bucket', '', True, False)
+        upload_iter = client._list_incomplete_uploads(
+            'bucket', '', True, False)
         uploads = []
         for upload in upload_iter:
             uploads.append(upload)
@@ -107,7 +109,8 @@ class ListIncompleteUploadsTest(TestCase):
                          200, content=mock_data))
 
         client = Minio('localhost:9000')
-        upload_iter = client._list_incomplete_uploads('bucket', '', False, False)
+        upload_iter = client._list_incomplete_uploads(
+            'bucket', '', False, False)
         uploads = []
         for upload in upload_iter:
             uploads.append(upload)
@@ -207,7 +210,8 @@ class ListIncompleteUploadsTest(TestCase):
                          {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data1))
 
         client = Minio('localhost:9000')
-        upload_iter = client._list_incomplete_uploads('bucket', '', True, False)
+        upload_iter = client._list_incomplete_uploads(
+            'bucket', '', True, False)
         uploads = []
         for upload in upload_iter:
             mock_server.mock_add_request(MockResponse('GET',

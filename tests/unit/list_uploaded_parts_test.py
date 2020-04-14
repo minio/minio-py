@@ -24,6 +24,7 @@ from minio.api import _DEFAULT_USER_AGENT
 
 from .minio_mocks import MockResponse, MockConnection
 
+
 class ListPartsTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_empty_list_parts_works(self, mock_connection):
@@ -181,7 +182,6 @@ class ListPartsTest(TestCase):
             MockResponse('GET',
                          'https://localhost:9000/bucket/key?uploadId=upload_id',
                          {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data1))
-
 
         client = Minio('localhost:9000')
         part_iter = client._list_object_parts('bucket', 'key', 'upload_id')

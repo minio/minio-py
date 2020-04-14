@@ -22,6 +22,7 @@ from minio.credentials.credentials import Value
 
 from nose.tools import eq_
 
+
 class FileMinioClientTest(TestCase):
 
     def test_file_minio_(self):
@@ -70,7 +71,8 @@ class FileMinioClientTest(TestCase):
         # clear environment
         os.environ.clear()
         # get provider
-        provider = FileMinioClient('minio/credentials/config.json.sample','play')
+        provider = FileMinioClient(
+            'minio/credentials/config.json.sample', 'play')
         # is_expired is True before retrieve
         eq_(provider.is_expired(), True)
         # get credentials

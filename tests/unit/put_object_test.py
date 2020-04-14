@@ -18,6 +18,7 @@ from nose.tools import raises
 
 from minio import Minio
 
+
 class PutObjectTest(TestCase):
     @raises(TypeError)
     def test_object_is_string(self):

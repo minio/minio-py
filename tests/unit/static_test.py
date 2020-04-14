@@ -19,6 +19,7 @@ from minio.credentials.credentials import Value
 from unittest import TestCase
 from nose.tools import eq_
 
+
 class StaticTest(TestCase):
     def test_static_credentials(self):
         # get provider

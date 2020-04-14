@@ -25,6 +25,7 @@ from minio.api import _DEFAULT_USER_AGENT
 
 from .minio_mocks import MockResponse, MockConnection
 
+
 class ListBucketsTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_empty_list_buckets_works(self, mock_connection):
@@ -62,6 +63,8 @@ class ListBucketsTest(TestCase):
             buckets_list.append(bucket)
         eq_(2, count)
         eq_('hello', buckets_list[0].name)
-        eq_(datetime(2015, 6, 22, 23, 7, 43, 240000, pytz.utc), buckets_list[0].creation_date)
+        eq_(datetime(2015, 6, 22, 23, 7, 43, 240000,
+                     pytz.utc), buckets_list[0].creation_date)
         eq_('world', buckets_list[1].name)
-        eq_(datetime(2015, 6, 22, 23, 7, 56, 766000, pytz.utc), buckets_list[1].creation_date)
+        eq_(datetime(2015, 6, 22, 23, 7, 56, 766000,
+                     pytz.utc), buckets_list[1].creation_date)

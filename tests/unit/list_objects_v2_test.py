@@ -23,6 +23,7 @@ from minio.api import _DEFAULT_USER_AGENT
 
 from .minio_mocks import MockResponse, MockConnection
 
+
 class ListObjectsV2Test(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_empty_list_objects_works(self, mock_connection):

@@ -24,6 +24,7 @@ from minio.error import InvalidArgumentError
 
 from .minio_mocks import MockResponse, MockConnection
 
+
 class SetBucketNotificationTest(TestCase):
     @raises(TypeError)
     def test_notification_is_dict_1(self):

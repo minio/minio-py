@@ -28,6 +28,7 @@ from minio.select.options import (SelectObjectOptions,
                                   OutputSerialization,
                                   CSVOutput)
 
+
 class GenerateRequestTest(TestCase):
     def test_generate_bucket_constraint(self):
         expected_string = b'<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' \
@@ -79,7 +80,7 @@ class GenerateRequestTest(TestCase):
                              Comments="#",
                              AllowQuotedRecordDelimiter="FALSE",
                              ),
-                ),
+            ),
 
             output_serialization=OutputSerialization(
                 csv=CSVOutput(QuoteFields="ASNEEDED",
@@ -87,10 +88,10 @@ class GenerateRequestTest(TestCase):
                               FieldDelimiter=",",
                               QuoteCharacter='"',
                               QuoteEscapeCharacter='"',)
-                                ),
+            ),
             request_progress=RequestProgress(
                 enabled="TRUE"
-                )
             )
+        )
         actual_string = xml_marshal_select(options)
         eq_(expected_string, actual_string)

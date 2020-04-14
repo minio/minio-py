@@ -21,8 +21,9 @@ from minio.credentials.file_aws_credentials import FileAWSCredentials
 from minio.credentials.credentials import Value
 from nose.tools import eq_
 
+
 class FileAWSCredentialsTest(TestCase):
-    
+
     def test_file_aws(self):
         # clear environment
         os.environ.clear()
@@ -92,7 +93,8 @@ class FileAWSCredentialsTest(TestCase):
         # clear environment
         os.environ.clear()
         # get provider
-        provider = FileAWSCredentials('minio/credentials/credentials.sample', 'no_token')
+        provider = FileAWSCredentials(
+            'minio/credentials/credentials.sample', 'no_token')
         # is_expired should be True before retrieve
         eq_(provider.is_expired(), True)
         # retrieve credentials
@@ -111,7 +113,8 @@ class FileAWSCredentialsTest(TestCase):
     def test_file_aws_no_creds(self):
         # clear environment
         os.environ.clear()
-        provider = FileAWSCredentials('minio/credentials/credentials.empty', 'no_token')
+        provider = FileAWSCredentials(
+            'minio/credentials/credentials.empty', 'no_token')
         creds = provider.retrieve()
         eq_(creds.access_key, None)
         eq_(creds.secret_key, None)

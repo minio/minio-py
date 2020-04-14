@@ -24,6 +24,7 @@ from minio.error import ResponseError
 from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
+
 class GetObjectTest(TestCase):
     @raises(TypeError)
     def test_object_is_string(self):

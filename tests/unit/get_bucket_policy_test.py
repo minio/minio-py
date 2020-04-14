@@ -27,6 +27,7 @@ from tests.unit.minio_mocks import (
     MockResponse
 )
 
+
 class GetBucketPolicyTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     @raises(NoSuchBucket)
@@ -48,28 +49,28 @@ class GetBucketPolicyTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_get_policy_for_existent_bucket(self, mock_connection):
         mock_data = {
-            "Version":"2012-10-17",
-            "Statement":[
+            "Version": "2012-10-17",
+            "Statement": [
                 {
-                "Sid":"",
-                "Effect":"Allow",
-                "Principal":{"AWS":"*"},
-                "Action":"s3:GetBucketLocation",
-                "Resource":"arn:aws:s3:::test-bucket"
+                    "Sid": "",
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"},
+                    "Action": "s3:GetBucketLocation",
+                    "Resource": "arn:aws:s3:::test-bucket"
                 },
                 {
-                "Sid":"",
-                "Effect":"Allow",
-                "Principal":{"AWS":"*"},
-                "Action":"s3:ListBucket",
-                "Resource":"arn:aws:s3:::test-bucket"
+                    "Sid": "",
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"},
+                    "Action": "s3:ListBucket",
+                    "Resource": "arn:aws:s3:::test-bucket"
                 },
                 {
-                "Sid":"",
-                "Effect":"Allow",
-                "Principal":{"AWS":"*"},
-                "Action":"s3:GetObject",
-                "Resource":"arn:aws:s3:::test-bucket/*"
+                    "Sid": "",
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"},
+                    "Action": "s3:GetObject",
+                    "Resource": "arn:aws:s3:::test-bucket/*"
                 }
             ]
         }

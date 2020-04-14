@@ -19,11 +19,13 @@ from minio.credentials.file_minio_client import FileMinioClient
 from unittest import TestCase
 from nose.tools import eq_
 
+
 class CredentialsTest(TestCase):
     def test_credentials_get(self):
         # get credentials
         credentials = Credentials(
-            provider=FileMinioClient('minio/credentials/config.json.sample','play')
+            provider=FileMinioClient(
+                'minio/credentials/config.json.sample', 'play')
         )
         # is_expired should be True before get
         eq_(credentials.is_expired(), True)
@@ -38,6 +40,6 @@ class CredentialsTest(TestCase):
         eq_(creds.session_token, expected_creds.session_token)
         # is_expired should be False after get
         eq_(credentials.is_expired(), False)
-    
+
     def test_credentials_with_error(self):
         pass

@@ -24,6 +24,7 @@ from minio.error import InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
 
+
 class StatObject(TestCase):
     @raises(TypeError)
     def test_object_is_string(self):

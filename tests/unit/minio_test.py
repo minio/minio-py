@@ -25,6 +25,7 @@ from minio.error import InvalidEndpointError, InvalidBucketError
 from minio.helpers import (get_target_url, is_valid_bucket_name,
                            get_s3_region_from_endpoint)
 
+
 class ValidBucketName(TestCase):
     @raises(InvalidBucketError)
     def test_bucket_name(self):
@@ -45,6 +46,7 @@ class ValidBucketName(TestCase):
     @raises(InvalidBucketError)
     def test_bucket_name_begins_period(self):
         is_valid_bucket_name('.ddmybucket', False)
+
 
 class GetURLTests(TestCase):
     def test_get_target_url_works(self):
@@ -104,6 +106,7 @@ class UserAgentTests(TestCase):
         client = Minio('localhost:9000')
         client.set_app_info('hello', '')
 
+
 class GetRegionTests(TestCase):
     def test_region_none(self):
         region = get_s3_region_from_endpoint('localhost')
@@ -118,7 +121,8 @@ class GetRegionTests(TestCase):
         eq_(region, 'us-west-1')
 
     def test_region_with_dualstack(self):
-        region = get_s3_region_from_endpoint('s3.dualstack.us-west-1.amazonaws.com')
+        region = get_s3_region_from_endpoint(
+            's3.dualstack.us-west-1.amazonaws.com')
         eq_(region, 'us-west-1')
 
     def test_region_us_east(self):

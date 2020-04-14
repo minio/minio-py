@@ -21,6 +21,7 @@ from minio.credentials.env_minio import EnvMinio
 from minio.credentials.credentials import Value
 from nose.tools import eq_
 
+
 class EnvMinioTest(TestCase):
 
     def test_env_minio_retrieve(self):

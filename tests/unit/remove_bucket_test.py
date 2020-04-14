@@ -24,6 +24,7 @@ from minio.error import InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
 
+
 class RemoveBucket(TestCase):
     @raises(TypeError)
     def test_bucket_is_string(self):
