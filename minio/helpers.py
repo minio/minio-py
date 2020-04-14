@@ -25,8 +25,9 @@ This module implements all helper functions.
 """
 
 from __future__ import absolute_import
-# if math.ceil returns an integer and devide two integers returns a float, calculate
-# part size will cause errors, so make sure division integers returns a float.
+# if math.ceil returns an integer and devide two integers returns a float,
+# calculate part size will cause errors, so make sure division integers returns
+# a float.
 from __future__ import division
 
 from __future__ import unicode_literals
@@ -68,6 +69,7 @@ _ALLOWED_HOSTNAME_REGEX = re.compile(
 
 _EXTRACT_REGION_REGEX = re.compile('s3[.-]?(.+?).amazonaws.com')
 
+
 def get_s3_region_from_endpoint(endpoint):
     """
     Extracts and returns an AWS S3 region from an endpoint
@@ -89,8 +91,6 @@ def get_s3_region_from_endpoint(endpoint):
             return region.split('.')[1]
         return region
 
-    # No regex matches return None.
-    return None
 
 def dump_http(method, url, request_headers, response, output_stream):
     """
@@ -115,7 +115,7 @@ def dump_http(method, url, request_headers, response, output_stream):
     output_stream.write('{0} {1} HTTP/1.1\n'.format(method,
                                                     http_path))
 
-    for k, v in list(request_headers.items()):
+    for k, v in request_headers.items():
         if k == 'authorization':
             # Redact signature header value from trace logs.
             v = re.sub(r'Signature=([[0-9a-f]+)', 'Signature=*REDACTED*', v)
@@ -128,16 +128,16 @@ def dump_http(method, url, request_headers, response, output_stream):
     output_stream.write('HTTP/1.1 {0}\n'.format(response.status))
 
     # Dump all response headers recursively.
-    for k, v in list(response.getheaders().items()):
+    for k, v in response.getheaders().items():
         output_stream.write('{0}: {1}\n'.format(k.title(), v))
 
     # For all errors write all the available response body.
-    if response.status != 200 and \
-       response.status != 204 and response.status != 206:
+    if response.status not in [200, 204, 206]:
         output_stream.write('{0}'.format(response.read()))
 
     # End header.
     output_stream.write('---------END-HTTP---------\n')
+
 
 def mkdir_p(path):
     """
@@ -153,6 +153,7 @@ def mkdir_p(path):
         else:
             raise
 
+
 class PartMetadata(object):
     """
     Parts manager split parts metadata :class:`PartMetadata <PartMetadata>`.
@@ -162,11 +163,13 @@ class PartMetadata(object):
     :param sha256_hex: Sha256 hash in hex format.
     :param size: Size of the part.
     """
+
     def __init__(self, data, md5_hex, sha256_hex, size):
         self.data = data
         self.md5_hex = md5_hex
         self.sha256_hex = sha256_hex
         self.size = size
+
 
 def read_full(data, size):
     """
@@ -177,7 +180,7 @@ def read_full(data, size):
     :param size: Number of bytes to read from `data`.
     :return: Returns :bytes:`part_data`
     """
-    default_read_size = 32768 # 32KiB per read operation.
+    default_read_size = 32768  # 32KiB per read operation.
     chunk = io.BytesIO()
     chunk_size = 0
 
@@ -186,12 +189,13 @@ def read_full(data, size):
         if (size - chunk_size) < default_read_size:
             read_size = size - chunk_size
         current_data = data.read(read_size)
-        if not current_data or len(current_data) == 0:
+        if not current_data:
             break
         chunk.write(current_data)
-        chunk_size+= len(current_data)
+        chunk_size += len(current_data)
 
     return chunk.getvalue()
+
 
 AWS_S3_ENDPOINT_MAP = {
     'us-east-1': 's3.amazonaws.com',
@@ -211,8 +215,10 @@ AWS_S3_ENDPOINT_MAP = {
     'cn-north-1': 's3.cn-north-1.amazonaws.com.cn'
 }
 
+
 def get_s3_endpoint(region):
     return AWS_S3_ENDPOINT_MAP.get(region, 's3.amazonaws.com')
+
 
 def get_target_url(endpoint_url, bucket_name=None, object_name=None,
                    bucket_region='us-east-1', query=None):
@@ -238,8 +244,8 @@ def get_target_url(endpoint_url, bucket_name=None, object_name=None,
 
     # Strip 80/443 ports since curl & browsers do not
     # send them in Host header.
-    if (scheme == 'http' and parsed_url.port == 80) or\
-       (scheme == 'https' and parsed_url.port == 443):
+    if (scheme == 'http' and parsed_url.port == 80) or (
+            scheme == 'https' and parsed_url.port == 443):
         host = parsed_url.hostname
 
     if 's3.amazonaws.com' in host:
@@ -252,9 +258,9 @@ def get_target_url(endpoint_url, bucket_name=None, object_name=None,
         is_virtual_host_style = is_virtual_host(endpoint_url,
                                                 bucket_name)
         if is_virtual_host_style:
-            url = (scheme + '://' + bucket_name + '.' + host)
+            url = scheme + '://' + bucket_name + '.' + host
         else:
-            url = (scheme + '://' + host + '/' + bucket_name)
+            url = scheme + '://' + host + '/' + bucket_name
 
     url_components = [url]
     url_components.append('/')
@@ -269,11 +275,11 @@ def get_target_url(endpoint_url, bucket_name=None, object_name=None,
         for component_key in ordered_query:
             if isinstance(ordered_query[component_key], list):
                 for value in ordered_query[component_key]:
-                    query_components.append(component_key+'='+
+                    query_components.append(component_key + '=' +
                                             queryencode(value))
             else:
                 query_components.append(
-                    component_key+'='+
+                    component_key + '=' +
                     queryencode(ordered_query.get(component_key, '')))
 
         query_string = '&'.join(query_components)
@@ -294,7 +300,7 @@ def is_valid_endpoint(endpoint):
        otherwise.
     """
     try:
-        if not '//' in endpoint:
+        if '//' not in endpoint:
             # Having '//' in the beginning of the endpoint enforce
             # urlsplit to consider the endpoint as a netloc according
             # to this quote in docs.python.org/3/library/urllib.parse.html:
@@ -309,7 +315,7 @@ def is_valid_endpoint(endpoint):
             raise InvalidEndpointError('Hostname cannot have a scheme.')
 
         hostname = u.hostname
-        if hostname is None:
+        if not hostname:
             raise InvalidEndpointError('Hostname cannot be empty.')
 
         if len(hostname) > 255:
@@ -325,6 +331,7 @@ def is_valid_endpoint(endpoint):
         raise TypeError(error)
 
     return True
+
 
 def is_virtual_host(endpoint_url, bucket_name):
     """
@@ -342,12 +349,10 @@ def is_virtual_host(endpoint_url, bucket_name):
     # such buckets.
     if 'https' in parsed_url.scheme and '.' in bucket_name:
         return False
-    for host in [
-        's3-accelerate.amazonaws.com', 's3.amazonaws.com', 'aliyuncs.com'
-    ]:
-        if host in parsed_url.netloc:
-            return True
-    return False
+
+    return any(host in parsed_url.netloc for host in [
+        's3-accelerate.amazonaws.com', 's3.amazonaws.com', 'aliyuncs.com'])
+
 
 def is_valid_bucket_name(bucket_name, strict):
     """
@@ -361,7 +366,7 @@ def is_valid_bucket_name(bucket_name, strict):
     """
     # Verify bucket name is not empty
     bucket_name = str(bucket_name).strip()
-    if bucket_name == '':
+    if not bucket_name:
         raise InvalidBucketError('Bucket name cannot be empty.')
 
     # Verify bucket name length.
@@ -379,19 +384,19 @@ def is_valid_bucket_name(bucket_name, strict):
     unallowed_successive_chars = ['..', '.-', '-.']
     if any(x in bucket_name for x in unallowed_successive_chars):
         raise InvalidBucketError('Bucket name contains invalid '
-                'successive chars ' + str(unallowed_successive_chars) + '.')
+                                 'successive chars '
+                                 + str(unallowed_successive_chars) + '.')
 
     if strict:
         match = _VALID_BUCKETNAME_STRICT_REGEX.match(bucket_name)
-        if match is None or match.end() != len(bucket_name):
+        if (not match) or match.end() != len(bucket_name):
             raise InvalidBucketError('Bucket name contains invalid '
                                      'characters (strictly enforced).')
 
     match = _VALID_BUCKETNAME_REGEX.match(bucket_name)
-    if match is None or match.end() != len(bucket_name):
+    if (not match) or match.end() != len(bucket_name):
         raise InvalidBucketError('Bucket name does not follow S3 standards.'
                                  ' Bucket: {0}'.format(bucket_name))
-
     return True
 
 
@@ -411,6 +416,7 @@ def is_non_empty_string(input_string):
 
     return True
 
+
 def is_valid_policy_type(policy):
     """
     Validate if policy is type str
@@ -420,7 +426,7 @@ def is_valid_policy_type(policy):
     Raise :exc:`TypeError` otherwise.
     """
     if _is_py3:
-        string_type = str,
+        string_type = str
     elif _is_py2:
         string_type = basestring
 
@@ -430,6 +436,7 @@ def is_valid_policy_type(policy):
     is_non_empty_string(policy)
 
     return True
+
 
 def is_valid_bucket_notification_config(notifications):
     """
@@ -443,7 +450,7 @@ def is_valid_bucket_notification_config(notifications):
     if not isinstance(notifications, dict):
         raise TypeError('notifications configuration must be a dictionary')
 
-    if len(notifications) == 0:
+    if not notifications:
         raise InvalidArgumentError(
             'notifications configuration may not be empty'
         )
@@ -506,7 +513,7 @@ def is_valid_bucket_notification_config(notifications):
 
             # check for required keys
             arn = service_config.get('Arn', '')
-            if arn == '':
+            if not arn:
                 raise InvalidArgumentError(
                     'Arn key in service config must be present and has to be '
                     'non-empty string'
@@ -555,14 +562,15 @@ def is_valid_bucket_notification_config(notifications):
                     except KeyError:
                         raise InvalidArgumentError((
                             '{} - a FilterRule dictionary must have "Name" '
-                             'and "Value" keys').format(filter_rule))
+                            'and "Value" keys').format(filter_rule))
 
                     if name not in ['prefix', 'suffix']:
                         raise InvalidArgumentError((
                             '{} - The "Name" key in a filter rule must be '
-                             'either "prefix" or "suffix"').format(name))
+                            'either "prefix" or "suffix"').format(name))
 
     return True
+
 
 def is_valid_sse_c_object(sse=None):
     """
@@ -571,7 +579,8 @@ def is_valid_sse_c_object(sse=None):
     :param sse: SSE object defined.
     """
     if sse and sse.type() != "SSE-C":
-            raise InvalidArgumentError("Required type SSE-C object to be passed")
+        raise InvalidArgumentError("Required type SSE-C object to be passed")
+
 
 def is_valid_sse_object(sse):
     """
@@ -579,8 +588,10 @@ def is_valid_sse_object(sse):
 
     :param sse: SSE object defined.
     """
-    if sse and sse.type() != "SSE-C" and sse.type() != "SSE-KMS" and sse.type() != "SSE-S3":
-        raise InvalidArgumentError("unsuported type of sse argument in put_object")
+    if sse and sse.type() not in ["SSE-C", "SSE-KMS", "SSE-S3"]:
+        raise InvalidArgumentError(
+            "unsuported type of sse argument in put_object")
+
 
 def is_valid_source_sse_object(sse):
     """
@@ -589,7 +600,9 @@ def is_valid_source_sse_object(sse):
     :param sse: SSE object defined.
     """
     if sse and sse.type() != "copy_SSE-C":
-        raise InvalidArgumentError("Required type copy_SSE-C object to be passed")
+        raise InvalidArgumentError(
+            "Required type copy_SSE-C object to be passed")
+
 
 def encode_object_name(object_name):
     """
@@ -601,15 +614,16 @@ def encode_object_name(object_name):
     is_non_empty_string(object_name)
     return _quote(object_name)
 
+
 class Hasher(object):
     """
     Adaptation of hashlib-based hash functions that
     return unicode-encoded hex- and base64-digest
     strings.
     """
+
     def __init__(self, data, h):
-        if data is None:
-            data = b''
+        data = data or b''
         if isinstance(data, str):
             data = data.encode('utf-8')
         self.h = h(data)
@@ -683,7 +697,7 @@ def optimal_part_info(length, part_size):
         # overflows during float64 to int64 conversions.
         part_size_float = math.ceil(length/MAX_MULTIPART_COUNT)
         part_size_float = (math.ceil(part_size_float/part_size)
-                        * part_size)
+                           * part_size)
     # Total parts count.
     total_parts_count = int(math.ceil(length/part_size_float))
     # Part size.
@@ -692,45 +706,51 @@ def optimal_part_info(length, part_size):
     last_part_size = length - int(total_parts_count-1)*part_size
     return total_parts_count, part_size, last_part_size
 
+
 # return a new metadata dictionary where user defined metadata keys
 # are prefixed by "x-amz-meta-"
 def amzprefix_user_metadata(metadata):
     m = dict()
-    for k,v in metadata.items():
-       # Check if metadata value has US-ASCII encoding since it is
-       # the only one supported by HTTP headers. This will show a better
-       # exception message when users pass unsupported characters
-       # in metadata values.
-       try:
+    for k, v in metadata.items():
+        # Check if metadata value has US-ASCII encoding since it is
+        # the only one supported by HTTP headers. This will show a better
+        # exception message when users pass unsupported characters
+        # in metadata values.
+        try:
             if isinstance(v, future_str):
-                 v.encode('us-ascii')
-       except UnicodeEncodeError:
+                v.encode('us-ascii')
+        except UnicodeEncodeError:
             raise ValueError('Metadata supports only US-ASCII characters.')
 
-       if is_amz_header(k) or is_supported_header(k) or is_storageclass_header(k):
+        if (is_amz_header(k) or is_supported_header(k) or
+                is_storageclass_header(k)):
             m[k] = v
-       else:
+        else:
             m["X-Amz-Meta-" + k] = v
     return m
+
 
 # returns true if amz s3 system defined metadata
 def is_amz_header(key):
     key = key.lower()
-    return key.startswith("x-amz-meta") or key == "x-amz-acl" or key.startswith("x-amz-server-side-encryption")
+    return (key.startswith("x-amz-meta") or key == "x-amz-acl" or
+            key.startswith("x-amz-server-side-encryption"))
+
 
 # returns true if a standard supported header
 def is_supported_header(key):
-    ## Supported headers for object.
+    # Supported headers for object.
     supported_headers = [
-	   "cache-control",
-	   "content-encoding",
-	   "content-type",
-	   "content-disposition",
-	   "content-language",
-	   "x-amz-website-redirect-location",
-            ## Add more supported headers here.
-        ]
+        "cache-control",
+        "content-encoding",
+        "content-type",
+        "content-disposition",
+        "content-language",
+        "x-amz-website-redirect-location",
+        # Add more supported headers here.
+    ]
     return key.lower() in supported_headers
+
 
 # returns true if header is a storage class header
 def is_storageclass_header(key):
