@@ -17,6 +17,8 @@
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
 
+import pytz
+
 
 class Value(object):
     def __init__(self, access_key=None, secret_key=None, session_token=None):
@@ -47,7 +49,8 @@ class Expiry(object):
             self._expiration = self._expiration + time_delta
 
     def is_expired(self):
-        return self._expiration < datetime.now() if self._expiration else True
+        utc_now = pytz.utc.localize(datetime.now())
+        return self._expiration < utc_now if self._expiration else True
 
 
 class Credentials(object):

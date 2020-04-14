@@ -36,7 +36,7 @@ def parse_iam_credentials(data):
         - a :class:`~minio.credentials.Value` instance with the temporary credentials.
         - A :class:`DateTime` instance of when the credentials expire.
     """
-    expiration = datetime.strptime(data['Expiration'], '%Y-%m-%dT%H:%M:%SZ')
+    expiration = _iso8601_to_utc_datetime(data['Expiration'])
     return Value(
         access_key=data['AccessKeyId'],
         secret_key=data['SecretAccessKey'],
