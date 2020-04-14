@@ -14,10 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nose.tools import eq_, raises
+from nose.tools import eq_
 from unittest import TestCase
 
-from minio.helpers import is_storageclass_header, is_amz_header, is_supported_header, amzprefix_user_metadata
+from minio.helpers import (is_storageclass_header, is_amz_header,
+                           is_supported_header, amzprefix_user_metadata)
 
 
 class HeaderTests(TestCase):

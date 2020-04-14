@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,5 +42,8 @@ class EnvMinioTest(TestCase):
             secret_key="secret",
             session_token=None
         )
+        eq_(creds.access_key, expected_creds.access_key)
+        eq_(creds.secret_key, expected_creds.secret_key)
+        eq_(creds.session_token, expected_creds.session_token)
         # assert expired true for retrieved credentials
         eq_(provider.is_expired(), False)

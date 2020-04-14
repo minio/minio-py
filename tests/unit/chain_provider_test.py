@@ -18,7 +18,6 @@ import os
 from unittest import TestCase
 
 from minio.credentials.chain import Chain
-from minio.credentials.credentials import Value
 from minio.credentials.env_aws import EnvAWS
 from minio.credentials.env_minio import EnvMinio
 from nose.tools import eq_

@@ -29,31 +29,32 @@ class ListPartsTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_empty_list_parts_works(self, mock_connection):
         mock_data = '''<?xml version="1.0"?>
-                       <ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                         <Bucket>bucket</Bucket>
-                         <Key>go1.4.2</Key>
-                         <UploadId>ntWSjzBytPT2xKLaMRonzXncsO10EH4Fc-Iq2-4hG-ulRYB</UploadId>
-                         <Initiator>
-                           <ID>minio</ID>
-                           <DisplayName>minio</DisplayName>
-                         </Initiator>
-                         <Owner>
-                           <ID>minio</ID>
-                           <DisplayName>minio</DisplayName>
-                         </Owner>
-                         <StorageClass>STANDARD</StorageClass>
-                         <PartNumberMarker>0</PartNumberMarker>
-                         <NextPartNumberMarker>0</NextPartNumberMarker>
-                         <MaxParts>1000</MaxParts>
-                         <IsTruncated>false</IsTruncated>
-                       </ListPartsResult>
-                    '''
+<ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Bucket>bucket</Bucket>
+  <Key>go1.4.2</Key>
+  <UploadId>ntWSjzBytPT2xKLaMRonzXncsO10EH4Fc-Iq2-4hG-ulRYB</UploadId>
+  <Initiator>
+    <ID>minio</ID>
+    <DisplayName>minio</DisplayName>
+  </Initiator>
+  <Owner>
+    <ID>minio</ID>
+    <DisplayName>minio</DisplayName>
+  </Owner>
+  <StorageClass>STANDARD</StorageClass>
+  <PartNumberMarker>0</PartNumberMarker>
+  <NextPartNumberMarker>0</NextPartNumberMarker>
+  <MaxParts>1000</MaxParts>
+  <IsTruncated>false</IsTruncated>
+</ListPartsResult>'''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
-            MockResponse('GET',
-                         'https://localhost:9000/bucket/key?uploadId=upload_id',
-                         {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data))
+            MockResponse(
+                'GET',
+                'https://localhost:9000/bucket/key?uploadId=upload_id',
+                {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data)
+        )
 
         client = Minio('localhost:9000')
         part_iter = client._list_object_parts('bucket', 'key', 'upload_id')
@@ -65,43 +66,46 @@ class ListPartsTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_list_object_parts_works(self, mock_connection):
         mock_data = '''<?xml version="1.0"?>
-                       <ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                         <Bucket>bucket</Bucket>
-                         <Key>go1.4.2</Key>
-                         <UploadId>ntWSjzBytPT2xKLaMRonzXncsO10EH4Fc-Iq2-4hG-ulRYB</UploadId>
-                         <Initiator>
-                           <ID>minio</ID>
-                           <DisplayName>minio</DisplayName>
-                         </Initiator>
-                         <Owner>
-                           <ID>minio</ID>
-                           <DisplayName>minio</DisplayName>
-                         </Owner>
-                         <StorageClass>STANDARD</StorageClass>
-                         <PartNumberMarker>0</PartNumberMarker>
-                         <NextPartNumberMarker>0</NextPartNumberMarker>
-                         <MaxParts>1000</MaxParts>
-                         <IsTruncated>false</IsTruncated>
-                         <Part>
-                           <PartNumber>1</PartNumber>
-                           <ETag>79b281060d337b9b2b84ccf390adcf74</ETag>
-                           <LastModified>2015-06-03T03:12:34.756Z</LastModified>
-                           <Size>5242880</Size>
-                         </Part>
-                         <Part>
-                           <PartNumber>2</PartNumber>
-                           <ETag>79b281060d337b9b2b84ccf390adcf74</ETag>
-                           <LastModified>2015-06-03T03:12:34.756Z</LastModified>
-                           <Size>5242880</Size>
-                         </Part>
-                       </ListPartsResult>
-                    '''
+<ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Bucket>bucket</Bucket>
+  <Key>go1.4.2</Key>
+  <UploadId>ntWSjzBytPT2xKLaMRonzXncsO10EH4Fc-Iq2-4hG-ulRYB</UploadId>
+  <Initiator>
+    <ID>minio</ID>
+    <DisplayName>minio</DisplayName>
+  </Initiator>
+  <Owner>
+    <ID>minio</ID>
+    <DisplayName>minio</DisplayName>
+  </Owner>
+  <StorageClass>STANDARD</StorageClass>
+  <PartNumberMarker>0</PartNumberMarker>
+  <NextPartNumberMarker>0</NextPartNumberMarker>
+  <MaxParts>1000</MaxParts>
+  <IsTruncated>false</IsTruncated>
+  <Part>
+    <PartNumber>1</PartNumber>
+    <ETag>79b281060d337b9b2b84ccf390adcf74</ETag>
+    <LastModified>2015-06-03T03:12:34.756Z</LastModified>
+    <Size>5242880</Size>
+  </Part>
+  <Part>
+    <PartNumber>2</PartNumber>
+    <ETag>79b281060d337b9b2b84ccf390adcf74</ETag>
+    <LastModified>2015-06-03T03:12:34.756Z</LastModified>
+    <Size>5242880</Size>
+  </Part>
+</ListPartsResult>'''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET',
-                                                  'https://localhost:9000/bucket/key?uploadId=upload_id',
-                                                  {'User-Agent': _DEFAULT_USER_AGENT}, 200,
-                                                  content=mock_data))
+        mock_server.mock_add_request(
+            MockResponse(
+                'GET',
+                'https://localhost:9000/bucket/key?uploadId=upload_id',
+                {'User-Agent': _DEFAULT_USER_AGENT}, 200,
+                content=mock_data
+            )
+        )
         client = Minio('localhost:9000')
         part_iter = client._list_object_parts('bucket', 'key', 'upload_id')
 
@@ -113,75 +117,76 @@ class ListPartsTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_list_objects_works(self, mock_connection):
         mock_data1 = '''<?xml version="1.0"?>
-                        <ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                          <Bucket>bucket</Bucket>
-                          <Key>go1.4.2</Key>
-                          <UploadId>ntWSjzBytPT2xKLaMRonzXncsO10EH4Fc-Iq2-4hG-ulRYB</UploadId>
-                          <Initiator>
-                            <ID>minio</ID>
-                            <DisplayName>minio</DisplayName>
-                          </Initiator>
-                          <Owner>
-                            <ID>minio</ID>
-                            <DisplayName>minio</DisplayName>
-                          </Owner>
-                          <StorageClass>STANDARD</StorageClass>
-                          <PartNumberMarker>0</PartNumberMarker>
-                          <NextPartNumberMarker>2</NextPartNumberMarker>
-                          <MaxParts>1000</MaxParts>
-                          <IsTruncated>true</IsTruncated>
-                          <Part>
-                            <PartNumber>1</PartNumber>
-                            <ETag>79b281060d337b9b2b84ccf390adcf74</ETag>
-                            <LastModified>2015-06-03T03:12:34.756Z</LastModified>
-                            <Size>5242880</Size>
-                          </Part>
-                          <Part>
-                            <PartNumber>2</PartNumber>
-                            <ETag>79b281060d337b9b2b84ccf390adcf74</ETag>
-                            <LastModified>2015-06-03T03:12:34.756Z</LastModified>
-                            <Size>5242880</Size>
-                          </Part>
-                        </ListPartsResult>
-                        '''
+<ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Bucket>bucket</Bucket>
+  <Key>go1.4.2</Key>
+  <UploadId>ntWSjzBytPT2xKLaMRonzXncsO10EH4Fc-Iq2-4hG-ulRYB</UploadId>
+  <Initiator>
+    <ID>minio</ID>
+    <DisplayName>minio</DisplayName>
+  </Initiator>
+  <Owner>
+    <ID>minio</ID>
+    <DisplayName>minio</DisplayName>
+  </Owner>
+  <StorageClass>STANDARD</StorageClass>
+  <PartNumberMarker>0</PartNumberMarker>
+  <NextPartNumberMarker>2</NextPartNumberMarker>
+  <MaxParts>1000</MaxParts>
+  <IsTruncated>true</IsTruncated>
+  <Part>
+    <PartNumber>1</PartNumber>
+    <ETag>79b281060d337b9b2b84ccf390adcf74</ETag>
+    <LastModified>2015-06-03T03:12:34.756Z</LastModified>
+    <Size>5242880</Size>
+  </Part>
+  <Part>
+    <PartNumber>2</PartNumber>
+    <ETag>79b281060d337b9b2b84ccf390adcf74</ETag>
+    <LastModified>2015-06-03T03:12:34.756Z</LastModified>
+    <Size>5242880</Size>
+  </Part>
+</ListPartsResult>'''
         mock_data2 = '''<?xml version="1.0"?>
-                        <ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                          <Bucket>bucket</Bucket>
-                          <Key>go1.4.2</Key>
-                          <UploadId>ntWSjzBytPT2xKLaMRonzXncsO10EH4Fc-Iq2-4hG-ulRYB</UploadId>
-                          <Initiator>
-                            <ID>minio</ID>
-                            <DisplayName>minio</DisplayName>
-                          </Initiator>
-                          <Owner>
-                            <ID>minio</ID>
-                            <DisplayName>minio</DisplayName>
-                          </Owner>
-                          <StorageClass>STANDARD</StorageClass>
-                          <PartNumberMarker>0</PartNumberMarker>
-                          <NextPartNumberMarker>0</NextPartNumberMarker>
-                          <MaxParts>1000</MaxParts>
-                          <IsTruncated>false</IsTruncated>
-                          <Part>
-                            <PartNumber>3</PartNumber>
-                            <ETag>79b281060d337b9b2b84ccf390adcf74</ETag>
-                            <LastModified>2015-06-03T03:12:34.756Z</LastModified>
-                            <Size>5242880</Size>
-                          </Part>
-                          <Part>
-                            <PartNumber>4</PartNumber>
-                            <ETag>79b281060d337b9b2b84ccf390adcf74</ETag>
-                            <LastModified>2015-06-03T03:12:34.756Z</LastModified>
-                            <Size>5242880</Size>
-                          </Part>
-                        </ListPartsResult>
-                     '''
+<ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Bucket>bucket</Bucket>
+  <Key>go1.4.2</Key>
+  <UploadId>ntWSjzBytPT2xKLaMRonzXncsO10EH4Fc-Iq2-4hG-ulRYB</UploadId>
+  <Initiator>
+    <ID>minio</ID>
+    <DisplayName>minio</DisplayName>
+  </Initiator>
+  <Owner>
+    <ID>minio</ID>
+    <DisplayName>minio</DisplayName>
+  </Owner>
+  <StorageClass>STANDARD</StorageClass>
+  <PartNumberMarker>0</PartNumberMarker>
+  <NextPartNumberMarker>0</NextPartNumberMarker>
+  <MaxParts>1000</MaxParts>
+  <IsTruncated>false</IsTruncated>
+  <Part>
+    <PartNumber>3</PartNumber>
+    <ETag>79b281060d337b9b2b84ccf390adcf74</ETag>
+    <LastModified>2015-06-03T03:12:34.756Z</LastModified>
+    <Size>5242880</Size>
+  </Part>
+  <Part>
+    <PartNumber>4</PartNumber>
+    <ETag>79b281060d337b9b2b84ccf390adcf74</ETag>
+    <LastModified>2015-06-03T03:12:34.756Z</LastModified>
+    <Size>5242880</Size>
+  </Part>
+</ListPartsResult>'''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
-            MockResponse('GET',
-                         'https://localhost:9000/bucket/key?uploadId=upload_id',
-                         {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data1))
+            MockResponse(
+                'GET',
+                'https://localhost:9000/bucket/key?uploadId=upload_id',
+                {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data1
+            )
+        )
 
         client = Minio('localhost:9000')
         part_iter = client._list_object_parts('bucket', 'key', 'upload_id')
@@ -189,8 +194,13 @@ class ListPartsTest(TestCase):
         parts = []
         for part in part_iter:
             mock_server.mock_add_request(
-                MockResponse('GET',
-                             'https://localhost:9000/bucket/key?part-number-marker=2&uploadId=upload_id',
-                             {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data2))
+                MockResponse(
+                    'GET',
+                    'https://localhost:9000/bucket/key?part-number-marker=2&'
+                    'uploadId=upload_id',
+                    {'User-Agent': _DEFAULT_USER_AGENT}, 200,
+                    content=mock_data2
+                )
+            )
             parts.append(part)
         eq_(4, len(parts))

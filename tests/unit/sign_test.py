@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -79,9 +80,11 @@ class CanonicalRequestTest(TestCase):
 
 class StringToSignTest(TestCase):
     def test_signing_key(self):
-        expected_signing_key_list = ['AWS4-HMAC-SHA256', '20150620T010203Z',
-                                     '20150620/us-east-1/s3/aws4_request',
-                                     'b93e86965c269a0dfef37a8bec231ef8acf8cdb101a64eb700a46c452c1ad233']
+        expected_signing_key_list = [
+            'AWS4-HMAC-SHA256', '20150620T010203Z',
+            '20150620/us-east-1/s3/aws4_request',
+            'b93e86965c269a0dfef37a8bec231ef8acf8cdb101a64eb700a46c452c1ad233'
+        ]
 
         actual_signing_key = generate_string_to_sign(
             dt, 'us-east-1', 'request_hash')
@@ -107,12 +110,16 @@ class SigningKeyTest(TestCase):
 
 class AuthorizationHeaderTest(TestCase):
     def test_generate_authentication_header(self):
-        expected_authorization_header = 'AWS4-HMAC-SHA256 Credential=public_key/20150620/region/s3/aws4_request, ' \
-                                        'SignedHeaders=host;X-Amz-Content-Sha256;X-Amz-Date, Signature=signed_request'
-        actual_authorization_header = generate_authorization_header('public_key', dt, 'region',
-                                                                    ['host', 'X-Amz-Content-Sha256',
-                                                                        'X-Amz-Date'],
-                                                                    'signed_request')
+        expected_authorization_header = (
+            'AWS4-HMAC-SHA256 Credential='
+            'public_key/20150620/region/s3/aws4_request, '
+            'SignedHeaders=host;X-Amz-Content-Sha256;X-Amz-Date, '
+            'Signature=signed_request'
+        )
+        actual_authorization_header = generate_authorization_header(
+            'public_key', dt, 'region',
+            ['host', 'X-Amz-Content-Sha256', 'X-Amz-Date'],
+            'signed_request')
         eq_(expected_authorization_header, actual_authorization_header)
 
 
@@ -142,11 +149,19 @@ class SignV4Test(TestCase):
                 secret_key='minio123'
             )
         )
-        url = get_target_url('http://localhost:9000', bucket_name='testbucket',
-                             object_name='~testobject', bucket_region='us-east-1', query={'partID': '1', 'uploadID': '~abcd'})
+        url = get_target_url('http://localhost:9000',
+                             bucket_name='testbucket',
+                             object_name='~testobject',
+                             bucket_region='us-east-1',
+                             query={'partID': '1', 'uploadID': '~abcd'})
         hdrs = sign_v4('PUT', url, 'us-east-1',
                        credentials=credentials, request_datetime=dt)
-        eq_(hdrs['Authorization'], 'AWS4-HMAC-SHA256 Credential=minio/20150620/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=a2f4546f647981732bd90dfa5a7599c44dca92f44bea48ecc7565df06032c25b')
+        eq_(hdrs['Authorization'],
+            'AWS4-HMAC-SHA256 Credential='
+            'minio/20150620/us-east-1/s3/aws4_request, '
+            'SignedHeaders=host;x-amz-content-sha256;x-amz-date, '
+            'Signature='
+            'a2f4546f647981732bd90dfa5a7599c44dca92f44bea48ecc7565df06032c25b')
 
 
 class UnicodeEncodeTest(TestCase):

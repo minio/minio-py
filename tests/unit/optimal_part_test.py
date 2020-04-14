@@ -17,7 +17,8 @@
 from nose.tools import eq_, raises
 from unittest import TestCase
 
-from minio.helpers import optimal_part_info, MAX_MULTIPART_OBJECT_SIZE, MIN_PART_SIZE
+from minio.helpers import (optimal_part_info, MAX_MULTIPART_OBJECT_SIZE,
+                           MIN_PART_SIZE)
 from minio.error import InvalidArgumentError
 
 

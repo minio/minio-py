@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,9 +45,11 @@ class GetObjectTest(TestCase):
                                    'object')
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET',
-                                                  'https://localhost:9000/hello/key',
-                                                  {'User-Agent': _DEFAULT_USER_AGENT},
-                                                  404, content=error_xml))
+        mock_server.mock_add_request(
+            MockResponse('GET',
+                         'https://localhost:9000/hello/key',
+                         {'User-Agent': _DEFAULT_USER_AGENT},
+                         404, content=error_xml)
+        )
         client = Minio('localhost:9000')
         client.get_object('hello', 'key')

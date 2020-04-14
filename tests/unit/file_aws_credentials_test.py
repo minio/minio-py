@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,7 +49,8 @@ class FileAWSCredentialsTest(TestCase):
         # clear environment
         os.environ.clear()
         # set env with aws config file
-        os.environ['AWS_SHARED_CREDENTIALS_FILE'] = 'minio/credentials/credentials.sample'
+        os.environ['AWS_SHARED_CREDENTIALS_FILE'] = (
+            'minio/credentials/credentials.sample')
         # get provider
         provider = FileAWSCredentials()
         # is_expired should be True before retrieve

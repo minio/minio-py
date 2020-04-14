@@ -25,8 +25,8 @@ else:
 
 
 class MockResponse(object):
-    def __init__(self, method, url, headers, status_code, response_headers=None,
-                 content=None):
+    def __init__(self, method, url, headers, status_code,
+                 response_headers=None, content=None):
         self.method = method
         self.url = url
         self.request_headers = FoldCaseDict()
@@ -79,6 +79,6 @@ class MockConnection(object):
 
     # noinspection PyRedeclaration,PyUnusedLocal,PyUnusedLocal
 
-    def urlopen(self, method, url, headers={}, preload_content=False, body=None,
-                redirect=False):
+    def urlopen(self, method, url, headers={}, preload_content=False,
+                body=None, redirect=False):
         return self.request(method, url, headers)

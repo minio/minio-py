@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,20 +29,23 @@ class ListObjectsV2Test(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_empty_list_objects_works(self, mock_connection):
         mock_data = '''<?xml version="1.0" encoding="UTF-8"?>
-            <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-              <Name>bucket</Name>
-              <Prefix></Prefix>
-              <KeyCount>0</KeyCount>
-              <MaxKeys>1000</MaxKeys>
-              <Delimiter></Delimiter>
-              <IsTruncated>false</IsTruncated>
-            </ListBucketResult>
-        '''
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Name>bucket</Name>
+  <Prefix></Prefix>
+  <KeyCount>0</KeyCount>
+  <MaxKeys>1000</MaxKeys>
+  <Delimiter></Delimiter>
+  <IsTruncated>false</IsTruncated>
+</ListBucketResult>'''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('GET',
-                                                  'https://localhost:9000/bucket/?list-type=2&prefix=&start-after=',
-                                                  {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data))
+        mock_server.mock_add_request(
+            MockResponse(
+                'GET',
+                'https://localhost:9000/bucket/?list-type=2&prefix=&'
+                'start-after=',
+                {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data)
+        )
         client = Minio('localhost:9000')
         object_iter = client.list_objects_v2('bucket', recursive=True)
         objects = []
@@ -53,34 +57,34 @@ class ListObjectsV2Test(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_list_objects_works(self, mock_connection):
         mock_data = '''<?xml version="1.0" encoding="UTF-8"?>
-            <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-              <Name>bucket</Name>
-              <Prefix></Prefix>
-              <KeyCount>2</KeyCount>
-              <MaxKeys>1000</MaxKeys>
-              <IsTruncated>false</IsTruncated>
-              <Contents>
-                <Key>6/f/9/6f9898076bb08572403f95dbb86c5b9c85e1e1b3</Key>
-                <LastModified>2016-11-27T07:55:53.000Z</LastModified>
-                <ETag>&quot;5d5512301b6b6e247b8aec334b2cf7ea&quot;</ETag>
-                <Size>493</Size>
-                <StorageClass>REDUCED_REDUNDANCY</StorageClass>
-              </Contents>
-              <Contents>
-                <Key>b/d/7/bd7f6410cced55228902d881c2954ebc826d7464</Key>
-                <LastModified>2016-11-27T07:10:27.000Z</LastModified>
-                <ETag>&quot;f00483d523ffc8b7f2883ae896769d85&quot;</ETag>
-                <Size>493</Size>
-                <StorageClass>REDUCED_REDUNDANCY</StorageClass>
-              </Contents>
-            </ListBucketResult>
-        '''
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Name>bucket</Name>
+  <Prefix></Prefix>
+  <KeyCount>2</KeyCount>
+  <MaxKeys>1000</MaxKeys>
+  <IsTruncated>false</IsTruncated>
+  <Contents>
+    <Key>6/f/9/6f9898076bb08572403f95dbb86c5b9c85e1e1b3</Key>
+    <LastModified>2016-11-27T07:55:53.000Z</LastModified>
+    <ETag>&quot;5d5512301b6b6e247b8aec334b2cf7ea&quot;</ETag>
+    <Size>493</Size>
+    <StorageClass>REDUCED_REDUNDANCY</StorageClass>
+  </Contents>
+  <Contents>
+    <Key>b/d/7/bd7f6410cced55228902d881c2954ebc826d7464</Key>
+    <LastModified>2016-11-27T07:10:27.000Z</LastModified>
+    <ETag>&quot;f00483d523ffc8b7f2883ae896769d85&quot;</ETag>
+    <Size>493</Size>
+    <StorageClass>REDUCED_REDUNDANCY</StorageClass>
+  </Contents>
+</ListBucketResult>'''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse(
                 'GET',
-                'https://localhost:9000/bucket/?delimiter=%2F&list-type=2&prefix=&start-after=',
+                'https://localhost:9000/bucket/?delimiter=%2F&list-type=2&'
+                'prefix=&start-after=',
                 {'User-Agent': _DEFAULT_USER_AGENT}, 200,
                 content=mock_data
             )
