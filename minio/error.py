@@ -28,10 +28,7 @@ and API specific errors.
 from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
 
-if hasattr(ElementTree, 'ParseError'):
-    ETREE_EXCEPTIONS = (ParseError, AttributeError, ValueError, TypeError)
-else:
-    ETREE_EXCEPTIONS = (SyntaxError, AttributeError, ValueError, TypeError)
+ETREE_EXCEPTIONS = (ParseError, AttributeError, ValueError, TypeError)
 
 
 class MinioError(Exception):
@@ -40,6 +37,7 @@ class MinioError(Exception):
 
     :param message: User defined message.
     """
+
     def __init__(self, message, **kwargs):
         super(MinioError, self).__init__(**kwargs)
         self.message = message
@@ -49,6 +47,7 @@ class MinioError(Exception):
             name=self.__class__.__name__,
             message=self.message
         )
+
 
 class InvalidEndpointError(MinioError):
     """
@@ -98,17 +97,19 @@ class MultiDeleteError(object):
     :error_code: Error code.
     :error_message: Error message.
     """
+
     def __init__(self, object_name, err_code, err_message):
         self.object_name = object_name
         self.error_code = err_code
         self.error_message = err_message
 
     def __str__(self):
-        string_format = '<MultiDeleteError: object_name: {} error_code: {}' \
-                        ' error_message: {}>'
+        string_format = ('<MultiDeleteError: object_name: {} error_code: {}'
+                         ' error_message: {}>')
         return string_format.format(self.object_name,
                                     self.error_code,
                                     self.error_message)
+
 
 class ResponseError(MinioError):
     """
@@ -117,6 +118,7 @@ class ResponseError(MinioError):
 
     :param response: Response from http client :class:`urllib3.HTTPResponse`.
     """
+
     def __init__(self, response, method, bucket_name=None,
                  object_name=None):
         super(ResponseError, self).__init__(message='')
@@ -154,10 +156,10 @@ class ResponseError(MinioError):
         Sets error response uses xml body if available, otherwise
         relies on HTTP headers.
         """
-        if not self._response.data:
-            self._set_error_response_without_body(bucket_name)
-        else:
+        if self._response.data:
             self._set_error_response_with_body(bucket_name)
+        else:
+            self._set_error_response_without_body(bucket_name)
 
     def _set_error_response_with_body(self, bucket_name=None):
         """
@@ -169,26 +171,26 @@ class ResponseError(MinioError):
         :param object_name: Option object name resource at which error
            occurred.
         """
-        if len(self._response.data) == 0:
+        if not self._response.data:
             raise ValueError('response data has no body.')
         try:
             root = ElementTree.fromstring(self._response.data)
         except ETREE_EXCEPTIONS as error:
             raise InvalidXMLError('"Error" XML is not parsable. '
                                   'Message: {0}'.format(error))
+
+        attrDict = {
+            'Code': 'code',
+            'BucketName': 'bucket_name',
+            'Key': 'object_name',
+            'Message': 'message',
+            'RequestId': 'request_id',
+            'HostId': 'host_id'
+        }
         for attribute in root:
-            if attribute.tag == 'Code':
-                self.code = attribute.text
-            elif attribute.tag == 'BucketName':
-                self.bucket_name = attribute.text
-            elif attribute.tag == 'Key':
-                self.object_name = attribute.text
-            elif attribute.tag == 'Message':
-                self.message = attribute.text
-            elif attribute.tag == 'RequestId':
-                self.request_id = attribute.text
-            elif attribute.tag == 'HostId':
-                self.host_id = attribute.text
+            attr = attrDict.get(attribute.tag)
+            if attr:
+                setattr(self, attr, attribute.text)
         # Set amz headers.
         self._set_amz_headers()
 
@@ -196,38 +198,27 @@ class ResponseError(MinioError):
         """
         Sets all the error response fields from response headers.
         """
-        if self._response.status == 404:
-            if bucket_name:
-                if self.object_name:
-                    self.code = 'NoSuchKey'
-                    self.message = self._response.reason
-                else:
-                    self.code = 'NoSuchBucket'
-                    self.message = self._response.reason
-        elif self._response.status == 409:
-            self.code = 'Conflict'
-            self.message = 'The bucket you tried to delete is not empty.'
-        elif self._response.status == 403:
-            self.code = 'AccessDenied'
-            self.message = self._response.reason
-        elif self._response.status == 400:
-            self.code = 'BadRequest'
-            self.message = self._response.reason
-        elif self._response.status == 301:
-            self.code = 'PermanentRedirect'
-            self.message = self._response.reason
-        elif self._response.status == 307:
-            self.code = 'Redirect'
-            self.message = self._response.reason
-        elif self._response.status in [405, 501]:
-            self.code = 'MethodNotAllowed'
-            self.message = self._response.reason
-        elif self._response.status == 500:
-            self.code = 'InternalError'
-            self.message = 'Internal Server Error.'
-        else:
-            self.code = 'UnknownException'
-            self.message = self._response.reason
+        statusDict = {
+            301: lambda: ('PermanentRedirect', self._response.reason),
+            307: lambda: ('Redirect', self._response.reason),
+            400: lambda: ('BadRequest', self._response.reason),
+            403: lambda: ('AccessDenied', self._response.reason),
+            404: lambda: (
+                (self.code, self.message) if not bucket_name else
+                ('NoSuchKey', self._response.reason) if self.object_name else
+                ('NoSuchBucket', self._response.reason)
+            ),
+            405: lambda: ('MethodNotAllowed', self._response.reason),
+            409: lambda: ('Conflict',
+                          'The bucket you tried to delete is not empty.'),
+            500: lambda: ('InternalError', 'Internal Server Error.'),
+            501: lambda: ('MethodNotAllowed', self._response.reason),
+        }
+
+        func = statusDict.get(self._response.status, lambda: (
+            'UnknownException', self._response.reason))
+        self.code, self.message = func()
+
         # Set amz headers.
         self._set_amz_headers()
 
@@ -236,25 +227,24 @@ class ResponseError(MinioError):
         Sets x-amz-* error response fields from response headers.
         """
         if self._response.headers:
-            # keeping x-amz-id-2 as part of amz_host_id.
-            if 'x-amz-id-2' in self._response.headers:
-                self.host_id = self._response.headers['x-amz-id-2']
-            if 'x-amz-request-id' in self._response.headers:
-                self.request_id = self._response.headers['x-amz-request-id']
-            # This is a new undocumented field, set only if available.
-            if 'x-amz-bucket-region' in self._response.headers:
-                self.region = self._response.headers['x-amz-bucket-region']
+            self.host_id = self._response.headers.get('x-amz-id-2',
+                                                      self.host_id)
+            self.request_id = self._response.headers.get('x-amz-request-id',
+                                                         self.request_id)
+            # 'x-amz-bucket-region' is a new undocumented field.
+            self.region = self._response.headers.get('x-amz-bucket-region',
+                                                     self.region)
 
     def __str__(self):
         return ('ResponseError: code: {0}, message: {1},'
                 ' bucket_name: {2}, object_name: {3}, request_id: {4},'
-                ' host_id: {5}, region: {6}'.format(self.code,
-                                                    self.message,
-                                                    self.bucket_name,
-                                                    self.object_name,
-                                                    self.request_id,
-                                                    self.host_id,
-                                                    self.region))
+                ' host_id: {5}, region: {6}').format(self.code,
+                                                     self.message,
+                                                     self.bucket_name,
+                                                     self.object_name,
+                                                     self.request_id,
+                                                     self.host_id,
+                                                     self.region)
 
 
 # Common error responses listed here
@@ -262,277 +252,357 @@ class ResponseError(MinioError):
 
 class KnownResponseError(MinioError):
     def __init__(self, response_error, **kwargs):
-        super(KnownResponseError, self).__init__(message=self.message, **kwargs)
+        super(KnownResponseError, self).__init__(
+            message=self.message, **kwargs)
         self.response_error = response_error
+
 
 class AccessDenied(KnownResponseError):
     message = 'Access Denied'
 
+
 class AccountProblem(KnownResponseError):
-    message = 'There is a problem with your account that prevents the ' \
-              'operation from completing successfully.'
+    message = ('There is a problem with your account that prevents the '
+               'operation from completing successfully.')
+
 
 class AmbiguousGrantByEmailAddress(KnownResponseError):
-    message = 'The email address you provided is associated with ' \
-              'more than one account.'
+    message = ('The email address you provided is associated with '
+               'more than one account.')
+
 
 class BadDigest(KnownResponseError):
     message = 'The Content-MD5 you specified did not match what we received.'
 
+
 class BucketAlreadyExists(KnownResponseError):
-    message = 'The requested bucket name is not available. The ' \
-              'bucket namespace is shared by all users of the system. ' \
-              'Please select a different name and try again.'
+    message = ('The requested bucket name is not available. The '
+               'bucket namespace is shared by all users of the system. '
+               'Please select a different name and try again.')
+
 
 class BucketAlreadyOwnedByYou(KnownResponseError):
-    message = 'Your previous request to create the named bucket ' \
-              'succeeded and you already own it.'
+    message = ('Your previous request to create the named bucket '
+               'succeeded and you already own it.')
+
 
 class BucketNotEmpty(KnownResponseError):
     message = 'The bucket you tried to delete is not empty.'
 
+
 class CredentialNotSupported(KnownResponseError):
     message = 'This request does not support credentials.'
 
+
 class CrossLocationLoggingProhibited(KnownResponseError):
-    message = 'Cross-location logging not allowed. Buckets in one ' \
-              'geographic location cannot log information to a bucket ' \
-              'in another location.'
+    message = ('Cross-location logging not allowed. Buckets in one '
+               'geographic location cannot log information to a bucket '
+               'in another location.')
+
 
 class EntityTooSmall(KnownResponseError):
-    message = 'Your proposed upload is smaller than the minimum a' \
-              'llowed object size.'
+    message = ('Your proposed upload is smaller than the minimum '
+               'allowed object size.')
+
 
 class EntityTooLarge(KnownResponseError):
     message = 'Your proposed upload exceeds the maximum allowed object size.'
 
+
 class ExpiredToken(KnownResponseError):
     message = 'The provided token has expired.'
 
+
 class IllegalVersioningConfigurationException(KnownResponseError):
-    message = 'Indicates that the versioning configuration specified ' \
-              'in the request is invalid.'
+    message = ('Indicates that the versioning configuration specified '
+               'in the request is invalid.')
+
 
 class IncompleteBody(KnownResponseError):
-    message = 'You did not provide the number of bytes specified by the ' \
-              'Content-Length HTTP header'
+    message = ('You did not provide the number of bytes specified by the '
+               'Content-Length HTTP header')
+
 
 class IncorrectNumberOfFilesInPostRequest(KnownResponseError):
     message = 'POST requires exactly one file upload per request.'
 
+
 class InlineDataTooLarge(KnownResponseError):
     message = 'Inline data exceeds the maximum allowed size.'
+
 
 class InternalError(KnownResponseError):
     message = 'We encountered an internal error. Please try again.'
 
+
 class InvalidAccessKeyId(KnownResponseError):
     message = 'The access key Id you provided does not exist in our records.'
+
 
 class InvalidAddressingHeader(KnownResponseError):
     message = 'You must specify the Anonymous role.'
 
+
 class InvalidArgument(KnownResponseError):
     message = 'Invalid Argument'
+
 
 class InvalidBucketName(KnownResponseError):
     message = 'The specified bucket is not valid.'
 
+
 class InvalidBucketState(KnownResponseError):
     message = 'The request is not valid with the current state of the bucket.'
+
 
 class InvalidDigest(KnownResponseError):
     message = 'The Content-MD5 you specified is not valid.'
 
+
 class InvalidEncryptionAlgorithmError(KnownResponseError):
-    message = 'The encryption request you specified is not valid. ' \
-              'The valid value is AES256.'
+    message = ('The encryption request you specified is not valid. '
+               'The valid value is AES256.')
+
 
 class InvalidLocationConstraint(KnownResponseError):
     message = 'The specified location constraint is not valid.'
 
+
 class InvalidObjectState(KnownResponseError):
     message = 'The operation is not valid for the current state of the object.'
 
+
 class InvalidPart(KnownResponseError):
-    message = 'One or more of the specified parts could not be found. ' \
-              'The part might not have been uploaded, or the specified ' \
-              'entity tag might not have matched the part\'s entity tag'
+    message = ('One or more of the specified parts could not be found. '
+               'The part might not have been uploaded, or the specified '
+               'entity tag might not have matched the part\'s entity tag')
+
 
 class InvalidPartOrder(KnownResponseError):
-    message = 'The list of parts was not in ascending order.Parts list ' \
-              'must specified in order by part number.'
+    message = ('The list of parts was not in ascending order.Parts list '
+               'must specified in order by part number.')
+
 
 class InvalidPayer(KnownResponseError):
     message = 'All access to this object has been disabled.'
 
+
 class InvalidPolicyDocument(KnownResponseError):
-    message = 'The content of the form does not meet the conditions ' \
-              'specified in the policy document.'
+    message = ('The content of the form does not meet the conditions '
+               'specified in the policy document.')
+
 
 class InvalidRange(KnownResponseError):
     message = 'The requested range cannot be satisfied.'
 
+
 class InvalidRequest(KnownResponseError):
     message = 'Invalid Request'
+
 
 class InvalidSecurity(KnownResponseError):
     message = 'The provided security credentials are not valid.'
 
+
 class InvalidSOAPRequest(KnownResponseError):
     message = 'The SOAP request body is invalid.'
+
 
 class InvalidStorageClass(KnownResponseError):
     message = 'The storage class you specified is not valid.'
 
+
 class InvalidTargetBucketForLogging(KnownResponseError):
-    message = 'The target bucket for logging does not exist, ' \
-              'is not owned by you, or does not have the appropriate ' \
-              'grants for the log-delivery group.'
+    message = ('The target bucket for logging does not exist, '
+               'is not owned by you, or does not have the appropriate '
+               'grants for the log-delivery group.')
+
 
 class InvalidToken(KnownResponseError):
     message = 'The provided token is malformed or otherwise invalid.'
 
+
 class InvalidURI(KnownResponseError):
     message = 'Couldn\'t parse the specified URI.'
+
 
 class KeyTooLong(KnownResponseError):
     message = 'Your key is too long.'
 
+
 class MalformedACLError(KnownResponseError):
-    message = 'The XML you provided was not well-formed ' \
-              'or did not validate against our published schema.'
+    message = ('The XML you provided was not well-formed '
+               'or did not validate against our published schema.')
+
 
 class MalformedPOSTRequest(KnownResponseError):
-    message = 'The body of your POST request is not ' \
-              'well-formed multipart/form-data.'
+    message = ('The body of your POST request is not '
+               'well-formed multipart/form-data.')
+
 
 class MalformedXML(KnownResponseError):
-    message = 'This happens when the user sends malformed xml (xml that ' \
-              'doesn\'t conform to the published xsd) for the configuration.'
+    message = ("This happens when the user sends malformed xml (xml that "
+               "doesn't conform to the published xsd) for the configuration.")
+
 
 class MaxMessageLengthExceeded(KnownResponseError):
     message = 'Your request was too big.'
 
+
 class MaxPostPreDataLengthExceededError(KnownResponseError):
-    message = 'Your POST request fields preceding the ' \
-              'upload file were too large.'
+    message = ('Your POST request fields preceding the '
+               'upload file were too large.')
+
 
 class MetadataTooLarge(KnownResponseError):
     message = 'Your metadata headers exceed the maximum allowed metadata size.'
 
+
 class MethodNotAllowed(KnownResponseError):
     message = 'The specified method is not allowed against this resource'
+
 
 class MissingAttachment(KnownResponseError):
     message = 'A SOAP attachment was expected, but none were found.'
 
+
 class MissingContentLength(KnownResponseError):
     message = 'You must provide the Content-Length HTTP header.'
 
+
 class MissingRequestBodyError(KnownResponseError):
-    message = 'This happens when the user sends an empty xml document ' \
-              'as a request. The error message is, "Request body is empty."'
+    message = ('This happens when the user sends an empty xml document '
+               'as a request. The error message is, "Request body is empty."')
+
 
 class MissingSecurityElement(KnownResponseError):
     message = 'The SOAP 1.1 request is missing a security element.'
 
+
 class MissingSecurityHeader(KnownResponseError):
     message = 'Your request is missing a required header.'
 
+
 class NoLoggingStatusForKey(KnownResponseError):
-    message = 'There is no such thing as a logging ' \
-              'status subresource for a key.'
+    message = ('There is no such thing as a logging '
+               'status subresource for a key.')
+
 
 class NoSuchBucket(KnownResponseError):
     message = 'The specified bucket does not exist.'
 
+
 class NoSuchKey(KnownResponseError):
     message = 'The specified key does not exist.'
+
 
 class NoSuchLifecycleConfiguration(KnownResponseError):
     message = 'The lifecycle configuration does not exist.'
 
+
 class NoSuchUpload(KnownResponseError):
-    message = 'The specified multipart upload does not exist. ' \
-              'The upload ID might be invalid, or the multipart \
-              upload might have been aborted or completed.'
+    message = ('The specified multipart upload does not exist. '
+               'The upload ID might be invalid, or the multipart '
+               'upload might have been aborted or completed.')
+
 
 class NoSuchVersion(KnownResponseError):
-    message = 'Indicates that the version ID specified in the ' \
-              'request does not match an existing version.'
+    message = ('Indicates that the version ID specified in the '
+               'request does not match an existing version.')
+
 
 class APINotImplemented(KnownResponseError):
-    message = 'A header you provided implies functionality ' \
-              'that is not implemented.'
+    message = ('A header you provided implies functionality '
+               'that is not implemented.')
+
 
 class NotSignedUp(KnownResponseError):
     message = 'Your account is not signed up.'
 
+
 class NoSuchBucketPolicy(KnownResponseError):
     message = 'The specified bucket does not have a bucket policy.'
 
+
 class OperationAborted(KnownResponseError):
-    message = 'A conflicting conditional operation is currently in ' \
-              'progress against this resource. Try again.'
+    message = ('A conflicting conditional operation is currently in '
+               'progress against this resource. Try again.')
+
 
 class PermanentRedirect(KnownResponseError):
-    message = 'The bucket you are attempting to access must be addressed ' \
-              'using the specified endpoint. Send all future requests ' \
-              'to this endpoint.'
+    message = ('The bucket you are attempting to access must be addressed '
+               'using the specified endpoint. Send all future requests '
+               'to this endpoint.')
+
 
 class PreconditionFailed(KnownResponseError):
     message = 'At least one of the preconditions you specified did not hold.'
 
+
 class Redirect(KnownResponseError):
     message = 'Temporary redirect.'
+
 
 class RestoreAlreadyInProgress(KnownResponseError):
     message = 'Object restore is already in progress.'
 
+
 class RequestIsNotMultiPartContent(KnownResponseError):
     message = 'Bucket POST must be of the enclosure-type multipart/form-data.'
 
+
 class RequestTimeout(KnownResponseError):
-    message = 'Your socket connection to the server was not read ' \
-              'from or written to within the timeout period.'
+    message = ('Your socket connection to the server was not read '
+               'from or written to within the timeout period.')
+
 
 class RequestTimeTooSkewed(KnownResponseError):
-    message = 'The difference between the request time and the ' \
-              'server\'s time is too large.'
+    message = ("The difference between the request time and the "
+               "server's time is too large.")
+
 
 class RequestTorrentOfBucketError(KnownResponseError):
     message = 'Requesting the torrent file of a bucket is not permitted.'
 
+
 class SignatureDoesNotMatch(KnownResponseError):
-    message = 'The request signature we calculated does not match the ' \
-              'signature you provided.'
+    message = ('The request signature we calculated does not match the '
+               'signature you provided.')
+
 
 class ServiceUnavailable(KnownResponseError):
     message = 'Reduce your request rate.'
 
+
 class SlowDown(KnownResponseError):
     message = 'Reduce your request rate.'
+
 
 class TemporaryRedirect(KnownResponseError):
     message = 'You are being redirected to the bucket while DNS updates.'
 
+
 class TokenRefreshRequired(KnownResponseError):
     message = 'The provided token must be refreshed.'
+
 
 class TooManyBuckets(KnownResponseError):
     message = 'You have attempted to create more buckets than allowed.'
 
+
 class UnexpectedContent(KnownResponseError):
     message = 'This request does not support content.'
 
+
 class UnresolvableGrantByEmailAddress(KnownResponseError):
-    message = 'The email address you provided does not match any account ' \
-              'on record.'
+    message = ('The email address you provided does not match any account '
+               'on record.')
+
 
 class UserKeyMustBeSpecified(KnownResponseError):
-    message = 'The bucket POST must contain the specified field name. ' \
-              'If it is specified, check the order of the fields.'
+    message = ('The bucket POST must contain the specified field name. '
+               'If it is specified, check the order of the fields.')
+
 
 known_errors = {
     'AccessDenied': AccessDenied,
@@ -547,7 +617,8 @@ known_errors = {
     'EntityTooSmall': EntityTooSmall,
     'EntityTooLarge': EntityTooLarge,
     'ExpiredToken': ExpiredToken,
-    'IllegalVersioningConfigurationException': IllegalVersioningConfigurationException,
+    'IllegalVersioningConfigurationException':
+    IllegalVersioningConfigurationException,
     'IncompleteBody': IncompleteBody,
     'IncorrectNumberOfFilesInPostRequest': IncorrectNumberOfFilesInPostRequest,
     'InlineDataTooLarge': InlineDataTooLarge,
