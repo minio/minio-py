@@ -88,9 +88,9 @@ def presign_v4(method, url, credentials,
 
     # If a sha256sum is known, add to headers to include with signature
     content_hash_hex = _UNSIGNED_PAYLOAD
-    for k in headers.keys():
+    for k in headers:
         if k.lower() == 'x-amz-content-sha256':
-            content_hash_hex = headers.get(k, _UNSIGNED_PAYLOAD)
+            content_hash_hex = headers[k] or _UNSIGNED_PAYLOAD
             del headers[k]
             break
 
