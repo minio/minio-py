@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,10 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# A Chain credentials provider, provides a way of chaining multiple providers together
-# and will pick the first available using priority order of the 'providers' list
+# A Chain credentials provider, provides a way of chaining multiple providers
+# together and will pick the first available using priority order of the
+# 'providers' list
 
-from minio.credentials import Chain, EnvAWS, EnvMinio, IamEc2MetaData
+from minio import Minio
+from minio.credentials import (
+    Chain, EnvAWS, EnvMinio, IamEc2MetaData, Credentials)
 
 client = Minio('s3.amazonaws.com',
                credentials=Credentials(

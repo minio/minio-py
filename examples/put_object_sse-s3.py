@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2018 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2018 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,7 +30,6 @@ STORAGE_BUCKET = 'test-encryption-bucket'
 
 
 def main():
-
     minio = Minio(STORAGE_ENDPOINT, access_key=AWSAccessKeyId,
                   secret_key=AWSSecretKey)
 
@@ -38,7 +38,8 @@ def main():
     # Create an SSE_S3 object
     sse_s3_obj = SSE_S3()
 
-    # Put object with from SSE_S3 object which encrypt object in S3 with provided key
+    # Put object with from SSE_S3 object which encrypt object in S3 with
+    # provided key
     minio.put_object(STORAGE_BUCKET, 'test_crypt.txt', content,
                      content.getbuffer().nbytes, sse=sse_s3_obj)
 

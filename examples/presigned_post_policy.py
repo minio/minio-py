@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,8 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: my-bucketname, my-objectname, YOUR-ACCESSKEYID, and YOUR-SECRETACCESSKEY
-# are dummy values, please replace them with original values.
+# Note: my-bucketname, my-objectname, YOUR-ACCESSKEYID, and
+# YOUR-SECRETACCESSKEY are dummy values, please replace them with original
+# values.
 
 from datetime import datetime, timedelta
 
@@ -31,7 +33,7 @@ post_policy.set_key_startswith('my-objectname')
 post_policy.set_content_length_range(10, 1024)
 
 # set expiry 10 days into future.
-expires_date = datetime.utcnow()+timedelta(days=10)
+expires_date = datetime.utcnow() + timedelta(days=10)
 post_policy.set_expires(expires_date)
 
 client = Minio('s3.amazonaws.com',
@@ -39,14 +41,15 @@ client = Minio('s3.amazonaws.com',
                secret_key='YOUR-SECRETACCESSKEY')
 
 try:
-    url_str, signed_form_data = client.presigned_post_policy(post_policy)
-    curl_str = 'curl -X POST {0}'.format(url_str)
-    curl_cmd = [curl_str]
-    for field in signed_form_data:
-        curl_cmd.append('-F {0}={1}'.format(field, signed_form_data[field]))
+    url, signed_form_data = client.presigned_post_policy(post_policy)
+
+    curl_cmd = (
+        ['curl -X POST {0}'.format(url)] +
+        ['-F {0}={1}'.format(k, v) for k, v in signed_form_data.items()] +
+        ['-F file=@<FILE>']
+    )
 
     # print curl command to upload files.
-    curl_cmd.append('-F file=@<FILE>')
     print(' '.join(curl_cmd))
 except ResponseError as err:
     print(err)

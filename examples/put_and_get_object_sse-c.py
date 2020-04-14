@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2018 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2018 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,9 +17,7 @@
 # Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
 # dummy values, please replace them with original values.
 
-import base64
 from io import BytesIO
-import hashlib
 
 from minio.api import Minio
 from minio.sse import SSE_C
@@ -45,16 +44,19 @@ def main():
     minio.put_object(STORAGE_BUCKET, 'test_crypt.txt', content,
                      content.getbuffer().nbytes, sse=sse_customer_key)
 
-    # Create a a copy_SSE-C object to copy an object from source to destination object on the Server-Side
+    # Create a a copy_SSE-C object to copy an object from source to destination
+    # object on the Server-Side
     copy_sse_customer_key = copy_SSE_C(key)
 
     # Copy encrypted object on Server-Side from Source to Destination
-    obj = minio.copy_object(STORAGE_BUCKET, 'test_crypt_copy.txt', STORAGE_BUCKET+'/test_crypt.txt',
-                            source_sse=copy_sse_customer_key, sse=sse_customer_key)
+    obj = minio.copy_object(STORAGE_BUCKET, 'test_crypt_copy.txt',
+                            STORAGE_BUCKET + '/test_crypt.txt',
+                            source_sse=copy_sse_customer_key,
+                            sse=sse_customer_key)
 
     # Get decrypted object with SSE_C object passed in as param
-    obj = minio.get_object(
-        STORAGE_BUCKET, 'test_crypt_copy.txt', sse=sse_customer_key)
+    obj = minio.get_object(STORAGE_BUCKET, 'test_crypt_copy.txt',
+                           sse=sse_customer_key)
 
     print(obj.read())
 

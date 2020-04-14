@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,9 +26,10 @@ client = Minio('s3.amazonaws.com',
 
 # Remove a prefix recursively.
 try:
-    def get_name(object): return object.object_name
-    names = map(get_name, client.list_objects_v2(
-        'my-bucketname', 'my-prefix', recursive=True))
+    names = map(
+        lambda x: x.object_name,
+        client.list_objects_v2('my-bucketname', 'my-prefix', recursive=True)
+    )
     for err in client.remove_objects('my-bucketname', names):
         print("Deletion Error: {}".format(err))
 except ResponseError as err:

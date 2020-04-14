@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2018 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2018 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,7 +73,8 @@ class Progress(Thread):
 
     def set_meta(self, total_length, object_name):
         """
-        Metadata settings for the object. This method called before uploading object
+        Metadata settings for the object. This method called before uploading
+        object
         :param total_length: Total length of object.
         :param object_name: Object name to be showed.
         """
@@ -82,7 +83,6 @@ class Progress(Thread):
         self.prefix = self.object_name + ': ' if self.object_name else ''
 
     def run(self):
-
         displayed_time = 0
         while True:
             try:
@@ -92,14 +92,18 @@ class Progress(Thread):
                 elapsed_time = time.time() - self.initial_time
                 if elapsed_time > displayed_time:
                     displayed_time = elapsed_time
-                self.print_status(current_size=self.current_size, total_length=self.total_length,
-                                  displayed_time=displayed_time, prefix=self.prefix)
+                self.print_status(current_size=self.current_size,
+                                  total_length=self.total_length,
+                                  displayed_time=displayed_time,
+                                  prefix=self.prefix)
                 continue
 
             current_size, total_length = task
             displayed_time = time.time() - self.initial_time
-            self.print_status(current_size=current_size, total_length=total_length,
-                              displayed_time=displayed_time, prefix=self.prefix)
+            self.print_status(current_size=current_size,
+                              total_length=total_length,
+                              displayed_time=displayed_time,
+                              prefix=self.prefix)
             self.display_queue.task_done()
             if current_size == total_length:
                 self.done_progress()
@@ -107,7 +111,8 @@ class Progress(Thread):
     def update(self, size):
         """
         Update object size to be showed. This method called while uploading
-        :param size: Object size to be showed. The object size should be in bytes.
+        :param size: Object size to be showed. The object size should be in
+                     bytes.
         """
         if not isinstance(size, int):
             raise ValueError('{} type can not be displayed. '
@@ -123,9 +128,8 @@ class Progress(Thread):
         self.current_size = 0
 
     def print_status(self, current_size, total_length, displayed_time, prefix):
-
-        formatted_str = prefix + \
-            format_string(current_size, total_length, displayed_time)
+        formatted_str = prefix + format_string(
+            current_size, total_length, displayed_time)
         self.stdout.write(_REFRESH_CHAR + formatted_str + ' ' *
                           max(self.last_printed_len - len(formatted_str), 0))
         self.stdout.flush()
@@ -160,15 +164,17 @@ def format_string(current_size, total_length, elapsed_time):
         n_to_mb / elapsed_time) if elapsed_time else _UNKNOWN_SIZE
     frac = float(current_size) / total_length
     bar_length = int(frac * _BAR_SIZE)
-    bar = _FINISHED_BAR * bar_length + \
-        _REMAINING_BAR * (_BAR_SIZE - bar_length)
+    bar = (_FINISHED_BAR * bar_length +
+           _REMAINING_BAR * (_BAR_SIZE - bar_length))
     percentage = _PERCENTAGE_FORMAT % (frac * 100)
-    left_str = seconds_to_time(
-        elapsed_time / current_size * (total_length - current_size)) if current_size else _UNKNOWN_SIZE
+    left_str = (
+        seconds_to_time(
+            elapsed_time / current_size * (total_length - current_size))
+        if current_size else _UNKNOWN_SIZE)
 
     humanized_total = _HUMANINZED_FORMAT % (
         total_length / _KILOBYTE / _KILOBYTE) + _STR_MEGABYTE
     humanized_n = _HUMANINZED_FORMAT % n_to_mb + _STR_MEGABYTE
 
-    return _DISPLAY_FORMAT % (
-        bar, humanized_n, humanized_total, percentage, elapsed_str, left_str, rate)
+    return _DISPLAY_FORMAT % (bar, humanized_n, humanized_total, percentage,
+                              elapsed_str, left_str, rate)
