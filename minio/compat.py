@@ -44,16 +44,16 @@ if _is_py2:
 
     from urlparse import urlsplit, parse_qs
 
-    ## Create missing types.
+    # Create missing types.
     bytes = str
 
-    ## Update better types.
+    # Update better types.
     builtin_range = range
     range = xrange
     builtin_str = str
     str = unicode
 
-    ## Add missing imports
+    # Add missing imports
     basestring = basestring
 elif _is_py3:
     from queue import Queue
@@ -63,21 +63,22 @@ elif _is_py3:
     queue_empty = Empty
 
     from urllib.parse import quote, unquote, urlsplit, parse_qs
+    unquote = unquote  # to get rid of F401
+    urlsplit = urlsplit  # to get rid of F401
+    parse_qs = parse_qs  # to get rid of F401
 
-    ## Create types to compat with py2.
+    # Create types to compat with py2.
     builtin_range = range
     builtin_str = str
 
-    ## Create missing types.
+    # Create missing types.
     basestring = (str, bytes)
     long = int
 
-    ## Add missing imports
+    # Add missing imports
     bytes = bytes
     range = range
     str = str
-
-numeric_types = (int, long, float)
 
 
 # Note earlier versions of minio.compat exposed urllib.quote as urlencode
