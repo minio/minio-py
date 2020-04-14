@@ -42,7 +42,7 @@ options = SelectObjectOptions(
                      ),
         # If input is JSON
         # json=JSONInput(Type="DOCUMENT",)
-        ),
+    ),
 
     output_serialization=OutputSerialization(
         csv=CSVOutput(QuoteFields="ASNEEDED",
@@ -54,11 +54,11 @@ options = SelectObjectOptions(
         # json = JsonOutput(
         #     RecordDelimiter="\n",
         #     )
-        ),
+    ),
     request_progress=RequestProgress(
         enabled="False"
-        )
     )
+)
 
 try:
     data = client.select_object_content('your-bucket', 'your-object', options)

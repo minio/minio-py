@@ -92,12 +92,14 @@ class Progress(Thread):
                 elapsed_time = time.time() - self.initial_time
                 if elapsed_time > displayed_time:
                     displayed_time = elapsed_time
-                self.print_status(current_size=self.current_size, total_length=self.total_length, displayed_time=displayed_time, prefix=self.prefix)
+                self.print_status(current_size=self.current_size, total_length=self.total_length,
+                                  displayed_time=displayed_time, prefix=self.prefix)
                 continue
 
             current_size, total_length = task
             displayed_time = time.time() - self.initial_time
-            self.print_status(current_size=current_size, total_length=total_length, displayed_time=displayed_time, prefix=self.prefix)
+            self.print_status(current_size=current_size, total_length=total_length,
+                              displayed_time=displayed_time, prefix=self.prefix)
             self.display_queue.task_done()
             if current_size == total_length:
                 self.done_progress()
@@ -122,8 +124,10 @@ class Progress(Thread):
 
     def print_status(self, current_size, total_length, displayed_time, prefix):
 
-        formatted_str = prefix + format_string(current_size, total_length, displayed_time)
-        self.stdout.write(_REFRESH_CHAR + formatted_str + ' ' * max(self.last_printed_len - len(formatted_str), 0))
+        formatted_str = prefix + \
+            format_string(current_size, total_length, displayed_time)
+        self.stdout.write(_REFRESH_CHAR + formatted_str + ' ' *
+                          max(self.last_printed_len - len(formatted_str), 0))
         self.stdout.flush()
         self.last_printed_len = len(formatted_str)
 
@@ -152,15 +156,18 @@ def format_string(current_size, total_length, elapsed_time):
     n_to_mb = current_size / _KILOBYTE / _KILOBYTE
     elapsed_str = seconds_to_time(elapsed_time)
 
-    rate = _RATE_FORMAT % (n_to_mb / elapsed_time) if elapsed_time else _UNKNOWN_SIZE
+    rate = _RATE_FORMAT % (
+        n_to_mb / elapsed_time) if elapsed_time else _UNKNOWN_SIZE
     frac = float(current_size) / total_length
     bar_length = int(frac * _BAR_SIZE)
-    bar = _FINISHED_BAR * bar_length + _REMAINING_BAR * (_BAR_SIZE - bar_length)
+    bar = _FINISHED_BAR * bar_length + \
+        _REMAINING_BAR * (_BAR_SIZE - bar_length)
     percentage = _PERCENTAGE_FORMAT % (frac * 100)
     left_str = seconds_to_time(
         elapsed_time / current_size * (total_length - current_size)) if current_size else _UNKNOWN_SIZE
 
-    humanized_total = _HUMANINZED_FORMAT % (total_length / _KILOBYTE / _KILOBYTE) + _STR_MEGABYTE
+    humanized_total = _HUMANINZED_FORMAT % (
+        total_length / _KILOBYTE / _KILOBYTE) + _STR_MEGABYTE
     humanized_n = _HUMANINZED_FORMAT % n_to_mb + _STR_MEGABYTE
 
     return _DISPLAY_FORMAT % (

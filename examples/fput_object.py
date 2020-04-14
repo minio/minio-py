@@ -41,6 +41,7 @@ except ResponseError as err:
 # Put an object 'my-objectname-csv' with progress.
 progress = Progress()
 try:
-    client.fput_object('my-bucketname', 'my-objectname', 'my-filepath', progress=progress)
+    client.fput_object('my-bucketname', 'my-objectname',
+                       'my-filepath', progress=progress)
 except ResponseError as err:
     print(err)

@@ -34,26 +34,30 @@ STORAGE_BUCKET = 'test-encryption-bucket'
 def main():
     content = BytesIO(b'Hello again')
 
-    minio = Minio(STORAGE_ENDPOINT, access_key=AWSAccessKeyId, secret_key=AWSSecretKey)
+    minio = Minio(STORAGE_ENDPOINT, access_key=AWSAccessKeyId,
+                  secret_key=AWSSecretKey)
 
     # Create an SSE-C object with a 32 byte customer_key
     key = b'32byteslongsecretkeymustprovided'
     sse_customer_key = SSE_C(key)
 
-    # Put object with SSE_C object passed as a param 
-    minio.put_object(STORAGE_BUCKET, 'test_crypt.txt', content, content.getbuffer().nbytes, sse=sse_customer_key)
+    # Put object with SSE_C object passed as a param
+    minio.put_object(STORAGE_BUCKET, 'test_crypt.txt', content,
+                     content.getbuffer().nbytes, sse=sse_customer_key)
 
     # Create a a copy_SSE-C object to copy an object from source to destination object on the Server-Side
     copy_sse_customer_key = copy_SSE_C(key)
 
-    #Copy encrypted object on Server-Side from Source to Destination
-    obj = minio.copy_object(STORAGE_BUCKET, 'test_crypt_copy.txt', STORAGE_BUCKET+'/test_crypt.txt', 
-    source_sse=copy_sse_customer_key, sse=sse_customer_key)
+    # Copy encrypted object on Server-Side from Source to Destination
+    obj = minio.copy_object(STORAGE_BUCKET, 'test_crypt_copy.txt', STORAGE_BUCKET+'/test_crypt.txt',
+                            source_sse=copy_sse_customer_key, sse=sse_customer_key)
 
     # Get decrypted object with SSE_C object passed in as param
-    obj = minio.get_object(STORAGE_BUCKET, 'test_crypt_copy.txt', sse=sse_customer_key)
+    obj = minio.get_object(
+        STORAGE_BUCKET, 'test_crypt_copy.txt', sse=sse_customer_key)
 
     print(obj.read())
+
 
 if __name__ == '__main__':
     main()

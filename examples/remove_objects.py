@@ -25,8 +25,9 @@ client = Minio('s3.amazonaws.com',
 
 # Remove a prefix recursively.
 try:
-    get_name = lambda object: object.object_name
-    names = map(get_name, client.list_objects_v2('my-bucketname', 'my-prefix', recursive=True))
+    def get_name(object): return object.object_name
+    names = map(get_name, client.list_objects_v2(
+        'my-bucketname', 'my-prefix', recursive=True))
     for err in client.remove_objects('my-bucketname', names):
         print("Deletion Error: {}".format(err))
 except ResponseError as err:

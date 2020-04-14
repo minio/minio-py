@@ -33,5 +33,5 @@ client = Minio('s3.amazonaws.com',
 # Initialize Minio with IamEc2MetaData custom
 client = Minio('s3.amazonaws.com',
                credentials=Credentials(
-                    provider=IamEc2MetaData(endpoint='custom.endpoint')
+                   provider=IamEc2MetaData(endpoint='custom.endpoint')
                ))

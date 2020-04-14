@@ -29,21 +29,24 @@ STORAGE_BUCKET = 'test-encryption-bucket'
 
 
 def main():
-   
-    minio = Minio(STORAGE_ENDPOINT, access_key=AWSAccessKeyId, secret_key=AWSSecretKey)
+
+    minio = Minio(STORAGE_ENDPOINT, access_key=AWSAccessKeyId,
+                  secret_key=AWSSecretKey)
 
     content = BytesIO(b'Hello again')
-    
-    #Create an SSE_S3 object
+
+    # Create an SSE_S3 object
     sse_s3_obj = SSE_S3()
 
     # Put object with from SSE_S3 object which encrypt object in S3 with provided key
-    minio.put_object(STORAGE_BUCKET, 'test_crypt.txt', content, content.getbuffer().nbytes, sse=sse_s3_obj)
+    minio.put_object(STORAGE_BUCKET, 'test_crypt.txt', content,
+                     content.getbuffer().nbytes, sse=sse_s3_obj)
 
     # Get decrypted object with same headers
     obj = minio.get_object(STORAGE_BUCKET, 'test_crypt.txt')
-   
+
     print(obj.read())
+
 
 if __name__ == '__main__':
     main()
