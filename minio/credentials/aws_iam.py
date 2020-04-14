@@ -14,29 +14,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os, json, urllib3, datetime
+import json
+import urllib3
+import datetime
 from .credentials import Provider, Value, Expiry
 from minio.error import ResponseError
 
+
 class IamEc2MetaData(Provider):
-
     iam_security_creds_path = '/latest/meta-data/iam/security-credentials'
-
     default_expiry_window = datetime.timedelta(minutes=5)
 
     def __init__(self, endpoint=None):
         super(Provider, self).__init__()
-        if endpoint == "" or endpoint is None:
-            endpoint = "http://169.254.169.254"
-        self._endpoint = endpoint
+        self._endpoint = endpoint or "http://169.254.169.254"
         self._expiry = Expiry()
         self._http_client = urllib3.PoolManager(
-                retries=urllib3.Retry(
-                    total=5,
-                    backoff_factor=0.2,
-                    status_forcelist=[500, 502, 503, 504]
-                    )
-                )
+            retries=urllib3.Retry(
+                total=5,
+                backoff_factor=0.2,
+                status_forcelist=[500, 502, 503, 504]
+            )
+        )
 
     def request_cred_list(self):
         url = self._endpoint + self.iam_security_creds_path
@@ -68,7 +67,8 @@ class IamEc2MetaData(Provider):
 
         creds_name = role_names[0]
         role_creds = self.request_cred(creds_name)
-        expiration = datetime.datetime.strptime(role_creds['Expiration'], '%Y-%m-%dT%H:%M:%SZ')
+        expiration = datetime.datetime.strptime(
+            role_creds['Expiration'], '%Y-%m-%dT%H:%M:%SZ')
         self._expiry.set_expiration(expiration, self.default_expiry_window)
 
         return Value(

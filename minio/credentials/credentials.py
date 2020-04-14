@@ -15,7 +15,8 @@
 # limitations under the License.
 
 from abc import ABCMeta, abstractmethod
-from datetime import datetime, timedelta
+from datetime import datetime
+
 
 class Value(object):
     def __init__(self, access_key=None, secret_key=None, session_token=None):
@@ -23,8 +24,8 @@ class Value(object):
         self.secret_key = secret_key
         self.session_token = session_token
 
-class Provider(object):
 
+class Provider(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -35,19 +36,19 @@ class Provider(object):
     def is_expired(self):
         pass
 
+
 class Expiry(object):
     def __init__(self):
         self._expiration = None
 
     def set_expiration(self, expiration, time_delta=None):
         self._expiration = expiration
-        if time_delta is not None:
+        if time_delta:
             self._expiration = self._expiration + time_delta
 
     def is_expired(self):
-        if self._expiration is None:
-            return True
-        return self._expiration < datetime.now()
+        return self._expiration < datetime.now() if self._expiration else True
+
 
 class Credentials(object):
     def __init__(self, forceRefresh=True, provider=None):
@@ -57,10 +58,7 @@ class Credentials(object):
 
     def get(self):
         if self.is_expired():
-            try:
-                creds = self._provider.retrieve()
-            except:
-                raise
+            creds = self._provider.retrieve()
             self._creds = creds
             self._forceRefresh = False
         return self._creds

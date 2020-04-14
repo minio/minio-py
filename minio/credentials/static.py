@@ -16,6 +16,7 @@
 
 from .credentials import Provider, Value
 
+
 class Static(Provider):
     def __init__(self, access_key=None, secret_key=None, token=None):
         super(Static, self).__init__()

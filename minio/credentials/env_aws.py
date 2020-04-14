@@ -18,6 +18,7 @@ import os
 
 from .credentials import Provider, Value
 
+
 class EnvAWS(Provider):
     def __init__(self, retrieved=False):
         super(Provider, self).__init__()
@@ -25,15 +26,14 @@ class EnvAWS(Provider):
 
     def retrieve(self):
         self.retrieved = False
-
-        access_key = os.environ.get('AWS_ACCESS_KEY_ID')
-        if access_key == "":
-            access_key = os.environ.get('AWS_ACCESS_KEY')
-
-        secret = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        if secret == "":
-            secret = os.environ.get('AWS_SECRET_KEY')
-
+        access_key = (
+            os.environ.get('AWS_ACCESS_KEY_ID') or
+            os.environ.get('AWS_ACCESS_KEY')
+        )
+        secret = (
+            os.environ.get('AWS_SECRET_ACCESS_KEY') or
+            os.environ.get('AWS_SECRET_KEY')
+        )
         self.retrieved = True
         return Value(
             access_key=access_key,
