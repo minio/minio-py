@@ -40,6 +40,8 @@ from .helpers import is_non_empty_string
 #      key: "x-amz-copy-if-modified-since",
 #      value: "Tue, 15 Nov 1994 12:45:26 GMT",
 #
+
+
 class CopyConditions(collectionsAbc.MutableMapping):
     """
     A :class:`CopyConditions <CopyConditions>` collection of
@@ -51,9 +53,9 @@ class CopyConditions(collectionsAbc.MutableMapping):
         - x-amz-copy-source-if-modified-since
 
     """
+
     def __init__(self, *args, **kwargs):
-        self._store = dict()
-        self.update(dict(*args, **kwargs))  # use the free update to set keys
+        self._store = dict(*args, **kwargs)
 
     def __getitem__(self, key):
         return self._store[key]
