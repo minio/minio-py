@@ -215,7 +215,7 @@ def sign_v4(method, url, region, headers=None,
                                                parsed_url,
                                                headers_to_sign,
                                                signed_headers,
-                                               content_sha256,
+                                               content_sha256
                                                )
 
     string_to_sign = generate_string_to_sign(request_datetime, region,
