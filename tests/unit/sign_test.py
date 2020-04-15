@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -31,6 +32,7 @@ from minio.helpers import get_target_url
 
 empty_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 dt = datetime(2015, 6, 20, 1, 2, 3, 0, pytz.utc)
+
 
 class CanonicalRequestTest(TestCase):
     def test_simple_request(self):
@@ -78,11 +80,14 @@ class CanonicalRequestTest(TestCase):
 
 class StringToSignTest(TestCase):
     def test_signing_key(self):
-        expected_signing_key_list = ['AWS4-HMAC-SHA256', '20150620T010203Z',
-                                     '20150620/us-east-1/s3/aws4_request',
-                                     'b93e86965c269a0dfef37a8bec231ef8acf8cdb101a64eb700a46c452c1ad233']
+        expected_signing_key_list = [
+            'AWS4-HMAC-SHA256', '20150620T010203Z',
+            '20150620/us-east-1/s3/aws4_request',
+            'b93e86965c269a0dfef37a8bec231ef8acf8cdb101a64eb700a46c452c1ad233'
+        ]
 
-        actual_signing_key = generate_string_to_sign(dt, 'us-east-1', 'request_hash')
+        actual_signing_key = generate_string_to_sign(
+            dt, 'us-east-1', 'request_hash')
         eq_('\n'.join(expected_signing_key_list), actual_signing_key)
 
 
@@ -90,10 +95,13 @@ class SigningKeyTest(TestCase):
     def test_generate_signing_key(self):
         key1_string = 'AWS4' + 'S3CR3T'
         key1 = key1_string.encode('utf-8')
-        key2 = hmac.new(key1, '20150620'.encode('utf-8'), hashlib.sha256).digest()
-        key3 = hmac.new(key2, 'region'.encode('utf-8'), hashlib.sha256).digest()
+        key2 = hmac.new(key1, '20150620'.encode(
+            'utf-8'), hashlib.sha256).digest()
+        key3 = hmac.new(key2, 'region'.encode(
+            'utf-8'), hashlib.sha256).digest()
         key4 = hmac.new(key3, 's3'.encode('utf-8'), hashlib.sha256).digest()
-        expected_result = hmac.new(key4, 'aws4_request'.encode('utf-8'), hashlib.sha256).digest()
+        expected_result = hmac.new(key4, 'aws4_request'.encode(
+            'utf-8'), hashlib.sha256).digest()
 
         actual_result = generate_signing_key(dt, 'region', 'S3CR3T')
 
@@ -102,12 +110,18 @@ class SigningKeyTest(TestCase):
 
 class AuthorizationHeaderTest(TestCase):
     def test_generate_authentication_header(self):
-        expected_authorization_header = 'AWS4-HMAC-SHA256 Credential=public_key/20150620/region/s3/aws4_request, ' \
-                                        'SignedHeaders=host;X-Amz-Content-Sha256;X-Amz-Date, Signature=signed_request'
-        actual_authorization_header = generate_authorization_header('public_key', dt, 'region',
-                                                                    ['host', 'X-Amz-Content-Sha256', 'X-Amz-Date'],
-                                                                    'signed_request')
+        expected_authorization_header = (
+            'AWS4-HMAC-SHA256 Credential='
+            'public_key/20150620/region/s3/aws4_request, '
+            'SignedHeaders=host;X-Amz-Content-Sha256;X-Amz-Date, '
+            'Signature=signed_request'
+        )
+        actual_authorization_header = generate_authorization_header(
+            'public_key', dt, 'region',
+            ['host', 'X-Amz-Content-Sha256', 'X-Amz-Date'],
+            'signed_request')
         eq_(expected_authorization_header, actual_authorization_header)
+
 
 class PresignURLTest(TestCase):
     @raises(InvalidArgumentError)
@@ -122,7 +136,9 @@ class PresignURLTest(TestCase):
         credentials = Credentials(
             provider=Static()
         )
-        presign_v4('GET', 'http://localhost:9000/hello', credentials, region=None, headers={}, expires=0)
+        presign_v4('GET', 'http://localhost:9000/hello',
+                   credentials, region=None, headers={}, expires=0)
+
 
 class SignV4Test(TestCase):
     def test_signv4(self):
@@ -133,10 +149,20 @@ class SignV4Test(TestCase):
                 secret_key='minio123'
             )
         )
-        url = get_target_url('http://localhost:9000', bucket_name='testbucket',
-             object_name='~testobject', bucket_region='us-east-1', query={'partID': '1', 'uploadID': '~abcd'})
-        hdrs = sign_v4('PUT', url, 'us-east-1', credentials=credentials, request_datetime=dt)
-        eq_(hdrs['Authorization'], 'AWS4-HMAC-SHA256 Credential=minio/20150620/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=a2f4546f647981732bd90dfa5a7599c44dca92f44bea48ecc7565df06032c25b')
+        url = get_target_url('http://localhost:9000',
+                             bucket_name='testbucket',
+                             object_name='~testobject',
+                             bucket_region='us-east-1',
+                             query={'partID': '1', 'uploadID': '~abcd'})
+        hdrs = sign_v4('PUT', url, 'us-east-1',
+                       credentials=credentials, request_datetime=dt)
+        eq_(hdrs['Authorization'],
+            'AWS4-HMAC-SHA256 Credential='
+            'minio/20150620/us-east-1/s3/aws4_request, '
+            'SignedHeaders=host;x-amz-content-sha256;x-amz-date, '
+            'Signature='
+            'a2f4546f647981732bd90dfa5a7599c44dca92f44bea48ecc7565df06032c25b')
+
 
 class UnicodeEncodeTest(TestCase):
     def test_unicode_quote(self):
@@ -152,7 +178,9 @@ class UnicodeEncodeTest(TestCase):
         eq_(queryencode(u'/test/123/汉字'), '%2Ftest%2F123%2F%E6%B1%89%E5%AD%97')
 
     def test_unicode_quote_b(self):
-        eq_(_quote(b'/test/123/\xe6\xb1\x89\xe5\xad\x97'), '/test/123/%E6%B1%89%E5%AD%97')
+        eq_(_quote(b'/test/123/\xe6\xb1\x89\xe5\xad\x97'),
+            '/test/123/%E6%B1%89%E5%AD%97')
 
     def test_unicode_queryencode_b(self):
-        eq_(queryencode(b'/test/123/\xe6\xb1\x89\xe5\xad\x97'), '%2Ftest%2F123%2F%E6%B1%89%E5%AD%97')
+        eq_(queryencode(b'/test/123/\xe6\xb1\x89\xe5\xad\x97'),
+            '%2Ftest%2F123%2F%E6%B1%89%E5%AD%97')

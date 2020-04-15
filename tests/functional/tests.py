@@ -68,6 +68,7 @@ class LimitedRandomReader(object):
 
     :param limit: Trigger EOF after limit bytes.
     """
+
     def __init__(self, limit):
         self._limit = limit
         self._offset_location = 0
@@ -235,7 +236,8 @@ def test_negative_make_bucket_invalid_name(client, log_output):
     # Default location
     log_output.args['location'] = "default value ('us-east-1')"
     # Create an array of invalid bucket names to test
-    invalid_bucket_name_list = [bucket_name+'.', '.'+bucket_name, bucket_name+'...'+'abcd']
+    invalid_bucket_name_list = [bucket_name+'.',
+                                '.'+bucket_name, bucket_name+'...'+'abcd']
     for name in invalid_bucket_name_list:
         log_output.args['bucket_name'] = name
         try:
@@ -274,7 +276,7 @@ def test_list_buckets(client, log_output):
                 continue
             raise ValueError('list_bucket api failure')
     except Exception as err:
-            raise Exception(err)
+        raise Exception(err)
     finally:
         client.remove_bucket(bucket_name)
     # Test passes
@@ -293,7 +295,8 @@ def test_select_object_content(client, log_output):
         client.make_bucket(bucket_name)
         content = io.BytesIO(b"col1,col2,col3\none,two,three\nX,Y,Z\n")
         expected_crc = calculate_crc(content.getvalue())
-        client.put_object(bucket_name, csvfile, content, len(content.getvalue()))
+        client.put_object(bucket_name, csvfile, content,
+                          len(content.getvalue()))
 
         options = SelectObjectOptions(
             expression="select * from s3object",
@@ -306,17 +309,17 @@ def test_select_object_content(client, log_output):
                              QuoteEscapeCharacter='"',
                              Comments="#",
                              AllowQuotedRecordDelimiter="FALSE",),
-                ),
+            ),
             output_serialization=OutputSerialization(
                 csv=CSVOutput(QuoteFields="ASNEEDED",
                               RecordDelimiter="\n",
                               FieldDelimiter=",",
                               QuoteCharacter='"',
                               QuoteEscapeCharacter='"',)
-                ),
+            ),
             request_progress=RequestProgress(
                 enabled="False"
-                )
+            )
         )
         data = client.select_object_content(bucket_name, csvfile, options)
         # Get the records
@@ -349,7 +352,8 @@ def test_fput_object_small_file(client, testfile, log_output, sse=None):
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
     log_output.args['file_path'] = testfile
-    log_output.args['metadata'] = metadata = {'x-amz-storage-class': 'STANDARD_IA'}
+    log_output.args['metadata'] = metadata = {
+        'x-amz-storage-class': 'STANDARD_IA'}
     try:
         client.make_bucket(bucket_name)
         # upload local small file.
@@ -357,7 +361,8 @@ def test_fput_object_small_file(client, testfile, log_output, sse=None):
             client.fput_object(bucket_name, object_name+'-f', testfile,
                                metadata=metadata, sse=sse)
         else:
-            client.fput_object(bucket_name, object_name+'-f', testfile, sse=sse)
+            client.fput_object(bucket_name, object_name +
+                               '-f', testfile, sse=sse)
     except Exception as err:
         raise Exception(err)
     finally:
@@ -378,7 +383,8 @@ def test_fput_object_large_file(client, largefile, log_output, sse=None):
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
     log_output.args['file_path'] = largefile
-    log_output.args['metadata'] = metadata = {'x-amz-storage-class': 'STANDARD_IA'}
+    log_output.args['metadata'] = metadata = {
+        'x-amz-storage-class': 'STANDARD_IA'}
     # upload local large file through multipart.
     try:
         client.make_bucket(bucket_name)
@@ -386,7 +392,8 @@ def test_fput_object_large_file(client, largefile, log_output, sse=None):
             client.fput_object(bucket_name, object_name+'-large', largefile,
                                metadata=metadata, sse=sse)
         else:
-            client.fput_object(bucket_name, object_name+'-large', largefile, sse=sse)
+            client.fput_object(bucket_name, object_name +
+                               '-large', largefile, sse=sse)
 
         client.stat_object(bucket_name, object_name+'-large', sse=sse)
     except Exception as err:
@@ -410,7 +417,8 @@ def test_fput_object_with_content_type(client, testfile, log_output):
     log_output.args['object_name'] = object_name = uuid.uuid4().__str__()
     log_output.args['file_path'] = testfile
     log_output.args['content_type'] = content_type = 'application/octet-stream'
-    log_output.args['metadata'] = metadata = {'x-amz-storage-class': 'STANDARD_IA'}
+    log_output.args['metadata'] = metadata = {
+        'x-amz-storage-class': 'STANDARD_IA'}
     try:
         client.make_bucket(bucket_name)
         # upload local small file with content_type defined.
@@ -446,7 +454,8 @@ def test_copy_object_no_copy_condition(client, log_output, ssec_copy=None, ssec=
         # Upload a streaming object of 1MiB
         KB_1 = 1024  # 1KiB.
         KB_1_reader = LimitedRandomReader(KB_1)
-        client.put_object(bucket_name, object_source, KB_1_reader, KB_1, sse=ssec)
+        client.put_object(bucket_name, object_source,
+                          KB_1_reader, KB_1, sse=ssec)
         client.copy_object(bucket_name, object_copy,
                            '/'+bucket_name+'/'+object_source, source_sse=ssec_copy, sse=ssec)
         st_obj = client.stat_object(bucket_name, object_copy, sse=ssec)
@@ -473,7 +482,8 @@ def test_copy_object_with_metadata(client, log_output):
     object_name = uuid.uuid4().__str__()
     log_output.args['object_source'] = object_source = object_name+'-source'
     log_output.args['object_name'] = object_copy = object_name+'-copy'
-    log_output.args['metadata'] = metadata = {"testing-string": "string", "testing-int": 1}
+    log_output.args['metadata'] = metadata = {
+        "testing-string": "string", "testing-int": 1}
     try:
         client.make_bucket(bucket_name)
         # Upload a streaming object of 1MiB
@@ -486,7 +496,8 @@ def test_copy_object_with_metadata(client, log_output):
                            '/'+bucket_name+'/'+object_source, metadata=metadata)
         # Verification
         stat_obj = client.stat_object(bucket_name, object_copy)
-        expected_metadata = {'x-amz-meta-testing-int': '1', 'x-amz-meta-testing-string': 'string'}
+        expected_metadata = {'x-amz-meta-testing-int': '1',
+                             'x-amz-meta-testing-string': 'string'}
         validate_stat_data(stat_obj, KB_1, expected_metadata)
     except Exception as err:
         raise Exception(err)
@@ -691,7 +702,8 @@ def test_put_object(client, log_output, sse=None):
         log_output.args['length'] = MB_11 = 11*1024*1024  # 11MiB.
         MB_11_reader = LimitedRandomReader(MB_11)
         log_output.args['data'] = 'LimitedRandomReader(MB_11)'
-        log_output.args['metadata'] = metadata = {'x-amz-meta-testing': 'value', 'test-key': 'value2'}
+        log_output.args['metadata'] = metadata = {
+            'x-amz-meta-testing': 'value', 'test-key': 'value2'}
         log_output.args['content_type'] = content_type = 'application/octet-stream'
         client.put_object(bucket_name,
                           object_name+'-metadata',
@@ -702,7 +714,8 @@ def test_put_object(client, log_output, sse=None):
                           sse=sse)
         # Stat on the uploaded object to check if it exists
         # Fetch saved stat metadata on a previously uploaded object with metadata.
-        st_obj = client.stat_object(bucket_name, object_name+'-metadata', sse=sse)
+        st_obj = client.stat_object(
+            bucket_name, object_name+'-metadata', sse=sse)
         normalized_meta = normalize_metadata(st_obj.metadata)
         if 'x-amz-meta-testing' not in normalized_meta:
             raise ValueError("Metadata key 'x-amz-meta-testing' not found")
@@ -731,7 +744,8 @@ def test_negative_put_object_with_path_segment(client, log_output):
 
     # Get a unique bucket_name and object_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
-    log_output.args['object_name'] = object_name = "/a/b/c/" + uuid.uuid4().__str__()
+    log_output.args['object_name'] = object_name = "/a/b/c/" + \
+        uuid.uuid4().__str__()
     try:
         client.make_bucket(bucket_name)
         log_output.args['length'] = 0  # Keep 0 bytes body to check for error.
@@ -810,7 +824,8 @@ def test_stat_object(client, log_output, sse=None):
         log_output.args['length'] = MB_11 = 11*1024*1024  # 11MiB.
         MB_11_reader = LimitedRandomReader(MB_11)
         log_output.args['data'] = 'LimitedRandomReader(MB_11)'
-        log_output.args['metadata'] = metadata = {'X-Amz-Meta-Testing': 'value'}
+        log_output.args['metadata'] = metadata = {
+            'X-Amz-Meta-Testing': 'value'}
         log_output.args['content_type'] = content_type = 'application/octet-stream'
 
         client.put_object(bucket_name,
@@ -821,7 +836,8 @@ def test_stat_object(client, log_output, sse=None):
                           metadata,
                           sse=sse)
         # Get the stat on the uploaded object
-        st_obj = client.stat_object(bucket_name, object_name+'-metadata', sse=sse)
+        st_obj = client.stat_object(
+            bucket_name, object_name+'-metadata', sse=sse)
         # Verify the collected stat data.
         validate_stat_data(st_obj, MB_11, normalize_metadata(metadata))
     except Exception as err:
@@ -939,7 +955,8 @@ def test_get_partial_object_with_default_length(client, log_output, sse=None):
         client.make_bucket(bucket_name)
         client.put_object(bucket_name, object_name, MB_1_reader, MB_1, sse=sse)
         # Get half of the object
-        object_data = client.get_partial_object(bucket_name, object_name, offset, sse=sse)
+        object_data = client.get_partial_object(
+            bucket_name, object_name, offset, sse=sse)
         with open(newfile, 'wb') as file_data:
             for d in object_data:
                 file_data.write(d)
@@ -976,7 +993,8 @@ def test_get_partial_object(client, log_output, sse=None):
         client.make_bucket(bucket_name)
         client.put_object(bucket_name, object_name, MB_1_reader, MB_1, sse=sse)
         # Get half of the object
-        object_data = client.get_partial_object(bucket_name, object_name, offset, length, sse=sse)
+        object_data = client.get_partial_object(
+            bucket_name, object_name, offset, length, sse=sse)
         with open(newfile, 'wb') as file_data:
             for d in object_data:
                 file_data.write(d)
@@ -1016,10 +1034,10 @@ def test_list_objects(client, log_output):
         objects = client.list_objects(bucket_name, '', is_recursive)
         for obj in objects:
             _, _, _, _, _, _ = obj.bucket_name,\
-                               obj.object_name,\
-                               obj.last_modified,\
-                               obj.etag, obj.size,\
-                               obj.content_type
+                obj.object_name,\
+                obj.last_modified,\
+                obj.etag, obj.size,\
+                obj.content_type
     except Exception as err:
         raise Exception(err)
     finally:
@@ -1037,10 +1055,10 @@ def count_objects(objects):
     no_of_files = 0
     for obj in objects:
         _, _, _, _, _, _ = obj.bucket_name,\
-                            obj.object_name,\
-                            obj.last_modified,\
-                            obj.etag, obj.size,\
-                            obj.content_type
+            obj.object_name,\
+            obj.last_modified,\
+            obj.etag, obj.size,\
+            obj.content_type
         no_of_files += 1
     return no_of_files
 
@@ -1048,9 +1066,11 @@ def count_objects(objects):
 def list_objects_api_test(client, bucket_name, expected_no, *argv):
     # argv is composed of prefix and recursive arguments of
     # list_objects api. They are both supposed to be passed as strings.
-    no_of_files = count_objects(client.list_objects(bucket_name, *argv))  # expect all objects to be listed
+    no_of_files = count_objects(client.list_objects(
+        bucket_name, *argv))  # expect all objects to be listed
     if expected_no != no_of_files:
-        raise ValueError("Listed no of objects ({}), does not match the expected no of objects ({})".format(no_of_files, expected_no))
+        raise ValueError("Listed no of objects ({}), does not match the expected no of objects ({})".format(
+            no_of_files, expected_no))
 
 
 def test_list_objects_with_prefix(client, log_output):
@@ -1071,7 +1091,8 @@ def test_list_objects_with_prefix(client, log_output):
         for i in range(no_of_created_files):
             str_i = str(i)
             MB_1_reader = LimitedRandomReader(MB_1)
-            client.put_object(bucket_name, path_prefix + str_i + '_' + object_name, MB_1_reader, MB_1)
+            client.put_object(bucket_name, path_prefix +
+                              str_i + '_' + object_name, MB_1_reader, MB_1)
             path_prefix += str_i + '/'
         # Created files and directory structure
         # ._<bucket_name>/
@@ -1126,7 +1147,8 @@ def test_list_objects_with_prefix(client, log_output):
             path_prefix = ''
             for i in range(no_of_created_files):
                 str_i = str(i)
-                client.remove_object(bucket_name, path_prefix + str_i + '_' + object_name)
+                client.remove_object(
+                    bucket_name, path_prefix + str_i + '_' + object_name)
                 path_prefix += str_i + '/'
             client.remove_bucket(bucket_name)
         except Exception as err:
@@ -1144,7 +1166,8 @@ def test_list_objects_with_1001_files(client, log_output):
     # Get a unique bucket_name and object_name
     log_output.args['bucket_name'] = bucket_name = generate_bucket_name()
     object_name = uuid.uuid4().__str__()
-    log_output.args['object_name'] = object_name + '_0 ~ ' + object_name + '_1000'
+    log_output.args['object_name'] = object_name + \
+        '_0 ~ ' + object_name + '_1000'
     try:
         client.make_bucket(bucket_name)
         KB_1 = 1024  # 1KiB.
@@ -1156,7 +1179,8 @@ def test_list_objects_with_1001_files(client, log_output):
         for i in range(no_of_created_files):
             str_i = str(i)
             KB_1_reader = LimitedRandomReader(KB_1)
-            client.put_object(bucket_name, path_prefix + object_name + '_' + str_i, KB_1_reader, KB_1)
+            client.put_object(bucket_name, path_prefix +
+                              object_name + '_' + str_i, KB_1_reader, KB_1)
 
         # List objects and check if 1001 files are returned
         list_objects_api_test(client, bucket_name, no_of_created_files)
@@ -1168,7 +1192,8 @@ def test_list_objects_with_1001_files(client, log_output):
             path_prefix = ''
             for i in range(no_of_created_files):
                 str_i = str(i)
-                client.remove_object(bucket_name, path_prefix + object_name + '_' + str_i)
+                client.remove_object(
+                    bucket_name, path_prefix + object_name + '_' + str_i)
             client.remove_bucket(bucket_name)
         except Exception as err:
             raise Exception(err)
@@ -1195,10 +1220,10 @@ def test_list_objects_v2(client, log_output):
         objects = client.list_objects_v2(bucket_name, '', is_recursive)
         for obj in objects:
             _, _, _, _, _, _ = obj.bucket_name,\
-                               obj.object_name,\
-                               obj.last_modified,\
-                               obj.etag, obj.size,\
-                               obj.content_type
+                obj.object_name,\
+                obj.last_modified,\
+                obj.etag, obj.size,\
+                obj.content_type
     except Exception as err:
         raise Exception(err)
     finally:
@@ -1335,7 +1360,8 @@ def test_presigned_get_object_expiry(client, log_output):
 
         log_output.args['response.status'] = response.status
         log_output.args['response.reason'] = response.reason
-        log_output.args['response.headers'] = json.dumps(response.headers.__dict__)
+        log_output.args['response.headers'] = json.dumps(
+            response.headers.__dict__)
         log_output.args['response._body'] = response._body.decode('utf-8')
 
         if response.status != 200:
@@ -1354,7 +1380,8 @@ def test_presigned_get_object_expiry(client, log_output):
 
         log_output.args['response.status-2'] = response.status
         log_output.args['response.reason-2'] = response.reason
-        log_output.args['response.headers-2'] = json.dumps(response.headers.__dict__)
+        log_output.args['response.headers-2'] = json.dumps(
+            response.headers.__dict__)
         log_output.args['response._body-2'] = response._body.decode('utf-8')
 
         # Success with an expired url is considered to be a failure
@@ -1396,7 +1423,8 @@ def test_presigned_get_object_response_headers(client, log_output):
                             'response-content-language': content_language}
         presigned_get_object_url = client.presigned_get_object(bucket_name,
                                                                object_name,
-                                                               timedelta(seconds=120),
+                                                               timedelta(
+                                                                   seconds=120),
                                                                response_headers)
         log_output.args['presigned_get_object_url'] = presigned_get_object_url
 
@@ -1406,7 +1434,8 @@ def test_presigned_get_object_response_headers(client, log_output):
 
         log_output.args['response.status'] = response.status
         log_output.args['response.reason'] = response.reason
-        log_output.args['response.headers'] = json.dumps(response.headers.__dict__)
+        log_output.args['response.headers'] = json.dumps(
+            response.headers.__dict__)
         log_output.args['response._body'] = response._body.decode('utf-8')
         log_output.args['returned_content_type'] = returned_content_type
         log_output.args['content_type'] = content_type
@@ -1583,7 +1612,7 @@ def test_thread_safe(client, test_file, log_output):
                 # Compare sha-sum values of the source file and the copied one
                 if expected_sha_sum != copied_file_sha_sum:
                     raise ValueError(
-                       'Sha-sum mismatch on multi-threaded put and get objects')
+                        'Sha-sum mismatch on multi-threaded put and get objects')
             except Exception as err:
                 exceptions.append(Exception(err))
             finally:
@@ -1661,7 +1690,8 @@ def get_policy_actions(stat):
 
 
 def policy_validated(client, bucket_name, policy):
-    policy_dict = json.loads(client.get_bucket_policy(bucket_name).decode("utf-8"))
+    policy_dict = json.loads(
+        client.get_bucket_policy(bucket_name).decode("utf-8"))
     actions = get_policy_actions(policy_dict.get('Statement'))
     actions.sort()
     expected_actions = get_policy_actions(policy.get('Statement'))
@@ -1682,11 +1712,11 @@ def test_get_bucket_notification(client, log_output):
             raise ValueError("Failed to receive an empty bucket notification")
 
     except APINotImplemented:
-            print(log_output.json_report(alert='Not Implemented',
-                                         status=LogOutput.NA))
+        print(log_output.json_report(alert='Not Implemented',
+                                     status=LogOutput.NA))
     except Exception as err:
-            print("exception", err)
-            raise Exception(err)
+        print("exception", err)
+        raise Exception(err)
     else:
         # Test passes
         print(log_output.json_report())
@@ -1830,7 +1860,8 @@ def test_remove_objects(client, log_output):
         object_names = []
         for i in range(10):
             curr_object_name = "prefix"+"-{}".format(i)
-            client.put_object(bucket_name, curr_object_name, LimitedRandomReader(MB_1), MB_1)
+            client.put_object(bucket_name, curr_object_name,
+                              LimitedRandomReader(MB_1), MB_1)
             object_names.append(curr_object_name)
         log_output.args['objects_iter'] = objects_iter = object_names
         # delete the objects in a single library call.
@@ -1921,7 +1952,8 @@ def main():
             with open(testfile, 'wb') as file_data:
                 shutil.copyfileobj(LimitedRandomReader(1024*1024), file_data)
             with open(largefile, 'wb') as file_data:
-                shutil.copyfileobj(LimitedRandomReader(11*1024*1024), file_data)
+                shutil.copyfileobj(
+                    LimitedRandomReader(11*1024*1024), file_data)
 
         # Create a Customer Key of 32 Bytes for Server Side Encryption (SSE-C)
         cust_key = b'AABBCCDDAABBCCDDAABBCCDDAABBCCDD'
@@ -1931,152 +1963,194 @@ def main():
         ssec_copy = copy_SSE_C(cust_key)
 
         if isFullMode():
-            log_output = LogOutput(client.make_bucket, 'test_make_bucket_default_region')
+            log_output = LogOutput(
+                client.make_bucket, 'test_make_bucket_default_region')
             test_make_bucket_default_region(client, log_output)
 
-            log_output = LogOutput(client.make_bucket, 'test_make_bucket_with_region')
+            log_output = LogOutput(
+                client.make_bucket, 'test_make_bucket_with_region')
             test_make_bucket_with_region(client, log_output)
 
-            log_output = LogOutput(client.make_bucket, 'test_negative_make_bucket_invalid_name')
+            log_output = LogOutput(
+                client.make_bucket, 'test_negative_make_bucket_invalid_name')
             test_negative_make_bucket_invalid_name(client, log_output)
 
             log_output = LogOutput(client.list_buckets, 'test_list_buckets')
             test_list_buckets(client, log_output)
 
-            log_output = LogOutput(client.fput_object, 'test_fput_object_small_file')
+            log_output = LogOutput(
+                client.fput_object, 'test_fput_object_small_file')
             test_fput_object_small_file(client, testfile, log_output)
 
             if secure:
-                log_output = LogOutput(client.fput_object, 'test_fput_object_small_file_with_SSE-C')
-                test_fput_object_small_file(client, testfile, log_output, sse=ssec)
+                log_output = LogOutput(
+                    client.fput_object, 'test_fput_object_small_file_with_SSE-C')
+                test_fput_object_small_file(
+                    client, testfile, log_output, sse=ssec)
 
-            log_output = LogOutput(client.fput_object, 'test_fput_object_large_file')
+            log_output = LogOutput(
+                client.fput_object, 'test_fput_object_large_file')
             test_fput_object_large_file(client, largefile, log_output)
 
             if secure:
-                log_output = LogOutput(client.fput_object, 'test_fput_object_large_file_with_SSE-C')
-                test_fput_object_large_file(client, largefile, log_output, sse=ssec)
+                log_output = LogOutput(
+                    client.fput_object, 'test_fput_object_large_file_with_SSE-C')
+                test_fput_object_large_file(
+                    client, largefile, log_output, sse=ssec)
 
-            log_output = LogOutput(client.fput_object, 'test_fput_object_with_content_type')
+            log_output = LogOutput(
+                client.fput_object, 'test_fput_object_with_content_type')
             test_fput_object_with_content_type(client, testfile, log_output)
 
-            log_output = LogOutput(client.copy_object, 'test_copy_object_no_copy_condition')
+            log_output = LogOutput(
+                client.copy_object, 'test_copy_object_no_copy_condition')
             test_copy_object_no_copy_condition(client, log_output)
 
-            log_output = LogOutput(client.copy_object, 'test_copy_object_etag_match')
+            log_output = LogOutput(
+                client.copy_object, 'test_copy_object_etag_match')
             test_copy_object_etag_match(client, log_output)
 
-            log_output = LogOutput(client.copy_object, 'test_copy_object_with_metadata')
+            log_output = LogOutput(
+                client.copy_object, 'test_copy_object_with_metadata')
             test_copy_object_with_metadata(client, log_output)
 
-            log_output = LogOutput(client.copy_object, 'test_copy_object_negative_etag_match')
+            log_output = LogOutput(
+                client.copy_object, 'test_copy_object_negative_etag_match')
             test_copy_object_negative_etag_match(client, log_output)
 
-            log_output = LogOutput(client.copy_object, 'test_copy_object_modified_since')
+            log_output = LogOutput(
+                client.copy_object, 'test_copy_object_modified_since')
             test_copy_object_modified_since(client, log_output)
 
-            log_output = LogOutput(client.copy_object, 'test_copy_object_unmodified_since')
+            log_output = LogOutput(
+                client.copy_object, 'test_copy_object_unmodified_since')
             test_copy_object_unmodified_since(client, log_output)
 
             if secure:
-                log_output = LogOutput(client.copy_object, 'test_copy_object_with_sse')
-                test_copy_object_no_copy_condition(client, log_output, ssec_copy=ssec_copy, ssec=ssec)
+                log_output = LogOutput(
+                    client.copy_object, 'test_copy_object_with_sse')
+                test_copy_object_no_copy_condition(
+                    client, log_output, ssec_copy=ssec_copy, ssec=ssec)
 
             log_output = LogOutput(client.put_object, 'test_put_object')
             test_put_object(client, log_output)
 
             if secure:
-                log_output = LogOutput(client.put_object, 'test_put_object_with_SSE-C')
+                log_output = LogOutput(
+                    client.put_object, 'test_put_object_with_SSE-C')
                 test_put_object(client, log_output, sse=ssec)
 
-            log_output = LogOutput(client.put_object, 'test_negative_put_object_with_path_segment')
+            log_output = LogOutput(
+                client.put_object, 'test_negative_put_object_with_path_segment')
             test_negative_put_object_with_path_segment(client, log_output)
 
             log_output = LogOutput(client.stat_object, 'test_stat_object')
             test_stat_object(client, log_output)
 
             if secure:
-                log_output = LogOutput(client.stat_object, 'test_stat_object_with_SSE-C')
+                log_output = LogOutput(
+                    client.stat_object, 'test_stat_object_with_SSE-C')
                 test_stat_object(client, log_output, sse=ssec)
 
             log_output = LogOutput(client.get_object, 'test_get_object')
             test_get_object(client, log_output)
 
             if secure:
-                log_output = LogOutput(client.get_object, 'test_get_object_with_SSE-C')
+                log_output = LogOutput(
+                    client.get_object, 'test_get_object_with_SSE-C')
                 test_get_object(client, log_output, sse=ssec)
 
             log_output = LogOutput(client.fget_object, 'test_fget_object')
             test_fget_object(client, log_output)
 
             if secure:
-                log_output = LogOutput(client.fget_object, 'test_fget_object_with_SSE-C')
+                log_output = LogOutput(
+                    client.fget_object, 'test_fget_object_with_SSE-C')
                 test_fget_object(client, log_output, sse=ssec)
 
-            log_output = LogOutput(client.get_partial_object, 'test_get_partial_object_with_default_length')
+            log_output = LogOutput(
+                client.get_partial_object, 'test_get_partial_object_with_default_length')
             test_get_partial_object_with_default_length(client, log_output)
 
-            log_output = LogOutput(client.get_partial_object, 'test_get_partial_object')
+            log_output = LogOutput(
+                client.get_partial_object, 'test_get_partial_object')
             test_get_partial_object(client, log_output)
 
             if secure:
-                log_output = LogOutput(client.get_partial_object, 'test_get_partial_object_with_SSE-C')
+                log_output = LogOutput(
+                    client.get_partial_object, 'test_get_partial_object_with_SSE-C')
                 test_get_partial_object(client, log_output)
 
             log_output = LogOutput(client.list_objects, 'test_list_objects')
             test_list_objects(client, log_output)
 
-            log_output = LogOutput(client.list_objects, 'test_list_objects_with_prefix')
+            log_output = LogOutput(client.list_objects,
+                                   'test_list_objects_with_prefix')
             test_list_objects_with_prefix(client, log_output)
 
-            log_output = LogOutput(client.list_objects, 'test_list_objects_with_1001_files')
+            log_output = LogOutput(client.list_objects,
+                                   'test_list_objects_with_1001_files')
             test_list_objects_with_1001_files(client, log_output)
 
-            log_output = LogOutput(client.remove_incomplete_upload, 'test_remove_incomplete_upload')
+            log_output = LogOutput(
+                client.remove_incomplete_upload, 'test_remove_incomplete_upload')
             test_remove_incomplete_upload(client, log_output)
 
-            log_output = LogOutput(client.list_objects_v2, 'test_list_objects_v2')
+            log_output = LogOutput(
+                client.list_objects_v2, 'test_list_objects_v2')
             test_list_objects_v2(client, log_output)
 
-            log_output = LogOutput(client.presigned_get_object, 'test_presigned_get_object_default_expiry')
+            log_output = LogOutput(
+                client.presigned_get_object, 'test_presigned_get_object_default_expiry')
             test_presigned_get_object_default_expiry(client, log_output)
 
-            log_output = LogOutput(client.presigned_get_object, 'test_presigned_get_object_expiry')
+            log_output = LogOutput(
+                client.presigned_get_object, 'test_presigned_get_object_expiry')
             test_presigned_get_object_expiry(client, log_output)
 
-            log_output = LogOutput(client.presigned_get_object, 'test_presigned_get_object_response_headers')
+            log_output = LogOutput(
+                client.presigned_get_object, 'test_presigned_get_object_response_headers')
             test_presigned_get_object_response_headers(client, log_output)
 
-            log_output = LogOutput(client.presigned_put_object, 'test_presigned_put_object_default_expiry')
+            log_output = LogOutput(
+                client.presigned_put_object, 'test_presigned_put_object_default_expiry')
             test_presigned_put_object_default_expiry(client, log_output)
 
-            log_output = LogOutput(client.presigned_put_object, 'test_presigned_put_object_expiry')
+            log_output = LogOutput(
+                client.presigned_put_object, 'test_presigned_put_object_expiry')
             test_presigned_put_object_expiry(client, log_output)
 
-            log_output = LogOutput(client.presigned_post_policy, 'test_presigned_post_policy')
+            log_output = LogOutput(
+                client.presigned_post_policy, 'test_presigned_post_policy')
             test_presigned_post_policy(client, log_output)
 
             log_output = LogOutput(client.put_object, 'test_thread_safe')
             test_thread_safe(client, testfile, log_output)
 
-            log_output = LogOutput(client.get_bucket_policy, 'test_get_bucket_policy')
+            log_output = LogOutput(
+                client.get_bucket_policy, 'test_get_bucket_policy')
             test_get_bucket_policy(client, log_output)
 
-            log_output = LogOutput(client.set_bucket_policy, 'test_set_bucket_policy_readonly')
+            log_output = LogOutput(
+                client.set_bucket_policy, 'test_set_bucket_policy_readonly')
             test_set_bucket_policy_readonly(client, log_output)
 
-            log_output = LogOutput(client.set_bucket_policy, 'test_set_bucket_policy_readwrite')
+            log_output = LogOutput(
+                client.set_bucket_policy, 'test_set_bucket_policy_readwrite')
             test_set_bucket_policy_readwrite(client, log_output)
 
-            log_output = LogOutput(client.get_bucket_notification, 'test_get_bucket_notification')
+            log_output = LogOutput(
+                client.get_bucket_notification, 'test_get_bucket_notification')
             test_get_bucket_notification(client, log_output)
 
-            log_output = LogOutput(client.select_object_content, 'test_select_object_content')
+            log_output = LogOutput(
+                client.select_object_content, 'test_select_object_content')
             test_select_object_content(client, log_output)
 
         else:
             # Quick mode tests
-            log_output = LogOutput(client.make_bucket, 'test_make_bucket_default_region')
+            log_output = LogOutput(
+                client.make_bucket, 'test_make_bucket_default_region')
             test_make_bucket_default_region(client, log_output)
 
             log_output = LogOutput(client.list_buckets, 'test_list_buckets')
@@ -2086,55 +2160,69 @@ def main():
             test_put_object(client, log_output)
 
             if secure:
-                log_output = LogOutput(client.put_object, 'test_put_object_with_SSE-C')
+                log_output = LogOutput(
+                    client.put_object, 'test_put_object_with_SSE-C')
                 test_put_object(client, log_output, sse=ssec)
 
             log_output = LogOutput(client.stat_object, 'test_stat_object')
             test_stat_object(client, log_output)
 
             if secure:
-                log_output = LogOutput(client.stat_object, 'test_stat_object_with_SSE-C')
+                log_output = LogOutput(
+                    client.stat_object, 'test_stat_object_with_SSE-C')
                 test_stat_object(client, log_output, sse=ssec)
 
             log_output = LogOutput(client.get_object, 'test_get_object')
             test_get_object(client, log_output)
 
             if secure:
-                log_output = LogOutput(client.get_object, 'test_get_object_with_SSE-C')
+                log_output = LogOutput(
+                    client.get_object, 'test_get_object_with_SSE-C')
                 test_get_object(client, log_output, sse=ssec)
 
             log_output = LogOutput(client.list_objects, 'test_list_objects')
             test_list_objects(client, log_output)
 
-            log_output = LogOutput(client.remove_incomplete_upload, 'test_remove_incomplete_upload')
+            log_output = LogOutput(
+                client.remove_incomplete_upload, 'test_remove_incomplete_upload')
             test_remove_incomplete_upload(client, log_output)
 
-            log_output = LogOutput(client.presigned_get_object, 'test_presigned_get_object_default_expiry')
+            log_output = LogOutput(
+                client.presigned_get_object, 'test_presigned_get_object_default_expiry')
             test_presigned_get_object_default_expiry(client, log_output)
 
-            log_output = LogOutput(client.presigned_put_object, 'test_presigned_put_object_default_expiry')
+            log_output = LogOutput(
+                client.presigned_put_object, 'test_presigned_put_object_default_expiry')
             test_presigned_put_object_default_expiry(client, log_output)
 
-            log_output = LogOutput(client.presigned_post_policy, 'test_presigned_post_policy')
+            log_output = LogOutput(
+                client.presigned_post_policy, 'test_presigned_post_policy')
             test_presigned_post_policy(client, log_output)
 
-            log_output = LogOutput(client.copy_object, 'test_copy_object_no_copy_condition')
+            log_output = LogOutput(
+                client.copy_object, 'test_copy_object_no_copy_condition')
             test_copy_object_no_copy_condition(client, log_output)
 
-            log_output = LogOutput(client.select_object_content, 'test_select_object_content')
+            log_output = LogOutput(
+                client.select_object_content, 'test_select_object_content')
             test_select_object_content(client, log_output)
 
             if secure:
-                log_output = LogOutput(client.copy_object, 'test_copy_object_with_sse')
-                test_copy_object_no_copy_condition(client, log_output, ssec_copy=ssec_copy, ssec=ssec)
+                log_output = LogOutput(
+                    client.copy_object, 'test_copy_object_with_sse')
+                test_copy_object_no_copy_condition(
+                    client, log_output, ssec_copy=ssec_copy, ssec=ssec)
 
-            log_output = LogOutput(client.get_bucket_policy, 'test_get_bucket_policy')
+            log_output = LogOutput(
+                client.get_bucket_policy, 'test_get_bucket_policy')
             test_get_bucket_policy(client, log_output)
 
-            log_output = LogOutput(client.set_bucket_policy, 'test_set_bucket_policy_readonly')
+            log_output = LogOutput(
+                client.set_bucket_policy, 'test_set_bucket_policy_readonly')
             test_set_bucket_policy_readonly(client, log_output)
 
-            log_output = LogOutput(client.get_bucket_notification, 'test_get_bucket_notification')
+            log_output = LogOutput(
+                client.get_bucket_notification, 'test_get_bucket_notification')
             test_get_bucket_notification(client, log_output)
 
         # Remove all objects.
@@ -2154,6 +2242,7 @@ def main():
     except Exception as err:
         print(log_output.json_report(err))
         exit(1)
+
 
 if __name__ == "__main__":
     # Execute only if run as a script

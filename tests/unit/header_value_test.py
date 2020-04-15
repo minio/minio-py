@@ -14,10 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nose.tools import eq_, raises
+from nose.tools import eq_
 from unittest import TestCase
 
-from minio.helpers import is_storageclass_header,is_amz_header,is_supported_header,amzprefix_user_metadata
+from minio.helpers import (is_storageclass_header, is_amz_header,
+                           is_supported_header, amzprefix_user_metadata)
+
 
 class HeaderTests(TestCase):
     header_variants = {
@@ -36,11 +38,11 @@ class HeaderTests(TestCase):
             "x-aMZ-mETA-mE",
         ],
         "cache-control": [
-            "cache-control" ,
-            "Cache-Control" ,
-            "CACHE-CONTROL" ,
-            "cACHE-cONTROL" ,
-            "CacHe-conTrol" ,
+            "cache-control",
+            "Cache-Control",
+            "CACHE-CONTROL",
+            "cACHE-cONTROL",
+            "CacHe-conTrol",
         ],
         "content-disposition": [
             "content-disposition",
@@ -95,7 +97,8 @@ class HeaderTests(TestCase):
         self.check_ok_header(is_supported_header, "content-disposition")
         self.check_ok_header(is_supported_header, "content-encoding")
         self.check_ok_header(is_supported_header, "content-language")
-        self.check_ok_header(is_supported_header, "x-amz-website-redirect-location")
+        self.check_ok_header(is_supported_header,
+                             "x-amz-website-redirect-location")
 
     def test_is_not_supported_header(self):
         self.check_bad_header(is_supported_header, "x-amz-meta-me")
@@ -116,16 +119,16 @@ class HeaderTests(TestCase):
 
     def test_amzprefix_user_metadata(self):
         metadata = {
-                  'x-amz-meta-testing': 'values',
-                  'x-amz-meta-setting': 'zombies',
-                  'amz-meta-setting': 'zombiesddd',
-                  'hhh':34,
-                  'u_u': 'dd',
-                  'y-fu-bar': 'zoo',
-                  'Content-Type': 'application/csv',
-                  'x-amz-storage-class': 'REDUCED_REDUNDANCY',
-                  'content-language':'fr'
-                  }
+            'x-amz-meta-testing': 'values',
+            'x-amz-meta-setting': 'zombies',
+            'amz-meta-setting': 'zombiesddd',
+            'hhh': 34,
+            'u_u': 'dd',
+            'y-fu-bar': 'zoo',
+            'Content-Type': 'application/csv',
+            'x-amz-storage-class': 'REDUCED_REDUNDANCY',
+            'content-language': 'fr'
+        }
         m = amzprefix_user_metadata(metadata)
         self.assertTrue('Content-Type' in m)
         self.assertTrue('content-language' in m)

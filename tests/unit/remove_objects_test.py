@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2016 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2016 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -24,6 +25,7 @@ from minio.api import _DEFAULT_USER_AGENT
 from minio.error import InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
+
 
 class RemoveObjectsTest(TestCase):
     @raises(TypeError)

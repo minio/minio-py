@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,8 +21,9 @@ from minio.credentials.file_aws_credentials import FileAWSCredentials
 from minio.credentials.credentials import Value
 from nose.tools import eq_
 
+
 class FileAWSCredentialsTest(TestCase):
-    
+
     def test_file_aws(self):
         # clear environment
         os.environ.clear()
@@ -48,7 +49,8 @@ class FileAWSCredentialsTest(TestCase):
         # clear environment
         os.environ.clear()
         # set env with aws config file
-        os.environ['AWS_SHARED_CREDENTIALS_FILE'] = 'minio/credentials/credentials.sample'
+        os.environ['AWS_SHARED_CREDENTIALS_FILE'] = (
+            'minio/credentials/credentials.sample')
         # get provider
         provider = FileAWSCredentials()
         # is_expired should be True before retrieve
@@ -92,7 +94,8 @@ class FileAWSCredentialsTest(TestCase):
         # clear environment
         os.environ.clear()
         # get provider
-        provider = FileAWSCredentials('minio/credentials/credentials.sample', 'no_token')
+        provider = FileAWSCredentials(
+            'minio/credentials/credentials.sample', 'no_token')
         # is_expired should be True before retrieve
         eq_(provider.is_expired(), True)
         # retrieve credentials
@@ -111,7 +114,8 @@ class FileAWSCredentialsTest(TestCase):
     def test_file_aws_no_creds(self):
         # clear environment
         os.environ.clear()
-        provider = FileAWSCredentials('minio/credentials/credentials.empty', 'no_token')
+        provider = FileAWSCredentials(
+            'minio/credentials/credentials.empty', 'no_token')
         creds = provider.retrieve()
         eq_(creds.access_key, None)
         eq_(creds.secret_key, None)

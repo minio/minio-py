@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +26,7 @@ from minio.error import ResponseError, InvalidBucketError
 from .minio_mocks import MockResponse, MockConnection
 from .helpers import generate_error
 
+
 class MakeBucket(TestCase):
     @raises(TypeError)
     def test_bucket_is_string(self):
@@ -40,10 +42,12 @@ class MakeBucket(TestCase):
     def test_make_bucket_works(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('PUT',
-                                                  'https://localhost:9000/hello/',
-                                                  {'User-Agent': _DEFAULT_USER_AGENT},
-                                                  200))
+        mock_server.mock_add_request(
+            MockResponse('PUT',
+                         'https://localhost:9000/hello/',
+                         {'User-Agent': _DEFAULT_USER_AGENT},
+                         200)
+        )
         Minio('localhost:9000')
 
     @mock.patch('urllib3.PoolManager')
@@ -54,9 +58,11 @@ class MakeBucket(TestCase):
                                    'object')
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('PUT',
-                                                  'https://localhost:9000/hello/',
-                                                  {'User-Agent': _DEFAULT_USER_AGENT},
-                                                  409, content=error_xml))
+        mock_server.mock_add_request(
+            MockResponse('PUT',
+                         'https://localhost:9000/hello/',
+                         {'User-Agent': _DEFAULT_USER_AGENT},
+                         409, content=error_xml)
+        )
         client = Minio('localhost:9000')
         client.make_bucket('hello')
