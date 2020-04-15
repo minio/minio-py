@@ -87,7 +87,7 @@ class StringToSignTest(TestCase):
         ]
 
         actual_signing_key = generate_string_to_sign(
-            dt, 'us-east-1', 'request_hash')
+            dt, 'us-east-1', 'request_hash', 's3')
         eq_('\n'.join(expected_signing_key_list), actual_signing_key)
 
 
