@@ -194,7 +194,7 @@ def sign_v4(method, url, region, headers=None,
 
     parsed_url = urlsplit(url)
     secure = parsed_url.scheme == 'https'
-    if secure:
+    if secure and not content_sha256:
         content_sha256 = _UNSIGNED_PAYLOAD
     content_sha256 = content_sha256 or get_sha256_hexdigest('')
 
@@ -215,7 +215,8 @@ def sign_v4(method, url, region, headers=None,
                                                parsed_url,
                                                headers_to_sign,
                                                signed_headers,
-                                               content_sha256)
+                                               content_sha256,
+                                               )
 
     string_to_sign = generate_string_to_sign(request_datetime, region,
                                              canonical_req, service_name)
