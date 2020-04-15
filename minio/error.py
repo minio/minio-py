@@ -179,15 +179,18 @@ class ResponseError(MinioError):
             raise InvalidXMLError('"Error" XML is not parsable. '
                                   'Message: {0}'.format(error))
 
+        # Deal with namespaced response from sts
+        tag_prefix = '{https://sts.amazonaws.com/doc/2011-06-15/}' if root.tag == '{https://sts.amazonaws.com/doc/2011-06-15/}ErrorResponse' else ''
+
         attrDict = {
-            'Code': 'code',
-            'BucketName': 'bucket_name',
-            'Key': 'object_name',
-            'Message': 'message',
-            'RequestId': 'request_id',
-            'HostId': 'host_id'
+            tag_prefix + 'Code': 'code',
+            tag_prefix + 'BucketName': 'bucket_name',
+            tag_prefix + 'Key': 'object_name',
+            tag_prefix + 'Message': 'message',
+            tag_prefix + 'RequestId': 'request_id',
+            tag_prefix + 'HostId': 'host_id'
         }
-        for attribute in root:
+        for attribute in root.iter():
             attr = attrDict.get(attribute.tag)
             if attr:
                 setattr(self, attr, attribute.text)

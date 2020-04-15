@@ -336,7 +336,8 @@ def generate_credential_string(access_key, date, region, service_name=_DEFAULT_S
 
 
 def generate_authorization_header(access_key, date, region,
-                                  signed_headers, signature, service_name=_DEFAULT_SERVICE_NAME):
+                                  signed_headers, signature,
+                                  service_name=_DEFAULT_SERVICE_NAME):
     """
     Generate authorization header.
 
