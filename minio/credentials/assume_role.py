@@ -27,6 +27,11 @@ from .parsers import parse_assume_role
 
 class AssumeRoleProvider(Provider):
     region = 'us-east-1'
+
+    # AWS STS support GET and POST requests for all actions. That is, the API does not require you to
+    # use GET for some actions and POST for others. However, GET requests are subject to the limitation
+    # size of a URL; although this limit is browser dependent, a typical limit is 2048 bytes. Therefore,
+    # for Query API requests that require larger sizes, you must use a POST request.
     method = 'POST'
 
     def __init__(self, mc, RoleArn=None, RoleSessionName=None, Policy=None, DurationSeconds=None):
