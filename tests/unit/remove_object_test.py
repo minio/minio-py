@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -24,6 +25,7 @@ from minio.error import InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
 
+
 class StatObject(TestCase):
     @raises(TypeError)
     def test_object_is_string(self):
@@ -44,8 +46,10 @@ class StatObject(TestCase):
     def test_remove_object_works(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('DELETE',
-                                                  'https://localhost:9000/hello/world',
-                                                  {'User-Agent': _DEFAULT_USER_AGENT}, 204))
+        mock_server.mock_add_request(
+            MockResponse('DELETE',
+                         'https://localhost:9000/hello/world',
+                         {'User-Agent': _DEFAULT_USER_AGENT}, 204)
+        )
         client = Minio('localhost:9000')
         client.remove_object('hello', 'world')

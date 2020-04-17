@@ -21,6 +21,7 @@ from minio import Minio
 from minio.error import InvalidBucketError
 from minio.copy_conditions import CopyConditions
 
+
 class CopyObjectTest(TestCase):
     @raises(TypeError)
     def test_object_is_string(self):
@@ -36,6 +37,7 @@ class CopyObjectTest(TestCase):
     def test_length_is_string(self):
         client = Minio('localhost:9000')
         client.copy_object('..hello', '1', '/testbucket/object')
+
 
 class CopyConditionTest(TestCase):
     @raises(ValueError)

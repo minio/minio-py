@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +18,7 @@ from unittest import TestCase
 from nose.tools import eq_
 from minio.helpers import get_s3_endpoint, is_valid_endpoint
 
+
 class GetS3Endpoint(TestCase):
     def test_get_s3_endpoint(self):
         eq_('s3.amazonaws.com', get_s3_endpoint('us-east-1'))
@@ -29,4 +31,3 @@ class GetS3Endpoint(TestCase):
         eq_(True, is_valid_endpoint('s3.cn-north-1.amazonaws.com.cn'))
         eq_(True, is_valid_endpoint('minio_server:9000'))
         eq_(True, is_valid_endpoint('s3.server_1.amazonaws.com'))
-        

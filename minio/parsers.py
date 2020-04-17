@@ -30,7 +30,6 @@ from xml.etree import ElementTree
 from datetime import datetime
 
 # dependencies.
-import pytz
 
 # minio specific.
 from .error import (ETREE_EXCEPTIONS, InvalidXMLError, MultiDeleteError)
@@ -38,10 +37,14 @@ from .compat import unquote
 from .definitions import (Object, Bucket, IncompleteUpload,
                           UploadPart, MultipartUploadResult,
                           CopyObjectResult)
+from .helpers import _iso8601_to_utc_datetime
 from .xml_marshal import (NOTIFICATIONS_ARN_FIELDNAME_MAP)
 
 
-_S3_NS = {'s3': 'http://s3.amazonaws.com/doc/2006-03-01/'}
+_XML_NS = {
+    's3': 'http://s3.amazonaws.com/doc/2006-03-01/',
+    'sts': 'https://sts.amazonaws.com/doc/2011-06-15/'
+}
 
 
 class S3Element(object):
@@ -78,14 +81,14 @@ class S3Element(object):
         """
         return [
             S3Element(self.root_name, elem)
-            for elem in self.element.findall('s3:{}'.format(name), _S3_NS)
+            for elem in self.element.findall('s3:{}'.format(name), _XML_NS)
         ]
 
     def find(self, name):
         """Similar to ElementTree.Element.find()
 
         """
-        elt = self.element.find('s3:{}'.format(name), _S3_NS)
+        elt = self.element.find('s3:{}'.format(name), _XML_NS)
         return S3Element(self.root_name, elt) if elt else None
 
     def get_child_text(self, name, strict=True):
@@ -96,14 +99,14 @@ class S3Element(object):
         """
         if strict:
             try:
-                return self.element.find('s3:{}'.format(name), _S3_NS).text
+                return self.element.find('s3:{}'.format(name), _XML_NS).text
             except ETREE_EXCEPTIONS as error:
                 raise InvalidXMLError(
                     ('Invalid XML provided for "{}" - erroring tag <{}>. '
                      'Message: {}').format(self.root_name, name, error)
                 )
         else:
-            return self.element.findtext('s3:{}'.format(name), None, _S3_NS)
+            return self.element.findtext('s3:{}'.format(name), None, _XML_NS)
 
     def get_urldecoded_elem_text(self, name, strict=True):
         """Like self.get_child_text(), but also performs urldecode() on the
@@ -130,7 +133,7 @@ class S3Element(object):
         """Parse a time XML child element.
 
         """
-        return _iso8601_to_localized_time(self.get_child_text(name))
+        return _iso8601_to_utc_datetime(self.get_child_text(name))
 
     def text(self):
         """Fetch the current node's text
@@ -353,25 +356,6 @@ def parse_location_constraint(data):
     """
     root = S3Element.fromstring('BucketLocationConstraintResult', data)
     return root.text()
-
-
-def _iso8601_to_localized_time(date_string):
-    """
-    Convert iso8601 date string into UTC time.
-
-    :param date_string: iso8601 formatted date string.
-    :return: :class:`datetime.datetime`
-    """
-
-    # Handle timestamps with and without fractional seconds. Some non-AWS
-    # vendors (e.g. Dell EMC ECS) are not consistent about always providing
-    # fractional seconds.
-    try:
-        parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
-    except ValueError:
-        parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%SZ')
-    localized_time = pytz.utc.localize(parsed_date)
-    return localized_time
 
 
 def parse_get_bucket_notification(data):

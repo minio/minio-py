@@ -17,8 +17,10 @@
 import json
 import urllib3
 import datetime
+
 from .credentials import Provider, Value, Expiry
 from minio.error import ResponseError
+from .parsers import parse_iam_credentials
 
 
 class IamEc2MetaData(Provider):
@@ -56,7 +58,7 @@ class IamEc2MetaData(Provider):
 
         data = json.loads(res.data)
         if data['Code'] != 'Success':
-            raise ResponseError(res)
+            raise ResponseError(res, 'GET')
 
         return data
 
@@ -67,15 +69,11 @@ class IamEc2MetaData(Provider):
 
         creds_name = role_names[0]
         role_creds = self.request_cred(creds_name)
-        expiration = datetime.datetime.strptime(
-            role_creds['Expiration'], '%Y-%m-%dT%H:%M:%SZ')
+        credentials_value, expiration = parse_iam_credentials(role_creds)
+
         self._expiry.set_expiration(expiration, self.default_expiry_window)
 
-        return Value(
-            access_key=role_creds['AccessKeyId'],
-            secret_key=role_creds['SecretAccessKey'],
-            session_token=role_creds['Token']
-        )
+        return credentials_value
 
     def is_expired(self):
         return self._expiry.is_expired()

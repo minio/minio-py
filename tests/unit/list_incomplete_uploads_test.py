@@ -24,31 +24,34 @@ from minio.api import _DEFAULT_USER_AGENT
 
 from .minio_mocks import MockResponse, MockConnection
 
+
 class ListIncompleteUploadsTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_empty_list_uploads_test(self, mock_connection):
         mock_data = '''<?xml version="1.0"?>
-                       <ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                         <Bucket>golang</Bucket>
-                         <KeyMarker/>
-                         <UploadIdMarker/>
-                         <NextKeyMarker/>
-                         <NextUploadIdMarker/>
-                         <EncodingType/>
-                         <MaxUploads>1000</MaxUploads>
-                         <IsTruncated>false</IsTruncated>
-                         <Prefix/>
-                         <Delimiter/>
-                       </ListMultipartUploadsResult>
-                    '''
+<ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Bucket>golang</Bucket>
+  <KeyMarker/>
+  <UploadIdMarker/>
+  <NextKeyMarker/>
+  <NextUploadIdMarker/>
+  <EncodingType/>
+  <MaxUploads>1000</MaxUploads>
+  <IsTruncated>false</IsTruncated>
+  <Prefix/>
+  <Delimiter/>
+</ListMultipartUploadsResult>'''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('GET',
                          'https://localhost:9000/bucket/?prefix=&uploads=',
-                         {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data))
+                         {'User-Agent': _DEFAULT_USER_AGENT}, 200,
+                         content=mock_data)
+        )
         client = Minio('localhost:9000')
-        upload_iter = client._list_incomplete_uploads('bucket', '', True, False)
+        upload_iter = client._list_incomplete_uploads(
+            'bucket', '', True, False)
         uploads = []
         for upload in upload_iter:
             uploads.append(upload)
@@ -57,57 +60,59 @@ class ListIncompleteUploadsTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_list_uploads_works(self, mock_connection):
         mock_data = '''<?xml version="1.0"?>
-                       <ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                         <Bucket>golang</Bucket>
-                         <KeyMarker/>
-                         <UploadIdMarker/>
-                         <NextKeyMarker>keymarker</NextKeyMarker>
-                         <NextUploadIdMarker>uploadidmarker</NextUploadIdMarker>
-                         <EncodingType/>
-                         <MaxUploads>1000</MaxUploads>
-                         <IsTruncated>false</IsTruncated>
-                         <Upload>
-                           <Key>go1.4.2</Key>
-                           <UploadId>uploadid</UploadId>
-                           <Initiator>
-                             <ID/>
-                             <DisplayName/>
-                           </Initiator>
-                           <Owner>
-                             <ID/>
-                             <DisplayName/>
-                           </Owner>
-                           <StorageClass/>
-                           <Initiated>2015-05-30T14:43:35.349Z</Initiated>
-                         </Upload>
-                         <Upload>
-                           <Key>go1.5.0</Key>
-                           <UploadId>uploadid2</UploadId>
-                           <Initiator>
-                             <ID/>
-                             <DisplayName/>
-                           </Initiator>
-                           <Owner>
-                             <ID/>
-                             <DisplayName/>
-                           </Owner>
-                           <StorageClass/>
-                           <Initiated>2015-05-30T15:00:07.759Z</Initiated>
-                         </Upload>
-                         <Prefix/>
-                         <Delimiter/>
-                       </ListMultipartUploadsResult>
-                    '''
+<ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Bucket>golang</Bucket>
+  <KeyMarker/>
+  <UploadIdMarker/>
+  <NextKeyMarker>keymarker</NextKeyMarker>
+  <NextUploadIdMarker>uploadidmarker</NextUploadIdMarker>
+  <EncodingType/>
+  <MaxUploads>1000</MaxUploads>
+  <IsTruncated>false</IsTruncated>
+  <Upload>
+    <Key>go1.4.2</Key>
+    <UploadId>uploadid</UploadId>
+    <Initiator>
+      <ID/>
+      <DisplayName/>
+    </Initiator>
+    <Owner>
+      <ID/>
+      <DisplayName/>
+    </Owner>
+    <StorageClass/>
+    <Initiated>2015-05-30T14:43:35.349Z</Initiated>
+  </Upload>
+  <Upload>
+    <Key>go1.5.0</Key>
+    <UploadId>uploadid2</UploadId>
+    <Initiator>
+      <ID/>
+      <DisplayName/>
+    </Initiator>
+    <Owner>
+      <ID/>
+      <DisplayName/>
+    </Owner>
+    <StorageClass/>
+    <Initiated>2015-05-30T15:00:07.759Z</Initiated>
+  </Upload>
+  <Prefix/>
+  <Delimiter/>
+</ListMultipartUploadsResult>'''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('GET',
-                         'https://localhost:9000/bucket/?delimiter=%2F&prefix=&uploads=',
+                         'https://localhost:9000/bucket/?delimiter=%2F&'
+                         'prefix=&uploads=',
                          {'User-Agent': _DEFAULT_USER_AGENT},
-                         200, content=mock_data))
+                         200, content=mock_data)
+        )
 
         client = Minio('localhost:9000')
-        upload_iter = client._list_incomplete_uploads('bucket', '', False, False)
+        upload_iter = client._list_incomplete_uploads(
+            'bucket', '', False, False)
         uploads = []
         for upload in upload_iter:
             uploads.append(upload)
@@ -116,106 +121,110 @@ class ListIncompleteUploadsTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_list_multipart_uploads_works(self, mock_connection):
         mock_data1 = '''<?xml version="1.0"?>
-                        <ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                          <Bucket>golang</Bucket>
-                          <KeyMarker/>
-                          <UploadIdMarker/>
-                          <NextKeyMarker>keymarker</NextKeyMarker>
-                          <NextUploadIdMarker>uploadidmarker</NextUploadIdMarker>
-                          <EncodingType/>
-                          <MaxUploads>1000</MaxUploads>
-                          <IsTruncated>true</IsTruncated>
-                          <Upload>
-                            <Key>go1.4.2</Key>
-                            <UploadId>uploadid</UploadId>
-                            <Initiator>
-                              <ID/>
-                              <DisplayName/>
-                            </Initiator>
-                            <Owner>
-                              <ID/>
-                              <DisplayName/>
-                            </Owner>
-                            <StorageClass/>
-                            <Initiated>2015-05-30T14:43:35.349Z</Initiated>
-                          </Upload>
-                          <Upload>
-                            <Key>go1.5.0</Key>
-                            <UploadId>uploadid2</UploadId>
-                            <Initiator>
-                              <ID/>
-                              <DisplayName/>
-                            </Initiator>
-                            <Owner>
-                              <ID/>
-                              <DisplayName/>
-                            </Owner>
-                            <StorageClass/>
-                            <Initiated>2015-05-30T15:00:07.759Z</Initiated>
-                          </Upload>
-                          <Prefix/>
-                          <Delimiter/>
-                        </ListMultipartUploadsResult>
-                     '''
+<ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Bucket>golang</Bucket>
+  <KeyMarker/>
+  <UploadIdMarker/>
+  <NextKeyMarker>keymarker</NextKeyMarker>
+  <NextUploadIdMarker>uploadidmarker</NextUploadIdMarker>
+  <EncodingType/>
+  <MaxUploads>1000</MaxUploads>
+  <IsTruncated>true</IsTruncated>
+  <Upload>
+    <Key>go1.4.2</Key>
+    <UploadId>uploadid</UploadId>
+    <Initiator>
+      <ID/>
+      <DisplayName/>
+    </Initiator>
+    <Owner>
+      <ID/>
+      <DisplayName/>
+    </Owner>
+    <StorageClass/>
+    <Initiated>2015-05-30T14:43:35.349Z</Initiated>
+  </Upload>
+  <Upload>
+    <Key>go1.5.0</Key>
+    <UploadId>uploadid2</UploadId>
+    <Initiator>
+      <ID/>
+      <DisplayName/>
+    </Initiator>
+    <Owner>
+      <ID/>
+      <DisplayName/>
+    </Owner>
+    <StorageClass/>
+    <Initiated>2015-05-30T15:00:07.759Z</Initiated>
+  </Upload>
+  <Prefix/>
+  <Delimiter/>
+</ListMultipartUploadsResult>'''
         mock_data2 = '''<?xml version="1.0"?>
-                        <ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                          <Bucket>golang</Bucket>
-                          <KeyMarker/>
-                          <UploadIdMarker/>
-                          <NextKeyMarker/>
-                          <NextUploadIdMarker/>
-                          <EncodingType/>
-                          <MaxUploads>1000</MaxUploads>
-                          <IsTruncated>false</IsTruncated>
-                          <Upload>
-                            <Key>go1.4.2</Key>
-                            <UploadId>uploadid</UploadId>
-                            <Initiator>
-                              <ID/>
-                              <DisplayName/>
-                            </Initiator>
-                            <Owner>
-                              <ID/>
-                              <DisplayName/>
-                            </Owner>
-                            <StorageClass/>
-                            <Initiated>2015-05-30T14:43:35.349Z</Initiated>
-                          </Upload>
-                          <Upload>
-                            <Key>go1.5.0</Key>
-                            <UploadId>uploadid2</UploadId>
-                            <Initiator>
-                              <ID/>
-                              <DisplayName/>
-                            </Initiator>
-                            <Owner>
-                              <ID/>
-                              <DisplayName/>
-                            </Owner>
-                            <StorageClass/>
-                            <Initiated>2015-05-30T15:00:07.759Z</Initiated>
-                          </Upload>
-                          <Prefix/>
-                          <Delimiter/>
-                        </ListMultipartUploadsResult>
-                     '''
+<ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Bucket>golang</Bucket>
+  <KeyMarker/>
+  <UploadIdMarker/>
+  <NextKeyMarker/>
+  <NextUploadIdMarker/>
+  <EncodingType/>
+  <MaxUploads>1000</MaxUploads>
+  <IsTruncated>false</IsTruncated>
+  <Upload>
+    <Key>go1.4.2</Key>
+    <UploadId>uploadid</UploadId>
+    <Initiator>
+      <ID/>
+      <DisplayName/>
+    </Initiator>
+    <Owner>
+      <ID/>
+      <DisplayName/>
+    </Owner>
+    <StorageClass/>
+    <Initiated>2015-05-30T14:43:35.349Z</Initiated>
+  </Upload>
+  <Upload>
+    <Key>go1.5.0</Key>
+    <UploadId>uploadid2</UploadId>
+    <Initiator>
+      <ID/>
+      <DisplayName/>
+    </Initiator>
+    <Owner>
+      <ID/>
+      <DisplayName/>
+    </Owner>
+    <StorageClass/>
+    <Initiated>2015-05-30T15:00:07.759Z</Initiated>
+  </Upload>
+  <Prefix/>
+  <Delimiter/>
+</ListMultipartUploadsResult>'''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('GET',
                          'https://localhost:9000/bucket/?prefix=&uploads=',
-                         {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data1))
+                         {'User-Agent': _DEFAULT_USER_AGENT}, 200,
+                         content=mock_data1)
+        )
 
         client = Minio('localhost:9000')
-        upload_iter = client._list_incomplete_uploads('bucket', '', True, False)
+        upload_iter = client._list_incomplete_uploads(
+            'bucket', '', True, False)
         uploads = []
         for upload in upload_iter:
-            mock_server.mock_add_request(MockResponse('GET',
-                                                      'https://localhost:9000/bucket/?'
-                                                      'key-marker=keymarker&'
-                                                      'prefix=&'
-                                                      'upload-id-marker=uploadidmarker&uploads=',
-                                                      {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data2))
+            mock_server.mock_add_request(
+                MockResponse('GET',
+                             'https://localhost:9000/bucket/?'
+                             'key-marker=keymarker&'
+                             'prefix=&'
+                             'upload-id-marker=uploadidmarker&uploads=',
+                             {'User-Agent': _DEFAULT_USER_AGENT}, 200,
+                             content=mock_data2)
+            )
             uploads.append(upload)
 
         eq_(4, len(uploads))

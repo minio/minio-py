@@ -19,6 +19,7 @@ from unittest import TestCase
 
 from minio import Minio
 
+
 class TraceTest(TestCase):
     @raises(ValueError)
     def test_bucket_is_string(self):

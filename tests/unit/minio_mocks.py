@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from nose.tools import eq_
 from minio.compat import _is_py3
 from minio.fold_case_dict import FoldCaseDict
 
@@ -22,11 +23,10 @@ if _is_py3:
 else:
     import httplib
 
-from nose.tools import eq_
 
 class MockResponse(object):
-    def __init__(self, method, url, headers, status_code, response_headers=None,
-                 content=None):
+    def __init__(self, method, url, headers, status_code,
+                 response_headers=None, content=None):
         self.method = method
         self.url = url
         self.request_headers = FoldCaseDict()
@@ -62,6 +62,7 @@ class MockResponse(object):
         if key == "status":
             return self.status
 
+
 class MockConnection(object):
     def __init__(self):
         self.requests = []
@@ -76,8 +77,8 @@ class MockConnection(object):
         return_request.mock_verify(method, url, headers)
         return self.requests.pop(0)
 
-
     # noinspection PyRedeclaration,PyUnusedLocal,PyUnusedLocal
-    def urlopen(self, method, url, headers={}, preload_content=False, body=None,
-                redirect=False):
+
+    def urlopen(self, method, url, headers={}, preload_content=False,
+                body=None, redirect=False):
         return self.request(method, url, headers)

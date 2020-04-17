@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2015, 2016, 2017, 2018, 2019 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015, 2016, 2017, 2018, 2019 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,19 +28,30 @@ from minio.select.options import (SelectObjectOptions,
                                   OutputSerialization,
                                   CSVOutput)
 
+
 class GenerateRequestTest(TestCase):
     def test_generate_bucket_constraint(self):
-        expected_string = b'<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' \
-                          b'<LocationConstraint>region</LocationConstraint></CreateBucketConfiguration>'
+        expected_string = (b'<CreateBucketConfiguration '
+                           b'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+                           b'<LocationConstraint>region</LocationConstraint>'
+                           b'</CreateBucketConfiguration>')
         actual_string = xml_marshal_bucket_constraint('region')
         eq_(expected_string, actual_string)
 
     def test_generate_complete_multipart_upload(self):
-        expected_string = b'<CompleteMultipartUpload xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Part>' \
-                          b'<PartNumber>1</PartNumber><ETag>"a54357aff0632cce46d942af68356b38"</ETag></Part>' \
-                          b'<Part><PartNumber>2</PartNumber><ETag>"0c78aef83f66abc1fa1e8477f296d394"</ETag>' \
-                          b'</Part><Part><PartNumber>3</PartNumber><ETag>"acbd18db4cc2f85cedef654fccc4a4d8"' \
-                          b'</ETag></Part></CompleteMultipartUpload>'
+        expected_string = (b'<CompleteMultipartUpload '
+                           b'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+                           b'<Part><PartNumber>1</PartNumber>'
+                           b'<ETag>"a54357aff0632cce46d942af68356b38"</ETag>'
+                           b'</Part>'
+                           b'<Part><PartNumber>2</PartNumber>'
+                           b'<ETag>"0c78aef83f66abc1fa1e8477f296d394"</ETag>'
+                           b'</Part>'
+                           b'<Part><PartNumber>3</PartNumber>'
+                           b'<ETag>"acbd18db4cc2f85cedef654fccc4a4d8"</ETag>'
+                           b'</Part>'
+                           b'</CompleteMultipartUpload>')
+
         etags = [
             UploadPart('bucket', 'object', 'upload_id', 1,
                        'a54357aff0632cce46d942af68356b38',
@@ -56,16 +67,31 @@ class GenerateRequestTest(TestCase):
         eq_(expected_string, actual_string)
 
     def test_xml_marshal_select(self):
-        expected_string = b'<SelectObjectContentRequest><Expression>select * from s3object</Expression>' \
-                          b'<ExpressionType>SQL</ExpressionType><InputSerialization>' \
-                          b'<CompressionType>NONE</CompressionType>' \
-                          b'<CSV><FileHeaderInfo>USE</FileHeaderInfo><RecordDelimiter>\n</RecordDelimiter><FieldDelimiter>,</FieldDelimiter>' \
-                          b'<QuoteCharacter>"</QuoteCharacter><QuoteEscapeCharacter>"</QuoteEscapeCharacter><Comments>#</Comments>' \
-                          b'<AllowQuotedRecordDelimiter>false</AllowQuotedRecordDelimiter></CSV></InputSerialization>' \
-                          b'<OutputSerialization><CSV><QuoteFields>ASNEEDED</QuoteFields>' \
-                          b'<RecordDelimiter>\n</RecordDelimiter><FieldDelimiter>,</FieldDelimiter>' \
-                          b'<QuoteCharacter>"</QuoteCharacter><QuoteEscapeCharacter>"</QuoteEscapeCharacter></CSV></OutputSerialization>' \
-                          b'<RequestProgress><Enabled>true</Enabled></RequestProgress></SelectObjectContentRequest>'
+        expected_string = (b'<SelectObjectContentRequest>'
+                           b'<Expression>select * from s3object</Expression>'
+                           b'<ExpressionType>SQL</ExpressionType>'
+                           b'<InputSerialization>'
+                           b'<CompressionType>NONE</CompressionType>'
+                           b'<CSV><FileHeaderInfo>USE</FileHeaderInfo>'
+                           b'<RecordDelimiter>\n</RecordDelimiter>'
+                           b'<FieldDelimiter>,</FieldDelimiter>'
+                           b'<QuoteCharacter>"</QuoteCharacter>'
+                           b'<QuoteEscapeCharacter>"</QuoteEscapeCharacter>'
+                           b'<Comments>#</Comments>'
+                           b'<AllowQuotedRecordDelimiter>false'
+                           b'</AllowQuotedRecordDelimiter></CSV>'
+                           b'</InputSerialization>'
+                           b'<OutputSerialization><CSV>'
+                           b'<QuoteFields>ASNEEDED</QuoteFields>'
+                           b'<RecordDelimiter>\n</RecordDelimiter>'
+                           b'<FieldDelimiter>,</FieldDelimiter>'
+                           b'<QuoteCharacter>"</QuoteCharacter>'
+                           b'<QuoteEscapeCharacter>"</QuoteEscapeCharacter>'
+                           b'</CSV></OutputSerialization>'
+                           b'<RequestProgress>'
+                           b'<Enabled>true</Enabled>'
+                           b'</RequestProgress>'
+                           b'</SelectObjectContentRequest>')
 
         options = SelectObjectOptions(
             expression="select * from s3object",
@@ -77,20 +103,19 @@ class GenerateRequestTest(TestCase):
                              QuoteCharacter='"',
                              QuoteEscapeCharacter='"',
                              Comments="#",
-                             AllowQuotedRecordDelimiter="FALSE",
-                             ),
-                ),
+                             AllowQuotedRecordDelimiter="FALSE"),
+            ),
 
             output_serialization=OutputSerialization(
                 csv=CSVOutput(QuoteFields="ASNEEDED",
                               RecordDelimiter="\n",
                               FieldDelimiter=",",
                               QuoteCharacter='"',
-                              QuoteEscapeCharacter='"',)
-                                ),
+                              QuoteEscapeCharacter='"')
+            ),
             request_progress=RequestProgress(
                 enabled="TRUE"
-                )
             )
+        )
         actual_string = xml_marshal_select(options)
         eq_(expected_string, actual_string)

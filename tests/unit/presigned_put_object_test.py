@@ -22,6 +22,7 @@ from unittest import TestCase
 from minio import Minio
 from minio.error import InvalidArgumentError
 
+
 class PresignedPutObjectTest(TestCase):
     @raises(TypeError)
     def test_object_is_string(self):

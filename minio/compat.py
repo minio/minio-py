@@ -40,7 +40,7 @@ if _is_py2:
     from Queue import Empty
     queue_empty = Empty
 
-    from urllib import quote, unquote
+    from urllib import quote, unquote, urlencode
 
     from urlparse import urlsplit, parse_qs
 
@@ -62,8 +62,9 @@ elif _is_py3:
     from queue import Empty
     queue_empty = Empty
 
-    from urllib.parse import quote, unquote, urlsplit, parse_qs
+    from urllib.parse import quote, unquote, urlsplit, parse_qs, urlencode
     unquote = unquote  # to get rid of F401
+    urlencode = urlencode  # to get rid of F401
     urlsplit = urlsplit  # to get rid of F401
     parse_qs = parse_qs  # to get rid of F401
 

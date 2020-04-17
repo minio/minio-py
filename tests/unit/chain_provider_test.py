@@ -18,10 +18,10 @@ import os
 from unittest import TestCase
 
 from minio.credentials.chain import Chain
-from minio.credentials.credentials import Value
 from minio.credentials.env_aws import EnvAWS
 from minio.credentials.env_minio import EnvMinio
 from nose.tools import eq_
+
 
 class ChainProviderTest(TestCase):
 
@@ -50,7 +50,6 @@ class ChainProviderTest(TestCase):
         eq_(creds.session_token, "token_aws")
         # assert is_expired
         eq_(chain.is_expired(), False)
-        
 
     def test_chain_is_expired(self):
         # clear environment
@@ -71,7 +70,7 @@ class ChainProviderTest(TestCase):
 
     def test_chain_with_no_provider(self):
         # clear environment
-        os.environ.clear()  
+        os.environ.clear()
         # create empty chain provider
         chain = Chain(
             providers=[]

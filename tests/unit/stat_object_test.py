@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -23,6 +24,7 @@ from minio.api import _DEFAULT_USER_AGENT
 from minio.error import InvalidBucketError
 
 from .minio_mocks import MockResponse, MockConnection
+
 
 class StatObject(TestCase):
     @raises(TypeError)
@@ -50,9 +52,11 @@ class StatObject(TestCase):
         }
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        mock_server.mock_add_request(MockResponse('HEAD',
-                                                  'https://localhost:9000/hello/world',
-                                                  {'User-Agent': _DEFAULT_USER_AGENT}, 200,
-                                                  response_headers=mock_headers))
+        mock_server.mock_add_request(
+            MockResponse('HEAD',
+                         'https://localhost:9000/hello/world',
+                         {'User-Agent': _DEFAULT_USER_AGENT}, 200,
+                         response_headers=mock_headers)
+        )
         client = Minio('localhost:9000')
         client.stat_object('hello', 'world')

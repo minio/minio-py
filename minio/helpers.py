@@ -42,6 +42,9 @@ import re
 import os
 import errno
 import math
+from datetime import datetime
+
+import pytz
 
 from .compat import (urlsplit, _quote, queryencode,
                      str, bytes, basestring, _is_py3, _is_py2)
@@ -755,3 +758,22 @@ def is_supported_header(key):
 # returns true if header is a storage class header
 def is_storageclass_header(key):
     return key.lower() == "x-amz-storage-class"
+
+
+def _iso8601_to_utc_datetime(date_string):
+    """
+    Convert iso8601 date string into UTC time.
+
+    :param date_string: iso8601 formatted date string.
+    :return: :class:`datetime.datetime` with timezone set to UTC
+    """
+
+    # Handle timestamps with and without fractional seconds. Some non-AWS
+    # vendors (e.g. Dell EMC ECS) are not consistent about always providing
+    # fractional seconds.
+    try:
+        parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
+    except ValueError:
+        parsed_date = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%SZ')
+    tz_aware_datetime = pytz.utc.localize(parsed_date)
+    return tz_aware_datetime

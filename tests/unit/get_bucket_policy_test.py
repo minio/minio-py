@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +28,7 @@ from tests.unit.minio_mocks import (
     MockResponse
 )
 
+
 class GetBucketPolicyTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     @raises(NoSuchBucket)
@@ -48,28 +50,28 @@ class GetBucketPolicyTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_get_policy_for_existent_bucket(self, mock_connection):
         mock_data = {
-            "Version":"2012-10-17",
-            "Statement":[
+            "Version": "2012-10-17",
+            "Statement": [
                 {
-                "Sid":"",
-                "Effect":"Allow",
-                "Principal":{"AWS":"*"},
-                "Action":"s3:GetBucketLocation",
-                "Resource":"arn:aws:s3:::test-bucket"
+                    "Sid": "",
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"},
+                    "Action": "s3:GetBucketLocation",
+                    "Resource": "arn:aws:s3:::test-bucket"
                 },
                 {
-                "Sid":"",
-                "Effect":"Allow",
-                "Principal":{"AWS":"*"},
-                "Action":"s3:ListBucket",
-                "Resource":"arn:aws:s3:::test-bucket"
+                    "Sid": "",
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"},
+                    "Action": "s3:ListBucket",
+                    "Resource": "arn:aws:s3:::test-bucket"
                 },
                 {
-                "Sid":"",
-                "Effect":"Allow",
-                "Principal":{"AWS":"*"},
-                "Action":"s3:GetObject",
-                "Resource":"arn:aws:s3:::test-bucket/*"
+                    "Sid": "",
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"},
+                    "Action": "s3:GetObject",
+                    "Resource": "arn:aws:s3:::test-bucket/*"
                 }
             ]
         }

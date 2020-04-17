@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ from minio.credentials.file_minio_client import FileMinioClient
 from minio.credentials.credentials import Value
 
 from nose.tools import eq_
+
 
 class FileMinioClientTest(TestCase):
 
@@ -70,7 +71,8 @@ class FileMinioClientTest(TestCase):
         # clear environment
         os.environ.clear()
         # get provider
-        provider = FileMinioClient('minio/credentials/config.json.sample','play')
+        provider = FileMinioClient(
+            'minio/credentials/config.json.sample', 'play')
         # is_expired is True before retrieve
         eq_(provider.is_expired(), True)
         # get credentials

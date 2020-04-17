@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,21 +20,24 @@ from unittest import TestCase
 from minio.credentials.aws_iam import IamEc2MetaData
 from nose.tools import eq_
 
+
 class CredListResponse(object):
     status = 200
     data = b'test-s3-full-access-for-minio-ec2'
 
+
 class CredsResponse(object):
     status = 200
     data = json.dumps({
-            "Code" : 'Success',
-            "Type" : 'AWS-HMAC',
-            "AccessKeyId" : 'accessKey',
-            "SecretAccessKey" : 'secret',
-            "Token" : 'token',
-            "Expiration" : '2014-12-16T01:51:37Z',
-            "LastUpdated" : '2009-11-23T0:00:00Z'
-        })
+        "Code": 'Success',
+        "Type": 'AWS-HMAC',
+        "AccessKeyId": 'accessKey',
+        "SecretAccessKey": 'secret',
+        "Token": 'token',
+        "Expiration": '2014-12-16T01:51:37Z',
+        "LastUpdated": '2009-11-23T0:00:00Z'
+    })
+
 
 class TestIamEc2MetaData(TestCase):
     @mock.patch('urllib3.PoolManager.urlopen')
