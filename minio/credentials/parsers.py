@@ -54,7 +54,8 @@ def parse_assume_role(data):
         - A :class:`DateTime` instance of when the credentials expire.
     """
     root = ElementTree.fromstring(data)
-    credentials_elem = root.find("sts:AssumeRoleResult", _XML_NS).find("sts:Credentials", _XML_NS)
+    credentials_elem = root.find("sts:AssumeRoleResult", _XML_NS).find(
+        "sts:Credentials", _XML_NS)
 
     access_key = credentials_elem.find("sts:AccessKeyId", _XML_NS).text
     secret_key = credentials_elem.find("sts:SecretAccessKey", _XML_NS).text
@@ -64,4 +65,3 @@ def parse_assume_role(data):
     expiry = _iso8601_to_utc_datetime(expiry_str)
 
     return Value(access_key, secret_key, session_token), expiry
-

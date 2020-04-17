@@ -91,4 +91,3 @@ class AssumeRoleProvider(Provider):
 
     def is_expired(self):
         return self._expiry.is_expired()
-

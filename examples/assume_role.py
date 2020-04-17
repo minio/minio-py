@@ -59,7 +59,8 @@ restricted_upload_policy = """{
 } 
 """
 
-credentials_provider = AssumeRoleProvider(client, Policy=restricted_upload_policy)
+credentials_provider = AssumeRoleProvider(
+    client, Policy=restricted_upload_policy)
 temp_creds = Credentials(provider=credentials_provider)
 
 # User can access the credentials for e.g. serialization
