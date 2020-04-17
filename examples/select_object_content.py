@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-#  2019 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2019 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,11 +18,13 @@
 from minio import Minio
 from minio.error import ResponseError
 from minio.select.errors import SelectCRCValidationError, SelectMessageError
-from minio.select.options import (SelectObjectOptions, CSVInput,
-                                  JSONInput, RequestProgress,
-                                  ParquetInput, InputSerialization,
-                                  OutputSerialization, CSVOutput,
-                                  JsonOutput)
+from minio.select.options import (SelectObjectOptions, RequestProgress,
+                                  InputSerialization, OutputSerialization)
+from minio.select.options import CSVInput
+from minio.select.options import CSVOutput
+# from minio.select.options import JSONOutput
+# from minio.select.options import JsonInput
+# from minio.select.options import ParquetInput
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEY',
@@ -32,33 +34,34 @@ options = SelectObjectOptions(
     expression="select * from s3object",
     input_serialization=InputSerialization(
         compression_type="NONE",
-        csv=CSVInput(FileHeaderInfo="USE",
-                     RecordDelimiter="\n",
-                     FieldDelimiter=",",
-                     QuoteCharacter='"',
-                     QuoteEscapeCharacter='"',
-                     Comments="#",
-                     AllowQuotedRecordDelimiter="FALSE",
-                     ),
-        # If input is JSON
-        # json=JSONInput(Type="DOCUMENT",)
+        csv=CSVInput(
+            FileHeaderInfo="USE",
+            RecordDelimiter="\n",
+            FieldDelimiter=",",
+            QuoteCharacter='"',
+            QuoteEscapeCharacter='"',
+            Comments="#",
+            AllowQuotedRecordDelimiter="FALSE",
         ),
+        # If input is JSON
+        # json=JSONInput(Type="DOCUMENT")
+    ),
 
     output_serialization=OutputSerialization(
-        csv=CSVOutput(QuoteFields="ASNEEDED",
-                      RecordDelimiter="\n",
-                      FieldDelimiter=",",
-                      QuoteCharacter='"',
-                      QuoteEscapeCharacter='"',)
-
-        # json = JsonOutput(
-        #     RecordDelimiter="\n",
-        #     )
+        csv=CSVOutput(
+            QuoteFields="ASNEEDED",
+            RecordDelimiter="\n",
+            FieldDelimiter=",",
+            QuoteCharacter='"',
+            QuoteEscapeCharacter='"',
         ),
+
+        # json = JsonOutput(RecordDelimiter="\n")
+    ),
     request_progress=RequestProgress(
         enabled="False"
-        )
     )
+)
 
 try:
     data = client.select_object_content('your-bucket', 'your-object', options)

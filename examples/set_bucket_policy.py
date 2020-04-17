@@ -29,28 +29,28 @@ client = Minio('s3.amazonaws.com',
 try:
     # Set bucket policy to read-only for bucket 'my-bucketname'
     policy_read_only = {
-        "Version":"2012-10-17",
-        "Statement":[
+        "Version": "2012-10-17",
+        "Statement": [
             {
-            "Sid":"",
-            "Effect":"Allow",
-            "Principal":{"AWS":"*"},
-            "Action":"s3:GetBucketLocation",
-            "Resource":"arn:aws:s3:::my-bucketname"
+                "Sid": "",
+                "Effect": "Allow",
+                "Principal": {"AWS": "*"},
+                "Action": "s3:GetBucketLocation",
+                "Resource": "arn:aws:s3:::my-bucketname"
             },
             {
-            "Sid":"",
-            "Effect":"Allow",
-            "Principal":{"AWS":"*"},
-            "Action":"s3:ListBucket",
-            "Resource":"arn:aws:s3:::my-bucketname"
+                "Sid": "",
+                "Effect": "Allow",
+                "Principal": {"AWS": "*"},
+                "Action": "s3:ListBucket",
+                "Resource": "arn:aws:s3:::my-bucketname"
             },
             {
-            "Sid":"",
-            "Effect":"Allow",
-            "Principal":{"AWS":"*"},
-            "Action":"s3:GetObject",
-            "Resource":"arn:aws:s3:::my-bucketname/*"
+                "Sid": "",
+                "Effect": "Allow",
+                "Principal": {"AWS": "*"},
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::my-bucketname/*"
             }
         ]
     }
@@ -83,10 +83,10 @@ try:
             },
             {
                 "Action": ["s3:ListMultipartUploadParts",
-                            "s3:GetObject",
-                            "s3:AbortMultipartUpload",
-                            "s3:DeleteObject",
-                            "s3:PutObject"],
+                           "s3:GetObject",
+                           "s3:AbortMultipartUpload",
+                           "s3:DeleteObject",
+                           "s3:PutObject"],
                 "Sid": "",
                 "Resource": ["arn:aws:s3:::my-bucketname/*"],
                 "Effect": "Allow",
@@ -98,26 +98,26 @@ try:
 
     # Set bucket policy to write-only for bucket 'my-bucketname'
     policy_write_only = {
-        "Version":"2012-10-17",
-        "Statement":[
+        "Version": "2012-10-17",
+        "Statement": [
             {
-                "Sid":"",
-                "Effect":"Allow",
-                "Principal":{"AWS":"*"},
-                "Action":"s3:GetBucketLocation",
-                "Resource":"arn:aws:s3:::my-bucketname"
+                "Sid": "",
+                "Effect": "Allow",
+                "Principal": {"AWS": "*"},
+                "Action": "s3:GetBucketLocation",
+                "Resource": "arn:aws:s3:::my-bucketname"
             },
-            {"Sid":"",
-            "Effect":"Allow",
-            "Principal":{"AWS":"*"},
-            "Action":"s3:ListBucketMultipartUploads",
-            "Resource":"arn:aws:s3:::my-bucketname"
-            },
+            {"Sid": "",
+             "Effect": "Allow",
+             "Principal": {"AWS": "*"},
+             "Action": "s3:ListBucketMultipartUploads",
+             "Resource": "arn:aws:s3:::my-bucketname"
+             },
             {
-                "Sid":"",
-                "Effect":"Allow",
-                "Principal":{"AWS":"*"},
-                "Action":[
+                "Sid": "",
+                "Effect": "Allow",
+                "Principal": {"AWS": "*"},
+                "Action": [
                     "s3:ListMultipartUploadParts",
                     "s3:AbortMultipartUpload",
                     "s3:DeleteObject",

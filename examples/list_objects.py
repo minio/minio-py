@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +33,7 @@ for obj in objects:
 # List all object paths in bucket that begin with my-prefixname using
 # V2 listing API.
 objects = client.list_objects_v2('my-bucketname', prefix='my-prefixname',
-                              recursive=True)
+                                 recursive=True)
 for obj in objects:
     print(obj.bucket_name, obj.object_name.encode('utf-8'), obj.last_modified,
           obj.etag, obj.size, obj.content_type)

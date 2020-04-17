@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2016 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2016 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +17,7 @@
 # Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-testfile, my-bucketname and
 # my-objectname are dummy values, please replace them with original values.
 
-import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 from minio import Minio, CopyConditions
 from minio.error import ResponseError
@@ -28,12 +28,11 @@ client = Minio('s3.amazonaws.com',
 
 # client.trace_on(sys.stderr)
 copy_conditions = CopyConditions()
-# Set modified condition, copy object modified since 2014 April.
-t = (2014, 4, 0, 0, 0, 0, 0, 0, 0)
-mod_since = datetime.utcfromtimestamp(time.mktime(t))
+# Set modified condition, copy object modified since 1st April 2014.
+mod_since = datetime(2014, 4, 1, tzinfo=timezone.utc)
 copy_conditions.set_modified_since(mod_since)
 
-# Set unmodified condition, copy object unmodified since 2014 April.
+# Set unmodified condition, copy object unmodified since 1st April 2014.
 # copy_conditions.set_unmodified_since(mod_since)
 
 # Set matching ETag condition, copy object which matches the following ETag.

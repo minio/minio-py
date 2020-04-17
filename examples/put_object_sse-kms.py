@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2018 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2018 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,24 +29,27 @@ STORAGE_BUCKET = 'test-encryption-bucket'
 
 
 def main():
-   
-    minio = Minio(STORAGE_ENDPOINT, access_key=AWSAccessKeyId, secret_key=AWSSecretKey)
+    minio = Minio(STORAGE_ENDPOINT, access_key=AWSAccessKeyId,
+                  secret_key=AWSSecretKey)
 
     content = BytesIO(b'Some Data to be stored')
 
     key_id = 'YOUR-KMS-KEY'
-    context = {'Key1':'Value1', 'Key2':'Value2'}
+    context = {'Key1': 'Value1', 'Key2': 'Value2'}
 
     # Create an SSE-KMS object with a Valid KMS key_id and context
     sse_kms_obj = SSE_KMS(key_id, context)
-    
-    # Put object with special headers from SSE_C object which encrypt object in S3 with provided key
-    minio.put_object(STORAGE_BUCKET, 'test_crypt.txt', content, content.getbuffer().nbytes, sse=sse_kms_obj)
+
+    # Put object with special headers from SSE_C object which encrypt object in
+    # S3 with provided key
+    minio.put_object(STORAGE_BUCKET, 'test_crypt.txt', content,
+                     content.getbuffer().nbytes, sse=sse_kms_obj)
 
     # Get decrypted object with same headers
     obj = minio.get_object(STORAGE_BUCKET, 'test_crypt.txt')
 
     print(obj.read())
+
 
 if __name__ == '__main__':
     main()

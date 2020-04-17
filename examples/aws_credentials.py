@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,5 +34,5 @@ client = Minio('s3.amazonaws.com',
 # Initialize Minio with IamEc2MetaData custom
 client = Minio('s3.amazonaws.com',
                credentials=Credentials(
-                    provider=IamEc2MetaData(endpoint='custom.endpoint')
+                   provider=IamEc2MetaData(endpoint='custom.endpoint')
                ))
