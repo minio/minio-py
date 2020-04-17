@@ -47,7 +47,7 @@ jobs:
         MINIO_SECRET_KEY: minio123
         SSL_CERT_FILE: /tmp/minio-config/certs/public.crt
       run: |
-          wget -O /tmp/minio https://dl.min.io/server/minio/release/linux-amd64/minio
+          wget --quiet -O /tmp/minio https://dl.min.io/server/minio/release/linux-amd64/minio
           chmod +x /tmp/minio
           mkdir -p /tmp/minio-config/certs/
           cp tests/certs/* /tmp/minio-config/certs/
