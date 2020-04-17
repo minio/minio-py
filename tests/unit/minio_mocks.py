@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nose.tools import eq_
 from minio.compat import _is_py3
 from minio.fold_case_dict import FoldCaseDict
+from nose.tools import eq_
 
 if _is_py3:
     import http.client as httplib

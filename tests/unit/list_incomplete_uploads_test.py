@@ -14,15 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import mock
-
-from nose.tools import eq_
 from unittest import TestCase
 
+import mock
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
+from nose.tools import eq_
 
-from .minio_mocks import MockResponse, MockConnection
+from .minio_mocks import MockConnection, MockResponse
 
 
 class ListIncompleteUploadsTest(TestCase):

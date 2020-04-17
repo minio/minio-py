@@ -20,8 +20,7 @@
 from io import BytesIO
 
 from minio.api import Minio
-from minio.sse import SSE_C
-from minio.sse import copy_SSE_C
+from minio.sse import SSE_C, copy_SSE_C
 
 AWSAccessKeyId = 'YOUR-ACCESSKEYID'
 AWSSecretKey = 'YOUR-SECRETACCESSKEY'

@@ -15,13 +15,12 @@
 # limitations under the License.
 
 from datetime import timedelta
-
-import mock
-from nose.tools import raises
 from unittest import TestCase
 
+import mock
 from minio import Minio
 from minio.error import InvalidArgumentError
+from nose.tools import raises
 
 
 class PresignedGetObjectTest(TestCase):

@@ -29,12 +29,12 @@ This module implements all helpers for AWS Signature version '4' support.
 import collections
 import hashlib
 import hmac
-
 from datetime import datetime
+
+from .compat import queryencode, urlsplit
 from .error import InvalidArgumentError
-from .compat import urlsplit, queryencode
-from .helpers import get_sha256_hexdigest
 from .fold_case_dict import FoldCaseDict
+from .helpers import get_sha256_hexdigest
 
 # Signature version '4' algorithm.
 _SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'

@@ -17,9 +17,10 @@
 # Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
 # dummy values, please replace them with original values.
 
+import json
+
 from minio import Minio
 from minio.error import ResponseError
-import json
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',

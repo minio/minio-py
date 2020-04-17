@@ -27,7 +27,8 @@ This module contains core API parsers.
 import base64
 import hashlib
 import json
-from .error import (InvalidArgumentError, InvalidSizeError)
+
+from .error import InvalidArgumentError, InvalidSizeError
 
 
 class SSE_C(object):

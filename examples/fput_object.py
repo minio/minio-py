@@ -17,9 +17,9 @@
 # Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname, my-objectname
 # and my-filepath dummy values, please replace them with original values.
 
+from examples.progress import Progress
 from minio import Minio
 from minio.error import ResponseError
-from examples.progress import Progress
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',

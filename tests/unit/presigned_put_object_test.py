@@ -15,12 +15,11 @@
 # limitations under the License.
 
 from datetime import timedelta
-
-from nose.tools import raises
 from unittest import TestCase
 
 from minio import Minio
 from minio.error import InvalidArgumentError
+from nose.tools import raises
 
 
 class PresignedPutObjectTest(TestCase):

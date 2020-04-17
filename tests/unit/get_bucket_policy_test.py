@@ -18,15 +18,11 @@
 from unittest import TestCase
 
 import mock
-from nose.tools import eq_, raises
-
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
 from minio.error import NoSuchBucket
-from tests.unit.minio_mocks import (
-    MockConnection,
-    MockResponse
-)
+from nose.tools import eq_, raises
+from tests.unit.minio_mocks import MockConnection, MockResponse
 
 
 class GetBucketPolicyTest(TestCase):

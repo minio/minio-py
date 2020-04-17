@@ -19,8 +19,8 @@
 # 'providers' list
 
 from minio import Minio
-from minio.credentials import (
-    Chain, EnvAWS, EnvMinio, IamEc2MetaData, Credentials)
+from minio.credentials import (Chain, Credentials, EnvAWS, EnvMinio,
+                               IamEc2MetaData)
 
 client = Minio('s3.amazonaws.com',
                credentials=Credentials(

@@ -20,8 +20,7 @@
 
 from datetime import datetime, timedelta
 
-from minio import Minio
-from minio import PostPolicy
+from minio import Minio, PostPolicy
 from minio.error import ResponseError
 
 post_policy = PostPolicy()

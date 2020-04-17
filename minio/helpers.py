@@ -24,32 +24,29 @@ This module implements all helper functions.
 
 """
 
-from __future__ import absolute_import
 # if math.ceil returns an integer and devide two integers returns a float,
 # calculate part size will cause errors, so make sure division integers returns
 # a float.
-from __future__ import division
+from __future__ import absolute_import, division, unicode_literals
 
-from __future__ import unicode_literals
+import base64
+import collections
+import errno
+import hashlib
+import io
+import math
+import os
+import re
 # future_str is unicode or str in both Python 2 and 3
 from builtins import str as future_str
-
-import io
-import collections
-import base64
-import hashlib
-import re
-import os
-import errno
-import math
 from datetime import datetime
 
 import pytz
 
-from .compat import (urlsplit, _quote, queryencode,
-                     str, bytes, basestring, _is_py3, _is_py2)
-from .error import (InvalidBucketError, InvalidEndpointError,
-                    InvalidArgumentError)
+from .compat import (_is_py2, _is_py3, _quote, basestring, bytes, queryencode,
+                     str, urlsplit)
+from .error import (InvalidArgumentError, InvalidBucketError,
+                    InvalidEndpointError)
 
 # Constants
 MAX_MULTIPART_COUNT = 10000  # 10000 parts

@@ -22,9 +22,10 @@ This module implements a progress printer while communicating with MinIO server
 
 """
 
-import time
 import sys
+import time
 from threading import Thread
+
 from minio.compat import queue, queue_empty
 
 _BAR_SIZE = 20

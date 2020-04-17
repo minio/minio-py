@@ -14,12 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-import urllib3
 import datetime
+import json
 
-from .credentials import Provider, Value, Expiry
+import urllib3
+
 from minio.error import ResponseError
+
+from .credentials import Expiry, Provider, Value
 from .parsers import parse_iam_credentials
 
 

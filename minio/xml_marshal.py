@@ -26,8 +26,8 @@ This module contains the simple wrappers for XML marshaller's.
 """
 
 from __future__ import absolute_import
-import io
 
+import io
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 

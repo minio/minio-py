@@ -15,20 +15,20 @@
 # limitations under the License.
 import hashlib
 import hmac
-from unittest import TestCase
 from datetime import datetime
+from unittest import TestCase
 
-from nose.tools import eq_, raises
 import pytz as pytz
 
-from minio.signer import (generate_canonical_request, generate_string_to_sign,
-                          generate_signing_key, generate_authorization_header,
-                          presign_v4, sign_v4)
-from minio.error import InvalidArgumentError
-from minio.compat import urlsplit, _quote, queryencode
-from minio.fold_case_dict import FoldCaseDict
+from minio.compat import _quote, queryencode, urlsplit
 from minio.credentials import Credentials, Static
+from minio.error import InvalidArgumentError
+from minio.fold_case_dict import FoldCaseDict
 from minio.helpers import get_target_url
+from minio.signer import (generate_authorization_header,
+                          generate_canonical_request, generate_signing_key,
+                          generate_string_to_sign, presign_v4, sign_v4)
+from nose.tools import eq_, raises
 
 empty_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 dt = datetime(2015, 6, 20, 1, 2, 3, 0, pytz.utc)

@@ -15,11 +15,10 @@
 # limitations under the License.
 
 import os
-
 from unittest import TestCase
-from minio.credentials.file_minio_client import FileMinioClient
-from minio.credentials.credentials import Value
 
+from minio.credentials.credentials import Value
+from minio.credentials.file_minio_client import FileMinioClient
 from nose.tools import eq_
 
 

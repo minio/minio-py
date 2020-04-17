@@ -18,7 +18,7 @@
 # dummy values, please replace them with original values.
 
 from minio import Minio
-from minio.error import ResponseError, ArgumentError
+from minio.error import ArgumentError, ResponseError
 
 client = Minio('s3.amazonaws.com', secure=True,
                access_key='YOUR-ACCESSKEYID',

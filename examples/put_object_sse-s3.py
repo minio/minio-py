@@ -18,9 +18,9 @@
 # dummy values, please replace them with original values.
 
 from io import BytesIO
+
 from minio.api import Minio
 from minio.sse import SSE_S3
-
 
 AWSAccessKeyId = 'YOUR-ACCESSKEYID'
 AWSSecretKey = 'YOUR-SECRETACCESSKEY'

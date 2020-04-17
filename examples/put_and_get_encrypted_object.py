@@ -18,8 +18,8 @@
 # dummy values, please replace them with original values.
 
 import base64
-from io import BytesIO
 import hashlib
+from io import BytesIO
 
 from minio.api import Minio
 

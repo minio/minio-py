@@ -25,20 +25,19 @@ This module contains core API parsers.
 
 """
 
+from datetime import datetime
 # standard.
 from xml.etree import ElementTree
-from datetime import datetime
+
+from .compat import unquote
+from .definitions import (Bucket, CopyObjectResult, IncompleteUpload,
+                          MultipartUploadResult, Object, UploadPart)
+# minio specific.
+from .error import ETREE_EXCEPTIONS, InvalidXMLError, MultiDeleteError
+from .helpers import _iso8601_to_utc_datetime
+from .xml_marshal import NOTIFICATIONS_ARN_FIELDNAME_MAP
 
 # dependencies.
-
-# minio specific.
-from .error import (ETREE_EXCEPTIONS, InvalidXMLError, MultiDeleteError)
-from .compat import unquote
-from .definitions import (Object, Bucket, IncompleteUpload,
-                          UploadPart, MultipartUploadResult,
-                          CopyObjectResult)
-from .helpers import _iso8601_to_utc_datetime
-from .xml_marshal import (NOTIFICATIONS_ARN_FIELDNAME_MAP)
 
 
 _XML_NS = {
