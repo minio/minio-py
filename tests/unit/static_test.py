@@ -14,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from minio.credentials.static import Static
-from minio.credentials.credentials import Value
 from unittest import TestCase
+
+from minio.credentials.credentials import Value
+from minio.credentials.static import Static
 from nose.tools import eq_
 
 

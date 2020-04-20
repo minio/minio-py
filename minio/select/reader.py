@@ -29,14 +29,11 @@ from __future__ import absolute_import
 
 import io
 import sys
-
 from xml.etree import ElementTree
 
-from .helpers import (EVENT_RECORDS, EVENT_STATS,
-                      EVENT, EVENT_CONTENT_TYPE, ERROR)
-
-from .helpers import (validate_crc, calculate_crc, byte_int)
-from .errors import (SelectMessageError, SelectCRCValidationError)
+from .errors import SelectCRCValidationError, SelectMessageError
+from .helpers import (ERROR, EVENT, EVENT_CONTENT_TYPE, EVENT_RECORDS,
+                      EVENT_STATS, byte_int, calculate_crc, validate_crc)
 
 
 def _extract_header(header_bytes):

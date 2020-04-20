@@ -15,9 +15,9 @@
 # limitations under the License.
 
 from unittest import TestCase
-from nose.tools import raises
 
 from minio import Minio
+from nose.tools import raises
 
 
 class PutObjectTest(TestCase):

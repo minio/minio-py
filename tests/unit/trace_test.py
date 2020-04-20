@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nose.tools import raises
 from unittest import TestCase
 
 from minio import Minio
+from nose.tools import raises
 
 
 class TraceTest(TestCase):

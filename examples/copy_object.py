@@ -19,7 +19,7 @@
 
 from datetime import datetime, timezone
 
-from minio import Minio, CopyConditions
+from minio import CopyConditions, Minio
 from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',

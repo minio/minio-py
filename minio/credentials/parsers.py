@@ -16,8 +16,8 @@
 
 from xml.etree import ElementTree
 
-from .credentials import Value
 from ..helpers import _iso8601_to_utc_datetime
+from .credentials import Value
 
 _XML_NS = {
     's3': 'http://s3.amazonaws.com/doc/2006-03-01/',

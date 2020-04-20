@@ -14,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from unittest import TestCase
+
 from minio.credentials.credentials import Credentials, Value
 from minio.credentials.file_minio_client import FileMinioClient
-from unittest import TestCase
 from nose.tools import eq_
 
 

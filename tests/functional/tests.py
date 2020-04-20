@@ -15,43 +15,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import division
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 
-import os
-import io
 import csv
+import hashlib
+import inspect
+import io
+import json
+import os
+import shutil
 import sys
 import tempfile
-
-from sys import exit
-import uuid
-import shutil
-import inspect
-import json
-from random import random
-
-from string import ascii_lowercase
 import time
 import traceback
+import uuid
 from datetime import datetime, timedelta
-
-import urllib3
-import certifi
-import hashlib
+from random import random
+from string import ascii_lowercase
+from sys import exit
 from threading import Thread
 
-from minio import Minio, PostPolicy, CopyConditions
-from minio.error import (APINotImplemented, NoSuchBucketPolicy, ResponseError,
-                         PreconditionFailed, BucketAlreadyOwnedByYou,
-                         BucketAlreadyExists, InvalidBucketError)
-from minio.select.options import (SelectObjectOptions, CSVInput,
-                                  RequestProgress, InputSerialization,
-                                  OutputSerialization, CSVOutput)
-from minio.select.helpers import (calculate_crc)
+import urllib3
 
-from minio.sse import SSE_C
-from minio.sse import copy_SSE_C
+import certifi
+from minio import CopyConditions, Minio, PostPolicy
+from minio.error import (APINotImplemented, BucketAlreadyExists,
+                         BucketAlreadyOwnedByYou, InvalidBucketError,
+                         NoSuchBucketPolicy, PreconditionFailed, ResponseError)
+from minio.select.helpers import calculate_crc
+from minio.select.options import (CSVInput, CSVOutput, InputSerialization,
+                                  OutputSerialization, RequestProgress,
+                                  SelectObjectOptions)
+from minio.sse import SSE_C, copy_SSE_C
 
 
 class LimitedRandomReader(object):

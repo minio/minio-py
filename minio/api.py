@@ -28,80 +28,64 @@ This module implements the API.
 
 # Standard python packages
 from __future__ import absolute_import
-import platform
-from threading import Thread
-
-from datetime import datetime, timedelta
 
 import io
+import itertools
 import json
 import os
-import itertools
+import platform
+from datetime import datetime, timedelta
+from threading import Thread
+
+import dateutil.parser
+# Dependencies
+import urllib3
+
+import certifi
+
+# Internal imports
+from . import __title__, __version__
+from .compat import basestring, queryencode, range, urlsplit
+from .credentials import (Chain, Credentials, EnvAWS, EnvMinio, IamEc2MetaData,
+                          Static)
+from .definitions import Object, UploadPart
+from .error import (AccessDenied, InvalidArgumentError, InvalidSizeError,
+                    InvalidXMLError, NoSuchBucket, ResponseError)
+from .fold_case_dict import FoldCaseDict
+from .helpers import (DEFAULT_PART_SIZE, MAX_MULTIPART_COUNT, MAX_PART_SIZE,
+                      MAX_POOL_SIZE, MIN_PART_SIZE, amzprefix_user_metadata,
+                      dump_http, get_md5_base64digest,
+                      get_s3_region_from_endpoint, get_sha256_hexdigest,
+                      get_target_url, is_amz_header, is_non_empty_string,
+                      is_supported_header, is_valid_bucket_name,
+                      is_valid_bucket_notification_config, is_valid_endpoint,
+                      is_valid_policy_type, is_valid_source_sse_object,
+                      is_valid_sse_c_object, is_valid_sse_object, mkdir_p,
+                      optimal_part_info, read_full)
+from .parsers import (parse_copy_object, parse_get_bucket_notification,
+                      parse_list_buckets, parse_list_multipart_uploads,
+                      parse_list_objects, parse_list_objects_v2,
+                      parse_list_parts, parse_location_constraint,
+                      parse_multi_object_delete_response,
+                      parse_multipart_upload_result,
+                      parse_new_multipart_upload)
+from .select import SelectObjectReader
+from .signer import (_SIGN_V4_ALGORITHM, _UNSIGNED_PAYLOAD,
+                     generate_credential_string, post_presign_signature,
+                     presign_v4, sign_v4)
+from .thread_pool import ThreadPool
+from .xml_marshal import (xml_marshal_bucket_constraint,
+                          xml_marshal_bucket_encryption,
+                          xml_marshal_bucket_notifications,
+                          xml_marshal_complete_multipart_upload,
+                          xml_marshal_delete_objects, xml_marshal_select,
+                          xml_to_dict)
 
 try:
     from json.decoder import JSONDecodeError
 except ImportError:
     JSONDecodeError = ValueError
 
-# Dependencies
-import urllib3
-import certifi
-import dateutil.parser
-
-# Internal imports
-from . import __title__, __version__
-from .compat import (urlsplit, queryencode,
-                     range, basestring)
-from .error import (ResponseError, NoSuchBucket, AccessDenied,
-                    InvalidArgumentError, InvalidSizeError, InvalidXMLError)
-from .definitions import Object, UploadPart
-from .parsers import (parse_list_buckets,
-                      parse_list_objects,
-                      parse_list_objects_v2,
-                      parse_list_parts,
-                      parse_copy_object,
-                      parse_list_multipart_uploads,
-                      parse_new_multipart_upload,
-                      parse_location_constraint,
-                      parse_multipart_upload_result,
-                      parse_get_bucket_notification,
-                      parse_multi_object_delete_response)
-from .helpers import (get_target_url, is_non_empty_string,
-                      is_valid_endpoint,
-                      get_sha256_hexdigest, get_md5_base64digest,
-                      optimal_part_info,
-                      is_valid_bucket_name, read_full,
-                      get_s3_region_from_endpoint, is_valid_sse_object,
-                      is_valid_sse_c_object, is_valid_source_sse_object,
-                      is_valid_bucket_notification_config,
-                      is_valid_policy_type, mkdir_p, dump_http,
-                      amzprefix_user_metadata, is_supported_header,
-                      is_amz_header)
-from .helpers import (MAX_PART_SIZE,
-                      MAX_POOL_SIZE,
-                      MIN_PART_SIZE,
-                      DEFAULT_PART_SIZE,
-                      MAX_MULTIPART_COUNT)
-from .signer import (sign_v4, presign_v4,
-                     generate_credential_string,
-                     post_presign_signature)
-from .signer import (_UNSIGNED_PAYLOAD, _SIGN_V4_ALGORITHM)
-from .xml_marshal import (xml_marshal_bucket_constraint,
-                          xml_marshal_complete_multipart_upload,
-                          xml_marshal_bucket_notifications,
-                          xml_marshal_delete_objects,
-                          xml_marshal_select,
-                          xml_marshal_bucket_encryption,
-                          xml_to_dict)
-from .fold_case_dict import FoldCaseDict
-from .thread_pool import ThreadPool
-from .select import SelectObjectReader
-from .credentials import (Chain,
-                          Credentials,
-                          EnvAWS,
-                          EnvMinio,
-                          IamEc2MetaData,
-                          Static)
 
 # Comment format.
 _COMMENTS = '({0}; {1})'

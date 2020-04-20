@@ -26,11 +26,11 @@ This module contains :class:`PostPolicy <PostPolicy>` implementation.
 """
 
 import base64
-import json
 import datetime
+import json
 
-from .helpers import (is_non_empty_string, is_valid_bucket_name)
 from .error import InvalidArgumentError
+from .helpers import is_non_empty_string, is_valid_bucket_name
 
 
 # Policy explanation:

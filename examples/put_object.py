@@ -19,9 +19,9 @@
 
 import os
 
+from examples.progress import Progress
 from minio import Minio
 from minio.error import ResponseError
-from examples.progress import Progress
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',

@@ -17,7 +17,6 @@ from datetime import datetime
 
 from minio.compat import urlencode
 from minio.error import ResponseError
-from minio.credentials import Credentials
 from minio.helpers import get_sha256_hexdigest
 from minio.signer import sign_v4
 

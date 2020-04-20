@@ -18,10 +18,10 @@
 from minio import Minio
 from minio.error import ResponseError
 from minio.select.errors import SelectCRCValidationError, SelectMessageError
-from minio.select.options import (SelectObjectOptions, RequestProgress,
-                                  InputSerialization, OutputSerialization)
-from minio.select.options import CSVInput
-from minio.select.options import CSVOutput
+from minio.select.options import (CSVInput, CSVOutput, InputSerialization,
+                                  OutputSerialization, RequestProgress,
+                                  SelectObjectOptions)
+
 # from minio.select.options import JSONOutput
 # from minio.select.options import JsonInput
 # from minio.select.options import ParquetInput

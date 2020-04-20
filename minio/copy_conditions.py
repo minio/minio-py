@@ -25,11 +25,13 @@ This module contains :class:`CopyConditions <CopyConditions>` implementation.
 """
 
 import collections
+
+from .helpers import is_non_empty_string
+
 try:
     collectionsAbc = collections.abc
 except AttributeError:
     collectionsAbc = collections
-from .helpers import is_non_empty_string
 
 # CopyCondition explanation:
 # http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectCOPY.html

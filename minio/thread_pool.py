@@ -27,6 +27,7 @@ in parallel. Tasks results can also be retrieved.
 """
 
 from threading import Thread
+
 from .compat import queue
 
 

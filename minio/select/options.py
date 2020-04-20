@@ -25,7 +25,7 @@ This module implements the SelectOption definition for SelectObject API.
 
 """
 
-from .helpers import (SQL)
+from .helpers import SQL
 
 
 class CSVInput:

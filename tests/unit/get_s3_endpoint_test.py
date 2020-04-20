@@ -15,8 +15,9 @@
 # limitations under the License.
 
 from unittest import TestCase
-from nose.tools import eq_
+
 from minio.helpers import get_s3_endpoint, is_valid_endpoint
+from nose.tools import eq_
 
 
 class GetS3Endpoint(TestCase):
