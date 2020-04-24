@@ -31,7 +31,7 @@ __title__ = 'minio-py'
 __author__ = 'MinIO, Inc.'
 __version__ = '6.0.0'
 __license__ = 'Apache 2.0'
-__copyright__ = 'Copyright 2015, 2016, 2017, 2018, 2019 MinIO, Inc.'
+__copyright__ = 'Copyright 2015, 2016, 2017, 2018, 2019, 2020 MinIO, Inc.'
 
 from .api import Minio  # pylint: disable=unused-import
 from .copy_conditions import CopyConditions  # pylint: disable=unused-import
