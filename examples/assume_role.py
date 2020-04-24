@@ -30,28 +30,26 @@
 #   those allowed by the policy of the role that is being assumed.
 # - YOUR-ACCESSKEYID and YOUR-SECRETACCESSKEY are
 #   dummy values, please replace them with original values.
-# - To use minio with AWS, the `Minio` client that is passed to the
-#   AssumeRoleProvider must have the endpoint 'sts.amazonaws.com', and the
-#   RoleARN argument must be provided.
-
+# - To use MinIO with AWS, pass the function - `get_assume_role_creds`
+#   as a lambda to the AssumeRoleProvider
 from minio import Minio
 from minio.credentials import AssumeRoleProvider, Credentials
 
-client = Minio('localhost:9000',
+client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY'
+               secret_key='YOUR-SECRETKEY'
                )
 
-restricted_upload_policy = """{
+_RESTRICTED_UPLOAD_POLICY = """{
   "Version": "2012-10-17",
   "Statement": [
     {
       "Action": [
-        "s3:PutObject"
+        "s3:*"
       ],
       "Effect": "Allow",
       "Resource": [
-        "arn:aws:s3:::uploads/2020/*"
+        "arn:aws:s3:::my-bucket/*"
       ],
       "Sid": "Upload-access-to-specific-bucket-only"
     }
@@ -60,7 +58,7 @@ restricted_upload_policy = """{
 """
 
 credentials_provider = AssumeRoleProvider(
-    client, Policy=restricted_upload_policy)
+    get_assume_role_creds=lambda: client.get_assume_role_creds(policy=_RESTRICTED_UPLOAD_POLICY))
 temp_creds = Credentials(provider=credentials_provider)
 
 # User can access the credentials for e.g. serialization
@@ -69,4 +67,11 @@ print(temp_creds.get().access_key)
 print(temp_creds.get().secret_key)
 
 # Initialize Minio client with the temporary credentials
-restricted_client = Minio('localhost:9000', credentials=temp_creds)
+restricted_client = Minio('s3.amazonaws.com', credentials=temp_creds)
+
+# Get a full object.
+
+data = restricted_client.get_object('my-bucket', 'my-object')
+with open('/tmp/testfile', 'wb') as file_data:
+    for d in data.stream(32*1024):
+        file_data.write(d)

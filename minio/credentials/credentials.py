@@ -49,7 +49,7 @@ class Expiry(object):
             self._expiration = self._expiration + time_delta
 
     def is_expired(self):
-        utc_now = pytz.utc.localize(datetime.now())
+        utc_now = pytz.utc.localize(datetime.utcnow())
         return self._expiration < utc_now if self._expiration else True
 
 

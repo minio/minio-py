@@ -29,6 +29,7 @@ from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
 
 from .compat import unquote
+from .credentials import Value
 from .definitions import (Bucket, CopyObjectResult, IncompleteUpload,
                           MultipartUploadResult, Object, UploadPart)
 # minio specific.
@@ -435,3 +436,27 @@ def parse_multi_delete_response(data):
                          errtag.get_child_text('Message'))
         for errtag in root.findall('Error')
     ]
+
+
+def parse_assume_role(data):
+    """
+    Parser for assume role response.
+
+    :param data: XML response data for STS assume role as a string.
+    :return: A 2-tuple containing:
+        - a :class:`minio.credentials.Value` instance with the
+                    temporary credentials.
+        - A :class:`DateTime` instance of when the credentials expire.
+    """
+    root = ElementTree.fromstring(data)
+    credentials = root.find("sts:AssumeRoleResult", _XML_NS).find(
+        "sts:Credentials", _XML_NS)
+
+    access_key = credentials.find("sts:AccessKeyId", _XML_NS).text
+    secret_key = credentials.find("sts:SecretAccessKey", _XML_NS).text
+    session_token = credentials.find("sts:SessionToken", _XML_NS).text
+
+    expiry_str = credentials.find("sts:Expiration", _XML_NS).text
+    expiry = _iso8601_to_utc_datetime(expiry_str)
+
+    return Value(access_key, secret_key, session_token), expiry

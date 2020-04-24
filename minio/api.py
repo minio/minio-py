@@ -46,7 +46,7 @@ import urllib3
 # Internal imports
 from . import __title__, __version__
 from .compat import range  # pylint: disable=redefined-builtin
-from .compat import basestring, quote, urlsplit
+from .compat import basestring, quote, urlencode, urlsplit
 from .credentials import (Chain, Credentials, EnvAWS, EnvMinio, IamEc2MetaData,
                           Static)
 from .definitions import Object, UploadPart
@@ -63,7 +63,8 @@ from .helpers import (DEFAULT_PART_SIZE, MAX_MULTIPART_COUNT, MAX_PART_SIZE,
                       is_valid_policy_type, is_valid_source_sse_object,
                       is_valid_sse_c_object, is_valid_sse_object, mkdir_p,
                       optimal_part_info, read_full)
-from .parsers import (parse_copy_object, parse_get_bucket_notification,
+from .parsers import (parse_assume_role, parse_copy_object,
+                      parse_get_bucket_notification,
                       parse_list_buckets, parse_list_multipart_uploads,
                       parse_list_objects, parse_list_objects_v2,
                       parse_list_parts, parse_location_constraint,
@@ -1952,6 +1953,58 @@ class Minio:  # pylint: disable=too-many-public-methods
         if location == 'EU':
             return 'eu-west-1'
         return location
+
+    def get_assume_role_creds(self, arn=None, session_name=None,
+                              policy=None, duration=None):
+        """
+        A callback to retrieve assume role credentials
+        """
+        query = {
+            "Action": "AssumeRole",
+            "Version": "2011-06-15",
+            "RoleArn": arn or "arn:xxx:xxx:xxx:xxxx",
+            "RoleSessionName": session_name or "anything",
+        }
+
+        # Add optional elements to the request
+        if policy:
+            query["Policy"] = policy
+
+        if duration:
+            query["DurationSeconds"] = str(duration)
+
+        url = self._endpoint_url + "/"
+        content = urlencode(query)
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
+            "User-Agent": self._user_agent
+        }
+
+        # Create signature headers
+        content_sha256_hex = get_sha256_hexdigest(content)
+        signed_headers = sign_v4(
+            "POST",
+            url,
+            "us-east-1",
+            headers,
+            self._credentials,
+            content_sha256=content_sha256_hex,
+            request_datetime=datetime.utcnow(),
+            service_name="sts"
+        )
+        response = self._http.urlopen(
+            "POST",
+            url,
+            body=content,
+            headers=signed_headers,
+            preload_content=True
+        )
+
+        if response.status != 200:
+            raise ResponseError(response, "POST").get_exception()
+
+        # Parse the XML Response - getting the credentials as a Values instance.
+        return parse_assume_role(response.data)
 
     def _url_open(self, method, bucket_name=None, object_name=None,
                   query=None, body=None, headers=None, content_sha256=None,
