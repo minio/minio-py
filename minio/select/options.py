@@ -25,25 +25,26 @@ This module implements the SelectOption definition for SelectObject API.
 
 """
 
-from .helpers import SQL
-
 
 class CSVInput:
     """
     CSVInput: Input Format as CSV.
     """
 
-    def __init__(self, FileHeaderInfo=None, RecordDelimiter="\n",
-                 FieldDelimiter=",", QuoteCharacter='"',
-                 QuoteEscapeCharacter='"', Comments="#",
-                 AllowQuotedRecordDelimiter=False):
-        self.FileHeaderInfo = FileHeaderInfo
-        self.RecordDelimiter = RecordDelimiter
-        self.FieldDelimiter = FieldDelimiter
-        self.QuoteCharacter = QuoteCharacter
-        self.QuoteEscapeCharacter = QuoteEscapeCharacter
-        self.Comments = Comments
-        self.AllowQuotedRecordDelimiter = AllowQuotedRecordDelimiter
+    def __init__(self, file_header_info=None, record_delimiter="\n",
+                 field_delimiter=",", quote_character='"',
+                 quote_escape_character='"', comments="#",
+                 allow_quoted_record_delimiter=False):
+        if file_header_info not in [None, "USE", "IGNORE", "NONE"]:
+            ValueError("invalid file header info {0}".format(file_header_info))
+
+        self.file_header_info = file_header_info
+        self.record_delimiter = record_delimiter
+        self.field_delimiter = field_delimiter
+        self.quote_character = quote_character
+        self.quote_escape_character = quote_escape_character
+        self.comments = comments
+        self.allow_quoted_record_delimiter = allow_quoted_record_delimiter
 
 
 class JSONInput:
@@ -51,8 +52,11 @@ class JSONInput:
     JSONInput: Input format as JSON.
     """
 
-    def __init__(self, Type=None):
-        self.Type = Type
+    def __init__(self, json_type=None):
+        if json_type not in [None, "DOCUMENT", "LINES"]:
+            ValueError("invalid type {0}".format(json_type))
+
+        self.json_type = json_type
 
 
 class ParquetInput:
@@ -66,11 +70,21 @@ class InputSerialization:
     InputSerialization: nput Format.
     """
 
-    def __init__(self, compression_type="NONE", csv=None, json=None, par=None):
+    def __init__(self, compression_type="NONE", csv=None, json=None,
+                 parquet=None):
+        if compression_type not in ["NONE", "GZIP", "BZIP2"]:
+            ValueError("invalid compression type {0}".format(compression_type))
+
         self.compression_type = compression_type
-        self.csv_input = csv
-        self.json_input = json
-        self.parquet_input = par
+        if (csv is not None) ^ (json is not None) ^ (parquet is not None):
+            self.csv = csv
+            self.json = json
+            self.parquet = parquet
+        else:
+            ValueError(
+                "only one csv, json or parquet input serialization "
+                "must be provided"
+            )
 
 
 class CSVOutput:
@@ -79,23 +93,25 @@ class CSVOutput:
 
     """
 
-    def __init__(self, QuoteFields="ASNEEDED", RecordDelimiter="\n",
-                 FieldDelimiter=",", QuoteCharacter='"',
-                 QuoteEscapeCharacter='"'):
-        self.QuoteFields = QuoteFields
-        self.RecordDelimiter = RecordDelimiter
-        self.FieldDelimiter = FieldDelimiter
-        self.QuoteCharacter = QuoteCharacter
-        self.QuoteEscapeCharacter = QuoteEscapeCharacter
+    def __init__(self, quote_fields="ASNEEDED", record_delimiter="\n",
+                 field_delimiter=",", quote_character='"',
+                 quote_escape_character='"'):
+        if quote_fields not in ["ALWAYS", "ASNEEDED"]:
+            ValueError("invalid quote fields {0}".format(quote_fields))
+        self.quote_fields = quote_fields
+        self.record_delimiter = record_delimiter
+        self.field_delimiter = field_delimiter
+        self.quote_character = quote_character
+        self.quote_escape_character = quote_escape_character
 
 
-class JsonOutput:
+class JSONOutput:
     """
-    JsonOutput- Output as JSON.
+    JSONOutput- Output as JSON.
     """
 
-    def __init__(self, RecordDelimiter="\n"):
-        self.RecordDelimiter = RecordDelimiter
+    def __init__(self, record_delimiter="\n"):
+        self.record_delimiter = record_delimiter
 
 
 class OutputSerialization:
@@ -103,9 +119,12 @@ class OutputSerialization:
     OutputSerialization: Output Format.
     """
 
-    def __init__(self,  csv=None, json=None):
-        self.csv_output = csv
-        self.json_output = json
+    def __init__(self, csv=None, json=None):
+        if (csv is not None) ^ (json is not None):
+            self.csv = csv
+            self.json = json
+        else:
+            ValueError("csv or json output serialization must be provided")
 
 
 class RequestProgress:
@@ -121,11 +140,10 @@ class SelectObjectOptions:
     """
     SelectObjectOptions: Options for select object
     """
-    expression_type = SQL
 
     def __init__(self, expression, input_serialization,
                  output_serialization, request_progress):
         self.expression = expression
-        self.in_ser = input_serialization
-        self.out_ser = output_serialization
-        self.req_progress = request_progress
+        self.input_serialization = input_serialization
+        self.output_serialization = output_serialization
+        self.request_progress = request_progress

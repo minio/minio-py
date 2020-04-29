@@ -28,7 +28,6 @@ This module implements the helper functions for SelectObject responses.
 import codecs
 from binascii import crc32
 
-SQL = 'SQL'  # Value for ExpressionType
 EVENT_RECORDS = 'Records'  # Event Type is Records
 EVENT_PROGRESS = 'Progress'  # Event Type Progress
 EVENT_STATS = 'Stats'  # Event Type Stats

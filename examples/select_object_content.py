@@ -56,7 +56,7 @@ options = SelectObjectOptions(
             QuoteEscapeCharacter='"',
         ),
 
-        # json = JsonOutput(RecordDelimiter="\n")
+        # json = JSONOutput(RecordDelimiter="\n")
     ),
     request_progress=RequestProgress(
         enabled="False"
