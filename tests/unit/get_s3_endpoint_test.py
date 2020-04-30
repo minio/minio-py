@@ -16,8 +16,9 @@
 
 from unittest import TestCase
 
-from minio.helpers import get_s3_endpoint, is_valid_endpoint
 from nose.tools import eq_
+
+from minio.helpers import get_s3_endpoint, is_valid_endpoint
 
 
 class GetS3Endpoint(TestCase):

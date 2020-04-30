@@ -16,10 +16,11 @@
 
 from unittest import TestCase
 
+from nose.tools import raises
+
 from minio import Minio
 from minio.copy_conditions import CopyConditions
 from minio.error import InvalidBucketError
-from nose.tools import raises
 
 
 class CopyObjectTest(TestCase):

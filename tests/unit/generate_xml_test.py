@@ -16,6 +16,8 @@
 
 from unittest import TestCase
 
+from nose.tools import eq_
+
 from minio.definitions import UploadPart
 from minio.select.options import (CSVInput, CSVOutput, InputSerialization,
                                   OutputSerialization, RequestProgress,
@@ -23,7 +25,6 @@ from minio.select.options import (CSVInput, CSVOutput, InputSerialization,
 from minio.xml_marshal import (xml_marshal_bucket_constraint,
                                xml_marshal_complete_multipart_upload,
                                xml_marshal_select)
-from nose.tools import eq_
 
 
 class GenerateRequestTest(TestCase):

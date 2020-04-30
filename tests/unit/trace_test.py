@@ -16,8 +16,9 @@
 
 from unittest import TestCase
 
-from minio import Minio
 from nose.tools import raises
+
+from minio import Minio
 
 
 class TraceTest(TestCase):

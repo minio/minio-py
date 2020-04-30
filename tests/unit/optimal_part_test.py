@@ -16,10 +16,11 @@
 
 from unittest import TestCase
 
+from nose.tools import eq_, raises
+
 from minio.error import InvalidArgumentError
 from minio.helpers import (MAX_MULTIPART_OBJECT_SIZE, MIN_PART_SIZE,
                            optimal_part_info)
-from nose.tools import eq_, raises
 
 
 class TraceTest(TestCase):

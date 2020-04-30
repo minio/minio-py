@@ -18,11 +18,11 @@ from datetime import datetime
 from unittest import TestCase
 
 import pytz
+from nose.tools import eq_
 
 import mock
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
-from nose.tools import eq_
 
 from .minio_mocks import MockConnection, MockResponse
 

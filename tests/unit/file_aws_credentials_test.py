@@ -17,9 +17,10 @@
 import os
 from unittest import TestCase
 
+from nose.tools import eq_
+
 from minio.credentials.credentials import Value
 from minio.credentials.file_aws_credentials import FileAWSCredentials
-from nose.tools import eq_
 
 
 class FileAWSCredentialsTest(TestCase):

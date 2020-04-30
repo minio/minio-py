@@ -17,9 +17,10 @@
 import os
 from unittest import TestCase
 
+from nose.tools import eq_
+
 from minio.credentials.credentials import Value
 from minio.credentials.env_aws import EnvAWS
-from nose.tools import eq_
 
 
 class EnvAWSTest(TestCase):
