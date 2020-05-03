@@ -16,13 +16,14 @@
 
 from unittest import TestCase
 
+from nose.tools import eq_, raises
+
 from minio import Minio
 from minio import __version__ as minio_version
 from minio.api import _DEFAULT_USER_AGENT
 from minio.error import InvalidBucketError, InvalidEndpointError
 from minio.helpers import (get_s3_region_from_endpoint, get_target_url,
                            is_valid_bucket_name)
-from nose.tools import eq_, raises
 
 
 class ValidBucketName(TestCase):

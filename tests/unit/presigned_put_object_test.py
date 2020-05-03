@@ -17,9 +17,10 @@
 from datetime import timedelta
 from unittest import TestCase
 
+from nose.tools import raises
+
 from minio import Minio
 from minio.error import InvalidArgumentError
-from nose.tools import raises
 
 
 class PresignedPutObjectTest(TestCase):

@@ -16,9 +16,10 @@
 
 from unittest import TestCase
 
+from nose.tools import eq_
+
 from minio.helpers import (amzprefix_user_metadata, is_amz_header,
                            is_storageclass_header, is_supported_header)
-from nose.tools import eq_
 
 
 class HeaderTests(TestCase):

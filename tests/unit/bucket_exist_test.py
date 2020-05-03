@@ -16,11 +16,12 @@
 
 from unittest import TestCase
 
+from nose.tools import eq_, raises
+
 import mock
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
 from minio.error import InvalidBucketError, ResponseError
-from nose.tools import eq_, raises
 
 from .minio_mocks import MockConnection, MockResponse
 

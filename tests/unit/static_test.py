@@ -16,9 +16,10 @@
 
 from unittest import TestCase
 
+from nose.tools import eq_
+
 from minio.credentials.credentials import Value
 from minio.credentials.static import Static
-from nose.tools import eq_
 
 
 class StaticTest(TestCase):

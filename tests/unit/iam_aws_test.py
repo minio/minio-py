@@ -17,9 +17,10 @@
 import json
 from unittest import TestCase
 
+from nose.tools import eq_
+
 import mock
 from minio.credentials.aws_iam import IamEc2MetaData
-from nose.tools import eq_
 
 
 class CredListResponse(object):

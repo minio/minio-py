@@ -16,10 +16,11 @@
 
 from unittest import TestCase
 
+from nose.tools import eq_, timed
+
 import mock
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
-from nose.tools import eq_, timed
 
 from .minio_mocks import MockConnection, MockResponse
 

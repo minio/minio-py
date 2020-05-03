@@ -16,9 +16,10 @@
 
 from unittest import TestCase
 
+from nose.tools import eq_
+
 from minio.credentials.credentials import Credentials, Value
 from minio.credentials.file_minio_client import FileMinioClient
-from nose.tools import eq_
 
 
 class CredentialsTest(TestCase):

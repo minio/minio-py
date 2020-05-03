@@ -37,11 +37,10 @@ import platform
 from datetime import datetime, timedelta
 from threading import Thread
 
+import certifi
 import dateutil.parser
 # Dependencies
 import urllib3
-
-import certifi
 
 # Internal imports
 from . import __title__, __version__
