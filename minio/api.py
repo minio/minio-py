@@ -46,7 +46,7 @@ import urllib3
 # Internal imports
 from . import __title__, __version__
 from .compat import range  # pylint: disable=redefined-builtin
-from .compat import basestring, queryencode, urlsplit
+from .compat import basestring, quote, urlsplit
 from .credentials import (Chain, Credentials, EnvAWS, EnvMinio, IamEc2MetaData,
                           Static)
 from .definitions import Object, UploadPart
@@ -868,8 +868,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             is_valid_sse_object(sse)
             headers.update(sse.marshal())
         # URI encoded, except '/' as per AWS S3 requirement
-        headers['X-Amz-Copy-Source'] = queryencode(
-            object_source).replace('%2F', '/')
+        headers['X-Amz-Copy-Source'] = quote(object_source)
 
         response = self._url_open('PUT',
                                   bucket_name=bucket_name,

@@ -16,13 +16,13 @@
 
 from nose.tools import eq_
 
-from minio.compat import _is_py3
+from minio.compat import PYTHON2
 from minio.fold_case_dict import FoldCaseDict
 
-if _is_py3:
-    import http.client as httplib
-else:
+if PYTHON2:
     import httplib
+else:
+    import http.client as httplib
 
 
 class MockResponse(object):

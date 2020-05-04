@@ -28,7 +28,12 @@ in parallel. Tasks results can also be retrieved.
 
 from threading import Thread
 
-from .compat import queue
+from .compat import PYTHON2
+
+if PYTHON2:
+    from Queue import Queue  # pylint: disable=import-error
+else:
+    from queue import Queue
 
 
 class Worker(Thread):
@@ -67,9 +72,9 @@ class ThreadPool:
     """ Pool of threads consuming tasks from a queue """
 
     def __init__(self, num_threads):
-        self.results_queue = queue()
-        self.exceptions_queue = queue()
-        self.tasks_queue = queue(num_threads)
+        self.results_queue = Queue()
+        self.exceptions_queue = Queue()
+        self.tasks_queue = Queue(num_threads)
         self.num_threads = num_threads
 
     def add_task(self, func, *args, **kargs):
