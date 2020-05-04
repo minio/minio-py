@@ -824,7 +824,8 @@ class Minio(object):
                                         sse=sse)
 
     def copy_object(self, bucket_name, object_name, object_source,
-                    conditions=None, source_sse=None, sse=None, metadata=None):
+                    conditions=None, source_sse=None, sse=None, metadata=None,
+                    url_encode=True):
         """
         Copy a source object on object storage server to a new object.
 
@@ -839,6 +840,8 @@ class Minio(object):
         supported CopyObject conditions.
         :param metadata: Any user-defined metadata to be copied along with
         destination object.
+        :param url_encode: A flag that defines whether or not the
+        object_source should be url encoded.
         """
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
@@ -864,7 +867,11 @@ class Minio(object):
             is_valid_sse_object(sse)
             headers.update(sse.marshal())
 
-        headers['X-Amz-Copy-Source'] = queryencode(object_source)
+        if url_encode:
+            headers['X-Amz-Copy-Source'] = queryencode(object_source)
+        else:
+            headers['X-Amz-Copy-Source'] = object_source
+
         response = self._url_open('PUT',
                                   bucket_name=bucket_name,
                                   object_name=object_name,
