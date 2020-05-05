@@ -866,7 +866,7 @@ class Minio(object):
         
         # Uri-encode everything but the '/' character
         copy_src = [ queryencode(part) for part in object_source.split('/') ]
-        copy_src = '/'.join()
+        copy_src = '/'.join(copy_src)
         headers['X-Amz-Copy-Source'] = copy_src
 
         response = self._url_open('PUT',
