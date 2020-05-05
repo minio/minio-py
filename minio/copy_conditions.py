@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2016 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2016 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,14 +25,12 @@ This module contains :class:`CopyConditions <CopyConditions>` implementation.
 
 """
 
-import collections
+try:
+    from collections import MutableMapping
+except ImportError:
+    from collections.abc import MutableMapping
 
 from .helpers import is_non_empty_string
-
-try:
-    collectionsAbc = collections.abc
-except AttributeError:
-    collectionsAbc = collections
 
 # CopyCondition explanation:
 # http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectCOPY.html
@@ -44,7 +43,7 @@ except AttributeError:
 #
 
 
-class CopyConditions(collectionsAbc.MutableMapping):
+class CopyConditions(MutableMapping):
     """
     A :class:`CopyConditions <CopyConditions>` collection of
        supported CopyObject conditions.
@@ -75,25 +74,21 @@ class CopyConditions(collectionsAbc.MutableMapping):
         return len(self._store)
 
     def set_match_etag(self, etag):
-        """
-        """
+        """Set ETag match condition."""
         is_non_empty_string(etag)
-        self._store['X-Amz-Copy-Source-If-Match'] = etag
+        self._store["X-Amz-Copy-Source-If-Match"] = etag
 
     def set_match_etag_except(self, etag):
-        """
-        """
+        """Set ETag not match condition."""
         is_non_empty_string(etag)
-        self._store['X-Amz-Copy-Source-If-None-Match'] = etag
+        self._store["X-Amz-Copy-Source-If-None-Match"] = etag
 
     def set_unmodified_since(self, mod_time):
-        """
-        """
-        time = mod_time.strftime('%a, %d %b %Y %H:%M:%S GMT')
-        self._store['X-Amz-Copy-Source-If-Unmodified-Since'] = time
+        """Set unmodified since condition."""
+        time = mod_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
+        self._store["X-Amz-Copy-Source-If-Unmodified-Since"] = time
 
     def set_modified_since(self, mod_time):
-        """
-        """
-        time = mod_time.strftime('%a, %d %b %Y %H:%M:%S GMT')
-        self._store['X-Amz-Copy-Source-If-Modified-Since'] = time
+        """Set modified since condition."""
+        time = mod_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
+        self._store["X-Amz-Copy-Source-If-Modified-Since"] = time
