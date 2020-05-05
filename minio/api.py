@@ -863,8 +863,12 @@ class Minio(object):
         if sse:
             is_valid_sse_object(sse)
             headers.update(sse.marshal())
+        
+        # Uri-encode everything but the '/' character
+        copy_src = [ queryencode(part) for part in object_source.split('/') ]
+        copy_src = '/'.join()
+        headers['X-Amz-Copy-Source'] = copy_src
 
-        headers['X-Amz-Copy-Source'] = queryencode(object_source)
         response = self._url_open('PUT',
                                   bucket_name=bucket_name,
                                   object_name=object_name,
