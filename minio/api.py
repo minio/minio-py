@@ -863,7 +863,6 @@ class Minio(object):
         if sse:
             is_valid_sse_object(sse)
             headers.update(sse.marshal())
-        
         # URI encoded, except '/' as per AWS S3 requirement
         headers['X-Amz-Copy-Source'] = queryencode(
             object_source).replace('%2F', '/')
