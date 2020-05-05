@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2015 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,7 +26,7 @@ This module contains the primary objects that power MinIO.
 """
 
 
-class Bucket(object):
+class Bucket:
     """
     A bucket metadata :class:`Bucket <Bucket>`.
 
@@ -38,10 +39,10 @@ class Bucket(object):
         self.creation_date = created
 
     def __str__(self):
-        return '<Bucket: {0} {1}>'.format(self.name, self.creation_date)
+        return "<Bucket: {0} {1}>".format(self.name, self.creation_date)
 
 
-class Object(object):
+class Object:
     """
     A object metadata :class:`Object <Object>`.
 
@@ -67,11 +68,11 @@ class Object(object):
         self.metadata = metadata
 
     def __str__(self):
-        string_format = ('<Object: bucket_name: {0} object_name: {1}'
-                         ' last_modified: {2} etag: {3} size: {4}'
-                         ' content_type: {5}, is_dir: {6}, metadata: {7}>')
+        string_format = ("<Object: bucket_name: {0} object_name: {1}"
+                         " last_modified: {2} etag: {3} size: {4}"
+                         " content_type: {5}, is_dir: {6}, metadata: {7}>")
         return string_format.format(self.bucket_name,
-                                    self.object_name.encode('utf-8'),
+                                    self.object_name.encode("utf-8"),
                                     self.last_modified,
                                     self.etag, self.size,
                                     self.content_type,
@@ -79,7 +80,7 @@ class Object(object):
                                     self.metadata)
 
 
-class MultipartUploadResult(object):
+class MultipartUploadResult:
     """
     A completed multipart upload metadata
          :class:`MultipartUploadResult <MultipartUploadResult>`.
@@ -97,13 +98,13 @@ class MultipartUploadResult(object):
         self.etag = etag
 
     def __str__(self):
-        string_format = ('<IncompleteUpload: bucket_name: {0}'
-                         ' object_name: {1} location: {2} etag: {3}>')
+        string_format = ("<IncompleteUpload: bucket_name: {0}"
+                         " object_name: {1} location: {2} etag: {3}>")
         return string_format.format(self.bucket_name, self.object_name,
                                     self.location, self.etag)
 
 
-class CopyObjectResult(object):
+class CopyObjectResult:
     """
     A complete copy object operation metadata.
          :class:`CopyObjectResult <CopyObjectResult>`.
@@ -121,13 +122,13 @@ class CopyObjectResult(object):
         self.last_modified = last_modified
 
     def __str__(self):
-        string_format = ('<CopyObjectResult: bucket_name: {0}'
-                         ' object_name: {1} etag: {2} last_modified: {3}>')
+        string_format = ("<CopyObjectResult: bucket_name: {0}"
+                         " object_name: {1} etag: {2} last_modified: {3}>")
         return string_format.format(self.bucket_name, self.object_name,
                                     self.etag, self.last_modified)
 
 
-class IncompleteUpload(object):
+class IncompleteUpload:
     """
     A partially uploaded object's metadata
          :class:`IncompleteUpload <IncompleteUpload>`.
@@ -146,14 +147,14 @@ class IncompleteUpload(object):
         self.size = 0
 
     def __str__(self):
-        string_format = ('<IncompleteUpload: bucket_name: {0}'
-                         ' object_name: {1} upload_id: {2}'
-                         ' initiated:{3} size: {4}>')
+        string_format = ("<IncompleteUpload: bucket_name: {0}"
+                         " object_name: {1} upload_id: {2}"
+                         " initiated:{3} size: {4}>")
         return string_format.format(self.bucket_name, self.object_name,
                                     self.upload_id, self.initiated, self.size)
 
 
-class UploadPart(object):
+class UploadPart:
     """
     A multipart upload part metadata :class:`UploadPart <UploadPart>`
 
@@ -177,9 +178,9 @@ class UploadPart(object):
         self.size = size
 
     def __str__(self):
-        string_format = ('<UploadPart: bucket_name: {0} object_name: {1}'
-                         ' upload_id: {2} part_number: {3} etag: {4}'
-                         ' last_modified: {5} size: {6}>')
+        string_format = ("<UploadPart: bucket_name: {0} object_name: {1}"
+                         " upload_id: {2} part_number: {3} etag: {4}"
+                         " last_modified: {5} size: {6}>")
         return string_format.format(self.bucket_name,
                                     self.object_name,
                                     self.upload_id,

@@ -27,7 +27,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools
-        pip install urllib3 certifi pytz pyflakes faker nose autopep8 isort
+        pip install urllib3 certifi pytz pyflakes faker nose autopep8 isort pylint
     - name: Run check
       run: |
         make check
