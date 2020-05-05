@@ -56,13 +56,13 @@ from .fold_case_dict import FoldCaseDict
 from .helpers import (DEFAULT_PART_SIZE, MAX_MULTIPART_COUNT, MAX_PART_SIZE,
                       MAX_POOL_SIZE, MIN_PART_SIZE, amzprefix_user_metadata,
                       dump_http, get_md5_base64digest,
-                      get_s3_region_from_endpoint, get_sha256_hexdigest,
-                      get_target_url, is_amz_header, is_non_empty_string,
-                      is_supported_header, is_valid_bucket_name,
-                      is_valid_endpoint, is_valid_notification_config,
-                      is_valid_policy_type, is_valid_sse_c_object,
-                      is_valid_sse_object, mkdir_p, optimal_part_info,
-                      read_full)
+                      get_s3_region_from_endpoint, get_scheme_host,
+                      get_sha256_hexdigest, get_target_url, is_amz_header,
+                      is_non_empty_string, is_supported_header,
+                      is_valid_bucket_name, is_valid_endpoint,
+                      is_valid_notification_config, is_valid_policy_type,
+                      is_valid_sse_c_object, is_valid_sse_object, mkdir_p,
+                      optimal_part_info, read_full)
 from .parsers import (parse_assume_role, parse_copy_object,
                       parse_get_bucket_notification, parse_list_buckets,
                       parse_list_multipart_uploads, parse_list_objects,
@@ -244,19 +244,7 @@ class Minio:  # pylint: disable=too-many-public-methods
     def use_s3_accelerate(self, value):
         """Enable AWS S3 accelerated endpoint."""
 
-        # Parse url
-        parsed_url = urlsplit(self._endpoint_url)
-
-        # Get new host, scheme.
-        scheme = parsed_url.scheme
-        host = parsed_url.netloc
-
-        # Strip 80/443 ports since curl & browsers do not
-        # send them in Host header.
-        if (scheme == 'http' and parsed_url.port == 80) or (
-                scheme == 'https' and parsed_url.port == 443):
-            host = parsed_url.hostname
-
+        _, host = get_scheme_host(urlsplit(self._endpoint_url))
         if 's3.amazonaws.com' in host:
             self._enable_s3_accelerate = value is True
 

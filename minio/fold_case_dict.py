@@ -24,19 +24,26 @@ This module implements a case insensitive dictionary.
 
 """
 
+from .compat import PYTHON2
+
+
+def _to_dict(value):
+    """Create value to dictionary."""
+    if not isinstance(value, dict):
+        return value
+
+    data = {}
+    for key, val in value.items():
+        data[key.lower()] = FoldCaseDict(val) if isinstance(val, dict) else val
+    return data
+
 
 class FoldCaseDict(dict):
-    def __init__(self, dictionary={}):
-        self._data = self.__create(dictionary)
+    """Dictionary deals with case insensitive key."""
 
-    def __create(self, value):
-        if not isinstance(value, dict):
-            return value
-
-        data = {}
-        for k, v in value.items():
-            data[k.lower()] = FoldCaseDict(v) if isinstance(v, dict) else v
-        return data
+    def __init__(self, dictionary=None):
+        super(FoldCaseDict, self).__init__()
+        self._data = _to_dict(dictionary) if dictionary else {}
 
     def __getitem__(self, key):
         return self._data.__getitem__(key.lower())
@@ -45,7 +52,7 @@ class FoldCaseDict(dict):
         return self._data.__contains__(key.lower())
 
     def __setitem__(self, key, value):
-        self._data.__setitem__(key.lower(), self.__create(value))
+        self._data.__setitem__(key.lower(), _to_dict(value))
 
     def __delitem__(self, key):
         self._data.__delitem__(key.lower())
@@ -73,7 +80,8 @@ class FoldCaseDict(dict):
         return self._data.get(key.lower(), default)
 
     def has_key(self, key):
-        return self._data.has_key(key.lower())
+        """Test for the presence of key in the dictionary."""
+        return key.lower() in self._data
 
     def items(self):
         return self._data.items()
@@ -85,15 +93,20 @@ class FoldCaseDict(dict):
         return self._data.values()
 
     def iteritems(self):
-        return self._data.iteritems()
+        """Return an iterator over the dictionary’s (key, value) pairs."""
+        if PYTHON2:
+            return self._data.iteritems()  # pylint: disable=no-member
+        return self._data.items()
 
     def iterkeys(self):
+        """Return an iterator over the dictionary’s keys."""
         for k in self._data.keys():
             yield k
 
     def itervalues(self):
-        for v in self._data.values():
-            yield v
+        """Return an iterator over the dictionary’s values."""
+        for value in self._data.values():
+            yield value
 
     def update(self, dictionary):
         if isinstance(dictionary, dict):
@@ -103,7 +116,7 @@ class FoldCaseDict(dict):
         else:
             raise TypeError
 
-        self._data.update(dictionary._data)
+        self._data.update(dictionary._data)  # pylint: disable=protected-access
 
     def copy(self):
         return FoldCaseDict(self._data.copy())
