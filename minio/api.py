@@ -866,7 +866,8 @@ class Minio(object):
         
         # Uri-encode everything but the '/' character
         object_source = queryencode(object_source).replace('%2F', '/')
-        headers['X-Amz-Copy-Source'] = object_source
+        # URI encoded, except '/' as per AWS S3 requirement
+        headers['X-Amz-Copy-Source'] = queryencode(object_source).replace('%2F', '/')
 
         response = self._url_open('PUT',
                                   bucket_name=bucket_name,
