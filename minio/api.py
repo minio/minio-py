@@ -59,7 +59,7 @@ from .helpers import (DEFAULT_PART_SIZE, MAX_MULTIPART_COUNT, MAX_PART_SIZE,
                       get_s3_region_from_endpoint, get_sha256_hexdigest,
                       get_target_url, is_amz_header, is_non_empty_string,
                       is_supported_header, is_valid_bucket_name,
-                      is_valid_bucket_notification_config, is_valid_endpoint,
+                      is_valid_endpoint, is_valid_notification_config,
                       is_valid_policy_type, is_valid_source_sse_object,
                       is_valid_sse_c_object, is_valid_sse_object, mkdir_p,
                       optimal_part_info, read_full)
@@ -500,7 +500,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param notifications: Notifications structure
         """
         is_valid_bucket_name(bucket_name, False)
-        is_valid_bucket_notification_config(notifications)
+        is_valid_notification_config(notifications)
 
         content = xml_marshal_bucket_notifications(notifications)
         headers = {
