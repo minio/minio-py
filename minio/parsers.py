@@ -25,15 +25,14 @@ This module contains core API parsers.
 
 """
 
-from datetime import datetime
-# standard.
 from xml.etree import ElementTree
+from xml.etree.ElementTree import ParseError
 
 from .compat import unquote
 from .definitions import (Bucket, CopyObjectResult, IncompleteUpload,
                           MultipartUploadResult, Object, UploadPart)
 # minio specific.
-from .error import ETREE_EXCEPTIONS, InvalidXMLError, MultiDeleteError
+from .error import InvalidXMLError, MultiDeleteError
 from .helpers import _iso8601_to_utc_datetime
 from .xml_marshal import NOTIFICATIONS_ARN_FIELDNAME_MAP
 
@@ -46,7 +45,7 @@ _XML_NS = {
 }
 
 
-class S3Element(object):
+class S3Element:
     """S3 aware XML parsing class. Wraps a root element name and
     ElementTree.Element instance. Provides S3 namespace aware parsing
     functions.
@@ -67,7 +66,7 @@ class S3Element(object):
         """
         try:
             return cls(root_name, ElementTree.fromstring(data.strip()))
-        except ETREE_EXCEPTIONS as error:
+        except (ParseError, AttributeError, ValueError, TypeError) as error:
             raise InvalidXMLError(
                 '"{}" XML is not parsable. Message: {}'.format(
                     root_name, error
@@ -99,7 +98,7 @@ class S3Element(object):
         if strict:
             try:
                 return self.element.find('s3:{}'.format(name), _XML_NS).text
-            except ETREE_EXCEPTIONS as error:
+            except (ParseError, AttributeError, ValueError, TypeError) as error:
                 raise InvalidXMLError(
                     ('Invalid XML provided for "{}" - erroring tag <{}>. '
                      'Message: {}').format(self.root_name, name, error)
@@ -366,15 +365,15 @@ def parse_get_bucket_notification(data):
     """
     root = S3Element.fromstring('GetBucketNotificationResult', data)
 
-    notifications = _parse_add_notifying_service_config(
+    notifications = _add_notifying_service_config(
         root, {},
         'TopicConfigurations', 'TopicConfiguration'
     )
-    notifications = _parse_add_notifying_service_config(
+    notifications = _add_notifying_service_config(
         root, notifications,
         'QueueConfigurations', 'QueueConfiguration'
     )
-    notifications = _parse_add_notifying_service_config(
+    notifications = _add_notifying_service_config(
         root, notifications,
         'CloudFunctionConfigurations', 'CloudFunctionConfiguration'
     )
@@ -382,8 +381,9 @@ def parse_get_bucket_notification(data):
     return notifications
 
 
-def _parse_add_notifying_service_config(data, notifications, service_key,
-                                        service_xml_tag):
+def _add_notifying_service_config(data, notifications, service_key,
+                                  service_xml_tag):
+    """Add service configuration in notification."""
 
     arn_elt_name = NOTIFICATIONS_ARN_FIELDNAME_MAP[service_xml_tag]
     config = []
@@ -419,7 +419,7 @@ def _parse_add_notifying_service_config(data, notifications, service_key,
     return notifications
 
 
-def parse_multi_object_delete_response(data):
+def parse_multi_delete_response(data):
     """Parser for Multi-Object Delete API response.
 
     :param data: XML response body content from service.
