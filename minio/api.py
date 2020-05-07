@@ -65,7 +65,7 @@ from .parsers import (parse_copy_object, parse_get_bucket_notification,
                       parse_list_buckets, parse_list_multipart_uploads,
                       parse_list_objects, parse_list_objects_v2,
                       parse_list_parts, parse_location_constraint,
-                      parse_multi_object_delete_response,
+                      parse_multi_delete_response,
                       parse_multipart_upload_result,
                       parse_new_multipart_upload)
 from .select import SelectObjectReader
@@ -1176,7 +1176,7 @@ class Minio(object):
         )
 
         # parse response to find delete errors
-        return parse_multi_object_delete_response(response.data)
+        return parse_multi_delete_response(response.data)
 
     def remove_objects(self, bucket_name, objects_iter):
         """
