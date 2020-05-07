@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C) 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,13 +33,15 @@
 #   dummy values, please replace them with original values.
 # - To use MinIO with AWS, pass the function - `get_assume_role_creds`
 #   as a lambda to the AssumeRoleProvider
+
 from minio import Minio
 from minio.credentials import AssumeRoleProvider, Credentials
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETKEY'
-               )
+user_client = Minio(
+    's3.amazonaws.com',
+    access_key='YOUR-ACCESSKEYID',
+    secret_key='YOUR-SECRETKEY',
+)
 
 _RESTRICTED_UPLOAD_POLICY = """{
   "Version": "2012-10-17",
@@ -54,24 +57,14 @@ _RESTRICTED_UPLOAD_POLICY = """{
       "Sid": "Upload-access-to-specific-bucket-only"
     }
   ]
-} 
+}
 """
 
-credentials_provider = AssumeRoleProvider(
-    get_assume_role_creds=lambda: client.get_assume_role_creds(policy=_RESTRICTED_UPLOAD_POLICY))
-temp_creds = Credentials(provider=credentials_provider)
+provider = AssumeRoleProvider(
+    lambda: user_client.get_assume_role_creds(_RESTRICTED_UPLOAD_POLICY),
+)
 
-# User can access the credentials for e.g. serialization
-print("Retrieved temporary credentials:")
-print(temp_creds.get().access_key)
-print(temp_creds.get().secret_key)
-
-# Initialize Minio client with the temporary credentials
-restricted_client = Minio('s3.amazonaws.com', credentials=temp_creds)
-
-# Get a full object.
-
-data = restricted_client.get_object('my-bucket', 'my-object')
-with open('/tmp/testfile', 'wb') as file_data:
-    for d in data.stream(32*1024):
-        file_data.write(d)
+client = Minio(
+    's3.amazonaws.com',
+    credentials=Credentials(provider),
+)

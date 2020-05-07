@@ -23,16 +23,16 @@
 # the 'endpoint' paramater to the IamEc2MetaData credentials object
 
 from minio import Minio
-from minio.credentials import Credentials, IamEc2MetaData
+from minio.credentials import Credentials, IAMProvider
 
 # Initialize Minio with IamEc2MetaData default credentials object
 client = Minio('s3.amazonaws.com',
                credentials=Credentials(
-                   provider=IamEc2MetaData()
+                   provider=IAMProvider()
                ))
 
 # Initialize Minio with IamEc2MetaData custom
 client = Minio('s3.amazonaws.com',
                credentials=Credentials(
-                   provider=IamEc2MetaData(endpoint='custom.endpoint')
+                   provider=IAMProvider(endpoint='custom.endpoint')
                ))
