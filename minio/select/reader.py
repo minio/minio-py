@@ -83,7 +83,7 @@ def _parse_stats(stats):
     return stat
 
 
-class SelectObjectReader(object):
+class SelectObjectReader:
     """
     SelectObjectReader returns a Reader that upon read
     returns queried data, but stops when the response ends.
@@ -96,19 +96,24 @@ class SelectObjectReader(object):
         self.stat = {}
         self.prog = {}
 
-    def readable(self):
+    def readable(self):  # pylint: disable=no-self-use
+        """Return this is readable."""
         return True
 
-    def writeable(self):
+    def writeable(self):  # pylint: disable=no-self-use
+        """Return this is not writeable."""
         return False
 
     def close(self):
+        """Close response."""
         self.response.close()
 
     def stats(self):
+        """Get stats information."""
         return self.stat
 
     def progress(self):
+        """Get progress information."""
         return self.prog
 
     def __extract_message(self):
