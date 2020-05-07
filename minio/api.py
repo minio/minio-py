@@ -60,21 +60,21 @@ from .helpers import (DEFAULT_PART_SIZE, MAX_MULTIPART_COUNT, MAX_PART_SIZE,
                       get_target_url, is_amz_header, is_non_empty_string,
                       is_supported_header, is_valid_bucket_name,
                       is_valid_endpoint, is_valid_notification_config,
-                      is_valid_policy_type, is_valid_source_sse_object,
-                      is_valid_sse_c_object, is_valid_sse_object, mkdir_p,
-                      optimal_part_info, read_full)
+                      is_valid_policy_type, is_valid_sse_c_object,
+                      is_valid_sse_object, mkdir_p, optimal_part_info,
+                      read_full)
 from .parsers import (parse_assume_role, parse_copy_object,
-                      parse_get_bucket_notification,
-                      parse_list_buckets, parse_list_multipart_uploads,
-                      parse_list_objects, parse_list_objects_v2,
-                      parse_list_parts, parse_location_constraint,
-                      parse_multi_delete_response,
+                      parse_get_bucket_notification, parse_list_buckets,
+                      parse_list_multipart_uploads, parse_list_objects,
+                      parse_list_objects_v2, parse_list_parts,
+                      parse_location_constraint, parse_multi_delete_response,
                       parse_multipart_upload_result,
                       parse_new_multipart_upload)
 from .select import SelectObjectReader
 from .signer import (_SIGN_V4_ALGORITHM, _UNSIGNED_PAYLOAD,
                      generate_credential_string, post_presign_signature,
                      presign_v4, sign_v4)
+from .sse import SseCustomerKey
 from .thread_pool import ThreadPool
 from .xml_marshal import (marshal_bucket_notifications,
                           marshal_complete_multipart,
@@ -860,16 +860,16 @@ class Minio:  # pylint: disable=too-many-public-methods
         if conditions:
             headers.update(conditions)
 
-        # Source argument to copy_object can only be of type copy_SSE_C
+        # Source argument to copy_object can only be of type SSE-C
         if source_sse:
-            is_valid_source_sse_object(source_sse)
-            headers.update(source_sse.marshal())
+            is_valid_sse_c_object(source_sse)
+            headers.update(source_sse.copy_headers())
 
-        # Destination argument to copy_object cannot be of type copy_SSE_C
+        # Destination argument to copy_object cannot be of type SSE-C
         if sse:
             is_valid_sse_object(sse)
-            headers.update(sse.marshal())
-        # URI encoded, except '/' as per AWS S3 requirement
+            headers.update(sse.headers())
+
         headers['X-Amz-Copy-Source'] = quote(object_source)
 
         response = self._url_open('PUT',
@@ -1119,8 +1119,8 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         headers = {}
         if sse:
-            is_valid_sse_c_object(sse=sse)
-            headers.update(sse.marshal())
+            is_valid_sse_c_object(sse)
+            headers = sse.headers()
 
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
@@ -1595,7 +1595,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         """
-        is_valid_sse_c_object(sse=sse)
+        is_valid_sse_c_object(sse)
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
@@ -1606,7 +1606,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 offset, offset + length - 1 if length else "")
 
         if sse:
-            headers.update(sse.marshal())
+            headers.update(sse.headers())
 
         return self._url_open('GET',
                               bucket_name=bucket_name,
@@ -1663,10 +1663,10 @@ class Minio:  # pylint: disable=too-many-public-methods
             }
             # Encryption headers for multipart uploads should
             # be set only in the case of SSE-C.
-            if sse and sse.type() == "SSE-C":
-                headers.update(sse.marshal())
+            if sse and isinstance(sse, SseCustomerKey):
+                headers.update(sse.headers())
         elif sse:
-            headers.update(sse.marshal())
+            headers.update(sse.headers())
 
         response = self._url_open(
             'PUT',
@@ -1831,7 +1831,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         if metadata:
             headers.update(metadata)
         if sse:
-            headers.update(sse.marshal())
+            headers.update(sse.headers())
 
         response = self._url_open('POST', bucket_name=bucket_name,
                                   object_name=object_name,

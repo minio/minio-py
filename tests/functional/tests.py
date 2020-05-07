@@ -46,7 +46,7 @@ from minio.select.helpers import calculate_crc
 from minio.select.options import (CSVInput, CSVOutput, InputSerialization,
                                   OutputSerialization, RequestProgress,
                                   SelectObjectOptions)
-from minio.sse import SSE_C, copy_SSE_C
+from minio.sse import SseCustomerKey
 
 if sys.version_info[0] == 2:
     from datetime import tzinfo  # pylint: disable=ungrouped-imports
@@ -1806,14 +1806,12 @@ def main():
         with open(_LARGE_FILE, 'wb') as file_data:
             shutil.copyfileobj(LimitedRandomReader(11 * MB), file_data)
 
-    ssec_copy = ssec = None
+    ssec = None
     if secure:
         # Create a Customer Key of 32 Bytes for Server Side Encryption (SSE-C)
         cust_key = b'AABBCCDDAABBCCDDAABBCCDDAABBCCDD'
         # Create an SSE-C object with provided customer key
-        ssec = SSE_C(cust_key)
-        # Test copy_object for SSE-C
-        ssec_copy = copy_SSE_C(cust_key)
+        ssec = SseCustomerKey(cust_key)
 
     if os.getenv("MINT_MODE") == "full":
         tests = {
@@ -1825,7 +1823,7 @@ def main():
             test_fput_object_large_file: {"sse": ssec} if ssec else None,
             test_fput_object_with_content_type: None,
             test_copy_object_no_copy_condition: {
-                "ssec_copy": ssec_copy, "ssec": ssec} if ssec else None,
+                "ssec_copy": ssec, "ssec": ssec} if ssec else None,
             test_copy_object_etag_match: None,
             test_copy_object_with_metadata: None,
             test_copy_object_negative_etag_match: None,
@@ -1869,7 +1867,7 @@ def main():
             test_presigned_put_object_default_expiry: None,
             test_presigned_post_policy: None,
             test_copy_object_no_copy_condition: {
-                "ssec_copy": ssec_copy, "ssec": ssec} if ssec else None,
+                "ssec_copy": ssec, "ssec": ssec} if ssec else None,
             test_select_object_content: None,
             test_get_bucket_policy: None,
             test_set_bucket_policy_readonly: None,

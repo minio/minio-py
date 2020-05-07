@@ -27,93 +27,76 @@ This module contains core API parsers.
 import base64
 import hashlib
 import json
+from abc import ABCMeta, abstractmethod
 
-from .error import InvalidArgumentError, InvalidSizeError
+
+class Sse:
+    """Server-side encryption base class."""
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def headers(self):
+        """Return headers."""
+
+    def copy_headers(self):  # pylint: disable=no-self-use
+        """Return copy headers."""
+        raise TypeError("method unsupported")
 
 
-class SSE_C(object):
+class SseCustomerKey(Sse):
+    """ Server-side encryption - customer key type."""
 
     def __init__(self, key):
-        self.key = key
-        if len(self.key) != 32:
-            raise InvalidSizeError(
-                "SSE-C keys need to be 256 bit base64 encoded")
-
-    def type(self):
-        return "SSE-C"
-
-    def marshal(self):
-
-        b64key = base64.b64encode(self.key)
+        if len(key) != 32:
+            raise ValueError(
+                "SSE-C keys need to be 256 bit base64 encoded",
+            )
+        b64key = base64.b64encode(key).decode()
         md5 = hashlib.md5()
-        md5.update(self.key)
-        md5_key = base64.b64encode(md5.digest()).decode()
-        keys = {
+        md5.update(key)
+        md5key = base64.b64encode(md5.digest()).decode()
+        self._headers = {
             "X-Amz-Server-Side-Encryption-Customer-Algorithm": "AES256",
-            "X-Amz-Server-Side-Encryption-Customer-Key": b64key.decode(),
-            "X-Amz-Server-Side-Encryption-Customer-Key-MD5": md5_key
+            "X-Amz-Server-Side-Encryption-Customer-Key": b64key,
+            "X-Amz-Server-Side-Encryption-Customer-Key-MD5": md5key,
         }
-
-        return keys
-
-
-class copy_SSE_C(object):
-
-    def __init__(self, key):
-        self.key = key
-        if len(self.key) != 32:
-            raise InvalidArgumentError(
-                "Length of Customer key must be 32 Bytes")
-
-    def type(self):
-        return "copy_SSE-C"
-
-    def marshal(self):
-        b64key = base64.b64encode(self.key)
-        md5 = hashlib.md5()
-        md5.update(self.key)
-        md5_key = base64.b64encode(md5.digest()).decode()
-        keys = {
+        self._copy_headers = {
             "X-Amz-Copy-Source-Server-Side-Encryption-Customer-Algorithm":
             "AES256",
-            "X-Amz-Copy-Source-Server-Side-Encryption-Customer-Key":
-            b64key.decode(),
+            "X-Amz-Copy-Source-Server-Side-Encryption-Customer-Key": b64key,
             "X-Amz-Copy-Source-Server-Side-Encryption-Customer-Key-MD5":
-            md5_key
+            md5key,
         }
-        return keys
+
+    def headers(self):
+        return self._headers.copy()
+
+    def copy_headers(self):
+        return self._copy_headers.copy()
 
 
-class SSE_KMS(object):
+class SseKMS(Sse):
+    """Server-side encryption - KMS type."""
+
     def __init__(self, key, context):
-        self.key = key
-        self.context = context
-
-    def type(self):
-        return "SSE-KMS"
-
-    def marshal(self):
-        keys = {
-            "X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id": self.key,
+        self._headers = {
+            "X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id": key,
             "X-Amz-Server-Side-Encryption": "aws:kms"
         }
+        if context:
+            data = bytes(json.dumps(context), "utf-8")
+            self._headers["X-Amz-Server-Side-Encryption-Context"] = (
+                base64.b64encode(data).decode()
+            )
 
-        if self.context:
-            ctx_str = json.dumps(self.context)
-            ctx_str = bytes(ctx_str, 'utf-8')
-            b64key = base64.b64encode(ctx_str)
-            header = {"X-Amz-Server-Side-Encryption-Context": b64key.decode()}
-            keys.update(header)
-
-        return keys
+    def headers(self):
+        return self._headers.copy()
 
 
-class SSE_S3(object):
-    def type(self):
-        return "SSE-S3"
+class SseS3(Sse):
+    """Server-side encryption - S3 type."""
 
-    def marshal(self):
-        keys = {
+    def headers(self):
+        return {
             "X-Amz-Server-Side-Encryption": "AES256"
         }
-        return keys
