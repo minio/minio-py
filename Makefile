@@ -2,7 +2,7 @@
 
 check:
 	@which pylint >/dev/null || pip install --user --upgrade pylint
-	@if python --version | grep -qi 'python 3'; then pylint --reports=no minio/copy_conditions.py minio/definitions.py minio/signer.py; fi
+	@if python --version | grep -qi 'python 3'; then pylint --reports=no minio/copy_conditions.py minio/definitions.py minio/signer.py minio/__init__.py; fi
 
 	@which isort >/dev/null || pip install --user --upgrade isort
 	@isort --diff --recursive .
