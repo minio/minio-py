@@ -34,48 +34,43 @@ from collections import defaultdict
 _S3_NAMESPACE = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
 
-def Element(tag, with_namespace=False):
+def Element(tag, with_namespace=False):  # pylint: disable=invalid-name
+    """Create ElementTree.Element with tag and namespace."""
     if with_namespace:
         return ET.Element(tag, {'xmlns': _S3_NAMESPACE})
     return ET.Element(tag)
 
 
-def SubElement(parent, tag, text=None):
-    subElement = ET.SubElement(parent, tag)
+def SubElement(parent, tag, text=None):  # pylint: disable=invalid-name
+    """Create ElementTree.SubElement on parent with tag and text."""
+    element = ET.SubElement(parent, tag)
     if text is not None:
-        subElement.text = text
-    return subElement
+        element.text = text
+    return element
 
 
-def get_xml_data(element):
+def _get_xml_data(element):
+    """Get XML data of ElementTree.Element."""
     data = io.BytesIO()
     ET.ElementTree(element).write(data, encoding=None, xml_declaration=False)
     return data.getvalue()
 
 
-def xml_to_dict(in_xml):
-    # Converts xml to dict
-    elem = ET.XML(in_xml)
-    return etree_to_dict(elem)
-
-
-def etree_to_dict(elem):
-    # Converts ElementTree object to dict
-    ns = '{' + _S3_NAMESPACE + '}'
+def _etree_to_dict(elem):
+    """Converts ElementTree object to dict."""
+    ns = '{' + _S3_NAMESPACE + '}'  # pylint: disable=invalid-name
     elem.tag = elem.tag.replace(ns, '')
 
-    d = {elem.tag: {} if elem.attrib else None}
+    d = {elem.tag: {} if elem.attrib else None}  # pylint: disable=invalid-name
     children = list(elem)
     if children:
-        dd = defaultdict(list)
-        if children[0].tag.replace(ns, '') == 'Rule':
-            for dc in map(etree_to_dict, children):
-                for k, v in dc.items():
-                    dd[k].append([v])
-        else:
-            for dc in map(etree_to_dict, children):
-                for k, v in dc.items():
-                    dd[k].append(v)
+        dd = defaultdict(list)  # pylint: disable=invalid-name
+        is_rule = children[0].tag.replace(ns, "") == "Rule"
+        # pylint: disable=invalid-name
+        for dc in map(_etree_to_dict, children):
+            for k, v in dc.items():  # pylint: disable=invalid-name
+                dd[k].append([v] if is_rule else v)
+        # pylint: disable=invalid-name
         d = {elem.tag: {k: v[0] if len(v) == 1 else v for k, v in dd.items()}}
     if elem.attrib:
         d[elem.tag].update(('@' + k, v) for k, v in elem.attrib.items())
@@ -89,7 +84,15 @@ def etree_to_dict(elem):
     return d
 
 
+def xml_to_dict(in_xml):
+    """Convert XML to dict."""
+    elem = ET.XML(in_xml)
+    return _etree_to_dict(elem)
+
+
 def xml_marshal_bucket_encryption(rules):
+    """Encode bucket encryption to XML."""
+
     root = Element('ServerSideEncryptionConfiguration')
 
     if rules:
@@ -105,7 +108,7 @@ def xml_marshal_bucket_encryption(rules):
         if kms_text:
             SubElement(apply_element, 'KMSMasterKeyID', kms_text)
 
-    return get_xml_data(root)
+    return _get_xml_data(root)
 
 
 def xml_marshal_bucket_constraint(region):
@@ -117,10 +120,12 @@ def xml_marshal_bucket_constraint(region):
     """
     root = Element('CreateBucketConfiguration', with_namespace=True)
     SubElement(root, 'LocationConstraint', region)
-    return get_xml_data(root)
+    return _get_xml_data(root)
 
 
 def xml_marshal_select(req):
+    """Encode select request to XML."""
+
     def bool_to_str(value):
         return "true" if value else "false"
 
@@ -219,10 +224,10 @@ def xml_marshal_select(req):
         bool_to_str(req.request_progress.enabled),
     )
 
-    return get_xml_data(root)
+    return _get_xml_data(root)
 
 
-def xml_marshal_complete_multipart_upload(uploaded_parts):
+def marshal_complete_multipart(uploaded_parts):
     """
     Marshal's complete multipart upload request based on *uploaded_parts*.
 
@@ -235,10 +240,10 @@ def xml_marshal_complete_multipart_upload(uploaded_parts):
         SubElement(part, 'PartNumber', str(uploaded_part.part_number))
         SubElement(part, 'ETag', '"' + uploaded_part.etag + '"')
 
-    return get_xml_data(root)
+    return _get_xml_data(root)
 
 
-def xml_marshal_bucket_notifications(notifications):
+def marshal_bucket_notifications(notifications):
     """
     Marshals the notifications structure for sending to S3 compatible storage
 
@@ -250,7 +255,12 @@ def xml_marshal_bucket_notifications(notifications):
                 'Id': 'string',
                 'Arn': 'string',
                 'Events': [
-                    's3:ReducedRedundancyLostObject'|'s3:ObjectCreated:*'|'s3:ObjectCreated:Put'|'s3:ObjectCreated:Post'|'s3:ObjectCreated:Copy'|'s3:ObjectCreated:CompleteMultipartUpload'|'s3:ObjectRemoved:*'|'s3:ObjectRemoved:Delete'|'s3:ObjectRemoved:DeleteMarkerCreated',
+                    's3:ReducedRedundancyLostObject'|'s3:ObjectCreated:*'|
+                    's3:ObjectCreated:Put'|'s3:ObjectCreated:Post'|
+                    's3:ObjectCreated:Copy'|
+                    's3:ObjectCreated:CompleteMultipartUpload'|
+                    's3:ObjectRemoved:*'|'s3:ObjectRemoved:Delete'|
+                    's3:ObjectRemoved:DeleteMarkerCreated',
                 ],
                 'Filter': {
                     'Key': {
@@ -269,7 +279,12 @@ def xml_marshal_bucket_notifications(notifications):
                 'Id': 'string',
                 'Arn': 'string',
                 'Events': [
-                    's3:ReducedRedundancyLostObject'|'s3:ObjectCreated:*'|'s3:ObjectCreated:Put'|'s3:ObjectCreated:Post'|'s3:ObjectCreated:Copy'|'s3:ObjectCreated:CompleteMultipartUpload'|'s3:ObjectRemoved:*'|'s3:ObjectRemoved:Delete'|'s3:ObjectRemoved:DeleteMarkerCreated',
+                    's3:ReducedRedundancyLostObject'|'s3:ObjectCreated:*'|
+                    's3:ObjectCreated:Put'|'s3:ObjectCreated:Post'|
+                    's3:ObjectCreated:Copy'|
+                    's3:ObjectCreated:CompleteMultipartUpload'|
+                    's3:ObjectRemoved:*'|'s3:ObjectRemoved:Delete'|
+                    's3:ObjectRemoved:DeleteMarkerCreated',
                 ],
                 'Filter': {
                     'Key': {
@@ -288,7 +303,12 @@ def xml_marshal_bucket_notifications(notifications):
                 'Id': 'string',
                 'Arn': 'string',
                 'Events': [
-                    's3:ReducedRedundancyLostObject'|'s3:ObjectCreated:*'|'s3:ObjectCreated:Put'|'s3:ObjectCreated:Post'|'s3:ObjectCreated:Copy'|'s3:ObjectCreated:CompleteMultipartUpload'|'s3:ObjectRemoved:*'|'s3:ObjectRemoved:Delete'|'s3:ObjectRemoved:DeleteMarkerCreated',
+                    's3:ReducedRedundancyLostObject'|'s3:ObjectCreated:*'|
+                    's3:ObjectCreated:Put'|'s3:ObjectCreated:Post'|
+                    's3:ObjectCreated:Copy'|
+                    's3:ObjectCreated:CompleteMultipartUpload'|
+                    's3:ObjectRemoved:*'|'s3:ObjectRemoved:Delete'|
+                    's3:ObjectRemoved:DeleteMarkerCreated',
                 ],
                 'Filter': {
                     'Key': {
@@ -323,7 +343,7 @@ def xml_marshal_bucket_notifications(notifications):
         notifications.get('CloudFunctionConfigurations', [])
     )
 
-    return get_xml_data(root)
+    return _get_xml_data(root)
 
 
 NOTIFICATIONS_ARN_FIELDNAME_MAP = {
@@ -380,4 +400,4 @@ def xml_marshal_delete_objects(object_names):
     for object_name in object_names:
         SubElement(SubElement(root, 'Object'), 'Key', object_name)
 
-    return get_xml_data(root)
+    return _get_xml_data(root)

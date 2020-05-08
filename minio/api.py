@@ -75,10 +75,10 @@ from .signer import (_SIGN_V4_ALGORITHM, _UNSIGNED_PAYLOAD,
                      generate_credential_string, post_presign_signature,
                      presign_v4, sign_v4)
 from .thread_pool import ThreadPool
-from .xml_marshal import (xml_marshal_bucket_constraint,
+from .xml_marshal import (marshal_bucket_notifications,
+                          marshal_complete_multipart,
+                          xml_marshal_bucket_constraint,
                           xml_marshal_bucket_encryption,
-                          xml_marshal_bucket_notifications,
-                          xml_marshal_complete_multipart_upload,
                           xml_marshal_delete_objects, xml_marshal_select,
                           xml_to_dict)
 
@@ -502,7 +502,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         is_valid_bucket_name(bucket_name, False)
         is_valid_notification_config(notifications)
 
-        content = xml_marshal_bucket_notifications(notifications)
+        content = marshal_bucket_notifications(notifications)
         headers = {
             'Content-Length': str(len(content)),
             'Content-Md5': get_md5_base64digest(content)
@@ -529,7 +529,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         is_valid_bucket_name(bucket_name, False)
 
-        content_bytes = xml_marshal_bucket_notifications({})
+        content_bytes = marshal_bucket_notifications({})
         headers = {
             'Content-Length': str(len(content_bytes)),
             'Content-Md5': get_md5_base64digest(content_bytes)
@@ -1857,7 +1857,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         for part in sorted(uploaded_parts.keys()):
             ordered_parts.append(uploaded_parts[part])
 
-        data = xml_marshal_complete_multipart_upload(ordered_parts)
+        data = marshal_complete_multipart(ordered_parts)
         sha256_hex = get_sha256_hexdigest(data)
         md5_base64 = get_md5_base64digest(data)
 
