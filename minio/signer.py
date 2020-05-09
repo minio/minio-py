@@ -103,15 +103,19 @@ def presign_v4(method, url, credentials,
     parsed_url = urlsplit(url)
     host = remove_default_port(parsed_url)
     headers['Host'] = host
-    iso8601Date = request_date.strftime("%Y%m%dT%H%M%SZ")
+    iso8601_date = request_date.strftime("%Y%m%dT%H%M%SZ")
 
     headers_to_sign = headers
     # Construct queries.
     query = {}
     query['X-Amz-Algorithm'] = _SIGN_V4_ALGORITHM
     query['X-Amz-Credential'] = generate_credential_string(
-        credentials.get().access_key, request_date, region, _PRESIGNED_SERVICE_NAME)
-    query['X-Amz-Date'] = iso8601Date
+        credentials.get().access_key,
+        request_date,
+        region,
+        _PRESIGNED_SERVICE_NAME,
+    )
+    query['X-Amz-Date'] = iso8601_date
     query['X-Amz-Expires'] = str(expires)
     if credentials.get().session_token:
         query['X-Amz-Security-Token'] = credentials.get().session_token
@@ -263,7 +267,8 @@ def generate_canonical_request(method, parsed_url, headers, signed_headers,
     return '\n'.join(lines)
 
 
-def generate_string_to_sign(date, region, canonical_request, service_name=_DEFAULT_SERVICE_NAME):
+def generate_string_to_sign(date, region, canonical_request,
+                            service_name=_DEFAULT_SERVICE_NAME):
     """
     Generate string to sign.
 
@@ -285,7 +290,8 @@ def generate_string_to_sign(date, region, canonical_request, service_name=_DEFAU
                       canonical_request_sha256])
 
 
-def generate_signing_key(date, region, secret_key, service_name=_DEFAULT_SERVICE_NAME):
+def generate_signing_key(date, region, secret_key,
+                         service_name=_DEFAULT_SERVICE_NAME):
     """
     Generate signing key.
 
@@ -324,7 +330,8 @@ def generate_scope_string(date, region, service_name):
     return scope
 
 
-def generate_credential_string(access_key, date, region, service_name=_DEFAULT_SERVICE_NAME):
+def generate_credential_string(access_key, date, region,
+                               service_name=_DEFAULT_SERVICE_NAME):
     """
     Generate credential string.
 
@@ -359,6 +366,7 @@ def generate_authorization_header(access_key, date, region,
 
 
 def remove_default_port(parsed_url):
+    """Remove default port in URL."""
     default_ports = {
         'http': 80,
         'https': 443

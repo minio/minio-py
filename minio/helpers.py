@@ -43,6 +43,7 @@ from datetime import datetime
 
 import pytz
 
+# pylint: disable=redefined-builtin
 from .compat import (_is_py2, _is_py3, _quote, basestring, bytes, queryencode,
                      str, urlsplit)
 from .error import (InvalidArgumentError, InvalidBucketError,
@@ -79,17 +80,17 @@ def get_s3_region_from_endpoint(endpoint):
     """
 
     # Extract region by regex search.
-    m = _EXTRACT_REGION_REGEX.search(endpoint)
-    if m:
-        # Regex matches, we have found a region.
-        region = m.group(1)
-        if region == 'external-1':
-            # Handle special scenario for us-east-1 URL.
-            return 'us-east-1'
-        if region.startswith('dualstack'):
-            # Handle special scenario for dualstack URL.
-            return region.split('.')[1]
-        return region
+    match = _EXTRACT_REGION_REGEX.search(endpoint)
+    if not match:
+        return None
+
+    # Regex matches, we have found a region.
+    region = match.group(1)
+    if region == "external-1":
+        # Handle special scenario for us-east-1 URL.
+        return "us-east-1"
+
+    return region.split(".")[1] if region.startswith("dualstack") else region
 
 
 def dump_http(method, url, request_headers, response, output_stream):
@@ -115,11 +116,14 @@ def dump_http(method, url, request_headers, response, output_stream):
     output_stream.write('{0} {1} HTTP/1.1\n'.format(method,
                                                     http_path))
 
-    for k, v in request_headers.items():
-        if k == 'authorization':
+    for key, value in request_headers.items():
+        if key == 'authorization':
             # Redact signature header value from trace logs.
-            v = re.sub(r'Signature=([[0-9a-f]+)', 'Signature=*REDACTED*', v)
-        output_stream.write('{0}: {1}\n'.format(k.title(), v))
+            value = re.sub(
+                r'Signature=([[0-9a-f]+)', 'Signature=*REDACTED*',
+                value,
+            )
+        output_stream.write('{0}: {1}\n'.format(key.title(), value))
 
     # Write a new line.
     output_stream.write('\n')
@@ -128,8 +132,8 @@ def dump_http(method, url, request_headers, response, output_stream):
     output_stream.write('HTTP/1.1 {0}\n'.format(response.status))
 
     # Dump all response headers recursively.
-    for k, v in response.getheaders().items():
-        output_stream.write('{0}: {1}\n'.format(k.title(), v))
+    for key, value in response.getheaders().items():
+        output_stream.write('{0}: {1}\n'.format(key.title(), value))
 
     # For all errors write all the available response body.
     if response.status not in [200, 204, 206]:
@@ -154,7 +158,7 @@ def mkdir_p(path):
             raise
 
 
-class PartMetadata(object):
+class PartMetadata:
     """
     Parts manager split parts metadata :class:`PartMetadata <PartMetadata>`.
 
@@ -217,6 +221,7 @@ AWS_S3_ENDPOINT_MAP = {
 
 
 def get_s3_endpoint(region):
+    """Gets AWS S3 endpoint of region."""
     return AWS_S3_ENDPOINT_MAP.get(region, 's3.amazonaws.com')
 
 
@@ -310,23 +315,21 @@ def is_valid_endpoint(endpoint):
             #    to start with a path component.
             endpoint = '//' + endpoint
 
-        u = urlsplit(endpoint)
-        if u.scheme:
+        url = urlsplit(endpoint)
+        if url.scheme:
             raise InvalidEndpointError('Hostname cannot have a scheme.')
 
-        hostname = u.hostname
-        if not hostname:
+        if not url.hostname:
             raise InvalidEndpointError('Hostname cannot be empty.')
 
-        if len(hostname) > 255:
+        if len(url.hostname) > 255:
             raise InvalidEndpointError('Hostname cannot be greater than 255.')
 
-        if hostname[-1] == '.':
-            hostname = hostname[:-1]
+        if url.hostname[-1] == '.':
+            url.hostname = url.hostname[:-1]
 
-        if not _ALLOWED_HOSTNAME_REGEX.match(hostname):
+        if not _ALLOWED_HOSTNAME_REGEX.match(url.hostname):
             raise InvalidEndpointError('Hostname does not meet URL standards.')
-
     except AttributeError as error:
         raise TypeError(error)
 
@@ -438,7 +441,7 @@ def is_valid_policy_type(policy):
     return True
 
 
-def is_valid_bucket_notification_config(notifications):
+def is_valid_notification_config(config):
     """
     Validate the notifications config structure
 
@@ -446,128 +449,118 @@ def is_valid_bucket_notification_config(notifications):
     :return: True if input is a valid bucket notifications structure.
        Raise :exc:`InvalidArgumentError` otherwise.
     """
-    # check if notifications is a dict.
-    if not isinstance(notifications, dict):
-        raise TypeError('notifications configuration must be a dictionary')
 
-    if not notifications:
-        raise InvalidArgumentError(
-            'notifications configuration may not be empty'
-        )
+    valid_events = (
+        "s3:ObjectAccessed:*",
+        "s3:ObjectAccessed:Get",
+        "s3:ObjectAccessed:Head",
+        "s3:ReducedRedundancyLostObject",
+        "s3:ObjectCreated:*",
+        "s3:ObjectCreated:Put",
+        "s3:ObjectCreated:Post",
+        "s3:ObjectCreated:Copy",
+        "s3:ObjectCreated:CompleteMultipartUpload",
+        "s3:ObjectRemoved:*",
+        "s3:ObjectRemoved:Delete",
+        "s3:ObjectRemoved:DeleteMarkerCreated",
+    )
 
-    VALID_NOTIFICATION_KEYS = set([
-        "TopicConfigurations",
-        "QueueConfigurations",
-        "CloudFunctionConfigurations",
-    ])
+    def _check_filter_rules(rules):
+        for rule in rules:
+            if not (rule.get("Name") and rule.get("Value")):
+                msg = ("{} - a FilterRule dictionary must have 'Name' "
+                       "and 'Value' keys")
+                raise InvalidArgumentError(msg.format(rule))
 
-    VALID_SERVICE_CONFIG_KEYS = set([
-        'Id',
-        'Arn',
-        'Events',
-        'Filter',
-    ])
+            if rule.get("Name") not in ["prefix", "suffix"]:
+                msg = ("{} - The 'Name' key in a filter rule must be "
+                       "either 'prefix' or 'suffix'")
+                raise InvalidArgumentError(msg.format(rule.get("Name")))
 
-    NOTIFICATION_EVENTS = set([
-        's3:ObjectAccessed:*',
-        's3:ObjectAccessed:Get',
-        's3:ObjectAccessed:Head',
-        's3:ReducedRedundancyLostObject',
-        's3:ObjectCreated:*',
-        's3:ObjectCreated:Put',
-        's3:ObjectCreated:Post',
-        's3:ObjectCreated:Copy',
-        's3:ObjectCreated:CompleteMultipartUpload',
-        's3:ObjectRemoved:*',
-        's3:ObjectRemoved:Delete',
-        's3:ObjectRemoved:DeleteMarkerCreated',
-    ])
+    def _check_service_config(config):
+        # check keys are valid
+        for skey in config.keys():
+            if skey not in ("Id", "Arn", "Events", "Filter"):
+                msg = "{} is an invalid key for a service configuration item"
+                raise InvalidArgumentError(msg.format(skey))
 
-    for key, value in notifications.items():
-        # check if key names are valid
-        if key not in VALID_NOTIFICATION_KEYS:
-            raise InvalidArgumentError((
-                '{} is an invalid key '
-                'for notifications configuration').format(key))
+        # check if "Id" key is present, it should be string or bytes.
+        if not isinstance(config.get("Id", ""), basestring):
+            raise InvalidArgumentError("'Id' key must be a string")
 
+        # check for required keys
+        if not config.get("Arn"):
+            raise InvalidArgumentError(
+                "Arn key in service config must be present and has to be "
+                "non-empty string",
+            )
+
+        events = config.get("Events", [])
+        if not isinstance(events, list):
+            raise InvalidArgumentError(
+                "'Events' must be a list of strings in a service "
+                "configuration",
+            )
+        if not events:
+            raise InvalidArgumentError(
+                "At least one event must be specified in a service config",
+            )
+
+        for event in events:
+            if event not in valid_events:
+                msg = "{} is not a valid event. Valid events are: {}"
+                raise InvalidArgumentError(msg.format(event, valid_events))
+
+        if "Filter" not in config:
+            return
+
+        msg = ("{} - If a Filter key is given, it must be a "
+               "dictionary, the dictionary must have the key 'Key', "
+               "and its value must be an object, with a key named "
+               "'FilterRules' which must be a non-empty list.")
+        if (
+                not isinstance(config.get("Filter", {}), dict) or
+                not isinstance(config.get("Filter", {}).get("Key", {}), dict)
+        ):
+            raise InvalidArgumentError(msg.format(config["Filter"]))
+
+        rules = config.get(
+            "Filter", {}).get("Key", {}).get("FilterRules", [])
+        if not isinstance(rules, list) or not rules:
+            raise InvalidArgumentError(msg.format(config["Filter"]))
+        _check_filter_rules(rules)
+
+    def _check_value(value, key):
         # check if config values conform
         # first check if value is a list
         if not isinstance(value, list):
+            msg = ("The value for key '{}' in the notifications configuration "
+                   "must be a list.")
+            raise InvalidArgumentError(msg.format(key))
+
+        for sconfig in value:
+            _check_service_config(sconfig)
+
+    # check if config is a dict.
+    if not isinstance(config, dict):
+        raise TypeError("notifications configuration must be a dictionary")
+
+    if not config:
+        raise InvalidArgumentError(
+            "notifications configuration may not be empty"
+        )
+
+    for key, value in config.items():
+        # check if key names are valid
+        if key not in (
+                "TopicConfigurations",
+                "QueueConfigurations",
+                "CloudFunctionConfigurations",
+        ):
             raise InvalidArgumentError((
-                'The value for key "{}" in the notifications '
-                'configuration must be a list.').format(key))
-
-        for service_config in value:
-            # check type matches
-            if not isinstance(service_config, dict):
-                raise InvalidArgumentError((
-                    'Each service configuration item for "{}" must be a '
-                    'dictionary').format(key))
-
-            # check keys are valid
-            for skey in service_config.keys():
-                if skey not in VALID_SERVICE_CONFIG_KEYS:
-                    raise InvalidArgumentError((
-                        '{} is an invalid key for a service '
-                        'configuration item').format(skey))
-
-            # check for required keys
-            arn = service_config.get('Arn', '')
-            if not arn:
-                raise InvalidArgumentError(
-                    'Arn key in service config must be present and has to be '
-                    'non-empty string'
-                )
-            events = service_config.get('Events', [])
-            if len(events) < 1:
-                raise InvalidArgumentError(
-                    'At least one event must be specified in a service config'
-                )
-            if not isinstance(events, list):
-                raise InvalidArgumentError('"Events" must be a list of strings '
-                                           'in a service configuration')
-
-            # check if 'Id' key is present, it should be string or bytes.
-            if not isinstance(service_config.get('Id', ''), basestring):
-                raise InvalidArgumentError('"Id" key must be a string')
-
-            for event in events:
-                if event not in NOTIFICATION_EVENTS:
-                    raise InvalidArgumentError(
-                        '{} is not a valid event. Valid '
-                        'events are: {}'.format(event, NOTIFICATION_EVENTS))
-
-            if 'Filter' in service_config:
-                exception_msg = (
-                    '{} - If a Filter key is given, it must be a '
-                    'dictionary, the dictionary must have the '
-                    'key "Key", and its value must be an object, with '
-                    'a key named "FilterRules" which must be a non-empty list.'
-                ).format(
-                    service_config['Filter']
-                )
-                try:
-                    filter_rules = service_config.get('Filter', {}).get(
-                        'Key', {}).get('FilterRules', [])
-                    if not isinstance(filter_rules, list):
-                        raise InvalidArgumentError(exception_msg)
-                    if len(filter_rules) < 1:
-                        raise InvalidArgumentError(exception_msg)
-                except AttributeError:
-                    raise InvalidArgumentError(exception_msg)
-                for filter_rule in filter_rules:
-                    try:
-                        name = filter_rule['Name']
-                        value = filter_rule['Value']
-                    except KeyError:
-                        raise InvalidArgumentError((
-                            '{} - a FilterRule dictionary must have "Name" '
-                            'and "Value" keys').format(filter_rule))
-
-                    if name not in ['prefix', 'suffix']:
-                        raise InvalidArgumentError((
-                            '{} - The "Name" key in a filter rule must be '
-                            'either "prefix" or "suffix"').format(name))
+                '{} is an invalid key '
+                'for notifications configuration').format(key))
+        _check_value(value, key)
 
     return True
 
@@ -615,7 +608,7 @@ def encode_object_name(object_name):
     return _quote(object_name)
 
 
-class Hasher(object):
+class Hasher:
     """
     Adaptation of hashlib-based hash functions that
     return unicode-encoded hex- and base64-digest
@@ -626,28 +619,33 @@ class Hasher(object):
         data = data or b''
         if isinstance(data, str):
             data = data.encode('utf-8')
-        self.h = h(data)
+        self.hasher = h(data)
 
     @classmethod
     def md5(cls, data=''):
+        """Compute MD5 hash."""
         return cls(data, hashlib.md5)
 
     @classmethod
     def sha256(cls, data=''):
+        """Compute SHA-256 hash."""
         return cls(data, hashlib.sha256)
 
     def update(self, data):
+        """Update hash of data."""
         if isinstance(data, str):
             data = data.encode('utf-8')
-        self.h.update(data)
+        self.hasher.update(data)
 
     def hexdigest(self):
-        r = self.h.hexdigest()
-        return r.decode('utf-8') if isinstance(r, bytes) else r
+        """Encode to hex."""
+        data = self.hasher.hexdigest()
+        return data.decode('utf-8') if isinstance(data, bytes) else data
 
     def base64digest(self):
-        r = base64.b64encode(self.h.digest())
-        return r.decode('utf-8') if isinstance(r, bytes) else r
+        """Encode to base64."""
+        data = base64.b64encode(self.hasher.digest())
+        return data.decode('utf-8') if isinstance(data, bytes) else data
 
 
 def get_sha256_hexdigest(content):
@@ -707,38 +705,41 @@ def optimal_part_info(length, part_size):
     return total_parts_count, part_size, last_part_size
 
 
-# return a new metadata dictionary where user defined metadata keys
-# are prefixed by "x-amz-meta-"
 def amzprefix_user_metadata(metadata):
-    m = dict()
-    for k, v in metadata.items():
+    """
+    Return a new metadata dictionary where user defined metadata keys
+    are prefixed by "x-amz-meta-".
+    """
+    meta = dict()
+    for key, value in metadata.items():
         # Check if metadata value has US-ASCII encoding since it is
         # the only one supported by HTTP headers. This will show a better
         # exception message when users pass unsupported characters
         # in metadata values.
         try:
-            if isinstance(v, future_str):
-                v.encode('us-ascii')
+            if isinstance(value, future_str):
+                value.encode('us-ascii')
         except UnicodeEncodeError:
             raise ValueError('Metadata supports only US-ASCII characters.')
 
-        if (is_amz_header(k) or is_supported_header(k) or
-                is_storageclass_header(k)):
-            m[k] = v
+        if (is_amz_header(key) or is_supported_header(key) or
+                is_storageclass_header(key)):
+            meta[key] = value
         else:
-            m["X-Amz-Meta-" + k] = v
-    return m
+            meta["X-Amz-Meta-" + key] = value
+    return meta
 
 
-# returns true if amz s3 system defined metadata
 def is_amz_header(key):
+    """Returns true if amz s3 system defined metadata."""
     key = key.lower()
     return (key.startswith("x-amz-meta") or key == "x-amz-acl" or
             key.startswith("x-amz-server-side-encryption"))
 
 
-# returns true if a standard supported header
 def is_supported_header(key):
+    """Returns true if a standard supported header."""
+
     # Supported headers for object.
     supported_headers = [
         "cache-control",
@@ -752,8 +753,8 @@ def is_supported_header(key):
     return key.lower() in supported_headers
 
 
-# returns true if header is a storage class header
 def is_storageclass_header(key):
+    """Returns true if header is a storage class header."""
     return key.lower() == "x-amz-storage-class"
 
 

@@ -21,11 +21,16 @@
 
 __title__ = 'minio-py'
 __author__ = 'MinIO, Inc.'
-__version__ = '0.0.1'
+__version__ = '0.1.0'
 __license__ = 'Apache 2.0'
 __copyright__ = 'Copyright 2019 MinIO, Inc.'
 
-from .errors import *
-from .helpers import *
-from .options import *
-from .reader import *
+# pylint: disable=unused-import
+from .errors import SelectCRCValidationError, SelectMessageError
+from .helpers import (byte_int, calculate_crc,  # pylint: disable=unused-import
+                      validate_crc)
+from .options import (CSVInput, CSVOutput,  # pylint: disable=unused-import
+                      InputSerialization, JSONInput, JSONOutput,
+                      OutputSerialization, ParquetInput, RequestProgress,
+                      SelectObjectOptions)
+from .reader import SelectObjectReader  # pylint: disable=unused-import

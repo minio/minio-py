@@ -120,54 +120,104 @@ def xml_marshal_bucket_constraint(region):
     return get_xml_data(root)
 
 
-def xml_marshal_select(opts):
-    root = Element('SelectObjectContentRequest')
-    SubElement(root, 'Expression', opts.expression)
-    SubElement(root, 'ExpressionType', 'SQL')
+def xml_marshal_select(req):
+    def bool_to_str(value):
+        return "true" if value else "false"
 
-    input_serialization = SubElement(root, 'InputSerialization')
-    SubElement(input_serialization, 'CompressionType',
-               opts.in_ser.compression_type)
+    root = Element("SelectObjectContentRequest")
+    SubElement(root, "Expression", req.expression)
+    SubElement(root, "ExpressionType", "SQL")
 
-    if opts.in_ser.csv_input:
-        csv = SubElement(input_serialization, 'CSV')
-        SubElement(csv, 'FileHeaderInfo', opts.in_ser.csv_input.FileHeaderInfo)
-        SubElement(csv, 'RecordDelimiter',
-                   opts.in_ser.csv_input.RecordDelimiter)
-        SubElement(csv, 'FieldDelimiter', opts.in_ser.csv_input.FieldDelimiter)
-        SubElement(csv, 'QuoteCharacter', opts.in_ser.csv_input.QuoteCharacter)
-        SubElement(csv, 'QuoteEscapeCharacter',
-                   opts.in_ser.csv_input.QuoteEscapeCharacter)
-        SubElement(csv, 'Comments', opts.in_ser.csv_input.Comments)
-        SubElement(csv, 'AllowQuotedRecordDelimiter',
-                   opts.in_ser.csv_input.AllowQuotedRecordDelimiter.lower())
+    input_serialization = SubElement(root, "InputSerialization")
+    SubElement(
+        input_serialization,
+        "CompressionType",
+        req.input_serialization.compression_type,
+    )
 
-    if opts.in_ser.json_input:
-        SubElement(SubElement(input_serialization, 'JSON'), 'Type',
-                   opts.in_ser.json_input.Type)
+    if req.input_serialization.csv:
+        csv = SubElement(input_serialization, "CSV")
+        SubElement(
+            csv,
+            "FileHeaderInfo",
+            req.input_serialization.csv.file_header_info,
+        )
+        SubElement(
+            csv,
+            "RecordDelimiter",
+            req.input_serialization.csv.record_delimiter,
+        )
+        SubElement(
+            csv, "FieldDelimiter", req.input_serialization.csv.field_delimiter,
+        )
+        SubElement(
+            csv, "QuoteCharacter", req.input_serialization.csv.quote_character,
+        )
+        SubElement(
+            csv,
+            "QuoteEscapeCharacter",
+            req.input_serialization.csv.quote_escape_character,
+        )
+        SubElement(csv, "Comments", req.input_serialization.csv.comments)
+        SubElement(
+            csv,
+            "AllowQuotedRecordDelimiter",
+            bool_to_str(
+                req.input_serialization.csv.allow_quoted_record_delimiter,
+            ),
+        )
 
-    if opts.in_ser.parquet_input:
-        SubElement(input_serialization, 'Parquet')
+    if req.input_serialization.json:
+        SubElement(
+            SubElement(input_serialization, "JSON"),
+            "Type",
+            req.input_serialization.json.json_type,
+        )
 
-    output_serialization = SubElement(root, 'OutputSerialization')
-    if opts.out_ser.csv_output:
-        csv = SubElement(output_serialization, 'CSV')
-        SubElement(csv, 'QuoteFields', opts.out_ser.csv_output.QuoteFields)
-        SubElement(csv, 'RecordDelimiter',
-                   opts.out_ser.csv_output.RecordDelimiter)
-        SubElement(csv, 'FieldDelimiter',
-                   opts.out_ser.csv_output.FieldDelimiter)
-        SubElement(csv, 'QuoteCharacter',
-                   opts.out_ser.csv_output.QuoteCharacter)
-        SubElement(csv, 'QuoteEscapeCharacter',
-                   opts.out_ser.csv_output.QuoteEscapeCharacter)
+    if req.input_serialization.parquet:
+        SubElement(input_serialization, "Parquet")
 
-    if opts.out_ser.json_output:
-        SubElement(SubElement(output_serialization, 'JSON'), 'RecordDelimiter',
-                   opts.out_ser.json_output.RecordDelimiter)
+    output_serialization = SubElement(root, "OutputSerialization")
+    if req.output_serialization.csv:
+        csv = SubElement(output_serialization, "CSV")
+        SubElement(
+            csv,
+            "QuoteFields",
+            req.output_serialization.csv.quote_fields,
+        )
+        SubElement(
+            csv,
+            "RecordDelimiter",
+            req.output_serialization.csv.record_delimiter,
+        )
+        SubElement(
+            csv,
+            "FieldDelimiter",
+            req.output_serialization.csv.field_delimiter,
+        )
+        SubElement(
+            csv,
+            "QuoteCharacter",
+            req.output_serialization.csv.quote_character,
+        )
+        SubElement(
+            csv,
+            "QuoteEscapeCharacter",
+            req.output_serialization.csv.quote_escape_character,
+        )
 
-    SubElement(SubElement(root, 'RequestProgress'), 'Enabled',
-               opts.req_progress.enabled.lower())
+    if req.output_serialization.json:
+        SubElement(
+            SubElement(output_serialization, "JSON"),
+            "RecordDelimiter",
+            req.output_serialization.json.record_delimiter,
+        )
+
+    SubElement(
+        SubElement(root, "RequestProgress"),
+        "Enabled",
+        bool_to_str(req.request_progress.enabled),
+    )
 
     return get_xml_data(root)
 

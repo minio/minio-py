@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-lines
 
 """
 minio.api
@@ -44,7 +45,8 @@ import urllib3
 
 # Internal imports
 from . import __title__, __version__
-from .compat import basestring, queryencode, range, urlsplit
+from .compat import range  # pylint: disable=redefined-builtin
+from .compat import basestring, queryencode, urlsplit
 from .credentials import (Chain, Credentials, EnvAWS, EnvMinio, IamEc2MetaData,
                           Static)
 from .definitions import Object, UploadPart
@@ -57,7 +59,7 @@ from .helpers import (DEFAULT_PART_SIZE, MAX_MULTIPART_COUNT, MAX_PART_SIZE,
                       get_s3_region_from_endpoint, get_sha256_hexdigest,
                       get_target_url, is_amz_header, is_non_empty_string,
                       is_supported_header, is_valid_bucket_name,
-                      is_valid_bucket_notification_config, is_valid_endpoint,
+                      is_valid_endpoint, is_valid_notification_config,
                       is_valid_policy_type, is_valid_source_sse_object,
                       is_valid_sse_c_object, is_valid_sse_object, mkdir_p,
                       optimal_part_info, read_full)
@@ -65,7 +67,7 @@ from .parsers import (parse_copy_object, parse_get_bucket_notification,
                       parse_list_buckets, parse_list_multipart_uploads,
                       parse_list_objects, parse_list_objects_v2,
                       parse_list_parts, parse_location_constraint,
-                      parse_multi_object_delete_response,
+                      parse_multi_delete_response,
                       parse_multipart_upload_result,
                       parse_new_multipart_upload)
 from .select import SelectObjectReader
@@ -106,7 +108,7 @@ _MAX_EXPIRY_TIME = 604800  # 7 days in seconds
 _PARALLEL_UPLOADERS = 3
 
 
-class Minio(object):
+class Minio:  # pylint: disable=too-many-public-methods
     """
     Constructs a :class:`Minio <Minio>`.
 
@@ -238,6 +240,8 @@ class Minio(object):
 
     # S3 Transfer Accelerate
     def use_s3_accelerate(self, value):
+        """Enable AWS S3 accelerated endpoint."""
+
         # Parse url
         parsed_url = urlsplit(self._endpoint_url)
 
@@ -412,12 +416,11 @@ class Minio(object):
 
         try:
             self._url_open('HEAD', bucket_name=bucket_name)
-        # If bucket has not been created yet, MinIO returns NoSuchBucket error.
+            return True
         except NoSuchBucket:
+            # If bucket has not been created yet, MinIO returns NoSuchBucket
+            # error.
             return False
-        except ResponseError:
-            raise
-        return True
 
     def remove_bucket(self, bucket_name):
         """
@@ -445,6 +448,7 @@ class Minio(object):
         return response.data
 
     def delete_bucket_policy(self, bucket_name):
+        """Delete policy of a bucket."""
         self._url_open("DELETE",
                        bucket_name=bucket_name,
                        query={"policy": ""})
@@ -496,7 +500,7 @@ class Minio(object):
         :param notifications: Notifications structure
         """
         is_valid_bucket_name(bucket_name, False)
-        is_valid_bucket_notification_config(notifications)
+        is_valid_notification_config(notifications)
 
         content = xml_marshal_bucket_notifications(notifications)
         headers = {
@@ -603,9 +607,9 @@ class Minio(object):
         )
 
     def listen_bucket_notification(self, bucket_name, prefix='', suffix='',
-                                   events=['s3:ObjectCreated:*',
+                                   events=('s3:ObjectCreated:*',
                                            's3:ObjectRemoved:*',
-                                           's3:ObjectAccessed:*']):
+                                           's3:ObjectAccessed:*')):
         """
         Yeilds new event notifications on a bucket, caller should iterate
         to read new notifications.
@@ -1178,7 +1182,7 @@ class Minio(object):
         )
 
         # parse response to find delete errors
-        return parse_multi_object_delete_response(response.data)
+        return parse_multi_delete_response(response.data)
 
     def remove_objects(self, bucket_name, objects_iter):
         """
@@ -1317,14 +1321,13 @@ class Minio(object):
                                                               bucket_name)
             for upload in uploads:
                 if is_aggregate_size:
-                    upload.size = self._get_total_multipart_upload_size(
+                    upload.size = self._get_all_parts_size(
                         upload.bucket_name,
                         upload.object_name,
                         upload.upload_id)
                 yield upload
 
-    def _get_total_multipart_upload_size(self, bucket_name, object_name,
-                                         upload_id):
+    def _get_all_parts_size(self, bucket_name, object_name, upload_id):
         """
         Get total multipart upload size.
 
@@ -1680,6 +1683,7 @@ class Minio(object):
         return response.headers['etag'].replace('"', '')
 
     def _upload_part_routine(self, part_info):
+        """ Upload part."""
         (bucket_name, object_name, upload_id, part_number,
          part_data, sse, progress) = part_info
         # Initiate multipart put.
@@ -1951,7 +1955,7 @@ class Minio(object):
         return location
 
     def _url_open(self, method, bucket_name=None, object_name=None,
-                  query=None, body=None, headers={}, content_sha256=None,
+                  query=None, body=None, headers=None, content_sha256=None,
                   preload_content=True):
         """
         Open a url wrapper around signature version '4'
@@ -1963,7 +1967,8 @@ class Minio(object):
 
         # Set user agent once before executing the request.
         fold_case_headers['User-Agent'] = self._user_agent
-        fold_case_headers.update(headers)
+        if headers:
+            fold_case_headers.update(headers)
 
         # Get bucket region.
         region = self._get_bucket_region(bucket_name)

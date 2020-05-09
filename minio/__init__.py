@@ -29,12 +29,12 @@ minio - MinIO Python Library for Amazon S3 Compatible Cloud Storage
 
 __title__ = 'minio-py'
 __author__ = 'MinIO, Inc.'
-__version__ = '5.0.11'
+__version__ = '6.0.0'
 __license__ = 'Apache 2.0'
 __copyright__ = 'Copyright 2015, 2016, 2017, 2018, 2019 MinIO, Inc.'
 
-from .api import Minio
-from .copy_conditions import CopyConditions
-from .definitions import Bucket, Object
-from .error import ResponseError
-from .post_policy import PostPolicy
+from .api import Minio  # pylint: disable=unused-import
+from .copy_conditions import CopyConditions  # pylint: disable=unused-import
+from .definitions import Bucket, Object  # pylint: disable=unused-import
+from .error import ResponseError  # pylint: disable=unused-import
+from .post_policy import PostPolicy  # pylint: disable=unused-import
