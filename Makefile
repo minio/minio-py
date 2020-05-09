@@ -16,7 +16,7 @@ check:
 
 apply:
 	@which isort >/dev/null || pip install --user --upgrade isort
-	isort --recursive .
+	@isort --recursive .
 
 	@which autopep8 >/dev/null || pip install --user --upgrade autopep8
 	@autopep8 --in-place *.py
