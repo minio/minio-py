@@ -867,8 +867,10 @@ class Minio:  # pylint: disable=too-many-public-methods
         if sse:
             is_valid_sse_object(sse)
             headers.update(sse.marshal())
+        # URI encoded, except '/' as per AWS S3 requirement
+        headers['X-Amz-Copy-Source'] = queryencode(
+            object_source).replace('%2F', '/')
 
-        headers['X-Amz-Copy-Source'] = queryencode(object_source)
         response = self._url_open('PUT',
                                   bucket_name=bucket_name,
                                   object_name=object_name,
