@@ -28,71 +28,71 @@ This module implements python 2.x and 3.x compatibility layer.
 import sys
 
 #: Python 2.x?
-_is_py2 = (sys.version_info[0] == 2)
+PYTHON2 = (sys.version_info[0] == 2)
 
-#: Python 3.x?
-_is_py3 = (sys.version_info[0] == 3)
-
-if _is_py2:
-    from Queue import Queue
-    queue = Queue
-
-    from Queue import Empty
-    queue_empty = Empty
-
-    from urllib import quote, unquote, urlencode
-
+if PYTHON2:
+    # pylint: disable=no-name-in-module
+    from urllib import quote as _quote
+    # pylint: disable=no-name-in-module
+    from urllib import unquote, urlencode
+    # pylint: disable=import-error
     from urlparse import urlsplit, parse_qs
 
     # Create missing types.
-    bytes = str
+    bytes = str  # pylint: disable=redefined-builtin, invalid-name
+
+    builtin_range = range  # pylint: disable=invalid-name
+    builtin_str = str  # pylint: disable=invalid-name
 
     # Update better types.
-    builtin_range = range
+    # pylint: disable=redefined-builtin, undefined-variable, invalid-name
     range = xrange
-    builtin_str = str
+    # pylint: disable=redefined-builtin, undefined-variable, invalid-name
     str = unicode
 
-    # Add missing imports
+    # Make importable.
+    # pylint: disable=self-assigning-variable, undefined-variable, invalid-name
     basestring = basestring
-elif _is_py3:
-    from queue import Queue
-    queue = Queue
+else:
+    from urllib.parse import quote as _quote  # pylint: disable=ungrouped-imports
+    # pylint: disable=ungrouped-imports
+    from urllib.parse import unquote, urlsplit, parse_qs, urlencode
 
-    from queue import Empty
-    queue_empty = Empty
-
-    from urllib.parse import quote, unquote, urlsplit, parse_qs, urlencode
-    unquote = unquote  # to get rid of F401
-    urlencode = urlencode  # to get rid of F401
-    urlsplit = urlsplit  # to get rid of F401
-    parse_qs = parse_qs  # to get rid of F401
-
-    # Create types to compat with py2.
-    builtin_range = range
-    builtin_str = str
+    # Create types to compat with python v2.
+    builtin_range = range  # pylint: disable=invalid-name
+    builtin_str = str  # pylint: disable=invalid-name
 
     # Create missing types.
-    basestring = (str, bytes)
-    long = int
+    basestring = (str, bytes)  # pylint: disable=invalid-name
+    long = int  # pylint: disable=invalid-name
 
-    # Add missing imports
-    bytes = bytes
-    range = range
-    str = str
+    # Make importable.
+    bytes = bytes  # pylint: disable=self-assigning-variable, invalid-name
+    range = range  # pylint: disable=self-assigning-variable, invalid-name
+    str = str  # pylint: disable=self-assigning-variable, invalid-name
+
+
+# Make importable.
+# to get rid of F401. pylint: disable=self-assigning-variable, invalid-name
+unquote = unquote
+# to get rid of F401. pylint: disable=self-assigning-variable, invalid-name
+urlencode = urlencode
+# to get rid of F401. pylint: disable=self-assigning-variable, invalid-name
+urlsplit = urlsplit
+# to get rid of F401. pylint: disable=self-assigning-variable, invalid-name
+parse_qs = parse_qs
 
 
 # Note earlier versions of minio.compat exposed urllib.quote as urlencode
-def _quote(resource):
+def quote(resource):
     """
     This implementation of urllib.quote supports all unicode characters
 
     :param: resource: Resource value to be url encoded.
     """
-    if isinstance(resource, str):
-        return quote(resource.encode('utf-8'))
-
-    return quote(resource)
+    return _quote(
+        resource.encode('utf-8') if isinstance(resource, str) else resource,
+    )
 
 
 def queryencode(query):
@@ -101,4 +101,4 @@ def queryencode(query):
 
     :param: query: Query value to be url encoded.
     """
-    return _quote(query).replace('/', '%2F')
+    return quote(query).replace('/', '%2F')

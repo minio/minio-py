@@ -21,7 +21,7 @@ from unittest import TestCase
 import pytz as pytz
 from nose.tools import eq_, raises
 
-from minio.compat import _quote, queryencode, urlsplit
+from minio.compat import queryencode, quote, urlsplit
 from minio.credentials import Credentials, Static
 from minio.error import InvalidArgumentError
 from minio.fold_case_dict import FoldCaseDict
@@ -166,19 +166,19 @@ class SignV4Test(TestCase):
 
 class UnicodeEncodeTest(TestCase):
     def test_unicode_quote(self):
-        eq_(_quote('/test/123/汉字'), '/test/123/%E6%B1%89%E5%AD%97')
+        eq_(quote('/test/123/汉字'), '/test/123/%E6%B1%89%E5%AD%97')
 
     def test_unicode_queryencode(self):
         eq_(queryencode('/test/123/汉字'), '%2Ftest%2F123%2F%E6%B1%89%E5%AD%97')
 
     def test_unicode_quote_u(self):
-        eq_(_quote(u'/test/123/汉字'), '/test/123/%E6%B1%89%E5%AD%97')
+        eq_(quote(u'/test/123/汉字'), '/test/123/%E6%B1%89%E5%AD%97')
 
     def test_unicode_queryencode_u(self):
         eq_(queryencode(u'/test/123/汉字'), '%2Ftest%2F123%2F%E6%B1%89%E5%AD%97')
 
     def test_unicode_quote_b(self):
-        eq_(_quote(b'/test/123/\xe6\xb1\x89\xe5\xad\x97'),
+        eq_(quote(b'/test/123/\xe6\xb1\x89\xe5\xad\x97'),
             '/test/123/%E6%B1%89%E5%AD%97')
 
     def test_unicode_queryencode_b(self):

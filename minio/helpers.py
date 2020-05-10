@@ -44,8 +44,8 @@ from datetime import datetime
 import pytz
 
 # pylint: disable=redefined-builtin
-from .compat import (_is_py2, _is_py3, _quote, basestring, bytes, queryencode,
-                     str, urlsplit)
+from .compat import (PYTHON2, basestring, bytes, queryencode, quote, str,
+                     urlsplit)
 from .error import (InvalidArgumentError, InvalidBucketError,
                     InvalidEndpointError)
 
@@ -428,11 +428,7 @@ def is_valid_policy_type(policy):
     :return: True if policy parameter is of a valid type, 'string'.
     Raise :exc:`TypeError` otherwise.
     """
-    if _is_py3:
-        string_type = str
-    elif _is_py2:
-        string_type = basestring
-
+    string_type = basestring if PYTHON2 else str
     if not isinstance(policy, string_type):
         raise TypeError('policy can only be of type str')
 
@@ -605,7 +601,7 @@ def encode_object_name(object_name):
     :return: URL encoded input object name.
     """
     is_non_empty_string(object_name)
-    return _quote(object_name)
+    return quote(object_name)
 
 
 class Hasher:
