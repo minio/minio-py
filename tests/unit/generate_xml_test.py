@@ -22,8 +22,8 @@ from minio.definitions import UploadPart
 from minio.select.options import (CSVInput, CSVOutput, InputSerialization,
                                   OutputSerialization, RequestProgress,
                                   SelectObjectOptions)
-from minio.xml_marshal import (xml_marshal_bucket_constraint,
-                               xml_marshal_complete_multipart_upload,
+from minio.xml_marshal import (marshal_complete_multipart,
+                               xml_marshal_bucket_constraint,
                                xml_marshal_select)
 
 
@@ -61,7 +61,7 @@ class GenerateRequestTest(TestCase):
                        'acbd18db4cc2f85cedef654fccc4a4d8',
                        None, 0),
         ]
-        actual_string = xml_marshal_complete_multipart_upload(etags)
+        actual_string = marshal_complete_multipart(etags)
         eq_(expected_string, actual_string)
 
     def test_xml_marshal_select(self):
