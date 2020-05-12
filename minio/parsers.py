@@ -199,27 +199,62 @@ def parse_list_buckets(data):
     ]
 
 
-def _parse_objects_from_xml_elts(bucket_name, contents, common_prefixes):
+def _parse_objects_from_xml_elts(bucket_name, contents, common_prefixes,
+                                 delete_markers=()):
     """Internal function that extracts objects and common prefixes from
     list_objects responses.
     """
     objects = [
-        Object(bucket_name,
-               content.get_child_text('Key'),
-               content.get_localized_time_elem('LastModified'),
-               content.get_etag_elem(strict=False),
-               content.get_int_elem('Size'),
-               is_dir=content.is_dir())
-        for content in contents
+        Object(
+            bucket_name,
+            content.get_child_text("Key"),
+            last_modified=content.get_localized_time_elem("LastModified"),
+            etag=content.get_etag_elem(strict=False),
+            size=content.get_int_elem("Size"),
+            is_dir=content.is_dir(),
+            version_id=content.get_child_text("VersionId", strict=False),
+            is_latest=content.get_child_text("IsLatest", strict=False),
+            storage_class=content.get_child_text("StorageClass", strict=False),
+            owner_id=(
+                content.find("Owner").get_child_text("ID", strict=False)
+                if content.find("Owner") else None
+            ),
+            owner_name=(
+                content.find("Owner").get_child_text(
+                    "DisplayName", strict=False,
+                ) if content.find("Owner") else None
+            ),
+        ) for content in contents
     ]
 
     object_dirs = [
-        Object(bucket_name, dir_elt.text(), None, '', 0, is_dir=True)
+        Object(bucket_name, dir_elt.text(), is_dir=True)
         for dirs_elt in common_prefixes
         for dir_elt in dirs_elt.findall('Prefix')
     ]
 
-    return objects, object_dirs
+    markers = [
+        Object(
+            bucket_name,
+            content.get_child_text("Key"),
+            last_modified=content.get_localized_time_elem("LastModified"),
+            is_dir=content.is_dir(),
+            version_id=content.get_child_text("VersionId", strict=False),
+            is_latest=content.get_child_text("IsLatest", strict=False),
+            owner_id=(
+                content.find("Owner").get_child_text("ID", strict=False)
+                if content.find("Owner") else None
+            ),
+            owner_name=(
+                content.find("Owner").get_child_text(
+                    "DisplayName", strict=False,
+                ) if content.find("Owner") else None
+            ),
+            delete_marker=True,
+        ) for content in delete_markers
+    ]
+
+    return objects, object_dirs, markers
 
 
 def parse_list_objects(data, bucket_name):
@@ -238,7 +273,7 @@ def parse_list_objects(data, bucket_name):
     is_truncated = root.get_child_text('IsTruncated').lower() == 'true'
     # NextMarker element need not be present.
     marker = root.get_urldecoded_elem_text('NextMarker', strict=False)
-    objects, object_dirs = _parse_objects_from_xml_elts(
+    objects, object_dirs, _ = _parse_objects_from_xml_elts(
         bucket_name,
         root.findall('Contents'),
         root.findall('CommonPrefixes')
@@ -267,13 +302,49 @@ def parse_list_objects_v2(data, bucket_name):
     # NextContinuationToken may not be present.
     continuation_token = root.get_child_text('NextContinuationToken',
                                              strict=False)
-    objects, object_dirs = _parse_objects_from_xml_elts(
+    objects, object_dirs, _ = _parse_objects_from_xml_elts(
         bucket_name,
         root.findall('Contents'),
         root.findall('CommonPrefixes')
     )
 
     return objects + object_dirs, is_truncated, continuation_token
+
+
+def parse_list_object_versions(data, bucket_name):
+    """
+    Parser for list object versions response.
+
+    :param data: Response data for list objects.
+    :param bucket_name: Response for the bucket.
+    :return: Returns three distinct components:
+       - List of :class:`Object <Object>`
+       - True if list is truncated, False otherwise.
+       - Continuation Token for the next request.
+    """
+    root = S3Element.fromstring("ListVersionsResult", data)
+
+    is_truncated = root.get_child_text("IsTruncated").lower() == "true"
+
+    key_marker = root.get_urldecoded_elem_text("NextKeyMarker", strict=False)
+    version_id_marker = root.get_urldecoded_elem_text(
+        "NextVersionIdMarker",
+        strict=False,
+    )
+
+    objects, object_dirs, delete_markers = _parse_objects_from_xml_elts(
+        bucket_name,
+        root.findall("Version"),
+        root.findall("CommonPrefixes"),
+        root.findall("DeleteMarker"),
+    )
+
+    return (
+        objects + object_dirs + delete_markers,
+        is_truncated,
+        key_marker,
+        version_id_marker,
+    )
 
 
 def parse_list_multipart_uploads(data, bucket_name):

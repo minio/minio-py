@@ -41,10 +41,13 @@ class ListObjectsV2Test(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse(
-                'GET',
-                'https://localhost:9000/bucket/?list-type=2&prefix=&'
-                'start-after=',
-                {'User-Agent': _DEFAULT_USER_AGENT}, 200, content=mock_data)
+                "GET",
+                "https://localhost:9000/bucket/?delimiter=&list-type=2"
+                "&max-keys=1000&prefix=",
+                {"User-Agent": _DEFAULT_USER_AGENT},
+                200,
+                content=mock_data,
+            ),
         )
         client = Minio('localhost:9000')
         object_iter = client.list_objects_v2('bucket', recursive=True)
@@ -82,12 +85,13 @@ class ListObjectsV2Test(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse(
-                'GET',
-                'https://localhost:9000/bucket/?delimiter=%2F&list-type=2&'
-                'prefix=&start-after=',
-                {'User-Agent': _DEFAULT_USER_AGENT}, 200,
-                content=mock_data
-            )
+                "GET",
+                "https://localhost:9000/bucket/?delimiter=%2F&list-type=2"
+                "&max-keys=1000&prefix=",
+                {"User-Agent": _DEFAULT_USER_AGENT},
+                200,
+                content=mock_data,
+            ),
         )
         client = Minio('localhost:9000')
         objects_iter = client.list_objects_v2('bucket')
