@@ -42,26 +42,3 @@ def parse_iam_credentials(data):
         secret_key=data['SecretAccessKey'],
         session_token=data['Token']
     ), expiration
-
-
-def parse_assume_role(data):
-    """
-    Parser for assume role response.
-
-    :param data: XML response data for STS assume role as a string.
-    :return: A 2-tuple containing:
-        - a :class:`~minio.credentials.Value` instance with the temporary credentials.
-        - A :class:`DateTime` instance of when the credentials expire.
-    """
-    root = ElementTree.fromstring(data)
-    credentials_elem = root.find("sts:AssumeRoleResult", _XML_NS).find(
-        "sts:Credentials", _XML_NS)
-
-    access_key = credentials_elem.find("sts:AccessKeyId", _XML_NS).text
-    secret_key = credentials_elem.find("sts:SecretAccessKey", _XML_NS).text
-    session_token = credentials_elem.find("sts:SessionToken", _XML_NS).text
-
-    expiry_str = credentials_elem.find("sts:Expiration", _XML_NS).text
-    expiry = _iso8601_to_utc_datetime(expiry_str)
-
-    return Value(access_key, secret_key, session_token), expiry
