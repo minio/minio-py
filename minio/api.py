@@ -141,6 +141,7 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     """
 
+    # pylint: disable=too-many-function-args
     def __init__(self, endpoint, access_key=None,
                  secret_key=None,
                  session_token=None,
