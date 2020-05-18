@@ -48,6 +48,7 @@ from .compat import (PYTHON2, basestring, bytes, queryencode, quote, str,
                      urlsplit)
 from .error import (InvalidArgumentError, InvalidBucketError,
                     InvalidEndpointError)
+from .sse import Sse, SseCustomerKey
 
 # Constants
 MAX_MULTIPART_COUNT = 10000  # 10000 parts
@@ -561,14 +562,15 @@ def is_valid_notification_config(config):
     return True
 
 
-def is_valid_sse_c_object(sse=None):
+def is_valid_sse_c_object(sse):
     """
     Validate the SSE object and type
 
     :param sse: SSE object defined.
     """
-    if sse and sse.type() != "SSE-C":
-        raise InvalidArgumentError("Required type SSE-C object to be passed")
+    if sse and not isinstance(sse, SseCustomerKey):
+        raise InvalidArgumentError(
+            "Required type SSE-C object to be passed")
 
 
 def is_valid_sse_object(sse):
@@ -577,20 +579,9 @@ def is_valid_sse_object(sse):
 
     :param sse: SSE object defined.
     """
-    if sse and sse.type() not in ["SSE-C", "SSE-KMS", "SSE-S3"]:
+    if sse and not isinstance(sse, Sse):
         raise InvalidArgumentError(
             "unsuported type of sse argument in put_object")
-
-
-def is_valid_source_sse_object(sse):
-    """
-    Validate the SSE object and type
-
-    :param sse: SSE object defined.
-    """
-    if sse and sse.type() != "copy_SSE-C":
-        raise InvalidArgumentError(
-            "Required type copy_SSE-C object to be passed")
 
 
 def encode_object_name(object_name):

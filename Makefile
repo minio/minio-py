@@ -2,7 +2,7 @@
 
 check:
 	@which pylint >/dev/null || pip install --user --upgrade pylint
-	@if python --version | grep -qi 'python 3'; then pylint --reports=no minio/compat.py minio/copy_conditions.py minio/definitions.py minio/error.py minio/helpers.py minio/parsers.py minio/post_policy.py minio/signer.py minio/thread_pool.py minio/__init__.py minio/xml_marshal.py minio/select tests/functional; fi
+	@if python --version | grep -qi 'python 3'; then pylint --reports=no minio/compat.py minio/copy_conditions.py minio/definitions.py minio/error.py minio/helpers.py minio/parsers.py minio/post_policy.py minio/signer.py minio/thread_pool.py minio/__init__.py minio/sse.py minio/xml_marshal.py minio/select tests/functional; fi
 	@if python --version | grep -qi 'python 3'; then pylint --reports=no minio/api.py; fi
 
 	@which isort >/dev/null || pip install --user --upgrade isort

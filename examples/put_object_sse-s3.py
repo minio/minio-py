@@ -20,7 +20,7 @@
 from io import BytesIO
 
 from minio.api import Minio
-from minio.sse import SSE_S3
+from minio.sse import SseS3
 
 AWSAccessKeyId = 'YOUR-ACCESSKEYID'
 AWSSecretKey = 'YOUR-SECRETACCESSKEY'
@@ -36,7 +36,7 @@ def main():
     content = BytesIO(b'Hello again')
 
     # Create an SSE_S3 object
-    sse_s3_obj = SSE_S3()
+    sse_s3_obj = SseS3()
 
     # Put object with from SSE_S3 object which encrypt object in S3 with
     # provided key

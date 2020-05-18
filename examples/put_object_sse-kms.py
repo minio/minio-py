@@ -20,7 +20,7 @@
 from io import BytesIO
 
 from minio.api import Minio
-from minio.sse import SSE_KMS
+from minio.sse import SseKMS
 
 AWSAccessKeyId = 'YOUR-ACCESSKEYID'
 AWSSecretKey = 'YOUR-SECRETACCESSKEY'
@@ -39,7 +39,7 @@ def main():
     context = {'Key1': 'Value1', 'Key2': 'Value2'}
 
     # Create an SSE-KMS object with a Valid KMS key_id and context
-    sse_kms_obj = SSE_KMS(key_id, context)
+    sse_kms_obj = SseKMS(key_id, context)
 
     # Put object with special headers from SSE_C object which encrypt object in
     # S3 with provided key
