@@ -226,6 +226,18 @@ def get_s3_endpoint(region):
     return AWS_S3_ENDPOINT_MAP.get(region, 's3.amazonaws.com')
 
 
+def get_scheme_host(url):
+    """Gets scheme and host of an URL"""
+    scheme = url.scheme
+    host = url.netloc
+    # Strip port 80/443 for HTTP/HTTPS.
+    if (scheme == 'http' and url.port == 80) or (
+            scheme == 'https' and url.port == 443):
+        host = url.hostname
+
+    return scheme, host
+
+
 def get_target_url(endpoint_url, bucket_name=None, object_name=None,
                    bucket_region='us-east-1', query=None):
     """
@@ -243,17 +255,7 @@ def get_target_url(endpoint_url, bucket_name=None, object_name=None,
 
     # Parse url
     parsed_url = urlsplit(endpoint_url)
-
-    # Get new host, scheme.
-    scheme = parsed_url.scheme
-    host = parsed_url.netloc
-
-    # Strip 80/443 ports since curl & browsers do not
-    # send them in Host header.
-    if (scheme == 'http' and parsed_url.port == 80) or (
-            scheme == 'https' and parsed_url.port == 443):
-        host = parsed_url.hostname
-
+    scheme, host = get_scheme_host(parsed_url)
     if 's3.amazonaws.com' in host:
         host = get_s3_endpoint(bucket_region)
 
