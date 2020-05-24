@@ -343,9 +343,17 @@ class Minio:  # pylint: disable=too-many-public-methods
                           content_sha256_hex,
                           datetime.utcnow())
 
+        if self._trace_output_stream:
+            dump_http(method, url, headers, None,
+                      self._trace_output_stream)
+
         response = self._http.urlopen(method, url,
                                       body=content,
                                       headers=headers)
+
+        if self._trace_output_stream:
+            dump_http(method, url, headers, response,
+                      self._trace_output_stream)
 
         if response.status != 200:
             raise ResponseError(response, method, bucket_name).get_exception()
@@ -377,6 +385,10 @@ class Minio:  # pylint: disable=too-many-public-methods
                           headers,
                           self._credentials,
                           None, datetime.utcnow())
+
+        if self._trace_output_stream:
+            dump_http(method, url, headers, None,
+                      self._trace_output_stream)
 
         response = self._http.urlopen(method, url,
                                       body=None,
@@ -1923,6 +1935,10 @@ class Minio:  # pylint: disable=too-many-public-methods
                           self._credentials,
                           None, datetime.utcnow())
 
+        if self._trace_output_stream:
+            dump_http(method, url, headers, None,
+                      self._trace_output_stream)
+
         response = self._http.urlopen(method, url,
                                       body=None,
                                       headers=headers)
@@ -2024,6 +2040,10 @@ class Minio:  # pylint: disable=too-many-public-methods
                           fold_case_headers,
                           self._credentials,
                           content_sha256, datetime.utcnow())
+
+        if self._trace_output_stream:
+            dump_http(method, url, headers, None,
+                      self._trace_output_stream)
 
         response = self._http.urlopen(method, url,
                                       body=body,
