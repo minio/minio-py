@@ -103,6 +103,22 @@ def dump_http(method, url, request_headers, response, output_stream):
     :param output_stream: Stream where the request is being dumped at.
     """
 
+    if response:
+        # Write response status code.
+        output_stream.write('HTTP/1.1 {0}\n'.format(response.status))
+
+        # Dump all response headers recursively.
+        for key, value in response.getheaders().items():
+            output_stream.write('{0}: {1}\n'.format(key.title(), value))
+
+        # For all errors write all the available response body.
+        if response.status not in [200, 204, 206]:
+            output_stream.write('{0}'.format(response.read()))
+
+        # End header.
+        output_stream.write('---------END-HTTP---------\n')
+        return
+
     # Start header.
     output_stream.write('---------START-HTTP---------\n')
 
@@ -128,20 +144,6 @@ def dump_http(method, url, request_headers, response, output_stream):
 
     # Write a new line.
     output_stream.write('\n')
-
-    # Write response status code.
-    output_stream.write('HTTP/1.1 {0}\n'.format(response.status))
-
-    # Dump all response headers recursively.
-    for key, value in response.getheaders().items():
-        output_stream.write('{0}: {1}\n'.format(key.title(), value))
-
-    # For all errors write all the available response body.
-    if response.status not in [200, 204, 206]:
-        output_stream.write('{0}'.format(response.read()))
-
-    # End header.
-    output_stream.write('---------END-HTTP---------\n')
 
 
 def mkdir_p(path):
