@@ -40,6 +40,7 @@ class AssumeRoleProvider(Provider):
         self._expiry = None
 
     def retrieve(self):
+        """Retrieve credential value and its expiry from provider callback."""
         if (
                 not self._value or
                 (self._expiry and self._expiry < datetime.utcnow())
@@ -56,12 +57,16 @@ class Chain(Provider):
         self._provider = None
 
     def retrieve(self):
+        """
+        Retrieve credential value and its expiry from one of available
+        provider.
+        """
+        value_error = ValueError("no credentials retrieved")
         try:
             if self._provider:
                 return self._provider.retrieve()
-        except ValueError:
-            # ignore this error and try other providers.
-            pass
+        except ValueError as exc:
+            value_error = exc
 
         for provider in self._providers:
             try:
@@ -69,11 +74,10 @@ class Chain(Provider):
                 if creds:
                     self._provider = provider
                     return creds, expiry
-            except ValueError:
-                # ignore this error and try other providers.
-                pass
+            except ValueError as exc:
+                value_error = exc
 
-        raise ValueError("no credentials retrieved")
+        raise value_error
 
 
 class EnvAWS(Provider):
@@ -96,6 +100,7 @@ class EnvAWS(Provider):
         )
 
     def retrieve(self):
+        """Retrieve credential value."""
         return self._value, None
 
 
@@ -109,6 +114,7 @@ class EnvMinio(Provider):
         )
 
     def retrieve(self):
+        """Retrieve credential value."""
         return self._value, None
 
 
@@ -124,6 +130,7 @@ class FileAWSCredentials(Provider):
         self._profile = profile or os.environ.get("AWS_PROFILE") or "default"
 
     def retrieve(self):
+        """Retrieve credential value from AWS configuration file."""
         parser = configparser.ConfigParser()
         parser.read(self._filename)
         access_key = parser.get(
@@ -163,6 +170,7 @@ class FileMinioClient(Provider):
         self._alias = alias or os.environ.get("MINIO_ALIAS") or "s3"
 
     def retrieve(self):
+        """Retrieve credential value from MinIO client configuration file."""
         try:
             with open(self._filename) as conf_file:
                 config = json.load(conf_file)
@@ -190,6 +198,7 @@ class IAMProvider(Provider):
         )
 
     def retrieve(self):
+        """Retrieve credential value and its expiry from IAM EC2."""
         # Get role names.
         creds_path = "/latest/meta-data/iam/security-credentials"
         url = self._endpoint + creds_path
@@ -230,9 +239,11 @@ class IAMProvider(Provider):
 class Static(Provider):
     """Fixed credential provider."""
 
-    def __init__(self, value, expiry=None):
-        self._value = value
+    def __init__(self, access_key, secret_key, session_token=None,
+                 expiry=None):
+        self._value = Value(access_key, secret_key, session_token)
         self._expiry = expiry
 
     def retrieve(self):
+        """Retrieve credential value and its expiry."""
         return self._value, self._expiry

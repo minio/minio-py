@@ -127,14 +127,14 @@ class PresignURLTest(TestCase):
     @raises(InvalidArgumentError)
     def test_presigned_no_access_key(self):
         credentials = Credentials(
-            provider=Static(Value(None, None)),
+            provider=Static(None, None),
         )
         presign_v4('GET', 'http://localhost:9000/hello', credentials, None)
 
     @raises(InvalidArgumentError)
     def test_presigned_invalid_expires(self):
         credentials = Credentials(
-            provider=Static(Value(None, None)),
+            provider=Static(None, None),
         )
         presign_v4('GET', 'http://localhost:9000/hello',
                    credentials, region=None, headers={}, expires=0)
@@ -144,9 +144,7 @@ class SignV4Test(TestCase):
     def test_signv4(self):
         # Construct target url.
         credentials = Credentials(
-            provider=Static(
-                Value("minio", "minio123"),
-            )
+            provider=Static("minio", "minio123"),
         )
         url = get_target_url('http://localhost:9000',
                              bucket_name='testbucket',

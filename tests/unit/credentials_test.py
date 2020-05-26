@@ -234,18 +234,15 @@ class FileMinioClientTest(TestCase):
 
 class StaticTest(TestCase):
     def test_static_credentials(self):
-        provider = Static(
-            Value("UXHW", "SECRET"),
-        )
+        provider = Static("UXHW", "SECRET")
         creds, expiry = provider.retrieve()
         eq_(creds.access_key, "UXHW")
         eq_(creds.secret_key, "SECRET")
         eq_(creds.session_token, None)
         eq_(expiry, None)
 
-    @raises(AttributeError)
     def test_empty_static_credentials(self):
-        provider = Static(None)
+        provider = Static(None, None)
         creds, expiry = provider.retrieve()
         eq_(creds.access_key, None)
         eq_(creds.secret_key, None)
