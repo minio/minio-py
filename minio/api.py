@@ -27,7 +27,6 @@ This module implements the API.
 
 """
 
-# Standard python packages
 from __future__ import absolute_import
 
 import io
@@ -40,10 +39,8 @@ from threading import Thread
 
 import certifi
 import dateutil.parser
-# Dependencies
 import urllib3
 
-# Internal imports
 from . import __title__, __version__
 from .compat import range  # pylint: disable=redefined-builtin
 from .compat import basestring, quote, urlencode, urlsplit
@@ -89,17 +86,10 @@ except ImportError:
     JSONDecodeError = ValueError
 
 
-# Comment format.
-_COMMENTS = '({0}; {1})'
-# App info format.
-_APP_INFO = '{0}/{1}'
-
-# MinIO (OS; ARCH) LIB/VER APP/VER .
-_DEFAULT_USER_AGENT = 'MinIO {0} {1}'.format(
-    _COMMENTS.format(platform.system(),
-                     platform.machine()),
-    _APP_INFO.format(__title__,
-                     __version__))
+_DEFAULT_USER_AGENT = "MinIO ({os}; {arch}) {lib}/{ver}".format(
+    os=platform.system(), arch=platform.machine(),
+    lib=__title__, ver=__version__,
+)
 
 
 # Duration of 7 days in seconds
@@ -215,11 +205,11 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param app_version: application version.
         """
         if not (app_name and app_version):
-            raise ValueError('app_name and app_version cannot be empty.')
+            raise ValueError("Application name/version cannot be empty.")
 
-        app_info = _APP_INFO.format(app_name,
-                                    app_version)
-        self._user_agent = ' '.join([_DEFAULT_USER_AGENT, app_info])
+        self._user_agent = "{0} {1}/{2}".format(
+            _DEFAULT_USER_AGENT, app_name, app_version,
+        )
 
     # enable HTTP trace.
     def trace_on(self, stream):
