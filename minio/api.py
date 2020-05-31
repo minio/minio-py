@@ -44,8 +44,7 @@ import urllib3
 from . import __title__, __version__
 from .compat import range  # pylint: disable=redefined-builtin
 from .compat import basestring, quote, urlencode, urlsplit
-from .credentials import (Chain, Credentials, EnvAWS, EnvMinio, IamEc2MetaData,
-                          Static)
+from .credentials import Chain, Credentials, EnvAWS, EnvMinio, Static
 from .definitions import Object, UploadPart
 from .error import (AccessDenied, InvalidArgumentError, InvalidSizeError,
                     InvalidXMLError, NoSuchBucket, ResponseError)
@@ -171,7 +170,6 @@ class Minio:  # pylint: disable=too-many-public-methods
                     Static(access_key, secret_key, session_token),
                     EnvAWS(),
                     EnvMinio(),
-                    IamEc2MetaData(),
                 ]
             )
         )

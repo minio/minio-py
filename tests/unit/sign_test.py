@@ -22,7 +22,7 @@ import pytz as pytz
 from nose.tools import eq_, raises
 
 from minio.compat import queryencode, quote, urlsplit
-from minio.credentials import Credentials, Static
+from minio.credentials import Credentials, Static, Value
 from minio.error import InvalidArgumentError
 from minio.fold_case_dict import FoldCaseDict
 from minio.helpers import get_target_url
@@ -127,14 +127,14 @@ class PresignURLTest(TestCase):
     @raises(InvalidArgumentError)
     def test_presigned_no_access_key(self):
         credentials = Credentials(
-            provider=Static()
+            provider=Static(None, None),
         )
         presign_v4('GET', 'http://localhost:9000/hello', credentials, None)
 
     @raises(InvalidArgumentError)
     def test_presigned_invalid_expires(self):
         credentials = Credentials(
-            provider=Static()
+            provider=Static(None, None),
         )
         presign_v4('GET', 'http://localhost:9000/hello',
                    credentials, region=None, headers={}, expires=0)
@@ -144,10 +144,7 @@ class SignV4Test(TestCase):
     def test_signv4(self):
         # Construct target url.
         credentials = Credentials(
-            provider=Static(
-                access_key='minio',
-                secret_key='minio123'
-            )
+            provider=Static("minio", "minio123"),
         )
         url = get_target_url('http://localhost:9000',
                              bucket_name='testbucket',

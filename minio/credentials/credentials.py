@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
+# (C) 2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,60 +14,61 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Credential definitions to access S3 service."""
+
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
 
-import pytz
+
+class Value:
+    """
+    Denotes credential values such as access key, secret key and session token.
+    """
+
+    def __init__(self, access_key, secret_key, session_token=None):
+        self._access_key = access_key
+        self._secret_key = secret_key
+        self._session_token = session_token
+
+    @property
+    def access_key(self):
+        """Get access key."""
+        return self._access_key
+
+    @property
+    def secret_key(self):
+        """Get secret key."""
+        return self._secret_key
+
+    @property
+    def session_token(self):
+        """Get session token."""
+        return self._session_token
 
 
-class Value(object):
-    def __init__(self, access_key=None, secret_key=None, session_token=None):
-        self.access_key = access_key
-        self.secret_key = secret_key
-        self.session_token = session_token
-
-
-class Provider(object):
+class Provider:  # pylint: disable=too-few-public-methods
+    """Credential retriever."""
     __metaclass__ = ABCMeta
 
     @abstractmethod
     def retrieve(self):
-        pass
-
-    @abstractmethod
-    def is_expired(self):
-        pass
+        """Retrieve credential value and its expiry."""
 
 
-class Expiry(object):
-    def __init__(self):
-        self._expiration = None
+class Credentials:  # pylint: disable=too-few-public-methods
+    """Denotes credentials for S3 service."""
 
-    def set_expiration(self, expiration, time_delta=None):
-        self._expiration = expiration
-        if time_delta:
-            self._expiration = self._expiration + time_delta
-
-    def is_expired(self):
-        utc_now = pytz.utc.localize(datetime.utcnow())
-        return self._expiration < utc_now if self._expiration else True
-
-
-class Credentials(object):
-    def __init__(self, forceRefresh=True, provider=None):
-        self._creds = None
-        self._forceRefresh = forceRefresh
+    def __init__(self, provider):
         self._provider = provider
+        self._value = None
+        self._expiry = None
 
-    def get(self):
-        if self.is_expired():
-            creds = self._provider.retrieve()
-            self._creds = creds
-            self._forceRefresh = False
-        return self._creds
-
-    def expire(self):
-        self._forceRefresh = True
-
-    def is_expired(self):
-        return self._forceRefresh or self._provider.is_expired()
+    def get(self, force=False):
+        """Get credentials from provider if needed."""
+        if (
+                force or
+                not self._value or
+                (self._expiry and self._expiry < datetime.utcnow())
+        ):
+            self._value, self._expiry = self._provider.retrieve()
+        return self._value
