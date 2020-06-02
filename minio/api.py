@@ -101,27 +101,25 @@ _PARALLEL_UPLOADERS = 3
 
 class Minio:  # pylint: disable=too-many-public-methods
     """
-    Constructs a :class:`Minio <Minio>`.
+    Simple Storage Service (aka S3) client to perform bucket and object
+    operations.
 
-    Examples:
+    :param endpoint: Hostname of a S3 service.
+    :param access_key: Access key (aka user ID) of your account in S3 service.
+    :param secret_key: Secret Key (aka password) of your account in S3 service.
+    :param session_token: Session token of your account in S3 service.
+    :param secure: Flag to indicate to use secure (TLS) connection to S3
+        service or not.
+    :param region: Region name of buckets in S3 service.
+    :param http_client: Customized HTTP client.
+    :param credentials: Credentials of your account in S3 service.
+    :return: :class:`Minio <Minio>` object
+
+    Example::
         client = Minio('play.min.io')
         client = Minio('s3.amazonaws.com', 'ACCESS_KEY', 'SECRET_KEY')
-
-        # To override auto bucket location discovery.
         client = Minio('play.min.io', 'ACCESS_KEY', 'SECRET_KEY',
                        region='us-east-1')
-
-    :param endpoint: Hostname of the cloud storage server.
-    :param access_key: Access key to sign self._http.request with.
-    :param secret_key: Secret key to sign self._http.request with.
-    :param session_token: Session token to sign self._http.request with.
-    :param secure: Set this value if wish to make secure requests.
-         Default is True.
-    :param region: Set this value to override automatic bucket
-         location discovery.
-    :param timeout: Set this value to control how long requests
-         are allowed to run before being aborted.
-    :return: :class:`Minio <Minio>` object
 
     **NOTE on concurrent usage:** The `Minio` object is thread safe when using
     the Python `threading` library. Specifically, it is **NOT** safe to share
@@ -189,19 +187,15 @@ class Minio:  # pylint: disable=too-many-public-methods
             )
         )
 
-    # Set application information.
     def set_app_info(self, app_name, app_version):
         """
-        Sets your application name and version to
-        default user agent in the following format.
+        Set your application name and version to user agent header.
 
-              MinIO (OS; ARCH) LIB/VER APP/VER
+        :param app_name: Application name.
+        :param app_version: Application version.
 
-        Example:
+        Example::
             client.set_app_info('my_app', '1.0.2')
-
-        :param app_name: application name.
-        :param app_version: application version.
         """
         if not (app_name and app_version):
             raise ValueError("Application name/version cannot be empty.")
@@ -210,26 +204,23 @@ class Minio:  # pylint: disable=too-many-public-methods
             _DEFAULT_USER_AGENT, app_name, app_version,
         )
 
-    # enable HTTP trace.
     def trace_on(self, stream):
         """
         Enable http trace.
 
-        :param output_stream: Stream where trace is written to.
+        :param output_stream: Stream for writing HTTP call tracing.
         """
         if not stream:
             raise ValueError('Input stream for trace output is invalid.')
         # Save new output stream.
         self._trace_output_stream = stream
 
-    # disable HTTP trace.
     def trace_off(self):
         """
         Disable HTTP trace.
         """
         self._trace_output_stream = None
 
-    # S3 Transfer Accelerate
     def use_s3_accelerate(self, value):
         """Enable AWS S3 accelerated endpoint."""
 
@@ -237,18 +228,17 @@ class Minio:  # pylint: disable=too-many-public-methods
         if 's3.amazonaws.com' in host:
             self._enable_s3_accelerate = value is True
 
-    # Select Object Content
     def select_object_content(self, bucket_name, object_name, opts):
         """
-        Executes SQL requests on objects having data in CSV, JSON
-        or Parquet formats.
+        Select content of an object by SQL expression.
 
-        Examples:
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param opts: Options for select object.
+        :return: A reader contains requested records and progress information.
+
+        Example::
             data = client.select_object_content('foo', 'test.csv', options)
-
-        :param bucket_name: Bucket to read object from
-        :param object_name: Name of object to read
-        :param options: Options for select object
         """
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
@@ -275,26 +265,19 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         return SelectObjectReader(response)
 
-    # Bucket level
     def make_bucket(self, bucket_name, location='us-east-1',
                     object_lock=False):
         """
-        Make a new bucket on the server.
+        Create a bucket with region and object lock.
 
-        Optionally include Location.
-           ['us-east-1', 'us-east-2', 'us-west-1', 'us-west-2', 'eu-west-1',
-            'eu-west-2', 'ca-central-1', 'eu-central-1', 'sa-east-1',
-            'cn-north-1', 'ap-southeast-1', 'ap-southeast-2',
-            'ap-northeast-1', 'ap-northeast-2']
+        :param bucket_name: Name of the bucket.
+        :param location: Region in which the bucket will be created.
+        :param object_lock: Flag to set object-lock feature.
 
-        Examples:
+        Examples::
             minio.make_bucket('foo')
             minio.make_bucket('foo', 'us-west-1')
             minio.make_bucket('foo', 'us-west-1', object_lock=True)
-
-        :param bucket_name: Bucket to create on server
-        :param location: Location to create bucket on
-        :param object_lock: Flag to set object-lock feature.
         """
         is_valid_bucket_name(bucket_name, True)
 
@@ -356,14 +339,14 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def list_buckets(self):
         """
-        List all buckets owned by the user.
+        List information of all accessible buckets.
 
-        Example:
+        :return: An iterator contains bucket information.
+
+        Example::
             bucket_list = minio.list_buckets()
             for bucket in bucket_list:
                 print(bucket.name, bucket.created_date)
-
-        :return: An iterator of buckets owned by the current user.
         """
 
         method = 'GET'
@@ -403,10 +386,17 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def bucket_exists(self, bucket_name):
         """
-        Check if the bucket exists and if the user has access to it.
+        Check if a bucket exists.
 
-        :param bucket_name: To test the existence and user access.
-        :return: True on success.
+        :param bucket_name: Name of the bucket.
+        :return: True if the bucket exists.
+
+        Example::
+            found = minio.bucket_exists("my-bucketname")
+            if found:
+                print("my-bucketname exists")
+            else:
+                print("my-bucketname does not exist")
         """
         is_valid_bucket_name(bucket_name, False)
 
@@ -420,9 +410,12 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def remove_bucket(self, bucket_name):
         """
-        Remove a bucket.
+        Remove an empty bucket.
 
-        :param bucket_name: Bucket to remove
+        :param bucket_name: Name of the bucket.
+
+        Example::
+            minio.remove_bucket("my-bucketname")
         """
         is_valid_bucket_name(bucket_name, False)
         self._url_open('DELETE', bucket_name=bucket_name)
@@ -432,9 +425,13 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def get_bucket_policy(self, bucket_name):
         """
-        Get bucket policy of given bucket name.
+        Get bucket policy configuration of a bucket.
 
-        :param bucket_name: Bucket name.
+        :param bucket_name: Name of the bucket.
+        :return: Bucket policy configuration as JSON string.
+
+        Example::
+            config = minio.get_bucket_policy("my-bucketname")
         """
         is_valid_bucket_name(bucket_name, False)
 
@@ -444,17 +441,27 @@ class Minio:  # pylint: disable=too-many-public-methods
         return response.data
 
     def delete_bucket_policy(self, bucket_name):
-        """Delete policy of a bucket."""
+        """
+        Delete bucket policy configuration of a bucket.
+
+        :param bucket_name: Name of the bucket.
+
+        Example::
+            minio.delete_bucket_policy("my-bucketname")
+        """
         self._url_open("DELETE",
                        bucket_name=bucket_name,
                        query={"policy": ""})
 
     def set_bucket_policy(self, bucket_name, policy):
         """
-        Set bucket policy of given bucket name.
+        Set bucket policy configuration to a bucket.
 
-        :param bucket_name: Bucket name.
-        :param policy: Access policy/ies in string format.
+        :param bucket_name: Name of the bucket.
+        :param policy: Bucket policy configuration as JSON string.
+
+        Example::
+            minio.get_bucket_policy("my-bucketname", config)
         """
         is_valid_policy_type(policy)
 
@@ -474,9 +481,13 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def get_bucket_notification(self, bucket_name):
         """
-        Get notifications configured for the given bucket.
+        Get notification configuration of a bucket.
 
-        :param bucket_name: Bucket name.
+        :param bucket_name: Name of the bucket.
+        :return: Notification configuration.
+
+        Example::
+            config = minio.get_bucket_notification("my-bucketname")
         """
         is_valid_bucket_name(bucket_name, False)
 
@@ -490,10 +501,13 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def set_bucket_notification(self, bucket_name, notifications):
         """
-        Set the given notifications on the bucket.
+        Set notification configuration of a bucket.
 
-        :param bucket_name: Bucket name.
-        :param notifications: Notifications structure
+        :param bucket_name: Name of the bucket.
+        :param notifications: Notification configuration to be set.
+
+        Example::
+            minio.set_bucket_notification("my-bucketname", config)
         """
         is_valid_bucket_name(bucket_name, False)
         is_valid_notification_config(notifications)
@@ -515,13 +529,13 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def remove_all_bucket_notification(self, bucket_name):
         """
-        Removes all bucket notification configs configured
-        previously, this call disable event notifications
-        on a bucket. This operation cannot be undone, to
-        set notifications again you should use
-        ``set_bucket_notification``
+        Remove notification configuration of a bucket. On success, S3 service
+        stops notification of events previously set of the bucket.
 
-        :param bucket_name: Bucket name.
+        :param bucket_name: Name of the bucket.
+
+        Example::
+            minio.remove_all_bucket_notification("my-bucketname")
         """
         is_valid_bucket_name(bucket_name, False)
 
@@ -540,15 +554,15 @@ class Minio:  # pylint: disable=too-many-public-methods
             content_sha256=content_sha256_hex
         )
 
-    # put_bucket_encryption sets default encryption configuration on an
-    # existing bucket.
     def put_bucket_encryption(self, bucket_name, enc_config):
         """
-        Set default encryption configuration on a given bucket.
+        Set encryption configuration of a bucket.
 
-        :param bucket_name: Bucket name.
-        :param enc_config: Default encryption configuration in dictionary
-                           format.
+        :param bucket_name: Name of the bucket.
+        :param enc_config: Encryption configuration as dictionary to be set.
+
+        Example::
+            minio.put_bucket_encryption("my-bucketname", config)
         """
         is_valid_bucket_name(bucket_name, False)
 
@@ -572,9 +586,13 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def get_bucket_encryption(self, bucket_name):
         """
-        Get default encryption configuration information on a given bucket.
+        Get encryption configuration of a bucket.
 
-        :param bucket_name: Bucket name.
+        :param bucket_name: Name of the bucket.
+        :return: Encryption configuration.
+
+        Example::
+            config = minio.get_bucket_encryption("my-bucketname")
         """
         is_valid_bucket_name(bucket_name, False)
 
@@ -587,12 +605,12 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def delete_bucket_encryption(self, bucket_name):
         """
-        Remove default encryption configuration on a given bucket
-        This operation cannot be undone.
-        To set default encryption configuration on a bucket again,
-        you need to reuse ``set_bucket_encryption`` command.
+        Delete encryption configuration of a bucket.
 
-        :param bucket_name: Bucket name.
+        :param bucket_name: Name of the bucket.
+
+        Example::
+            minio.delete_bucket_encryption("my-bucketname")
         """
         is_valid_bucket_name(bucket_name, False)
 
@@ -607,17 +625,22 @@ class Minio:  # pylint: disable=too-many-public-methods
                                            's3:ObjectRemoved:*',
                                            's3:ObjectAccessed:*')):
         """
-        Yeilds new event notifications on a bucket, caller should iterate
-        to read new notifications.
+        Listen events of object prefix and suffix of a bucket. Caller should
+        iterate returned iterator to read new events.
 
-        NOTE: Notification is retried in case of `JSONDecodeError` otherwise
-        the function raises an exception.
+        :param bucket_name: Name of the bucket.
+        :param prefix: Listen events of object starts with prefix.
+        :param suffix: Listen events of object ends with suffix.
+        :param events: Events to listen.
+        :return: Iterator contains event records.
 
-        :param bucket_name: Bucket name to listen event notifications from.
-        :param prefix: Object key prefix to filter notifications for.
-        :param suffix: Object key suffix to filter notifications for.
-        :param events: Enables notifications for specific event types.
-             of events.
+        Example::
+            iter = minio.listen_bucket_notification(
+                "my-bucketname",
+                events=('s3:ObjectCreated:*', 's3:ObjectAccessed:*'),
+            )
+            for events in iter:
+                print(events)
         """
         is_valid_bucket_name(bucket_name, False)
 
@@ -678,11 +701,25 @@ class Minio:  # pylint: disable=too-many-public-methods
         )
 
     def enable_bucket_versioning(self, bucket_name):
-        """Enable versioning support in a bucket."""
+        """
+        Enable object versioning feature in a bucket.
+
+        :param bucket_name: Name of the bucket.
+
+        Example::
+            minio.enable_bucket_versioning("my-bucketname")
+        """
         self._do_bucket_versioning(bucket_name, True)
 
     def disable_bucket_versioning(self, bucket_name):
-        """Disables versioning support in a bucket."""
+        """
+        Disable object versioning feature in a bucket.
+
+        :param bucket_name: Name of the bucket.
+
+        Example::
+            minio.disable_bucket_versioning("my-bucketname")
+        """
         self._do_bucket_versioning(bucket_name, False)
 
     def fput_object(self, bucket_name, object_name, file_path,
@@ -690,20 +727,21 @@ class Minio:  # pylint: disable=too-many-public-methods
                     metadata=None, sse=None, progress=None,
                     part_size=DEFAULT_PART_SIZE):
         """
-        Add a new object to the cloud storage server.
+        Uploads data from a file to an object in a bucket.
 
-        Examples:
-            minio.fput_object('foo', 'bar', 'filepath', 'text/plain')
-
-        :param bucket_name: Bucket to read object from.
-        :param object_name: Name of the object to read.
-        :param file_path: Local file path to be uploaded.
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param file_path: Name of file to upload.
         :param content_type: Content type of the object.
         :param metadata: Any additional metadata to be uploaded along
             with your PUT request.
+        :param sse: Server-side encryption.
         :param progress: A progress object
         :param part_size: Multipart part size
-        :return: etag
+        :return: etag and version ID if available.
+
+        Example::
+            minio.fput_object('foo', 'bar', 'filepath', 'text/plain')
         """
 
         # Open file in 'read' mode.
@@ -717,22 +755,23 @@ class Minio:  # pylint: disable=too-many-public-methods
                     request_headers=None, sse=None, version_id=None,
                     extra_query_params=None):
         """
-        Retrieves an object from a bucket and writes at file_path.
+        Downloads data of an object to file.
 
-        Examples:
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param file_path: Name of file to upload.
+        :param request_headers: Any additional headers to be added with GET
+                                request.
+        :param sse: Server-side encryption customer key.
+        :param version_id: Version-ID of the object.
+        :param extra_query_params: Extra query parameters for advanced usage.
+        :return: Object information.
+
+        Example::
             minio.fget_object('foo', 'bar', 'localfile')
             minio.fget_object(
                 'foo', 'bar', 'localfile', version_id='VERSION-ID',
             )
-
-        :param bucket_name: Bucket to read object from.
-        :param object_name: Name of the object to read.
-        :param file_path: Local file path to save the object.
-        :param request_headers: Any additional headers to be added with GET
-                                request.
-        :param sse: Server-side encryption of customer key.
-        :param version_id: Version-ID of the object.
-        :param extra_query_params: Extra query parameters for advanced usage.
         """
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
@@ -807,23 +846,26 @@ class Minio:  # pylint: disable=too-many-public-methods
     def get_object(self, bucket_name, object_name, request_headers=None,
                    sse=None, version_id=None, extra_query_params=None):
         """
-        Retrieves an object from a bucket.
+        Get data of an object. Returned response should be closed after use to
+        release network resources. To reuse the connection, its required to
+        call `response.release_conn()` explicitly.
 
-        This function returns an object that contains an open network
-        connection to enable incremental consumption of the
-        response. To re-use the connection (if desired) on subsequent
-        requests, the user needs to call `release_conn()` on the
-        returned object after processing.
-
-        Examples:
-            my_object = minio.get_partial_object('foo', 'bar')
-
-        :param bucket_name: Bucket to read object from
-        :param object_name: Name of object to read
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
         :param request_headers: Any additional headers to be added with GET
                                 request.
+        :param sse: Server-side encryption customer key.
+        :param version_id: Version-ID of the object.
+        :param extra_query_params: Extra query parameters for advanced usage.
         :return: :class:`urllib3.response.HTTPResponse` object.
 
+        Example::
+            try:
+                response = minio.get_object('foo', 'bar')
+                // Read data from response.
+            finally:
+                response.close()
+                response.release_conn()
         """
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
@@ -841,29 +883,28 @@ class Minio:  # pylint: disable=too-many-public-methods
                            request_headers=None, sse=None, version_id=None,
                            extra_query_params=None):
         """
-        Retrieves an object from a bucket.
+        Gets data from offset to length of an object. Returned response should
+        be closed after use to release network resources. To reuse the
+        connection, its required to call `response.release_conn()` explicitly.
 
-        Optionally takes an offset and length of data to retrieve.
-
-        This function returns an object that contains an open network
-        connection to enable incremental consumption of the
-        response. To re-use the connection (if desired) on subsequent
-        requests, the user needs to call `release_conn()` on the
-        returned object after processing.
-
-        Examples:
-            partial_object = minio.get_partial_object('foo', 'bar', 2, 4)
-
-        :param bucket_name: Bucket to retrieve object from
-        :param object_name: Name of object to retrieve
-        :param offset: Optional offset to retrieve bytes from.
-           Must be >= 0.
-        :param length: Optional number of bytes to retrieve.
-           Must be an integer.
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param offset: Start byte position of object data.
+        :param length: Number of bytes of object data from offset.
         :param request_headers: Any additional headers to be added with GET
                                 request.
+        :param sse: Server-side encryption customer key.
+        :param version_id: Version-ID of the object.
+        :param extra_query_params: Extra query parameters for advanced usage.
         :return: :class:`urllib3.response.HTTPResponse` object.
 
+        Example::
+            try:
+                response = minio.get_partial_object('foo', 'bar', 2, 4)
+                // Read data from response.
+            finally:
+                response.close()
+                response.release_conn()
         """
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
@@ -882,19 +923,33 @@ class Minio:  # pylint: disable=too-many-public-methods
     def copy_object(self, bucket_name, object_name, object_source,
                     conditions=None, source_sse=None, sse=None, metadata=None):
         """
-        Copy a source object on object storage server to a new object.
+        Create an object by server-side copying data from another object.
+        In this API maximum supported source object size is 5GiB.
 
-        NOTE: Maximum object size supported by this API is 5GB.
-
-        Examples:
-
-        :param bucket_name: Bucket of new object.
-        :param object_name: Name of new object.
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
         :param object_source: Source object to be copied.
         :param conditions: :class:`CopyConditions` object. Collection of
-        supported CopyObject conditions.
+                           supported CopyObject conditions.
+        :param source_sse: Server-side encryption customer key of source
+                           object.
+        :param sse: Server-side encryption of destination object.
         :param metadata: Any user-defined metadata to be copied along with
-        destination object.
+                         destination object.
+        :return: :class:`CopyObjectResult`
+
+        Example::
+            minio.copy_object(
+                "my-bucketname",
+                "my-objectname",
+                "my-source-bucketname/my-source-bucketname",
+            )
+            minio.copy_object(
+                "my-bucketname",
+                "my-objectname",
+                "my-source-bucketname/my-source-bucketname"
+                "?versionId=b6602757-7c9c-449b-937f-fed504d04c94",
+            )
         """
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
@@ -934,33 +989,26 @@ class Minio:  # pylint: disable=too-many-public-methods
                    metadata=None, sse=None, progress=None,
                    part_size=DEFAULT_PART_SIZE):
         """
-        Add a new object to the cloud storage server.
+        Uploads data from a stream to an object in a bucket.
 
-        NOTE: Maximum object size supported by this API is 5TiB.
-
-        Examples:
-         file_stat = os.stat('hello.txt')
-         with open('hello.txt', 'rb') as data:
-             minio.put_object('foo', 'bar', data, file_stat.st_size,
-                              'text/plain')
-
-        - For length lesser than 5MB put_object automatically
-          does single Put operation.
-        - For length larger than 5MB put_object automatically
-          does resumable multipart operation.
-
-        :param bucket_name: Bucket of new object.
-        :param object_name: Name of new object.
-        :param data: Contents to upload.
-        :param length: Total length of object.
-        :param content_type: mime type of object as a string.
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param data: Contains object data.
+        :param content_type: Content type of the object.
         :param metadata: Any additional metadata to be uploaded along
             with your PUT request.
+        :param sse: Server-side encryption.
         :param progress: A progress object
         :param part_size: Multipart part size
-        :return: etag
-        """
+        :return: etag and version ID if available.
 
+        Example::
+            file_stat = os.stat('hello.txt')
+            with open('hello.txt', 'rb') as data:
+                minio.put_object(
+                    'foo', 'bar', data, file_stat.st_size, 'text/plain',
+                )
+        """
         is_valid_sse_object(sse)
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
@@ -1014,40 +1062,39 @@ class Minio:  # pylint: disable=too-many-public-methods
     def list_objects(self, bucket_name, prefix=None, recursive=False,
                      include_version=False):
         """
-        List objects in the given bucket.
+        Lists object information of a bucket using S3 API version 1, optionally
+        for prefix recursively.
 
-        Examples:
+        :param bucket_name: Name of the bucket.
+        :param prefix: Object name starts with prefix.
+        :param recursive: List recursively than directory structure emulation.
+        :param include_version: Flag to control whether include object
+                                versions.
+        :return: An iterator contains object information.
+
+        Example::
+            # List objects information.
             objects = minio.list_objects('foo')
-            for current_object in objects:
-                print(current_object)
-            # hello
-            # hello/
-            # hello/
-            # world/
+            for object in objects:
+                print(object)
 
+            # List objects information those names starts with 'hello/'.
             objects = minio.list_objects('foo', prefix='hello/')
-            for current_object in objects:
-                print(current_object)
-            # hello/world/
+            for object in objects:
+                print(object)
 
+            # List objects information recursively.
             objects = minio.list_objects('foo', recursive=True)
-            for current_object in objects:
-                print(current_object)
-            # hello/world/1
-            # world/world/2
-            # ...
+            for object in objects:
+                print(object)
 
-            objects = minio.list_objects('foo', prefix='hello/',
-                                         recursive=True)
-            for current_object in objects:
-                print(current_object)
-            # hello/world/1
-            # hello/world/2
-
-        :param bucket_name: Bucket to list objects from
-        :param prefix: String specifying objects returned must begin with
-        :param recursive: If yes, returns all objects for a specified prefix
-        :return: An iterator of objects in alphabetical order.
+            # List objects information recursively those names starts with
+            # 'hello/'.
+            objects = minio.list_objects(
+                'foo', prefix='hello/', recursive=True,
+            )
+            for object in objects:
+                print(object)
         """
         return self._list_objects(
             bucket_name,
@@ -1061,47 +1108,50 @@ class Minio:  # pylint: disable=too-many-public-methods
                         start_after=None, include_user_meta=False,
                         include_version=False):
         """
-        List objects in the given bucket using the List objects V2 API.
+        Lists object information of a bucket using S3 API version 2, optionally
+        for prefix recursively.
 
-        Examples:
+        :param bucket_name: Name of the bucket.
+        :param prefix: Object name starts with prefix.
+        :param recursive: List recursively than directory structure emulation.
+        :param start_after: List objects after this key name.
+        :param include_user_meta: MinIO specific flag to control to include
+                                 user metadata.
+        :param include_version: Flag to control whether include object
+                                versions.
+        :return: An iterator contains object information.
+
+        Example::
+            # List objects information.
             objects = minio.list_objects_v2('foo')
-            for current_object in objects:
-                print(current_object)
-            # hello
-            # hello/
-            # hello/
-            # world/
+            for object in objects:
+                print(object)
 
+            # List objects information those names starts with 'hello/'.
             objects = minio.list_objects_v2('foo', prefix='hello/')
-            for current_object in objects:
-                print(current_object)
-            # hello/world/
+            for object in objects:
+                print(object)
 
+            # List objects information recursively.
             objects = minio.list_objects_v2('foo', recursive=True)
-            for current_object in objects:
-                print(current_object)
-            # hello/world/1
-            # world/world/2
-            # ...
+            for object in objects:
+                print(object)
 
-            objects = minio.list_objects_v2('foo', prefix='hello/',
-                                         recursive=True)
-            for current_object in objects:
-                print(current_object)
-            # hello/world/1
-            # hello/world/2
+            # List objects information recursively those names starts with
+            # 'hello/'.
+            objects = minio.list_objects_v2(
+                'foo', prefix='hello/', recursive=True,
+            )
+            for object in objects:
+                print(object)
 
-
-            objects = minio.list_objects_v2('foo', recursive=True,
-                                          start_after='hello/world/1')
-            for current_object in objects:
-                print(current_object)
-            # hello/world/2
-
-        :param bucket_name: Bucket to list objects from
-        :param prefix: String specifying objects returned must begin with
-        :param recursive: If yes, returns all objects for a specified prefix
-        :return: An iterator of objects in alphabetical order.
+            # List objects information recursively after object name
+            # 'hello/world/1'.
+            objects = minio.list_objects_v2(
+                'foo', recursive=True, start_after='hello/world/1',
+            )
+            for object in objects:
+                print(object)
         """
         return self._list_objects(
             bucket_name,
@@ -1115,11 +1165,17 @@ class Minio:  # pylint: disable=too-many-public-methods
     def stat_object(self, bucket_name, object_name, sse=None, version_id=None,
                     extra_query_params=None):
         """
-        Check if an object exists.
+        Get object information and metadata of an object.
 
-        :param bucket_name: Bucket of object.
-        :param object_name: Name of object
-        :return: Object metadata if object exists
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param sse: Server-side encryption customer key.
+        :param version_id: Version ID of the object.
+        :param extra_query_params: Extra query parameters for advanced usage.
+        :return: :class:`Object <Object>`.
+
+        Example::
+            stat = minio.stat_object("my-bucketname", "my-objectname")
         """
 
         is_valid_bucket_name(bucket_name, False)
@@ -1166,11 +1222,19 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def remove_object(self, bucket_name, object_name, version_id=None):
         """
-        Remove an object from the bucket.
+        Remove an object.
 
-        :param bucket_name: Bucket of object to remove
-        :param object_name: Name of object to remove
-        :return: None
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param version_id: Version ID of the object.
+
+        Example::
+            minio.remove_object("my-bucketname", "my-objectname")
+            minio.remove_object(
+                "my-bucketname",
+                "my-objectname",
+                version_id="13f88b18-8dcd-4c83-88f2-8631fdb6250c",
+            )
         """
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
@@ -1211,16 +1275,23 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def remove_objects(self, bucket_name, objects_iter):
         """
-        Removes multiple objects from a bucket.
+        Remove multiple objects.
 
-        :param bucket_name: Bucket from which to remove objects
+        :param bucket_name: Name of the bucket.
+        :param objects_iter: An iterable type python object providing object
+                             names for deletion.
+        :return: An iterator contains
+                 :class:`MultiDeleteError <MultiDeleteError>`.
 
-        :param objects_iter: A list, tuple or iterator that provides
-        objects names to delete.
-
-        :return: An iterator of MultiDeleteError instances for each
-        object that had a delete error.
-
+        Example::
+            minio.remove_objects(
+                "my-bucketname",
+                [
+                    "my-objectname1",
+                    "my-objectname2",
+                    ("my-objectname3", "13f88b18-8dcd-4c83-88f2-8631fdb6250c"),
+                ],
+            )
         """
         is_valid_bucket_name(bucket_name, False)
         if isinstance(objects_iter, basestring):
@@ -1258,44 +1329,38 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def list_incomplete_uploads(self, bucket_name, prefix='', recursive=False):
         """
-        List all in-complete uploads for a given bucket.
+        List incomplete object upload information of a bucket, optionally for
+        prefix recursively.
 
-        Examples:
-            incomplete_uploads = minio.list_incomplete_uploads('foo')
-            for current_upload in incomplete_uploads:
-                print(current_upload)
-            # hello
-            # hello/
-            # hello/
-            # world/
+        :param bucket_name: Name of the bucket.
+        :param prefix: Object name starts with prefix.
+        :param recursive: List recursively than directory structure emulation.
+        :return: An iterator contains incomplete object upload information.
 
-            incomplete_uploads = minio.list_incomplete_uploads('foo',
-                                                               prefix='hello/')
-            for current_upload in incomplete_uploads:
-                print(current_upload)
-            # hello/world/
+        Example::
+            # List incomplete object upload information.
+            objects = minio.list_incomplete_uploads('foo')
+            for object in objects:
+                print(object)
 
-            incomplete_uploads = minio.list_incomplete_uploads('foo',
-                                                               recursive=True)
-            for current_upload in incomplete_uploads:
-                print(current_upload)
-            # hello/world/1
-            # world/world/2
-            # ...
+            # List incomplete object upload information those names starts with
+            # 'hello/'.
+            objects = minio.list_incomplete_uploads('foo', prefix='hello/')
+            for object in objects:
+                print(object)
 
-            incomplete_uploads = minio.list_incomplete_uploads('foo',
-                                                               prefix='hello/',
-                                                               recursive=True)
-            for current_upload in incomplete_uploads:
-                print(current_upload)
-            # hello/world/1
-            # hello/world/2
+            # List incomplete object upload information recursively.
+            objects = minio.list_incomplete_uploads('foo', recursive=True)
+            for object in objects:
+                print(object)
 
-        :param bucket_name: Bucket to list incomplete uploads
-        :param prefix: String specifying objects returned must begin with.
-        :param recursive: If yes, returns all incomplete uploads for
-           a specified prefix.
-        :return: An generator of incomplete uploads in alphabetical order.
+            # List incomplete object upload information recursively those names
+            # starts with 'hello/'.
+            objects = minio.list_incomplete_uploads(
+                'foo', prefix='hello/', recursive=True,
+            )
+            for object in objects:
+                print(object)
         """
         is_valid_bucket_name(bucket_name, False)
 
@@ -1400,11 +1465,13 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def remove_incomplete_upload(self, bucket_name, object_name):
         """
-        Remove all in-complete uploads for a given bucket_name and object_name.
+        Remove all incomplete uploads of an object.
 
-        :param bucket_name: Bucket to drop incomplete uploads
-        :param object_name: Name of object to remove incomplete uploads
-        :return: None
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+
+        Example::
+            minio.remove_incomplete_upload("my-bucketname", "my-objectname")
         """
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
@@ -1426,28 +1493,55 @@ class Minio:  # pylint: disable=too-many-public-methods
                       version_id=None,
                       extra_query_params=None):
         """
-        Presigns a method on an object and provides a url
+        Get presigned URL of an object for HTTP method, expiry time and custom
+        request parameters.
 
-        Example:
-            from datetime import timedelta
-
-            presignedURL = presigned_url('GET',
-                                         'bucket_name',
-                                         'object_name',
-                                         expires=timedelta(days=7))
-            print(presignedURL)
-
-        :param bucket_name: Bucket for the presigned url.
-        :param object_name: Object for which presigned url is generated.
-        :param expires: Optional expires argument to specify timedelta.
-                        Defaults to 7days.
+        :param method: HTTP method.
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param expires: Expiry in seconds; defaults to 7 days.
         :params response_headers: Optional response_headers argument to
                                   specify response fields like date, size,
                                   type of file, data about server, etc.
         :params request_date: Optional request_date argument to
                               specify a different request date. Default is
                               current date.
-        :return: Presigned put object url.
+        :param version_id: Version ID of the object.
+        :param extra_query_params: Extra query parameters for advanced usage.
+        :return: URL string.
+
+        Example::
+            # Get presigned URL string to delete 'my-objectname' in
+            # 'my-bucketname' with one day expiry.
+            url = minio.presigned_url(
+                "DELETE",
+                "my-bucketname",
+                "my-objectname",
+                expires=timedelta(days=1),
+            )
+            print(url)
+
+            # Get presigned URL string to upload 'my-objectname' in
+            # 'my-bucketname' with response-content-type as application/json
+            # and one day expiry.
+            url = minio.presigned_url(
+                "PUT",
+                "my-bucketname",
+                "my-objectname",
+                expires=timedelta(days=1),
+                response_headers={"response-content-type": "application/json"},
+            )
+            print(url)
+
+            # Get presigned URL string to download 'my-objectname' in
+            # 'my-bucketname' with two hours expiry.
+            url = minio.presigned_url(
+                "GET",
+                "my-bucketname",
+                "my-objectname",
+                expires=timedelta(hours=2),
+            )
+            print(url)
         """
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
@@ -1491,28 +1585,34 @@ class Minio:  # pylint: disable=too-many-public-methods
                              version_id=None,
                              extra_query_params=None):
         """
-        Presigns a get object request and provides a url
+        Get presigned URL of an object to download its data with expiry time
+        and custom request parameters.
 
-        Example:
-
-            from datetime import timedelta
-
-            presignedURL = presigned_get_object('bucket_name',
-                                                'object_name',
-                                                timedelta(days=7))
-            print(presignedURL)
-
-        :param bucket_name: Bucket for the presigned url.
-        :param object_name: Object for which presigned url is generated.
-        :param expires: Optional expires argument to specify timedelta.
-           Defaults to 7days.
-        :params response_headers: Optional response_headers argument to
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param expires: Expiry in seconds; defaults to 7 days.
+        :param response_headers: Optional response_headers argument to
                                   specify response fields like date, size,
                                   type of file, data about server, etc.
-        :params request_date: Optional request_date argument to
+        :param request_date: Optional request_date argument to
                               specify a different request date. Default is
                               current date.
-        :return: Presigned url.
+        :param version_id: Version ID of the object.
+        :param extra_query_params: Extra query parameters for advanced usage.
+        :return: URL string.
+
+        Example::
+            # Get presigned URL string to download 'my-objectname' in
+            # 'my-bucketname' with default expiry.
+            url = minio.presigned_get_object("my-bucketname", "my-objectname")
+            print(url)
+
+            # Get presigned URL string to download 'my-objectname' in
+            # 'my-bucketname' with two hours expiry.
+            url = minio.presigned_get_object(
+                "my-bucketname", "my-objectname", expires=timedelta(hours=2),
+            )
+            print(url)
         """
         return self.presigned_url(
             "GET",
@@ -1528,23 +1628,27 @@ class Minio:  # pylint: disable=too-many-public-methods
     def presigned_put_object(self, bucket_name, object_name,
                              expires=timedelta(days=7)):
         """
-        Presigns a put object request and provides a url
+        Get presigned URL of an object to upload data with expiry time and
+        custom request parameters.
 
-        Example:
-            from datetime import timedelta
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param expires: Expiry in seconds; defaults to 7 days.
+        :return: URL string.
 
-            presignedURL = presigned_put_object('bucket_name',
-                                                'object_name',
-                                                timedelta(days=7))
-            print(presignedURL)
+        Example::
+            # Get presigned URL string to upload data to 'my-objectname' in
+            # 'my-bucketname' with default expiry.
+            url = minio.presigned_put_object("my-bucketname", "my-objectname")
+            print(url)
 
-        :param bucket_name: Bucket for the presigned url.
-        :param object_name: Object for which presigned url is generated.
-        :param expires: optional expires argument to specify timedelta.
-           Defaults to 7days.
-        :return: Presigned put object url.
+            # Get presigned URL string to upload data to 'my-objectname' in
+            # 'my-bucketname' with two hours expiry.
+            url = minio.presigned_put_object(
+                "my-bucketname", "my-objectname", expires=timedelta(hours=2),
+            )
+            print(url)
         """
-
         return self.presigned_url('PUT',
                                   bucket_name,
                                   object_name,
@@ -1552,20 +1656,21 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def presigned_post_policy(self, post_policy):
         """
-        Provides a POST form data that can be used for object uploads.
+        Get form-data of PostPolicy of an object to upload its data using POST
+        method.
 
-        Example:
+        :param post_policy: :class:`PostPolicy <PostPolicy>`.
+        :return: :dict: contains form-data.
+
+        Example::
             post_policy = PostPolicy()
             post_policy.set_bucket_name('bucket_name')
             post_policy.set_key_startswith('objectPrefix/')
-
             expires_date = datetime.utcnow()+timedelta(days=10)
             post_policy.set_expires(expires_date)
 
-            print(presigned_post_policy(post_policy))
-
-        :param post_policy: Post_Policy object.
-        :return: PostPolicy form dictionary to be used in curl or HTML forms.
+            form_data = presigned_post_policy(post_policy)
+            print(form_data)
         """
         post_policy.is_valid()
 
