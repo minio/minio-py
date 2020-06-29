@@ -68,7 +68,7 @@ class IAMProviderTest(TestCase):
     @mock.patch("urllib3.PoolManager.urlopen")
     def test_iam(self, mock_connection):
         mock_connection.side_effect = [CredListResponse(), CredsResponse()]
-        provider = IAMProvider(timedelta(minutes=5))
+        provider = IAMProvider(expiry_delta=timedelta(minutes=5))
         creds, expiry = provider.retrieve()
         eq_(creds.access_key, "accessKey")
         eq_(creds.secret_key, "secret")
