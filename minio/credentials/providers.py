@@ -233,7 +233,7 @@ class IAMProvider(Provider):
             data["AccessKeyId"],
             data["SecretAccessKey"],
             session_token=data["Token"],
-        ), expiration + timedelta(minutes=5)
+        ), expiration
 
 
 class Static(Provider):
