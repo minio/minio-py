@@ -68,21 +68,13 @@ class IAMProviderTest(TestCase):
     @mock.patch("urllib3.PoolManager.urlopen")
     def test_iam(self, mock_connection):
         mock_connection.side_effect = [CredListResponse(), CredsResponse()]
-        provider = IAMProvider()
-        creds, expiry = provider.retrieve()
-        eq_(creds.access_key, "accessKey")
-        eq_(creds.secret_key, "secret")
-        eq_(creds.session_token, "token")
-        eq_(expiry, datetime(2014, 12, 16, 1, 51, 37))
-
-    def test_iam_time_delta(self, mock_connection):
-        mock_connection.side_effect = [CredListResponse(), CredsResponse()]
-        provider = IAMProvider(expiry_time_delta=timedelta(minutes=5))
+        provider = IAMProvider(timedelta(minutes=5))
         creds, expiry = provider.retrieve()
         eq_(creds.access_key, "accessKey")
         eq_(creds.secret_key, "secret")
         eq_(creds.session_token, "token")
         eq_(expiry, datetime(2014, 12, 16, 1, 46, 37))
+
 
 class ChainProviderTest(TestCase):
     def test_chain_retrieve(self):

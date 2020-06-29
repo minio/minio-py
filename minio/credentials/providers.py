@@ -187,7 +187,11 @@ class FileMinioClient(Provider):
 class IAMProvider(Provider):
     """IAM EC2 credential provider."""
 
-    def __init__(self, endpoint=None, http_client=None, expiry_time_delta=timedelta(seconds=0)):
+    def __init__(self,
+                 endpoint=None,
+                 http_client=None,
+                 expiry_delta=timedelta(seconds=0)):
+
         self._endpoint = endpoint or "http://169.254.169.254"
         self._http_client = http_client or urllib3.PoolManager(
             retries=urllib3.Retry(
@@ -196,6 +200,7 @@ class IAMProvider(Provider):
                 status_forcelist=[500, 502, 503, 504],
             ),
         )
+        self._expiry_delta = expiry_delta
 
     def retrieve(self):
         """Retrieve credential value and its expiry from IAM EC2."""
@@ -233,7 +238,7 @@ class IAMProvider(Provider):
             data["AccessKeyId"],
             data["SecretAccessKey"],
             session_token=data["Token"],
-        ), expiration - expiry_time_delta
+        ), expiration - self._expiry_delta
 
 
 class Static(Provider):
