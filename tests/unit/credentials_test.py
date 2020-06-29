@@ -16,7 +16,7 @@
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest import TestCase
 
 from nose.tools import eq_, raises
@@ -75,6 +75,14 @@ class IAMProviderTest(TestCase):
         eq_(creds.session_token, "token")
         eq_(expiry, datetime(2014, 12, 16, 1, 51, 37))
 
+    def test_iam_time_delta(self, mock_connection):
+        mock_connection.side_effect = [CredListResponse(), CredsResponse()]
+        provider = IAMProvider(expiry_time_delta=timedelta(minutes=5))
+        creds, expiry = provider.retrieve()
+        eq_(creds.access_key, "accessKey")
+        eq_(creds.secret_key, "secret")
+        eq_(creds.session_token, "token")
+        eq_(expiry, datetime(2014, 12, 16, 1, 46, 37))
 
 class ChainProviderTest(TestCase):
     def test_chain_retrieve(self):

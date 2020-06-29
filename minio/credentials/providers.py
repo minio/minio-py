@@ -20,7 +20,7 @@ import configparser
 import json
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import urllib3
 from urllib3.exceptions import HTTPError, ResponseError
@@ -187,7 +187,7 @@ class FileMinioClient(Provider):
 class IAMProvider(Provider):
     """IAM EC2 credential provider."""
 
-    def __init__(self, endpoint=None, http_client=None):
+    def __init__(self, endpoint=None, http_client=None, expiry_time_delta=timedelta(seconds=0)):
         self._endpoint = endpoint or "http://169.254.169.254"
         self._http_client = http_client or urllib3.PoolManager(
             retries=urllib3.Retry(
@@ -233,7 +233,7 @@ class IAMProvider(Provider):
             data["AccessKeyId"],
             data["SecretAccessKey"],
             session_token=data["Token"],
-        ), expiration
+        ), expiration - expiry_time_delta
 
 
 class Static(Provider):
