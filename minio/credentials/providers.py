@@ -190,7 +190,7 @@ class IAMProvider(Provider):
     def __init__(self,
                  endpoint=None,
                  http_client=None,
-                 expiry_delta=timedelta(seconds=0)):
+                 expiry_delta=None):
 
         self._endpoint = endpoint or "http://169.254.169.254"
         self._http_client = http_client or urllib3.PoolManager(
@@ -200,7 +200,10 @@ class IAMProvider(Provider):
                 status_forcelist=[500, 502, 503, 504],
             ),
         )
-        self._expiry_delta = expiry_delta
+        if expiry_delta is None:
+            self._expiry_delta = timedelta(seconds=10)
+        else:
+            self._expiry_delta = expiry_delta
 
     def retrieve(self):
         """Retrieve credential value and its expiry from IAM EC2."""
