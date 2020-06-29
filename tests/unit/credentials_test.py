@@ -73,7 +73,7 @@ class IAMProviderTest(TestCase):
         eq_(creds.access_key, "accessKey")
         eq_(creds.secret_key, "secret")
         eq_(creds.session_token, "token")
-        eq_(expiry, datetime(2014, 12, 16, 1, 56, 37))
+        eq_(expiry, datetime(2014, 12, 16, 1, 51, 37))
 
 
 class ChainProviderTest(TestCase):
