@@ -20,7 +20,7 @@ import configparser
 import json
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import urllib3
 from urllib3.exceptions import HTTPError, ResponseError
