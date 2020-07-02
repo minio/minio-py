@@ -19,6 +19,7 @@ from unittest import TestCase
 
 from nose.tools import raises
 
+import mock
 from minio import Minio
 from minio.error import InvalidArgumentError
 
@@ -38,3 +39,11 @@ class PresignedPutObjectTest(TestCase):
     def test_expiry_limit(self):
         client = Minio('localhost:9000')
         client.presigned_put_object('hello', 'key', expires=timedelta(days=8))
+
+    def test_endpoint_url(self):
+        client = Minio('minio-docker:9000', 'my_access_key',
+                       'my_secret_key', secure=True)
+        client._get_bucket_region = mock.Mock(return_value='us-east-1')
+        url = client.presigned_put_object(
+            'bucket', 'key', endpoint_url='http://localhost:9000')
+        self.assertRegexpMatches(url, r'^http://localhost:9000/bucket/key\?')

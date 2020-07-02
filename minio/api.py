@@ -1389,7 +1389,8 @@ class Minio:  # pylint: disable=too-many-public-methods
                       object_name,
                       expires=timedelta(days=7),
                       response_headers=None,
-                      request_date=None):
+                      request_date=None,
+                      endpoint_url=None):
         """
         Presigns a method on an object and provides a url
 
@@ -1412,6 +1413,9 @@ class Minio:  # pylint: disable=too-many-public-methods
         :params request_date: Optional request_date argument to
                               specify a different request date. Default is
                               current date.
+        :param endpoint_url: Optional endpoint_url argument to specify a
+                             different server URL, instead of getting the
+                             endpoint from this client.
         :return: Presigned put object url.
         """
         is_valid_bucket_name(bucket_name, False)
@@ -1424,9 +1428,12 @@ class Minio:  # pylint: disable=too-many-public-methods
                 ' {0} secs'.format(_MAX_EXPIRY_TIME))
 
         region = self._get_bucket_region(bucket_name)
-        endpoint_url = self._endpoint_url
-        if self._enable_s3_accelerate:
-            endpoint_url = self._accelerate_endpoint_url
+
+        if endpoint_url is None:
+            if self._enable_s3_accelerate:
+                endpoint_url = self._accelerate_endpoint_url
+            else:
+                endpoint_url = self._endpoint_url
 
         url = get_target_url(endpoint_url,
                              bucket_name=bucket_name,
@@ -1443,7 +1450,8 @@ class Minio:  # pylint: disable=too-many-public-methods
     def presigned_get_object(self, bucket_name, object_name,
                              expires=timedelta(days=7),
                              response_headers=None,
-                             request_date=None):
+                             request_date=None,
+                             endpoint_url=None):
         """
         Presigns a get object request and provides a url
 
@@ -1466,6 +1474,9 @@ class Minio:  # pylint: disable=too-many-public-methods
         :params request_date: Optional request_date argument to
                               specify a different request date. Default is
                               current date.
+        :param endpoint_url: Optional endpoint_url argument to specify a
+                             different server URL, instead of getting the
+                             endpoint from this client.
         :return: Presigned url.
         """
 
@@ -1474,10 +1485,12 @@ class Minio:  # pylint: disable=too-many-public-methods
                                   object_name,
                                   expires,
                                   response_headers=response_headers,
-                                  request_date=request_date)
+                                  request_date=request_date,
+                                  endpoint_url=endpoint_url)
 
     def presigned_put_object(self, bucket_name, object_name,
-                             expires=timedelta(days=7)):
+                             expires=timedelta(days=7),
+                             endpoint_url=None):
         """
         Presigns a put object request and provides a url
 
@@ -1493,13 +1506,17 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param object_name: Object for which presigned url is generated.
         :param expires: optional expires argument to specify timedelta.
            Defaults to 7days.
+        :param endpoint_url: Optional endpoint_url argument to specify a
+                             different server URL, instead of getting the
+                             endpoint from this client.
         :return: Presigned put object url.
         """
 
         return self.presigned_url('PUT',
                                   bucket_name,
                                   object_name,
-                                  expires)
+                                  expires,
+                                  endpoint_url=endpoint_url)
 
     def presigned_post_policy(self, post_policy):
         """

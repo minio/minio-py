@@ -53,3 +53,11 @@ class PresignedGetObjectTest(TestCase):
         self.assertIn('inline', r)
         self.assertIn('test.pdf', r)
         self.assertIn('application%2Fpdf', r)
+
+    def test_endpoint_url(self):
+        client = Minio('minio-docker:9000', 'my_access_key',
+                       'my_secret_key', secure=True)
+        client._get_bucket_region = mock.Mock(return_value='us-east-1')
+        url = client.presigned_get_object(
+            'bucket', 'key', endpoint_url='http://localhost:9000')
+        self.assertRegexpMatches(url, r'^http://localhost:9000/bucket/key\?')
