@@ -32,11 +32,12 @@ PYTHON2 = (sys.version_info[0] == 2)
 
 if PYTHON2:
     # pylint: disable=no-name-in-module
-    from urllib import quote as _quote
     # pylint: disable=no-name-in-module
+    from urllib import quote as _quote
     from urllib import unquote, urlencode
+
     # pylint: disable=import-error
-    from urlparse import urlsplit, parse_qs
+    from urlparse import parse_qs, urlsplit
 
     # Create missing types.
     bytes = str  # pylint: disable=redefined-builtin, invalid-name
@@ -54,9 +55,8 @@ if PYTHON2:
     # pylint: disable=self-assigning-variable, undefined-variable, invalid-name
     basestring = basestring
 else:
+    from urllib.parse import parse_qs, unquote, urlencode, urlsplit  # pylint: disable=ungrouped-imports
     from urllib.parse import quote as _quote  # pylint: disable=ungrouped-imports
-    # pylint: disable=ungrouped-imports
-    from urllib.parse import unquote, urlsplit, parse_qs, urlencode
 
     # Create types to compat with python v2.
     builtin_range = range  # pylint: disable=invalid-name
