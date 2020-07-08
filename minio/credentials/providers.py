@@ -185,7 +185,17 @@ class FileMinioClient(Provider):
 
 
 class IAMProvider(Provider):
-    """IAM EC2 credential provider."""
+    """
+        IAM EC2 credential provider.
+    
+        expiry_delta param is used to create a window to the token expiration time.
+        If expiry_delta is greater than 0 the expiration time will be reduced by the
+        delta value.
+
+        Using a delta value is helpful to trigger credentials to expire sooner than
+        the expiration time given to ensure no requests are made with expired token.
+
+    """
 
     def __init__(self,
                  endpoint=None,
