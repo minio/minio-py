@@ -63,13 +63,14 @@ if sys.version_info[0] == 2:
         def dst(self, dt):
             return timedelta(0)
 
-    utc = UTC()
+    UTC = UTC()
     from inspect import getargspec
+    GETARGSSPEC = getargspec
 else:
     from datetime import timezone  # pylint: disable=ungrouped-imports
-    utc = timezone.utc
+    UTC = timezone.utc
     from inspect import getfullargspec  # pylint: disable=ungrouped-imports
-    getargspec = getfullargspec
+    GETARGSSPEC = getfullargspec
 
 _CLIENT = None  # initialized in main().
 _TEST_FILE = None  # initialized in main().
@@ -77,7 +78,7 @@ _LARGE_FILE = None  # initialized in main().
 _IS_AWS = None  # initialized in main().
 KB = 1024
 MB = 1024 * KB
-http = urllib3.PoolManager(
+HTTP = urllib3.PoolManager(
     cert_reqs='CERT_REQUIRED',
     ca_certs=os.environ.get('SSL_CERT_FILE') or certifi.where()
 )
@@ -156,7 +157,7 @@ def _call_test(func, *args, **kwargs):
         log_entry["function"] = "{0}({1})".format(
             log_entry["method"].__name__,
             # pylint: disable=deprecated-method
-            ', '.join(getargspec(log_entry["method"]).args[1:]))
+            ', '.join(GETARGSSPEC(log_entry["method"]).args[1:]))
     log_entry["args"] = {
         k: v for k, v in log_entry.get("args", {}).items() if v
     }
@@ -624,7 +625,7 @@ def test_copy_object_modified_since(log_entry):
         _CLIENT.put_object(bucket_name, object_source, reader, size)
         # Set up the 'modified_since' copy condition
         copy_conditions = CopyConditions()
-        mod_since = datetime(2014, 4, 1, tzinfo=utc)
+        mod_since = datetime(2014, 4, 1, tzinfo=UTC)
         copy_conditions.set_modified_since(mod_since)
         log_entry["args"]["conditions"] = {
             'set_modified_since': mod_since.strftime('%c')}
@@ -663,7 +664,7 @@ def test_copy_object_unmodified_since(  # pylint: disable=invalid-name
         _CLIENT.put_object(bucket_name, object_source, reader, size)
         # Set up the 'unmodified_since' copy condition
         copy_conditions = CopyConditions()
-        unmod_since = datetime(2014, 4, 1, tzinfo=utc)
+        unmod_since = datetime(2014, 4, 1, tzinfo=UTC)
         copy_conditions.set_unmodified_since(unmod_since)
         log_entry["args"]["conditions"] = {
             'set_unmodified_since': unmod_since.strftime('%c')}
@@ -1245,7 +1246,7 @@ def test_presigned_get_object_default_expiry(  # pylint: disable=invalid-name
                            size)
         presigned_get_object_url = _CLIENT.presigned_get_object(
             bucket_name, object_name)
-        response = http.urlopen('GET', presigned_get_object_url)
+        response = HTTP.urlopen('GET', presigned_get_object_url)
         if response.status != 200:
             raise ResponseError(response,
                                 'GET',
@@ -1276,7 +1277,7 @@ def test_presigned_get_object_expiry(  # pylint: disable=invalid-name
                            size)
         presigned_get_object_url = _CLIENT.presigned_get_object(
             bucket_name, object_name, timedelta(seconds=120))
-        response = http.urlopen('GET', presigned_get_object_url)
+        response = HTTP.urlopen('GET', presigned_get_object_url)
         if response.status != 200:
             raise ResponseError(response,
                                 'GET',
@@ -1286,7 +1287,7 @@ def test_presigned_get_object_expiry(  # pylint: disable=invalid-name
         log_entry["args"]["presigned_get_object_url"] = (
             presigned_get_object_url)
 
-        response = http.urlopen('GET', presigned_get_object_url)
+        response = HTTP.urlopen('GET', presigned_get_object_url)
 
         log_entry["args"]['response.status'] = response.status
         log_entry["args"]['response.reason'] = response.reason
@@ -1306,7 +1307,7 @@ def test_presigned_get_object_expiry(  # pylint: disable=invalid-name
 
         # Wait for 2 seconds for the presigned url to expire
         time.sleep(2)
-        response = http.urlopen('GET', presigned_get_object_url)
+        response = HTTP.urlopen('GET', presigned_get_object_url)
 
         log_entry["args"]['response.status-2'] = response.status
         log_entry["args"]['response.reason-2'] = response.reason
@@ -1357,7 +1358,7 @@ def test_presigned_get_object_response_headers(  # pylint: disable=invalid-name
         log_entry["args"]["presigned_get_object_url"] = (
             presigned_get_object_url)
 
-        response = http.urlopen('GET', presigned_get_object_url)
+        response = HTTP.urlopen('GET', presigned_get_object_url)
         returned_content_type = response.headers['Content-Type']
         returned_content_language = response.headers['Content-Language']
 
@@ -1400,7 +1401,7 @@ def test_presigned_put_object_default_expiry(  # pylint: disable=invalid-name
     try:
         presigned_put_object_url = _CLIENT.presigned_put_object(
             bucket_name, object_name)
-        response = http.urlopen('PUT',
+        response = HTTP.urlopen('PUT',
                                 presigned_put_object_url,
                                 LimitedRandomReader(1 * KB))
         if response.status != 200:
@@ -1433,7 +1434,7 @@ def test_presigned_put_object_expiry(  # pylint: disable=invalid-name
             bucket_name, object_name, timedelta(seconds=1))
         # Wait for 2 seconds for the presigned url to expire
         time.sleep(2)
-        response = http.urlopen('PUT',
+        response = HTTP.urlopen('PUT',
                                 presigned_put_object_url,
                                 LimitedRandomReader(1 * KB))
         if response.status == 200:
