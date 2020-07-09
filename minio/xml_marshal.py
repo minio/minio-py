@@ -28,8 +28,8 @@ This module contains the simple wrappers for XML marshaller's.
 from __future__ import absolute_import
 
 import io
-import xml.etree.ElementTree as ET
 from collections import defaultdict
+from xml.etree import ElementTree as ET
 
 _S3_NAMESPACE = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
