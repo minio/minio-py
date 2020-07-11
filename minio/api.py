@@ -61,9 +61,10 @@ from .helpers import (DEFAULT_PART_SIZE, MAX_MULTIPART_COUNT, MAX_PART_SIZE,
                       optimal_part_info, read_full)
 from .parsers import (parse_assume_role, parse_copy_object,
                       parse_get_bucket_notification, parse_list_buckets,
-                      parse_list_multipart_uploads, parse_list_objects,
-                      parse_list_objects_v2, parse_list_parts,
-                      parse_location_constraint, parse_multi_delete_response,
+                      parse_list_multipart_uploads, parse_list_object_versions,
+                      parse_list_objects, parse_list_objects_v2,
+                      parse_list_parts, parse_location_constraint,
+                      parse_multi_delete_response,
                       parse_multipart_upload_result,
                       parse_new_multipart_upload)
 from .select import SelectObjectReader
@@ -275,7 +276,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         return SelectObjectReader(response)
 
     # Bucket level
-    def make_bucket(self, bucket_name, location='us-east-1'):
+    def make_bucket(self, bucket_name, location='us-east-1',
+                    object_lock=False):
         """
         Make a new bucket on the server.
 
@@ -288,9 +290,11 @@ class Minio:  # pylint: disable=too-many-public-methods
         Examples:
             minio.make_bucket('foo')
             minio.make_bucket('foo', 'us-west-1')
+            minio.make_bucket('foo', 'us-west-1', object_lock=True)
 
         :param bucket_name: Bucket to create on server
         :param location: Location to create bucket on
+        :param object_lock: Flag to set object-lock feature.
         """
         is_valid_bucket_name(bucket_name, True)
 
@@ -306,6 +310,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         method = 'PUT'
         # Set user agent once before the request.
         headers = {'User-Agent': self._user_agent}
+        if object_lock:
+            headers["x-amz-bucket-object-lock-enabled"] = "true"
 
         content = None
         if location and location != 'us-east-1':
@@ -648,6 +654,37 @@ class Minio:  # pylint: disable=too-many-public-methods
                 response.close()
                 continue
 
+    def _do_bucket_versioning(self, bucket_name, status):
+        """Do versioning support in a bucket."""
+        is_valid_bucket_name(bucket_name, False)
+        config = (
+            '<VersioningConfiguration '
+            'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+            '<Status>{0}</Status></VersioningConfiguration>'
+        ).format("Enabled" if status else "Suspended")
+        body = config.encode()
+        headers = {
+            'Content-Length': str(len(body)),
+            'Content-Md5': get_md5_base64digest(body)
+        }
+        content_sha256_hex = get_sha256_hexdigest(body)
+        self._url_open(
+            "PUT",
+            bucket_name=bucket_name,
+            query={"versioning": ""},
+            headers=headers,
+            body=body,
+            content_sha256=content_sha256_hex,
+        )
+
+    def enable_bucket_versioning(self, bucket_name):
+        """Enable versioning support in a bucket."""
+        self._do_bucket_versioning(bucket_name, True)
+
+    def disable_bucket_versioning(self, bucket_name):
+        """Disables versioning support in a bucket."""
+        self._do_bucket_versioning(bucket_name, False)
+
     def fput_object(self, bucket_name, object_name, file_path,
                     content_type='application/octet-stream',
                     metadata=None, sse=None, progress=None,
@@ -677,23 +714,28 @@ class Minio:  # pylint: disable=too-many-public-methods
                                    progress, part_size)
 
     def fget_object(self, bucket_name, object_name, file_path,
-                    request_headers=None, sse=None):
+                    request_headers=None, sse=None, version_id=None,
+                    extra_query_params=None):
         """
         Retrieves an object from a bucket and writes at file_path.
 
         Examples:
             minio.fget_object('foo', 'bar', 'localfile')
+            minio.fget_object(
+                'foo', 'bar', 'localfile', version_id='VERSION-ID',
+            )
 
         :param bucket_name: Bucket to read object from.
         :param object_name: Name of the object to read.
         :param file_path: Local file path to save the object.
         :param request_headers: Any additional headers to be added with GET
                                 request.
+        :param sse: Server-side encryption of customer key.
+        :param version_id: Version-ID of the object.
+        :param extra_query_params: Extra query parameters for advanced usage.
         """
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
-
-        stat = self.stat_object(bucket_name, object_name, sse)
 
         if os.path.isdir(file_path):
             raise OSError("file is a directory.")
@@ -702,6 +744,13 @@ class Minio:  # pylint: disable=too-many-public-methods
         top_level_dir = os.path.dirname(file_path)
         if top_level_dir:
             mkdir_p(top_level_dir)
+
+        stat = self.stat_object(
+            bucket_name,
+            object_name,
+            sse,
+            version_id=version_id,
+        )
 
         # Write to a temporary file "file_path.part.minio" before saving.
         file_part_path = file_path + stat.etag + '.part.minio'
@@ -713,11 +762,14 @@ class Minio:  # pylint: disable=too-many-public-methods
 
             # Get partial object.
             response = self._get_partial_object(
-                bucket_name, object_name,
+                bucket_name,
+                object_name,
                 offset=file_statinfo.st_size,
                 length=0,
                 request_headers=request_headers,
-                sse=sse
+                sse=sse,
+                version_id=version_id,
+                extra_query_params=extra_query_params,
             )
 
             # Save content_size to verify if we wrote more data.
@@ -753,7 +805,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         return stat
 
     def get_object(self, bucket_name, object_name, request_headers=None,
-                   sse=None):
+                   sse=None, version_id=None, extra_query_params=None):
         """
         Retrieves an object from a bucket.
 
@@ -776,13 +828,18 @@ class Minio:  # pylint: disable=too-many-public-methods
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
-        return self._get_partial_object(bucket_name,
-                                        object_name,
-                                        request_headers=request_headers,
-                                        sse=sse)
+        return self._get_partial_object(
+            bucket_name,
+            object_name,
+            request_headers=request_headers,
+            sse=sse,
+            version_id=version_id,
+            extra_query_params=extra_query_params,
+        )
 
     def get_partial_object(self, bucket_name, object_name, offset=0, length=0,
-                           request_headers=None, sse=None):
+                           request_headers=None, sse=None, version_id=None,
+                           extra_query_params=None):
         """
         Retrieves an object from a bucket.
 
@@ -811,11 +868,16 @@ class Minio:  # pylint: disable=too-many-public-methods
         is_valid_bucket_name(bucket_name, False)
         is_non_empty_string(object_name)
 
-        return self._get_partial_object(bucket_name,
-                                        object_name,
-                                        offset, length,
-                                        request_headers=request_headers,
-                                        sse=sse)
+        return self._get_partial_object(
+            bucket_name,
+            object_name,
+            offset,
+            length,
+            request_headers=request_headers,
+            sse=sse,
+            version_id=version_id,
+            extra_query_params=extra_query_params,
+        )
 
     def copy_object(self, bucket_name, object_name, object_source,
                     conditions=None, source_sse=None, sse=None, metadata=None):
@@ -949,7 +1011,8 @@ class Minio:  # pylint: disable=too-many-public-methods
                                    metadata=metadata, sse=sse,
                                    progress=progress)
 
-    def list_objects(self, bucket_name, prefix='', recursive=False):
+    def list_objects(self, bucket_name, prefix=None, recursive=False,
+                     include_version=False):
         """
         List objects in the given bucket.
 
@@ -986,41 +1049,17 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param recursive: If yes, returns all objects for a specified prefix
         :return: An iterator of objects in alphabetical order.
         """
-        is_valid_bucket_name(bucket_name, False)
+        return self._list_objects(
+            bucket_name,
+            delimiter=None if recursive else "/",
+            prefix=prefix,
+            use_version1=True,
+            include_version=include_version,
+        )
 
-        # If someone explicitly set prefix to None convert it to empty string.
-        prefix = prefix or ''
-
-        method = 'GET'
-
-        # Initialize query parameters.
-        query = {
-            'prefix': prefix
-        }
-
-        # Delimited by default.
-        if not recursive:
-            query['delimiter'] = '/'
-
-        marker = ''
-        is_truncated = True
-        while is_truncated:
-            if marker:
-                query['marker'] = marker
-            headers = {}
-            response = self._url_open(method,
-                                      bucket_name=bucket_name,
-                                      query=query,
-                                      headers=headers)
-            objects, is_truncated, marker = parse_list_objects(
-                response.data,
-                bucket_name=bucket_name
-            )
-            for obj in objects:
-                yield obj
-
-    def list_objects_v2(self, bucket_name, prefix='', recursive=False,
-                        start_after=''):
+    def list_objects_v2(self, bucket_name, prefix=None, recursive=False,
+                        start_after=None, include_user_meta=False,
+                        include_version=False):
         """
         List objects in the given bucket using the List objects V2 API.
 
@@ -1064,39 +1103,17 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param recursive: If yes, returns all objects for a specified prefix
         :return: An iterator of objects in alphabetical order.
         """
-        is_valid_bucket_name(bucket_name, False)
+        return self._list_objects(
+            bucket_name,
+            delimiter=None if recursive else "/",
+            include_user_meta=include_user_meta,
+            prefix=prefix,
+            start_after=start_after,
+            include_version=include_version,
+        )
 
-        # If someone explicitly set prefix to None convert it to empty string.
-        prefix = prefix or ''
-        start_after = start_after or ''
-
-        # Initialize query parameters.
-        query = {
-            'list-type': '2',
-            'start-after': start_after,
-            'prefix': prefix
-        }
-
-        # Delimited by default.
-        if not recursive:
-            query['delimiter'] = '/'
-
-        continuation_token = None
-        is_truncated = True
-        while is_truncated:
-            if continuation_token:
-                query['continuation-token'] = continuation_token
-            response = self._url_open(method='GET',
-                                      bucket_name=bucket_name,
-                                      query=query)
-            objects, is_truncated, continuation_token = parse_list_objects_v2(
-                response.data, bucket_name=bucket_name
-            )
-
-            for obj in objects:
-                yield obj
-
-    def stat_object(self, bucket_name, object_name, sse=None):
+    def stat_object(self, bucket_name, object_name, sse=None, version_id=None,
+                    extra_query_params=None):
         """
         Check if an object exists.
 
@@ -1105,34 +1122,49 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: Object metadata if object exists
         """
 
+        is_valid_bucket_name(bucket_name, False)
+        is_non_empty_string(object_name)
+
         headers = {}
         if sse:
             is_valid_sse_c_object(sse)
             headers = sse.headers()
 
-        is_valid_bucket_name(bucket_name, False)
-        is_non_empty_string(object_name)
+        if version_id:
+            if extra_query_params:
+                extra_query_params["versionId"] = version_id
+            else:
+                extra_query_params = {"versionId": version_id}
 
-        response = self._url_open('HEAD', bucket_name=bucket_name,
-                                  object_name=object_name, headers=headers)
+        response = self._url_open(
+            "HEAD",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            headers=headers,
+            query=extra_query_params,
+        )
 
-        etag = response.headers.get('etag', '').replace('"', '')
-        size = int(response.headers.get('content-length', '0'))
-        content_type = response.headers.get('content-type', '')
-        last_modified = response.headers.get('last-modified')
+        custom_metadata = {
+            key: value for key, value in response.headers.items()
+            if is_supported_header(key) or is_amz_header(key)
+        }
 
-        # Capture only custom metadata.
-        custom_metadata = dict()
-        for k in response.headers:
-            if is_supported_header(k) or is_amz_header(k):
-                custom_metadata[k] = response.headers.get(k)
-
+        last_modified = response.headers.get("last-modified")
         if last_modified:
             last_modified = dateutil.parser.parse(last_modified).timetuple()
-        return Object(bucket_name, object_name, last_modified, etag, size,
-                      content_type=content_type, metadata=custom_metadata)
 
-    def remove_object(self, bucket_name, object_name):
+        return Object(
+            bucket_name,
+            object_name,
+            last_modified=last_modified,
+            etag=response.headers.get("etag", "").replace('"', ""),
+            size=int(response.headers.get("content-length", "0")),
+            content_type=response.headers.get("content-type"),
+            metadata=custom_metadata,
+            version_id=response.headers.get("x-amz-version-id"),
+        )
+
+    def remove_object(self, bucket_name, object_name, version_id=None):
         """
         Remove an object from the bucket.
 
@@ -1145,8 +1177,12 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         # No reason to store successful response, for errors
         # relevant exceptions are thrown.
-        self._url_open('DELETE', bucket_name=bucket_name,
-                       object_name=object_name)
+        self._url_open(
+            "DELETE",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            query={"versionId": version_id} if version_id else None,
+        )
 
     def _process_remove_objects_batch(self, bucket_name, objects_batch):
         """
@@ -1196,32 +1232,29 @@ class Minio:  # pylint: disable=too-many-public-methods
         # turn list like objects into an iterator.
         objects_iter = itertools.chain(objects_iter)
 
-        obj_batch = []
-        exit_loop = False
-        while not exit_loop:
-            try:
-                object_name = next(objects_iter)
-                is_non_empty_string(object_name)
-            except StopIteration:
-                exit_loop = True
+        def check_name(name):
+            if not isinstance(name, basestring):
+                name = name[0]
+            is_non_empty_string(name)
+            return True
 
-            if not exit_loop:
-                obj_batch.append(object_name)
+        while True:
+            # get 1000 entries or whatever available.
+            obj_batch = [
+                name for _, name in zip(range(1000), objects_iter)
+                if check_name(name)
+            ]
 
-            # if we have 1000 items in the batch, or we have to exit
-            # the loop, we have to make a request to delete objects.
-            if len(obj_batch) == 1000 or (exit_loop and len(obj_batch) > 0):
-                # send request and parse response
-                errs_result = self._process_remove_objects_batch(
-                    bucket_name, obj_batch
-                )
+            if not obj_batch:
+                break
 
-                # return the delete errors.
-                for err_result in errs_result:
-                    yield err_result
+            errs_result = self._process_remove_objects_batch(
+                bucket_name, obj_batch,
+            )
 
-                # clear batch for next set of items
-                obj_batch = []
+            # return the delete errors.
+            for err_result in errs_result:
+                yield err_result
 
     def list_incomplete_uploads(self, bucket_name, prefix='', recursive=False):
         """
@@ -1389,7 +1422,9 @@ class Minio:  # pylint: disable=too-many-public-methods
                       object_name,
                       expires=timedelta(days=7),
                       response_headers=None,
-                      request_date=None):
+                      request_date=None,
+                      version_id=None,
+                      extra_query_params=None):
         """
         Presigns a method on an object and provides a url
 
@@ -1428,10 +1463,19 @@ class Minio:  # pylint: disable=too-many-public-methods
         if self._enable_s3_accelerate:
             endpoint_url = self._accelerate_endpoint_url
 
-        url = get_target_url(endpoint_url,
-                             bucket_name=bucket_name,
-                             object_name=object_name,
-                             bucket_region=region)
+        if version_id:
+            if extra_query_params:
+                extra_query_params["versionId"] = version_id
+            else:
+                extra_query_params = {"versionId": version_id}
+
+        url = get_target_url(
+            endpoint_url,
+            bucket_name=bucket_name,
+            object_name=object_name,
+            bucket_region=region,
+            query=extra_query_params,
+        )
 
         return presign_v4(method, url,
                           credentials=self._credentials,
@@ -1443,7 +1487,9 @@ class Minio:  # pylint: disable=too-many-public-methods
     def presigned_get_object(self, bucket_name, object_name,
                              expires=timedelta(days=7),
                              response_headers=None,
-                             request_date=None):
+                             request_date=None,
+                             version_id=None,
+                             extra_query_params=None):
         """
         Presigns a get object request and provides a url
 
@@ -1468,13 +1514,16 @@ class Minio:  # pylint: disable=too-many-public-methods
                               current date.
         :return: Presigned url.
         """
-
-        return self.presigned_url('GET',
-                                  bucket_name,
-                                  object_name,
-                                  expires,
-                                  response_headers=response_headers,
-                                  request_date=request_date)
+        return self.presigned_url(
+            "GET",
+            bucket_name,
+            object_name,
+            expires,
+            response_headers=response_headers,
+            request_date=request_date,
+            version_id=version_id,
+            extra_query_params=extra_query_params,
+        )
 
     def presigned_put_object(self, bucket_name, object_name,
                              expires=timedelta(days=7)):
@@ -1557,7 +1606,8 @@ class Minio:  # pylint: disable=too-many-public-methods
     # All private functions below.
     def _get_partial_object(self, bucket_name, object_name,
                             offset=0, length=0, request_headers=None,
-                            sse=None):
+                            sse=None, version_id=None,
+                            extra_query_params=None):
         """Retrieves an object from a bucket.
 
         Optionally takes an offset and length of data to retrieve.
@@ -1596,11 +1646,20 @@ class Minio:  # pylint: disable=too-many-public-methods
         if sse:
             headers.update(sse.headers())
 
-        return self._url_open('GET',
-                              bucket_name=bucket_name,
-                              object_name=object_name,
-                              headers=headers,
-                              preload_content=False)
+        if version_id:
+            if extra_query_params:
+                extra_query_params["versionId"] = version_id
+            else:
+                extra_query_params = {"versionId": version_id}
+
+        return self._url_open(
+            "GET",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            headers=headers,
+            preload_content=False,
+            query=extra_query_params,
+        )
 
     def _do_put_object(self, bucket_name, object_name, part_data,
                        part_size, upload_id='', part_number=0,
@@ -1669,18 +1728,20 @@ class Minio:  # pylint: disable=too-many-public-methods
         if progress:
             # Update the 'progress' object with uploaded 'part_size'.
             progress.update(part_size)
-        return response.headers['etag'].replace('"', '')
+        return (
+            response.headers['etag'].replace('"', ''),
+            response.headers.get("x-amz-version-id"),
+        )
 
     def _upload_part_routine(self, part_info):
         """ Upload part."""
         (bucket_name, object_name, upload_id, part_number,
          part_data, sse, progress) = part_info
         # Initiate multipart put.
-        etag = self._do_put_object(bucket_name, object_name, part_data,
+        vals = self._do_put_object(bucket_name, object_name, part_data,
                                    len(part_data), upload_id,
                                    part_number, sse=sse, progress=progress)
-
-        return part_number, etag, len(part_data)
+        return part_number, vals[0], len(part_data)
 
     def _stream_put_object(self, bucket_name, object_name,
                            data, content_size,
@@ -1772,10 +1833,10 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         # Complete all multipart transactions if possible.
         try:
-            mpart_result = self._complete_multipart_upload(bucket_name,
-                                                           object_name,
-                                                           upload_id,
-                                                           uploaded_parts)
+            result = self._complete_multipart_upload(bucket_name,
+                                                     object_name,
+                                                     upload_id,
+                                                     uploaded_parts)
         except:
             # Any exception that occurs sends an abort on the
             # on-going multipart operation.
@@ -1783,9 +1844,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                                            object_name,
                                            upload_id)
             raise
-
-        # Return etag here.
-        return mpart_result.etag
+        return result[0].etag, result[1]
 
     def _remove_incomplete_upload(self, bucket_name, object_name, upload_id):
         """
@@ -1862,8 +1921,10 @@ class Minio:  # pylint: disable=too-many-public-methods
                                   query={'uploadId': upload_id},
                                   headers=headers, body=data,
                                   content_sha256=sha256_hex)
-
-        return parse_multipart_upload_result(response.data)
+        return (
+            parse_multipart_upload_result(response.data),
+            response.headers.get("x-amz-version-id"),
+        )
 
     def _delete_bucket_region(self, bucket_name):
         """
@@ -2062,3 +2123,84 @@ class Minio:  # pylint: disable=too-many-public-methods
                              ' error: {0}'.format(response.status))
 
         return response
+
+    def _list_objects(  # pylint: disable=too-many-arguments,too-many-branches
+            self,
+            bucket_name,
+            continuation_token=None,  # listV2 only
+            delimiter=None,  # all
+            encoding_type=None,  # all
+            fetch_owner=None,  # listV2 only
+            include_user_meta=None,  # MinIO specific listV2.
+            max_keys=None,  # all
+            prefix=None,  # all
+            start_after=None,  # all: v1:marker, versioned:key_marker
+            version_id_marker=None,  # versioned
+            use_version1=False,
+            include_version=False,
+    ):
+        """
+        List objects optionally including versions.
+        Note: Its required to send empty values to delimiter/prefix and 1000 to
+        max-keys when not provided for server-side bucket policy evaluation to
+        succeed; otherwise AccessDenied error will be returned for such
+        policies.
+        """
+
+        is_valid_bucket_name(bucket_name, False)
+
+        if version_id_marker:
+            include_version = True
+
+        is_truncated = True
+        while is_truncated:
+            query = {}
+            if include_version:
+                query["versions"] = ""
+            elif not use_version1:
+                query["list-type"] = "2"
+
+            if not include_version and not use_version1:
+                if continuation_token:
+                    query["continuation-token"] = continuation_token
+                if fetch_owner:
+                    query["fetch-owner"] = "true"
+                if include_user_meta:
+                    query["user-metadata"] = "true"
+            query["delimiter"] = delimiter or ""
+            if encoding_type:
+                query["encoding-type"] = encoding_type
+            query["max-keys"] = str(max_keys or 1000)
+            query["prefix"] = prefix or ""
+            if start_after:
+                if include_version:
+                    query["key-marker"] = start_after
+                elif use_version1:
+                    query["marker"] = start_after
+                else:
+                    query["start-after"] = start_after
+            if version_id_marker:
+                query["version-id-marker"] = version_id_marker
+
+            response = self._url_open(
+                method="GET",
+                bucket_name=bucket_name,
+                query=query,
+            )
+
+            if include_version:
+                objects, is_truncated, start_after, version_id_marker = (
+                    parse_list_object_versions(response.data, bucket_name)
+                )
+            elif use_version1:
+                objects, is_truncated, start_after = parse_list_objects(
+                    response.data,
+                    bucket_name,
+                )
+            else:
+                objects, is_truncated, continuation_token = (
+                    parse_list_objects_v2(response.data, bucket_name)
+                )
+
+            for obj in objects:
+                yield obj

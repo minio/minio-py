@@ -56,8 +56,12 @@ class Object:
     :param metadata: Optional parameter contains all the custom metadata.
     """
 
-    def __init__(self, bucket_name, object_name, last_modified, etag, size,
-                 content_type=None, is_dir=False, metadata=None):
+    def __init__(self, bucket_name,  # pylint: disable=too-many-arguments
+                 object_name,
+                 last_modified=None, etag='',
+                 size=0, content_type=None, is_dir=False, metadata=None,
+                 version_id=None, is_latest=None, storage_class=None,
+                 owner_id=None, owner_name=None, delete_marker=False):
         self.bucket_name = bucket_name
         self.object_name = object_name
         self.last_modified = last_modified
@@ -66,18 +70,37 @@ class Object:
         self.content_type = content_type
         self.is_dir = is_dir
         self.metadata = metadata
+        self.version_id = version_id
+        self.is_latest = is_latest
+        self.storage_class = storage_class
+        self.owner_id = owner_id
+        self.owner_name = owner_name
+        self.delete_marker = delete_marker
 
     def __str__(self):
-        string_format = ("<Object: bucket_name: {0} object_name: {1}"
-                         " last_modified: {2} etag: {3} size: {4}"
-                         " content_type: {5}, is_dir: {6}, metadata: {7}>")
-        return string_format.format(self.bucket_name,
-                                    self.object_name.encode("utf-8"),
-                                    self.last_modified,
-                                    self.etag, self.size,
-                                    self.content_type,
-                                    self.is_dir,
-                                    self.metadata)
+        return (
+            "<Object: "
+            "bucket_name: {bucket_name} "
+            "object_name: {object_name} "
+            "version_id: {version_id} "
+            "last_modified: {last_modified} "
+            "etag: {etag} "
+            "size: {size} "
+            "content_type: {content_type} "
+            "is_dir: {is_dir} "
+            "metadata: {metadata} "
+            ">"
+        ).format(
+            bucket_name=self.bucket_name,
+            object_name=self.object_name.encode("utf-8"),
+            version_id=self.version_id,
+            last_modified=self.last_modified,
+            etag=self.etag,
+            size=self.size,
+            content_type=self.content_type,
+            is_dir=self.is_dir,
+            metadata=self.metadata,
+        )
 
 
 class MultipartUploadResult:
