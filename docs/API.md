@@ -78,6 +78,7 @@ minioClient = Minio('play.min.io',
 ```
 
 > NOTE: If there is a corporate proxy, specify a custom httpClient using *urllib3.ProxyManager* as shown below:
+
 ```py
 from minio import Minio
 from minio.error import ResponseError
