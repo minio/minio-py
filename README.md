@@ -88,7 +88,7 @@ try:
        minioClient.fput_object('maylogs', 'pumaserver_debug.log', '/tmp/pumaserver_debug.log')
 except ResponseError as err:
        print(err)
-        
+
 ```
 
 #### Run file-uploader
@@ -216,5 +216,3 @@ The full API Reference is available here.
 [Contributors Guide](https://github.com/minio/minio-py/blob/master/CONTRIBUTING.md)
 
 [![PYPI](https://img.shields.io/pypi/v/minio.svg)](https://pypi.python.org/pypi/minio)
-[![Build Status](https://travis-ci.org/minio/minio-py.svg)](https://travis-ci.org/minio/minio-py)
-[![Build status](https://ci.appveyor.com/api/projects/status/1d05e6nvxcelmrak?svg=true)](https://ci.appveyor.com/project/harshavardhana/minio-py)
