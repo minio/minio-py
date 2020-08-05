@@ -30,7 +30,7 @@ try:
 except ImportError:
     from collections.abc import MutableMapping
 
-from .helpers import is_non_empty_string
+from .helpers import check_non_empty_string
 
 # CopyCondition explanation:
 # http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectCOPY.html
@@ -75,12 +75,12 @@ class CopyConditions(MutableMapping):
 
     def set_match_etag(self, etag):
         """Set ETag match condition."""
-        is_non_empty_string(etag)
+        check_non_empty_string(etag)
         self._store["X-Amz-Copy-Source-If-Match"] = etag
 
     def set_match_etag_except(self, etag):
         """Set ETag not match condition."""
-        is_non_empty_string(etag)
+        check_non_empty_string(etag)
         self._store["X-Amz-Copy-Source-If-None-Match"] = etag
 
     def set_unmodified_since(self, mod_time):

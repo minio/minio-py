@@ -30,7 +30,7 @@ import datetime
 import json
 
 from .error import InvalidArgumentError
-from .helpers import check_bucket_name, is_non_empty_string
+from .helpers import check_bucket_name, check_non_empty_string
 
 
 # Policy explanation:
@@ -66,7 +66,7 @@ class PostPolicy:
 
         :param key: set key name.
         """
-        is_non_empty_string(key)
+        check_non_empty_string(key)
 
         self.policies.append(('eq', '$key', key))
         self.form_data['key'] = key
@@ -78,7 +78,7 @@ class PostPolicy:
 
         :param key_startswith: set key prefix name.
         """
-        is_non_empty_string(key_startswith)
+        check_non_empty_string(key_startswith)
 
         self.policies.append(('starts-with', '$key', key_startswith))
         self.form_data['key'] = key_startswith

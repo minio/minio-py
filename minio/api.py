@@ -51,14 +51,13 @@ from .error import (AccessDenied, InvalidArgumentError, InvalidSizeError,
 from .fold_case_dict import FoldCaseDict
 from .helpers import (DEFAULT_PART_SIZE, MAX_MULTIPART_COUNT, MAX_PART_SIZE,
                       MAX_POOL_SIZE, MIN_PART_SIZE, amzprefix_user_metadata,
-                      check_bucket_name, dump_http, get_md5_base64digest,
-                      get_s3_region_from_endpoint, get_scheme_host,
-                      get_sha256_hexdigest, get_target_url, is_amz_header,
-                      is_non_empty_string, is_supported_header,
-                      is_valid_endpoint, is_valid_notification_config,
-                      is_valid_policy_type, is_valid_sse_c_object,
-                      is_valid_sse_object, mkdir_p, optimal_part_info,
-                      read_full)
+                      check_bucket_name, check_non_empty_string, dump_http,
+                      get_md5_base64digest, get_s3_region_from_endpoint,
+                      get_scheme_host, get_sha256_hexdigest, get_target_url,
+                      is_amz_header, is_supported_header, is_valid_endpoint,
+                      is_valid_notification_config, is_valid_policy_type,
+                      is_valid_sse_c_object, is_valid_sse_object, mkdir_p,
+                      optimal_part_info, read_full)
 from .parsers import (parse_assume_role, parse_copy_object,
                       parse_get_bucket_notification, parse_list_buckets,
                       parse_list_multipart_uploads, parse_list_object_versions,
@@ -241,7 +240,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             data = client.select_object_content('foo', 'test.csv', options)
         """
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
+        check_non_empty_string(object_name)
 
         content = xml_marshal_select(opts)
         url_values = {
@@ -774,7 +773,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             )
         """
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
+        check_non_empty_string(object_name)
 
         if os.path.isdir(file_path):
             raise OSError("file is a directory.")
@@ -868,7 +867,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 response.release_conn()
         """
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
+        check_non_empty_string(object_name)
 
         return self._get_partial_object(
             bucket_name,
@@ -907,7 +906,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 response.release_conn()
         """
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
+        check_non_empty_string(object_name)
 
         return self._get_partial_object(
             bucket_name,
@@ -952,8 +951,8 @@ class Minio:  # pylint: disable=too-many-public-methods
             )
         """
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
-        is_non_empty_string(object_source)
+        check_non_empty_string(object_name)
+        check_non_empty_string(object_source)
 
         headers = {}
 
@@ -1011,7 +1010,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         is_valid_sse_object(sse)
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
+        check_non_empty_string(object_name)
 
         if progress:
             if not isinstance(progress, Thread):
@@ -1179,7 +1178,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
 
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
+        check_non_empty_string(object_name)
 
         headers = {}
         if sse:
@@ -1237,7 +1236,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             )
         """
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
+        check_non_empty_string(object_name)
 
         # No reason to store successful response, for errors
         # relevant exceptions are thrown.
@@ -1306,7 +1305,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         def check_name(name):
             if not isinstance(name, basestring):
                 name = name[0]
-            is_non_empty_string(name)
+            check_non_empty_string(name)
             return True
 
         while True:
@@ -1436,8 +1435,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param upload_id: Upload id of the previously uploaded object name.
         """
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
-        is_non_empty_string(upload_id)
+        check_non_empty_string(object_name)
+        check_non_empty_string(upload_id)
 
         query = {
             'uploadId': upload_id,
@@ -1474,7 +1473,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             minio.remove_incomplete_upload("my-bucketname", "my-objectname")
         """
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
+        check_non_empty_string(object_name)
 
         uploads = self._list_incomplete_uploads(bucket_name, object_name,
                                                 recursive=True,
@@ -1544,7 +1543,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             print(url)
         """
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
+        check_non_empty_string(object_name)
 
         if (expires.total_seconds() < 1 or
                 expires.total_seconds() > _MAX_EXPIRY_TIME):
@@ -1740,7 +1739,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         is_valid_sse_c_object(sse)
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
+        check_non_empty_string(object_name)
 
         headers = request_headers or {}
 
@@ -1783,7 +1782,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param progress: A progress object
         """
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
+        check_non_empty_string(object_name)
 
         # Accept only bytes - otherwise we need to know how to encode
         # the data to bytes before storing in the object.
@@ -1866,7 +1865,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param part_size: Multipart part size
         """
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
+        check_non_empty_string(object_name)
         if not callable(getattr(data, 'read')):
             raise ValueError(
                 'Invalid input data does not implement'
@@ -1977,7 +1976,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: Returns an upload id.
         """
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
+        check_non_empty_string(object_name)
 
         headers = {}
         if metadata:
@@ -2003,8 +2002,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param uploaded_parts: Key, Value dictionary of uploaded parts.
         """
         check_bucket_name(bucket_name)
-        is_non_empty_string(object_name)
-        is_non_empty_string(upload_id)
+        check_non_empty_string(object_name)
+        check_non_empty_string(upload_id)
 
         # Order uploaded parts as required by S3 specification
         ordered_parts = []
