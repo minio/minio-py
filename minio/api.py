@@ -51,14 +51,14 @@ from .error import (AccessDenied, InvalidArgumentError, InvalidSizeError,
 from .fold_case_dict import FoldCaseDict
 from .helpers import (DEFAULT_PART_SIZE, MAX_MULTIPART_COUNT, MAX_PART_SIZE,
                       MAX_POOL_SIZE, MIN_PART_SIZE, amzprefix_user_metadata,
-                      dump_http, get_md5_base64digest,
+                      check_bucket_name, dump_http, get_md5_base64digest,
                       get_s3_region_from_endpoint, get_scheme_host,
                       get_sha256_hexdigest, get_target_url, is_amz_header,
                       is_non_empty_string, is_supported_header,
-                      is_valid_bucket_name, is_valid_endpoint,
-                      is_valid_notification_config, is_valid_policy_type,
-                      is_valid_sse_c_object, is_valid_sse_object, mkdir_p,
-                      optimal_part_info, read_full)
+                      is_valid_endpoint, is_valid_notification_config,
+                      is_valid_policy_type, is_valid_sse_c_object,
+                      is_valid_sse_object, mkdir_p, optimal_part_info,
+                      read_full)
 from .parsers import (parse_assume_role, parse_copy_object,
                       parse_get_bucket_notification, parse_list_buckets,
                       parse_list_multipart_uploads, parse_list_object_versions,
@@ -240,7 +240,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         Example::
             data = client.select_object_content('foo', 'test.csv', options)
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
         content = xml_marshal_select(opts)
@@ -279,7 +279,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             minio.make_bucket('foo', 'us-west-1')
             minio.make_bucket('foo', 'us-west-1', object_lock=True)
         """
-        is_valid_bucket_name(bucket_name, True)
+        check_bucket_name(bucket_name, True)
 
         # Default region for all requests.
         region = self._region or 'us-east-1'
@@ -398,7 +398,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             else:
                 print("my-bucketname does not exist")
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
 
         try:
             self._url_open('HEAD', bucket_name=bucket_name)
@@ -417,7 +417,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         Example::
             minio.remove_bucket("my-bucketname")
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         self._url_open('DELETE', bucket_name=bucket_name)
 
         # Make sure to purge bucket_name from region cache.
@@ -433,7 +433,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         Example::
             config = minio.get_bucket_policy("my-bucketname")
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
 
         response = self._url_open("GET",
                                   bucket_name=bucket_name,
@@ -465,7 +465,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         is_valid_policy_type(policy)
 
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
 
         headers = {
             'Content-Length': str(len(policy)),
@@ -489,7 +489,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         Example::
             config = minio.get_bucket_notification("my-bucketname")
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
 
         response = self._url_open(
             "GET",
@@ -509,7 +509,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         Example::
             minio.set_bucket_notification("my-bucketname", config)
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_valid_notification_config(notifications)
 
         content = marshal_bucket_notifications(notifications)
@@ -537,7 +537,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         Example::
             minio.remove_all_bucket_notification("my-bucketname")
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
 
         content_bytes = marshal_bucket_notifications({})
         headers = {
@@ -564,7 +564,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         Example::
             minio.put_bucket_encryption("my-bucketname", config)
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
 
         # 'Rule' is a list, so we need to go through each one of
         # its key/value pair and collect the encryption values.
@@ -594,7 +594,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         Example::
             config = minio.get_bucket_encryption("my-bucketname")
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
 
         response = self._url_open(
             "GET",
@@ -612,7 +612,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         Example::
             minio.delete_bucket_encryption("my-bucketname")
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
 
         self._url_open(
             'DELETE',
@@ -642,7 +642,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             for events in iter:
                 print(events)
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
 
         # If someone explicitly set prefix to None convert it to empty string.
         prefix = prefix or ''
@@ -679,7 +679,7 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def _do_bucket_versioning(self, bucket_name, status):
         """Do versioning support in a bucket."""
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         config = (
             '<VersioningConfiguration '
             'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
@@ -773,7 +773,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 'foo', 'bar', 'localfile', version_id='VERSION-ID',
             )
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
         if os.path.isdir(file_path):
@@ -867,7 +867,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 response.close()
                 response.release_conn()
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
         return self._get_partial_object(
@@ -906,7 +906,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 response.close()
                 response.release_conn()
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
         return self._get_partial_object(
@@ -951,7 +951,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 "?versionId=b6602757-7c9c-449b-937f-fed504d04c94",
             )
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
         is_non_empty_string(object_source)
 
@@ -1010,7 +1010,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 )
         """
         is_valid_sse_object(sse)
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
         if progress:
@@ -1178,7 +1178,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             stat = minio.stat_object("my-bucketname", "my-objectname")
         """
 
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
         headers = {}
@@ -1236,7 +1236,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 version_id="13f88b18-8dcd-4c83-88f2-8631fdb6250c",
             )
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
         # No reason to store successful response, for errors
@@ -1293,7 +1293,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 ],
             )
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         if isinstance(objects_iter, basestring):
             raise TypeError(
                 'objects_iter cannot be `str` or `bytes` instance. It must be '
@@ -1362,7 +1362,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             for object in objects:
                 print(object)
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
 
         return self._list_incomplete_uploads(bucket_name, prefix, recursive)
 
@@ -1378,7 +1378,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                           specified prefix.
         :return: An generator of incomplete uploads in alphabetical order.
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
 
         # If someone explicitly set prefix to None convert it to empty string.
         prefix = prefix or ''
@@ -1435,7 +1435,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param object_name: Object name to list parts for.
         :param upload_id: Upload id of the previously uploaded object name.
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
         is_non_empty_string(upload_id)
 
@@ -1473,7 +1473,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         Example::
             minio.remove_incomplete_upload("my-bucketname", "my-objectname")
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
         uploads = self._list_incomplete_uploads(bucket_name, object_name,
@@ -1543,7 +1543,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             )
             print(url)
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
         if (expires.total_seconds() < 1 or
@@ -1739,7 +1739,7 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         """
         is_valid_sse_c_object(sse)
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
         headers = request_headers or {}
@@ -1782,7 +1782,7 @@ class Minio:  # pylint: disable=too-many-public-methods
            with your object.
         :param progress: A progress object
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
         # Accept only bytes - otherwise we need to know how to encode
@@ -1865,7 +1865,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param progress: A progress object
         :param part_size: Multipart part size
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
         if not callable(getattr(data, 'read')):
             raise ValueError(
@@ -1976,7 +1976,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param metadata: Additional new metadata for the new object.
         :return: Returns an upload id.
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
 
         headers = {}
@@ -2002,7 +2002,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param upload_id: Upload id of the active multipart request.
         :param uploaded_parts: Key, Value dictionary of uploaded parts.
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
         is_non_empty_string(object_name)
         is_non_empty_string(upload_id)
 
@@ -2252,7 +2252,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         policies.
         """
 
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
 
         if version_id_marker:
             include_version = True

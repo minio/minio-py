@@ -30,7 +30,7 @@ import datetime
 import json
 
 from .error import InvalidArgumentError
-from .helpers import is_non_empty_string, is_valid_bucket_name
+from .helpers import check_bucket_name, is_non_empty_string
 
 
 # Policy explanation:
@@ -89,7 +89,7 @@ class PostPolicy:
 
         :param bucket_name: set bucket name.
         """
-        is_valid_bucket_name(bucket_name, False)
+        check_bucket_name(bucket_name)
 
         self.policies.append(('eq', '$bucket', bucket_name))
         self.form_data['bucket'] = bucket_name

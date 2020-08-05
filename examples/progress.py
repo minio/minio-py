@@ -24,9 +24,8 @@ This module implements a progress printer while communicating with MinIO server
 
 import sys
 import time
+from queue import Empty, Queue
 from threading import Thread
-from queue import Queue, Empty
-
 
 _BAR_SIZE = 20
 _KILOBYTE = 1024

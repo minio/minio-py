@@ -349,7 +349,7 @@ def is_virtual_host(endpoint_url, bucket_name):
     :param endpoint_url: Endpoint url which will be used for virtual host.
     :param bucket_name: Bucket name to be validated against.
     """
-    is_valid_bucket_name(bucket_name, False)
+    check_bucket_name(bucket_name)
 
     parsed_url = urlsplit(endpoint_url)
     # bucket_name can be valid but '.' in the hostname will fail
@@ -362,16 +362,9 @@ def is_virtual_host(endpoint_url, bucket_name):
         's3-accelerate.amazonaws.com', 's3.amazonaws.com', 'aliyuncs.com'])
 
 
-def is_valid_bucket_name(bucket_name, strict):
-    """
-    Check to see if the ``bucket_name`` complies with the
-    restricted DNS naming conventions necessary to allow
-    access via virtual-hosting style.
+def check_bucket_name(bucket_name, strict=False):
+    """Check whether bucket name is valid optional with strict check or not."""
 
-    :param bucket_name: Bucket name in *str*.
-    :return: True if the bucket is valid. Raise :exc:`InvalidBucketError`
-       otherwise.
-    """
     # Verify bucket name is not empty
     bucket_name = str(bucket_name).strip()
     if not bucket_name:
@@ -405,7 +398,6 @@ def is_valid_bucket_name(bucket_name, strict):
     if (not match) or match.end() != len(bucket_name):
         raise InvalidBucketError('Bucket name does not follow S3 standards.'
                                  ' Bucket: {0}'.format(bucket_name))
-    return True
 
 
 def is_non_empty_string(input_string):
