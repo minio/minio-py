@@ -41,8 +41,7 @@ s3Client = Minio(
 | [`list_incomplete_uploads`](#list_incomplete_uploads)     | [`remove_incomplete_upload`](#remove_incomplete_upload) |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
 | [`enable_bucket_versioning`](#enable_bucket_versioning)   | [`fput_object`](#fput_object)                           |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
 | [`disable_bucket_versioning`](#disable_bucket_versioning) | [`fget_object`](#fget_object)                           |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
-|                                                           | [`get_partial_object`](#get_partial_object)             |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
-|                                                           | [`select_object_content`](#select_object_content)       |                                                   |                                                                     |
+|                                                           | [`select_object_content`](#select_object_content)       |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
 
 ## 1. Constructor
 
@@ -717,41 +716,7 @@ minio.disable_bucket_versioning("my-bucketname")
 
 <a name="get_object"></a>
 
-### get_object(self, bucket_name, object_name, request_headers=None, sse=None, version_id=None, extra_query_params=None)
-
-Get data of an object. Returned response should be closed after use to release network resources. To reuse the connection, its required to call `response.release_conn()` explicitly.
-
-__Parameters__
-
-| Param                | Type                   | Description                                          |
-|:---------------------|:-----------------------|:-----------------------------------------------------|
-| `bucket_name`        | _str_                  | Name of the bucket.                                  |
-| `object_name`        | _str_                  | Object name in the bucket.                           |
-| `request_header`     | _dict_                 | Any additional headers to be added with GET request. |
-| `sse`                | _minio.SseCustomerKey_ | Server-side encryption customer key.                 |
-| `version_id`         | _str_                  | Version-ID of the object.                            |
-| `extra_query_params` | _dict_                 | Extra query parameters for advanced usage.           |
-
-__Return Value__
-
-| Return                                  |
-|:----------------------------------------|
-| _urllib3.response.HTTPResponse_ object. |
-
-__Example__
-
-```py
-try:
-    response = minio.get_object('foo', 'bar')
-    // Read data from response.
-finally:
-    response.close()
-    response.release_conn()
-```
-
-<a name="get_partial_object"></a>
-
-### get_partial_object(bucket_name, object_name, offset=0, length=0, request_headers=None, sse=None, version_id=None, extra_query_params=None)
+### get_object(bucket_name, object_name, offset=0, length=0, request_headers=None, sse=None, version_id=None, extra_query_params=None)
 
 Gets data from offset to length of an object. Returned response should be closed after use to release network resources. To reuse the connection, its required to call `response.release_conn()` explicitly.
 
@@ -777,6 +742,15 @@ __Return Value__
 __Example__
 
 ```py
+// Get entire object data.
+ try:
+    response = minio.get_object('foo', 'bar')
+    // Read data from response.
+finally:
+    response.close()
+    response.release_conn()
+
+// Get object data for offset/length.
 try:
     response = minio.get_partial_object('foo', 'bar', 2, 4)
     // Read data from response.

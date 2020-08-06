@@ -791,7 +791,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         )
 
         # Write to a temporary file "file_path.part.minio" before saving.
-        file_part_path = file_path + stat.etag + '.part.minio'
+        file_part_path = file_path + "." + stat.etag + '.part.minio'
 
         # Open file in 'overwrite' mode.
         with open(file_part_path, 'wb') as file_part_data:
@@ -799,7 +799,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             file_statinfo = os.stat(file_part_path)
 
             # Get partial object.
-            response = self._get_partial_object(
+            response = self.get_object(
                 bucket_name,
                 object_name,
                 offset=file_statinfo.st_size,
@@ -842,49 +842,13 @@ class Minio:  # pylint: disable=too-many-public-methods
         # Return the stat
         return stat
 
-    def get_object(self, bucket_name, object_name, request_headers=None,
-                   sse=None, version_id=None, extra_query_params=None):
+    def get_object(self, bucket_name, object_name, offset=0, length=0,
+                   request_headers=None, sse=None, version_id=None,
+                   extra_query_params=None):
         """
         Get data of an object. Returned response should be closed after use to
         release network resources. To reuse the connection, its required to
         call `response.release_conn()` explicitly.
-
-        :param bucket_name: Name of the bucket.
-        :param object_name: Object name in the bucket.
-        :param request_headers: Any additional headers to be added with GET
-                                request.
-        :param sse: Server-side encryption customer key.
-        :param version_id: Version-ID of the object.
-        :param extra_query_params: Extra query parameters for advanced usage.
-        :return: :class:`urllib3.response.HTTPResponse` object.
-
-        Example::
-            try:
-                response = minio.get_object('foo', 'bar')
-                // Read data from response.
-            finally:
-                response.close()
-                response.release_conn()
-        """
-        check_bucket_name(bucket_name)
-        check_non_empty_string(object_name)
-
-        return self._get_partial_object(
-            bucket_name,
-            object_name,
-            request_headers=request_headers,
-            sse=sse,
-            version_id=version_id,
-            extra_query_params=extra_query_params,
-        )
-
-    def get_partial_object(self, bucket_name, object_name, offset=0, length=0,
-                           request_headers=None, sse=None, version_id=None,
-                           extra_query_params=None):
-        """
-        Gets data from offset to length of an object. Returned response should
-        be closed after use to release network resources. To reuse the
-        connection, its required to call `response.release_conn()` explicitly.
 
         :param bucket_name: Name of the bucket.
         :param object_name: Object name in the bucket.
@@ -898,6 +862,15 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         Example::
+            // Get entire object data.
+            try:
+                response = minio.get_object('foo', 'bar')
+                // Read data from response.
+            finally:
+                response.close()
+                response.release_conn()
+
+            // Get object data for offset/length.
             try:
                 response = minio.get_partial_object('foo', 'bar', 2, 4)
                 // Read data from response.
@@ -907,16 +880,28 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
+        is_valid_sse_c_object(sse)
 
-        return self._get_partial_object(
-            bucket_name,
-            object_name,
-            offset,
-            length,
-            request_headers=request_headers,
-            sse=sse,
-            version_id=version_id,
-            extra_query_params=extra_query_params,
+        headers = request_headers or {}
+
+        if offset or length:
+            headers['Range'] = 'bytes={}-{}'.format(
+                offset, offset + length - 1 if length else "")
+
+        if sse:
+            headers.update(sse.headers())
+
+        if version_id:
+            extra_query_params = extra_query_params or {}
+            extra_query_params["versionId"] = version_id
+
+        return self._url_open(
+            "GET",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            headers=headers,
+            preload_content=False,
+            query=extra_query_params,
         )
 
     def copy_object(self, bucket_name, object_name, object_source,
@@ -1706,64 +1691,6 @@ class Minio:  # pylint: disable=too-many-public-methods
                                  bucket_name=post_policy.form_data['bucket'],
                                  bucket_region=region)
         return (url_str, post_policy.form_data)
-
-    # All private functions below.
-    def _get_partial_object(self, bucket_name, object_name,
-                            offset=0, length=0, request_headers=None,
-                            sse=None, version_id=None,
-                            extra_query_params=None):
-        """Retrieves an object from a bucket.
-
-        Optionally takes an offset and length of data to retrieve.
-
-        It returns a response object whose content is not
-        pre-loaded. This means that the connection associated with the
-        response needs to be released (for efficient re-use) after
-        usage with `response.release_conn()`. Otherwise, the
-        connection will linger until the object is garbage collected,
-        when the connection is simply closed and not re-used.
-
-        Examples:
-            partial_object = minio.get_partial_object('foo', 'bar', 2, 4)
-
-        :param bucket_name: Bucket to retrieve object from
-        :param object_name: Name of object to retrieve
-        :param offset: Optional offset to retrieve bytes from.
-           Must be >= 0.
-        :param length: Optional number of bytes to retrieve.
-           Must be > 0.
-        :param request_headers: Any additional metadata to be uploaded along
-            with request.
-        :return: :class:`urllib3.response.HTTPResponse` object.
-
-        """
-        is_valid_sse_c_object(sse)
-        check_bucket_name(bucket_name)
-        check_non_empty_string(object_name)
-
-        headers = request_headers or {}
-
-        if offset or length:
-            headers['Range'] = 'bytes={}-{}'.format(
-                offset, offset + length - 1 if length else "")
-
-        if sse:
-            headers.update(sse.headers())
-
-        if version_id:
-            if extra_query_params:
-                extra_query_params["versionId"] = version_id
-            else:
-                extra_query_params = {"versionId": version_id}
-
-        return self._url_open(
-            "GET",
-            bucket_name=bucket_name,
-            object_name=object_name,
-            headers=headers,
-            preload_content=False,
-            query=extra_query_params,
-        )
 
     def _do_put_object(self, bucket_name, object_name, part_data,
                        part_size, upload_id='', part_number=0,

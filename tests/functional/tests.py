@@ -983,9 +983,9 @@ def test_fget_object_version(log_entry, sse=None):
     _test_fget_object(log_entry, sse, version_check=True)
 
 
-def test_get_partial_object_with_default_length(  # pylint: disable=invalid-name
+def test_get_object_with_default_length(  # pylint: disable=invalid-name
         log_entry, sse=None):
-    """Test get_partial_object() with default length."""
+    """Test get_object() with default length."""
 
     if sse:
         log_entry["name"] += "_SSEC"
@@ -1008,8 +1008,8 @@ def test_get_partial_object_with_default_length(  # pylint: disable=invalid-name
         _CLIENT.put_object(bucket_name, object_name,
                            LimitedRandomReader(size), size, sse=sse)
         # Get half of the object
-        object_data = _CLIENT.get_partial_object(bucket_name, object_name,
-                                                 offset, sse=sse)
+        object_data = _CLIENT.get_object(bucket_name, object_name,
+                                         offset=offset, sse=sse)
         newfile = 'newfile'
         with open(newfile, 'wb') as file_data:
             for data in object_data:
@@ -1025,7 +1025,7 @@ def test_get_partial_object_with_default_length(  # pylint: disable=invalid-name
 
 
 def test_get_partial_object(log_entry, sse=None):
-    """Test get_partial_object()."""
+    """Test get_object() by offset/length."""
 
     if sse:
         log_entry["name"] += "_SSEC"
@@ -1048,8 +1048,8 @@ def test_get_partial_object(log_entry, sse=None):
         _CLIENT.put_object(bucket_name, object_name,
                            LimitedRandomReader(size), size, sse=sse)
         # Get half of the object
-        object_data = _CLIENT.get_partial_object(bucket_name, object_name,
-                                                 offset, length, sse=sse)
+        object_data = _CLIENT.get_object(bucket_name, object_name,
+                                         offset=offset, length=length, sse=sse)
         newfile = 'newfile'
         with open(newfile, 'wb') as file_data:
             for data in object_data:
@@ -1980,7 +1980,7 @@ def main():
             test_get_object_version: {"sse": ssec} if ssec else None,
             test_fget_object: {"sse": ssec} if ssec else None,
             test_fget_object_version: {"sse": ssec} if ssec else None,
-            test_get_partial_object_with_default_length: None,
+            test_get_object_with_default_length: None,
             test_get_partial_object: {"sse": ssec} if ssec else None,
             test_list_objects: None,
             test_list_object_versions: None,
