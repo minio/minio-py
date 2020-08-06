@@ -400,21 +400,13 @@ def check_bucket_name(bucket_name, strict=False):
                                  ' Bucket: {0}'.format(bucket_name))
 
 
-def is_non_empty_string(input_string):
-    """
-    Validate if non empty string
-
-    :param input_string: Input is a *str*.
-    :return: True if input is string and non empty.
-       Raise :exc:`Exception` otherwise.
-    """
+def check_non_empty_string(string):
+    """Check whether given string is not empty."""
     try:
-        if not input_string.strip():
+        if not string.strip():
             raise ValueError()
-    except AttributeError as error:
-        raise TypeError(error)
-
-    return True
+    except AttributeError as exc:
+        raise TypeError(exc)
 
 
 def is_valid_policy_type(policy):
@@ -429,7 +421,7 @@ def is_valid_policy_type(policy):
     if not isinstance(policy, string_type):
         raise TypeError('policy can only be of type str')
 
-    is_non_empty_string(policy)
+    check_non_empty_string(policy)
 
     return True
 
@@ -587,7 +579,7 @@ def encode_object_name(object_name):
     :param object_name: Un-encoded object name.
     :return: URL encoded input object name.
     """
-    is_non_empty_string(object_name)
+    check_non_empty_string(object_name)
     return quote(object_name)
 
 
