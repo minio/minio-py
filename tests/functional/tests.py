@@ -1064,7 +1064,7 @@ def test_get_partial_object(log_entry, sse=None):
         _CLIENT.remove_bucket(bucket_name)
 
 
-def _test_list_objects(log_entry, version2=False, version_check=False):
+def _test_list_objects(log_entry, use_api_v1=False, version_check=False):
     """Test list_objects()."""
 
     # Get a unique bucket_name and object_name
@@ -1092,14 +1092,10 @@ def _test_list_objects(log_entry, version2=False, version_check=False):
             bucket_name, object_name + "-2", LimitedRandomReader(size), size,
         )
         # List all object paths in bucket.
-        if version2:
-            objects = _CLIENT.list_objects_v2(
-                bucket_name, '', is_recursive, include_version=version_check,
-            )
-        else:
-            objects = _CLIENT.list_objects(
-                bucket_name, '', is_recursive, include_version=version_check,
-            )
+        objects = _CLIENT.list_objects(
+            bucket_name, '', is_recursive, include_version=version_check,
+            use_api_v1=use_api_v1,
+        )
         for obj in objects:
             _ = (obj.bucket_name, obj.object_name, obj.last_modified,
                  obj.etag, obj.size, obj.content_type)
@@ -1119,14 +1115,14 @@ def _test_list_objects(log_entry, version2=False, version_check=False):
         _CLIENT.remove_bucket(bucket_name)
 
 
-def test_list_objects(log_entry):
+def test_list_objects_v1(log_entry):
     """Test list_objects()."""
-    _test_list_objects(log_entry)
+    _test_list_objects(log_entry, use_api_v1=True)
 
 
-def test_list_object_versions(log_entry):
+def test_list_object_v1_versions(log_entry):
     """Test list_objects()."""
-    _test_list_objects(log_entry, version_check=True)
+    _test_list_objects(log_entry, use_api_v1=True, version_check=True)
 
 
 def _test_list_objects_api(bucket_name, expected_no, *argv):
@@ -1266,14 +1262,14 @@ def test_list_objects_with_1001_files(  # pylint: disable=invalid-name
         _CLIENT.remove_bucket(bucket_name)
 
 
-def test_list_objects_v2(log_entry):
-    """Test list_objects_v2()."""
-    _test_list_objects(log_entry, version2=True)
+def test_list_objects(log_entry):
+    """Test list_objects()."""
+    _test_list_objects(log_entry)
 
 
-def test_list_object_versions_v2(log_entry):
-    """Test list_objects_v2() of versioned object."""
-    _test_list_objects(log_entry, version2=True, version_check=True)
+def test_list_object_versions(log_entry):
+    """Test list_objects() of versioned object."""
+    _test_list_objects(log_entry, version_check=True)
 
 
 def _create_upload_ids(bucket_name, object_name, count):
@@ -1982,13 +1978,13 @@ def main():
             test_fget_object_version: {"sse": ssec} if ssec else None,
             test_get_object_with_default_length: None,
             test_get_partial_object: {"sse": ssec} if ssec else None,
-            test_list_objects: None,
-            test_list_object_versions: None,
+            test_list_objects_v1: None,
+            test_list_object_v1_versions: None,
             test_list_objects_with_prefix: None,
             test_list_objects_with_1001_files: None,
             test_remove_incomplete_upload: None,
-            test_list_objects_v2: None,
-            test_list_object_versions_v2: None,
+            test_list_objects: None,
+            test_list_object_versions: None,
             test_presigned_get_object_default_expiry: None,
             test_presigned_get_object_expiry: None,
             test_presigned_get_object_response_headers: None,

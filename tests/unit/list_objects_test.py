@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015, 2016 MinIO, Inc.
+# (C) 2015-2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,66 +28,57 @@ from .minio_mocks import MockConnection, MockResponse
 class ListObjectsTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_empty_list_objects_works(self, mock_connection):
-        mock_data = '''<?xml version="1.0"?>
+        mock_data = '''<?xml version="1.0" encoding="UTF-8"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
-  <Prefix/>
-  <Marker/>
-  <IsTruncated>false</IsTruncated>
+  <Prefix></Prefix>
+  <KeyCount>0</KeyCount>
   <MaxKeys>1000</MaxKeys>
-  <Delimiter/>
+  <Delimiter></Delimiter>
+  <IsTruncated>false</IsTruncated>
 </ListBucketResult>'''
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse(
                 "GET",
-                "https://localhost:9000/bucket/"
-                "?delimiter=&max-keys=1000&prefix=",
+                "https://localhost:9000/bucket/?delimiter=&list-type=2"
+                "&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
                 content=mock_data,
             ),
         )
         client = Minio('localhost:9000')
-        bucket_iter = client.list_objects('bucket', recursive=True)
-        buckets = []
-        for bucket in bucket_iter:
-            buckets.append(bucket)
-        eq_(0, len(buckets))
+        object_iter = client.list_objects('bucket', recursive=True)
+        objects = []
+        for obj in object_iter:
+            objects.append(obj)
+        eq_(0, len(objects))
 
     @timed(1)
     @mock.patch('urllib3.PoolManager')
     def test_list_objects_works(self, mock_connection):
-        mock_data = '''<?xml version="1.0"?>
+        mock_data = '''<?xml version="1.0" encoding="UTF-8"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
-  <Prefix/>
-  <Marker/>
+  <Prefix></Prefix>
+  <KeyCount>2</KeyCount>
   <MaxKeys>1000</MaxKeys>
-  <Delimiter/>
   <IsTruncated>false</IsTruncated>
   <Contents>
-    <Key>key1</Key>
-    <LastModified>2015-05-05T02:21:15.716Z</LastModified>
-    <ETag>5eb63bbbe01eeed093cb22bb8f5acdc3</ETag>
-    <Size>11</Size>
-    <StorageClass>STANDARD</StorageClass>
-    <Owner>
-      <ID>minio</ID>
-      <DisplayName>minio</DisplayName>
-    </Owner>
+    <Key>6/f/9/6f9898076bb08572403f95dbb86c5b9c85e1e1b3</Key>
+    <LastModified>2016-11-27T07:55:53.000Z</LastModified>
+    <ETag>&quot;5d5512301b6b6e247b8aec334b2cf7ea&quot;</ETag>
+    <Size>493</Size>
+    <StorageClass>REDUCED_REDUNDANCY</StorageClass>
   </Contents>
   <Contents>
-    <Key>key2</Key>
-    <LastModified>2015-05-05T20:36:17.498Z</LastModified>
-    <ETag>2a60eaffa7a82804bdc682ce1df6c2d4</ETag>
-    <Size>1661</Size>
-    <StorageClass>STANDARD</StorageClass>
-    <Owner>
-      <ID>minio</ID>
-      <DisplayName>minio</DisplayName>
-    </Owner>
+    <Key>b/d/7/bd7f6410cced55228902d881c2954ebc826d7464</Key>
+    <LastModified>2016-11-27T07:10:27.000Z</LastModified>
+    <ETag>&quot;f00483d523ffc8b7f2883ae896769d85&quot;</ETag>
+    <Size>493</Size>
+    <StorageClass>REDUCED_REDUNDANCY</StorageClass>
   </Contents>
 </ListBucketResult>'''
         mock_server = MockConnection()
@@ -95,124 +86,17 @@ class ListObjectsTest(TestCase):
         mock_server.mock_add_request(
             MockResponse(
                 "GET",
-                "https://localhost:9000/bucket/"
-                "?delimiter=%2F&max-keys=1000&prefix=",
+                "https://localhost:9000/bucket/?delimiter=%2F&list-type=2"
+                "&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
                 content=mock_data,
             ),
         )
         client = Minio('localhost:9000')
-        bucket_iter = client.list_objects('bucket')
-        buckets = []
-        for bucket in bucket_iter:
-            # cause an xml exception and fail if we try retrieving again
-            mock_server.mock_add_request(
-                MockResponse(
-                    "GET",
-                    "https://localhost:9000/bucket/"
-                    "?delimiter=%2F&max-keys=1000&prefix=",
-                    {"User-Agent": _DEFAULT_USER_AGENT},
-                    200,
-                    content="",
-                ),
-            )
-            buckets.append(bucket)
+        objects_iter = client.list_objects('bucket')
+        objects = []
+        for obj in objects_iter:
+            objects.append(obj)
 
-        eq_(2, len(buckets))
-
-    @timed(1)
-    @mock.patch('urllib3.PoolManager')
-    def test_list_objects_works_well(self, mock_connection):
-        mock_data1 = '''<?xml version="1.0"?>
-<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-  <Name>bucket</Name>
-  <Prefix/>
-  <Marker />
-  <NextMarker>marker</NextMarker>
-  <MaxKeys>1000</MaxKeys>
-  <Delimiter/>
-  <IsTruncated>true</IsTruncated>
-  <Contents>
-    <Key>key1</Key>
-    <LastModified>2015-05-05T02:21:15.716Z</LastModified>
-    <ETag>5eb63bbbe01eeed093cb22bb8f5acdc3</ETag>
-    <Size>11</Size>
-    <StorageClass>STANDARD</StorageClass>
-    <Owner>
-      <ID>minio</ID>
-      <DisplayName>minio</DisplayName>
-    </Owner>
-  </Contents>
-  <Contents>
-    <Key>key2</Key>
-    <LastModified>2015-05-05T20:36:17.498Z</LastModified>
-    <ETag>2a60eaffa7a82804bdc682ce1df6c2d4</ETag>
-    <Size>1661</Size>
-    <StorageClass>STANDARD</StorageClass>
-    <Owner>
-      <ID>minio</ID>
-      <DisplayName>minio</DisplayName>
-    </Owner>
-  </Contents>
-</ListBucketResult>'''
-        mock_data2 = '''<?xml version="1.0"?>
-<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-  <Name>bucket</Name>
-  <Prefix/>
-  <Marker/>
-  <MaxKeys>1000</MaxKeys>
-  <Delimiter/>
-  <IsTruncated>false</IsTruncated>
-  <Contents>
-    <Key>key3</Key>
-    <LastModified>2015-05-05T02:21:15.716Z</LastModified>
-    <ETag>5eb63bbbe01eeed093cb22bb8f5acdc3</ETag>
-    <Size>11</Size>
-    <StorageClass>STANDARD</StorageClass>
-    <Owner>
-      <ID>minio</ID>
-      <DisplayName>minio</DisplayName>
-    </Owner>
-  </Contents>
-  <Contents>
-    <Key>key4</Key>
-    <LastModified>2015-05-05T20:36:17.498Z</LastModified>
-    <ETag>2a60eaffa7a82804bdc682ce1df6c2d4</ETag>
-    <Size>1661</Size>
-    <StorageClass>STANDARD</StorageClass>
-    <Owner>
-      <ID>minio</ID>
-      <DisplayName>minio</DisplayName>
-    </Owner>
-  </Contents>
-</ListBucketResult>'''
-        mock_server = MockConnection()
-        mock_connection.return_value = mock_server
-        mock_server.mock_add_request(
-            MockResponse(
-                "GET",
-                "https://localhost:9000/bucket/"
-                "?delimiter=&max-keys=1000&prefix=",
-                {"User-Agent": _DEFAULT_USER_AGENT},
-                200,
-                content=mock_data1,
-            ),
-        )
-        client = Minio('localhost:9000')
-        bucket_iter = client.list_objects('bucket', recursive=True)
-        buckets = []
-        for bucket in bucket_iter:
-            mock_server.mock_add_request(
-                MockResponse(
-                    "GET",
-                    "https://localhost:9000/bucket/"
-                    "?delimiter=&marker=marker&max-keys=1000&prefix=",
-                    {"User-Agent": _DEFAULT_USER_AGENT},
-                    200,
-                    content=mock_data2,
-                ),
-            )
-            buckets.append(bucket)
-
-        eq_(4, len(buckets))
+        eq_(2, len(objects))

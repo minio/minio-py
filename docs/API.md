@@ -37,10 +37,10 @@ s3Client = Minio(
 | [`bucket_exists`](#bucket_exists)                         | [`copy_object`](#copy_object)                           | [`presigned_post_policy`](#presigned_post_policy) | [`delete_bucket_policy`](#delete_bucket_policy)                     |
 | [`remove_bucket`](#remove_bucket)                         | [`stat_object`](#stat_object)                           |                                                   | [`get_bucket_notification`](#get_bucket_notification)               |
 | [`list_objects`](#list_objects)                           | [`remove_object`](#remove_object)                       |                                                   | [`set_bucket_notification`](#set_bucket_notification)               |
-| [`list_objects_v2`](#list_objects_v2)                     | [`remove_objects`](#remove_objects)                     |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
-| [`list_incomplete_uploads`](#list_incomplete_uploads)     | [`remove_incomplete_upload`](#remove_incomplete_upload) |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
-| [`enable_bucket_versioning`](#enable_bucket_versioning)   | [`fput_object`](#fput_object)                           |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
-| [`disable_bucket_versioning`](#disable_bucket_versioning) | [`fget_object`](#fget_object)                           |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
+| [`list_incomplete_uploads`](#list_incomplete_uploads)     | [`remove_objects`](#remove_objects)                     |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
+| [`enable_bucket_versioning`](#enable_bucket_versioning)   | [`remove_incomplete_upload`](#remove_incomplete_upload) |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
+| [`disable_bucket_versioning`](#disable_bucket_versioning) | [`fput_object`](#fput_object)                           |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
+|                                                           | [`fget_object`](#fget_object)                           |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
 |                                                           | [`select_object_content`](#select_object_content)       |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
 
 ## 1. Constructor
@@ -251,64 +251,6 @@ for object in objects:
 # 'hello/'.
 objects = minio.list_objects(
     'foo', prefix='hello/', recursive=True,
-)
-for object in objects:
-    print(object)
-```
-
-<a name="list_objects_v2"></a>
-
-### list_objects_v2(bucket_name, prefix=None, recursive=False, start_after=None, include_user_meta=False, include_version=False)
-
-Lists object information of a bucket using S3 API version 2, optionally for prefix recursively.
-
-__Parameters__
-
-| Param               | Type   | Description                                              |
-|:--------------------|:-------|:---------------------------------------------------------|
-| `bucket_name`       | _str_  | Name of the bucket.                                      |
-| `prefix`            | _str_  | Object name starts with prefix.                          |
-| `recursive`         | _bool_ | List recursively than directory structure emulation.     |
-| `start_after`       | _str_  | List objects after this key name.                        |
-| `include_user_meta` | _bool_ | MinIO specific flag to control to include user metadata. |
-| `include_version`   | _bool_ | Flag to control whether include object versions.         |
-
-__Return Value__
-
-| Return                                                    |
-|:----------------------------------------------------------|
-| An iterator contains object information as _minio.Object_ |
-
-__Example__
-
-```py
-# List objects information.
-objects = minio.list_objects_v2('foo')
-for object in objects:
-    print(object)
-
-# List objects information those names starts with 'hello/'.
-objects = minio.list_objects_v2('foo', prefix='hello/')
-for object in objects:
-    print(object)
-
-# List objects information recursively.
-objects = minio.list_objects_v2('foo', recursive=True)
-for object in objects:
-    print(object)
-
-# List objects information recursively those names starts with
-# 'hello/'.
-objects = minio.list_objects_v2(
-    'foo', prefix='hello/', recursive=True,
-)
-for object in objects:
-    print(object)
-
-# List objects information recursively after object name
-# 'hello/world/1'.
-objects = minio.list_objects_v2(
-    'foo', recursive=True, start_after='hello/world/1',
 )
 for object in objects:
     print(object)
@@ -752,7 +694,7 @@ finally:
 
 // Get object data for offset/length.
 try:
-    response = minio.get_partial_object('foo', 'bar', 2, 4)
+    response = minio.get_object('foo', 'bar', 2, 4)
     // Read data from response.
 finally:
     response.close()
