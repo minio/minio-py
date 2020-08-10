@@ -75,6 +75,12 @@ class GetURLTests(TestCase):
                            'objectName',
                            'us-west-2', None),
             'https://bucket-name.s3-us-west-2.amazonaws.com/objectName')
+        eq_(get_target_url('http://localhost:9000',
+                           'bucket-name',
+                           'objectName',
+                           'us-east-1',
+                           {'versionId': 'uuid'}),
+            'http://localhost:9000/bucket-name/objectName?versionId=uuid')
 
     @raises(TypeError)
     def test_minio_requires_string(self):

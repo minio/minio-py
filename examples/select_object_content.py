@@ -35,28 +35,28 @@ options = SelectObjectOptions(
     input_serialization=InputSerialization(
         compression_type="NONE",
         csv=CSVInput(
-            FileHeaderInfo="USE",
-            RecordDelimiter="\n",
-            FieldDelimiter=",",
-            QuoteCharacter='"',
-            QuoteEscapeCharacter='"',
-            Comments="#",
-            AllowQuotedRecordDelimiter="FALSE",
+            file_header_info="USE",
+            record_delimiter="\n",
+            field_delimiter=",",
+            quote_character='"',
+            quote_escape_character='"',
+            comments="#",
+            allow_quoted_record_delimiter="FALSE",
         ),
         # If input is JSON
-        # json=JSONInput(Type="DOCUMENT")
+        # json=JSONInput(json_type="DOCUMENT")
     ),
 
     output_serialization=OutputSerialization(
         csv=CSVOutput(
-            QuoteFields="ASNEEDED",
-            RecordDelimiter="\n",
-            FieldDelimiter=",",
-            QuoteCharacter='"',
-            QuoteEscapeCharacter='"',
+            quote_fields="ASNEEDED",
+            record_delimiter="\n",
+            field_delimiter=",",
+            quote_character='"',
+            quote_escape_character='"',
         ),
 
-        # json = JSONOutput(RecordDelimiter="\n")
+        # json = JSONOutput(record_delimiter="\n")
     ),
     request_progress=RequestProgress(
         enabled="False"
