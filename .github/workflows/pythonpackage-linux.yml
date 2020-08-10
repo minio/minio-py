@@ -52,5 +52,5 @@ jobs:
           chmod +x /tmp/minio
           mkdir -p /tmp/minio-config/certs/
           cp tests/certs/* /tmp/minio-config/certs/
-          /tmp/minio -C /tmp/minio-config server /tmp/fs/ &
+          /tmp/minio -C /tmp/minio-config server /tmp/fs{1...4} &
           python tests/functional/tests.py

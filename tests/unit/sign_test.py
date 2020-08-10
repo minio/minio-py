@@ -139,6 +139,15 @@ class PresignURLTest(TestCase):
         presign_v4('GET', 'http://localhost:9000/hello',
                    credentials, region=None, headers={}, expires=0)
 
+    def test_presigned_versioned_id(self):
+        credentials = Credentials(
+            provider=Static("minio", "minio123"),
+        )
+        url = presign_v4('GET', 'http://localhost:9000/bucket-name/objectName?versionId=uuid',
+                         credentials, region='us-east-1', headers={}, request_date=dt)
+
+        eq_(url, 'http://localhost:9000/bucket-name/objectName?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=minio%2F20150620%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20150620T010203Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&versionId=uuid&X-Amz-Signature=3ce13e2ca929fafa20581a05730e4e9435f2a5e20ec7c5a082d175692fb0a663')
+
 
 class SignV4Test(TestCase):
     def test_signv4(self):

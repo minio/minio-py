@@ -786,22 +786,22 @@ options = SelectObjectOptions(
     expression=" select * from s3object",
     input_serialization=InputSerialization(
         compression_type="NONE",
-        csv=CSVInput(FileHeaderInfo="USE",
-                     RecordDelimiter="\n",
-                     FieldDelimiter=",",
-                     QuoteCharacter='"',
-                     QuoteEscapeCharacter='"',
-                     Comments="#",
-                     AllowQuotedRecordDelimiter="FALSE",
+        csv=CSVInput(file_header_info="USE",
+                     record_delimiter="\n",
+                     field_delimiter=",",
+                     quote_character='"',
+                     quote_escape_character='"',
+                     comments="#",
+                     allow_quoted_record_delimiter="FALSE",
                      ),
         ),
 
     output_serialization=OutputSerialization(
-        csv=CSVOutput(QuoteFields="ASNEEDED",
-                      RecordDelimiter="\n",
-                      FieldDelimiter=",",
-                      QuoteCharacter='"',
-                      QuoteEscapeCharacter='"',)
+        csv=CSVOutput(quote_fields="ASNEEDED",
+                      record_delimiter="\n",
+                      field_delimiter=",",
+                      quote_character='"',
+                      quote_escape_character='"',)
                       ),
     request_progress=RequestProgress(
         enabled="FALSE"

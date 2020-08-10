@@ -84,7 +84,7 @@ parse_qs = parse_qs
 
 
 # Note earlier versions of minio.compat exposed urllib.quote as urlencode
-def quote(resource):
+def quote(resource, safe='/', encoding=None, errors=None):
     """
     This implementation of urllib.quote supports all unicode characters
 
@@ -92,13 +92,15 @@ def quote(resource):
     """
     return _quote(
         resource.encode('utf-8') if isinstance(resource, str) else resource,
+        safe=safe, encoding=encoding,
+        errors=errors,
     )
 
 
-def queryencode(query):
+def queryencode(query, safe='/', encoding=None, errors=None):
     """
     This implementation of queryencode supports all unicode characters
 
     :param: query: Query value to be url encoded.
     """
-    return quote(query).replace('/', '%2F')
+    return quote(query, safe, encoding, errors).replace('/', '%2F')
