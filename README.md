@@ -8,7 +8,7 @@ This document assumes that you have a working [Python](https://www.python.org/do
 
 ## Minimum Requirements
 
-- Python 2.7 or higher
+- Python 3.4 or higher
 
 ## Download from pip
 
