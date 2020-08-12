@@ -550,26 +550,16 @@ def is_valid_notification_config(config):
     return True
 
 
-def is_valid_sse_c_object(sse):
-    """
-    Validate the SSE object and type
-
-    :param sse: SSE object defined.
-    """
+def check_ssec(sse):
+    """Check sse is SseCustomerKey type or not."""
     if sse and not isinstance(sse, SseCustomerKey):
-        raise InvalidArgumentError(
-            "Required type SSE-C object to be passed")
+        raise InvalidArgumentError("SseCustomerKey type is required")
 
 
-def is_valid_sse_object(sse):
-    """
-    Validate the SSE object and type
-
-    :param sse: SSE object defined.
-    """
+def check_sse(sse):
+    """Check sse is Sse type or not."""
     if sse and not isinstance(sse, Sse):
-        raise InvalidArgumentError(
-            "unsuported type of sse argument in put_object")
+        raise InvalidArgumentError("Sse type is required")
 
 
 def encode_object_name(object_name):
