@@ -186,9 +186,24 @@ class FileMinioClient(Provider):
 
 
 class IAMProvider(Provider):
-    """IAM EC2 credential provider."""
+    """
+        IAM EC2 credential provider.
 
-    def __init__(self, endpoint=None, http_client=None):
+        expiry_delta param is used to create a window to the token
+        expiration time. If expiry_delta is greater than 0 the
+        expiration time will be reduced by the delta value.
+
+        Using a delta value is helpful to trigger credentials to
+        expire sooner than the expiration time given to ensure no
+        requests are made with expired token.
+
+    """
+
+    def __init__(self,
+                 endpoint=None,
+                 http_client=None,
+                 expiry_delta=None):
+
         self._endpoint = endpoint or "http://169.254.169.254"
         self._http_client = http_client or urllib3.PoolManager(
             retries=urllib3.Retry(
@@ -197,6 +212,10 @@ class IAMProvider(Provider):
                 status_forcelist=[500, 502, 503, 504],
             ),
         )
+        if expiry_delta is None:
+            self._expiry_delta = timedelta(seconds=10)
+        else:
+            self._expiry_delta = expiry_delta
 
     def retrieve(self):
         """Retrieve credential value and its expiry from IAM EC2."""
@@ -234,7 +253,7 @@ class IAMProvider(Provider):
             data["AccessKeyId"],
             data["SecretAccessKey"],
             session_token=data["Token"],
-        ), expiration + timedelta(minutes=5)
+        ), expiration - self._expiry_delta
 
 
 class Static(Provider):

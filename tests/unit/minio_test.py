@@ -22,30 +22,30 @@ from minio import Minio
 from minio import __version__ as minio_version
 from minio.api import _DEFAULT_USER_AGENT
 from minio.error import InvalidBucketError, InvalidEndpointError
-from minio.helpers import (get_s3_region_from_endpoint, get_target_url,
-                           is_valid_bucket_name)
+from minio.helpers import (check_bucket_name, get_s3_region_from_endpoint,
+                           get_target_url)
 
 
 class ValidBucketName(TestCase):
     @raises(InvalidBucketError)
     def test_bucket_name(self):
-        is_valid_bucket_name('bucketName=', False)
+        check_bucket_name('bucketName=', False)
 
     @raises(InvalidBucketError)
     def test_bucket_name_invalid_characters(self):
-        is_valid_bucket_name('$$$bcuket', False)
+        check_bucket_name('$$$bcuket', False)
 
     @raises(InvalidBucketError)
     def test_bucket_name_length(self):
-        is_valid_bucket_name('dd', False)
+        check_bucket_name('dd', False)
 
     @raises(InvalidBucketError)
     def test_bucket_name_periods(self):
-        is_valid_bucket_name('dd..mybucket', False)
+        check_bucket_name('dd..mybucket', False)
 
     @raises(InvalidBucketError)
     def test_bucket_name_begins_period(self):
-        is_valid_bucket_name('.ddmybucket', False)
+        check_bucket_name('.ddmybucket', False)
 
 
 class GetURLTests(TestCase):
@@ -75,6 +75,12 @@ class GetURLTests(TestCase):
                            'objectName',
                            'us-west-2', None),
             'https://bucket-name.s3-us-west-2.amazonaws.com/objectName')
+        eq_(get_target_url('http://localhost:9000',
+                           'bucket-name',
+                           'objectName',
+                           'us-east-1',
+                           {'versionId': 'uuid'}),
+            'http://localhost:9000/bucket-name/objectName?versionId=uuid')
 
     @raises(TypeError)
     def test_minio_requires_string(self):

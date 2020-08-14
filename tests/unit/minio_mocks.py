@@ -22,7 +22,7 @@ from minio.fold_case_dict import FoldCaseDict
 if PYTHON2:
     import httplib
 else:
-    import http.client as httplib
+    from http import client as httplib
 
 
 class MockResponse(object):
