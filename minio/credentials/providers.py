@@ -71,8 +71,10 @@ class Chain(Provider):
         for provider in self._providers:
             try:
                 creds, expiry = provider.retrieve()
-                if ((creds.access_key is not None and creds.access_key != "") and
-                    (creds.secret_key is not None and creds.secret_key != "")):
+                access_key = creds.access_key
+                secret_key = creds.secret_key
+                if (access_key is not None and access_key != "") and (
+                        secret_key is not None and secret_key != ""):
                     self._provider = provider
                     return creds, expiry
             except ValueError as exc:
