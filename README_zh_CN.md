@@ -8,7 +8,7 @@ MinIO Python Client SDK提供简单的API来访问任何与Amazon S3兼容的对
 
 ## 最低要求
 
-- Python 2.7或更高版本
+- Python 3.4或更高版本
 
 ## 使用pip安装
 

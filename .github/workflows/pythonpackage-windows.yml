@@ -15,7 +15,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [2.7, 3.6, 3.7, 3.8]
+        python-version: [3.6, 3.7, 3.8]
         os: [windows-latest]
 
     steps:
@@ -47,6 +47,6 @@ jobs:
           New-Item -ItemType Directory -Path "$env:temp/minio-config/certs/"
           Copy-Item -Path tests\certs\* -Destination "$env:temp/minio-config/certs/"
           Invoke-WebRequest -Uri https://dl.minio.io/server/minio/release/windows-amd64/minio.exe -OutFile $HOME/minio.exe
-          Start-Process -NoNewWindow -FilePath "$HOME/minio.exe" -ArgumentList "-C", "$env:temp/minio-config", "server", "$env:temp/fs"
+          Start-Process -NoNewWindow -FilePath "$HOME/minio.exe" -ArgumentList "-C", "$env:temp/minio-config", "server", "$env:temp/fs{1...4}"
           $env:SSL_CERT_FILE = "$env:temp/minio-config/certs/public.crt"
           python tests/functional/tests.py

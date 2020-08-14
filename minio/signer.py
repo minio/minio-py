@@ -31,7 +31,7 @@ import hashlib
 import hmac
 from datetime import datetime
 
-from .compat import queryencode, urlsplit
+from .compat import parse_qs, queryencode, urlencode, urlsplit
 from .error import InvalidArgumentError
 from .fold_case_dict import FoldCaseDict
 from .helpers import get_sha256_hexdigest
@@ -126,29 +126,23 @@ def presign_v4(method, url, credentials,
     if response_headers:
         query.update(response_headers)
 
+    provided_query = parse_qs(parsed_url.query)
+    query.update(provided_query)
+
     # URL components.
-    url_components = [parsed_url.geturl()]
     ordered_query = collections.OrderedDict(sorted(query.items()))
-    query_components = []
-    for component_key in ordered_query:
-        single_component = [component_key, '=']
-        if ordered_query[component_key]:
-            single_component.append(queryencode(ordered_query[component_key]))
-        query_components.append(''.join(single_component))
+    ordered_query.update(query)
 
-    query_string = '&'.join(query_components)
-    if query_string:
-        url_components.append('?')
-        url_components.append(query_string)
-    new_url = ''.join(url_components)
-    # new url constructor block ends.
+    query_str = urlencode(ordered_query, doseq=True, quote_via=queryencode)
+    new_url = parsed_url.scheme + '://' + parsed_url.netloc + \
+        parsed_url.path + '?' + query_str
     new_parsed_url = urlsplit(new_url)
-
     canonical_request = generate_canonical_request(method,
                                                    new_parsed_url,
                                                    headers_to_sign,
                                                    signed_headers,
                                                    content_hash_hex)
+    print(canonical_request)
     string_to_sign = generate_string_to_sign(request_date, region,
                                              canonical_request,
                                              _PRESIGNED_SERVICE_NAME)
@@ -156,8 +150,8 @@ def presign_v4(method, url, credentials,
                                        credentials.get().secret_key)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
-    new_parsed_url = urlsplit(new_url + "&X-Amz-Signature="+signature)
-    return new_parsed_url.geturl()
+
+    return new_parsed_url.geturl()+"&X-Amz-Signature="+signature
 
 
 def get_signed_headers(headers):
