@@ -238,11 +238,11 @@ def test_negative_make_bucket_invalid_name(  # pylint: disable=invalid-name
         log_entry["args"]["bucket_name"] = name
         try:
             # Create a bucket with default bucket location
-            _call(log_entry, _CLIENT.make_bucket, bucket_name)
+            _call(log_entry, _CLIENT.make_bucket, name)
             # Check if bucket was created properly
-            _call(log_entry, _CLIENT.bucket_exists, bucket_name)
+            _call(log_entry, _CLIENT.bucket_exists, name)
             # Remove bucket
-            _call(log_entry, _CLIENT.remove_bucket, bucket_name)
+            _call(log_entry, _CLIENT.remove_bucket, name)
         except InvalidBucketError:
             pass
     # Test passes
