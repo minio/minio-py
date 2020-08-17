@@ -63,6 +63,15 @@ class CredsResponse(object):
         "LastUpdated": "2009-11-23T0:00:00Z"
     })
 
+class ECSCredsResponse(object):
+    status = 200
+    data = json.dumps({
+        "RoleArn": "arn:aws:iam::123456789101:role/my-ecs-role",
+        "AccessKeyId": "accessKey",
+        "SecretAccessKey": "secret",
+        "Token": "token",
+        "Expiration": "2014-12-16T01:51:37Z",
+    })
 
 class IAMProviderTest(TestCase):
     @mock.patch("urllib3.PoolManager.urlopen")
@@ -75,6 +84,16 @@ class IAMProviderTest(TestCase):
         eq_(creds.session_token, "token")
         eq_(expiry, datetime(2014, 12, 16, 1, 46, 37))
 
+class IAMProviderECSTest(TestCase):
+    @mock.patch("urllib3.PoolManager.urlopen")
+    def test_iam(self, mock_connection):
+        mock_connection.side_effect = [ECSCredsResponse()]
+        provider = IAMProvider(expiry_delta=timedelta(minutes=5), is_ecs_task=True)
+        creds, expiry = provider.retrieve()
+        eq_(creds.access_key, "accessKey")
+        eq_(creds.secret_key, "secret")
+        eq_(creds.session_token, "token")
+        eq_(expiry, datetime(2014, 12, 16, 1, 46, 37))
 
 class ChainProviderTest(TestCase):
     def test_chain_retrieve(self):
