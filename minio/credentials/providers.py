@@ -204,14 +204,14 @@ class IAMProvider(Provider):
                  expiry_delta=None,
                  is_ecs_task=False):
 
-        DEFAULT_IAM_ROLE_ENDPOINT = "http://169.254.169.254"
-        DEFAULT_ECS_ROLE_ENDPOINT = "http://169.254.170.2"
+        default_iam_role_endpoint = "http://169.254.169.254"
+        default_ecs_role_endpoint = "http://169.254.170.2"
 
         self._is_ecs_task = is_ecs_task
 
-        DEFAULT_ENDPOINT = DEFAULT_ECS_ROLE_ENDPOINT if self._is_ecs_task else DEFAULT_IAM_ROLE_ENDPOINT
+        default_endpoint = default_ecs_role_endpoint if self._is_ecs_task else default_iam_role_endpoint
 
-        self._endpoint = endpoint or DEFAULT_ENDPOINT
+        self._endpoint = endpoint or default_endpoint
         self._http_client = http_client or urllib3.PoolManager(
             retries=urllib3.Retry(
                 total=5,
