@@ -209,7 +209,10 @@ class IAMProvider(Provider):
 
         self._is_ecs_task = is_ecs_task
 
-        default_endpoint = default_ecs_role_endpoint if self._is_ecs_task else default_iam_role_endpoint
+        if self._is_ecs_task:
+            default_endpoint = default_ecs_role_endpoint
+        else:
+            default_endpoint = default_iam_role_endpoint
 
         self._endpoint = endpoint or default_endpoint
         self._http_client = http_client or urllib3.PoolManager(
@@ -225,7 +228,10 @@ class IAMProvider(Provider):
             self._expiry_delta = expiry_delta
 
     def retrieve(self):
-        """Retrieve credential value and its expiry from IAM EC2 or ECS task role."""
+        """
+            Retrieve credential value and its expiry from IAM EC2 instance role
+            or ECS task role.
+        """
         if not self._is_ecs_task:
             # Get role names and get the first role for EC2.
             creds_path = "/latest/meta-data/iam/security-credentials"
@@ -241,7 +247,8 @@ class IAMProvider(Provider):
             credentials_url = self._endpoint + creds_path + "/" + role_names[0]
         else:
             # This URL directly gives the credentials for an ECS task
-            credentials_url = self._endpoint + os.environ.get("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI")
+            credentials_url = (self._endpoint +
+                os.environ.get("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"))
 
         # Get credentials of role.
         res = self._http_client.urlopen("GET", credentials_url)
