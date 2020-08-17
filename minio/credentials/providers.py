@@ -247,8 +247,8 @@ class IAMProvider(Provider):
             credentials_url = self._endpoint + creds_path + "/" + role_names[0]
         else:
             # This URL directly gives the credentials for an ECS task
-            credentials_url = (self._endpoint +
-                os.environ.get("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"))
+            relative_url_var = "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"
+            credentials_url = self._endpoint + os.environ.get(relative_url_var)
 
         # Get credentials of role.
         res = self._http_client.urlopen("GET", credentials_url)
