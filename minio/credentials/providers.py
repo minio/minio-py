@@ -260,7 +260,7 @@ class IAMProvider(Provider):
         data = json.loads(res.data)
 
         # Note the response in ECS does not include the "Code" key.
-        if data["Code"] != "Success" and not self._is_ecs_task:
+        if not self._is_ecs_task and data["Code"] != "Success":
             raise ResponseError(
                 "credential retrieval failed with code {0}".format(
                     data["Code"]),
