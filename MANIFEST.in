@@ -1,8 +1,7 @@
 include LICENSE README*
 recursive-include docs *.md
 recursive-include examples *.py
-recursive-include tests *.py *.sh *.crt *.key
-recursive-include minio/credentials *.empty *.sample
+recursive-include tests *.py *.sh *.crt *.key *.sample *.empty
 
 prune .github
 prune Makefile
