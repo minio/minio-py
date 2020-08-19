@@ -17,70 +17,181 @@
 """Credential providers."""
 
 import configparser
+import ipaddress
 import json
 import os
+import socket
 import sys
+import time
+from abc import ABCMeta, abstractmethod
 from datetime import datetime, timedelta
+from urllib.parse import urlencode
+from xml.etree import ElementTree
 
 import urllib3
-from urllib3.exceptions import HTTPError, ResponseError
 
-from .credentials import Provider, Value
+from minio.helpers import get_sha256_hexdigest
+from minio.signer import sign_v4
+
+from .credentials import Credentials
 
 RFC3339NANO = "%Y-%m-%dT%H:%M:%S.%fZ"
 RFC3339 = "%Y-%m-%dT%H:%M:%SZ"
+_MIN_DURATION_SECONDS = timedelta(minutes=15).total_seconds()
+_MAX_DURATION_SECONDS = timedelta(days=7).total_seconds()
+_DEFAULT_DURATION_SECONDS = timedelta(hours=1).total_seconds()
+_XML_NS = {
+    "s3": "http://s3.amazonaws.com/doc/2006-03-01/",
+    "sts": "https://sts.amazonaws.com/doc/2011-06-15/",
+}
+
+
+def _parse_credentials(data, result_path):
+    """Parse data containing credentials XML."""
+
+    root = ElementTree.fromstring(data)
+    credentials = root.find("sts:" + result_path, _XML_NS).find(
+        "sts:Credentials", _XML_NS)
+
+    access_key = credentials.find("sts:AccessKeyId", _XML_NS).text
+    secret_key = credentials.find("sts:SecretAccessKey", _XML_NS).text
+    session_token = credentials.find("sts:SessionToken", _XML_NS).text
+    text = credentials.find("sts:Expiration", _XML_NS).text
+    try:
+        expiration = datetime.strptime(text, RFC3339NANO)
+    except ValueError:
+        expiration = datetime.strptime(text, RFC3339)
+
+    return Credentials(access_key, secret_key, session_token, expiration)
+
+
+def _urlopen(http_client, method, url, body=None, headers=None):
+    """Wrapper of urlopen() handles HTTP status code."""
+    res = http_client.urlopen(method, url, body=body, headers=headers)
+    if res.status not in [200, 204, 206]:
+        raise ValueError(
+            "{0} failed with HTTP status code {1}".format(url, res.status),
+        )
+    return res
+
+
+class Provider:  # pylint: disable=too-few-public-methods
+    """Credential retriever."""
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def retrieve(self):
+        """Retrieve credentials and its expiry if available."""
 
 
 class AssumeRoleProvider(Provider):
     """Assume-role credential provider."""
 
-    def __init__(self, provider_func):
-        self._provider_func = provider_func
-        self._value = None
-        self._expiry = None
+    def __init__(
+            self, sts_endpoint, access_key, secret_key, duration_seconds=0,
+            policy=None, region=None, role_arn=None, role_session_name=None,
+            external_id=None, http_client=None,
+    ):
+        self._sts_endpoint = sts_endpoint
+        self._access_key = access_key
+        self._secret_key = secret_key
+        self._region = region or ""
+        self._http_client = http_client or urllib3.PoolManager(
+            retries=urllib3.Retry(
+                total=5,
+                backoff_factor=0.2,
+                status_forcelist=[500, 502, 503, 504],
+            ),
+        )
+
+        query_params = {
+            "Action": "AssumeRole",
+            "Version": "2011-06-15",
+            "DurationSeconds": str(
+                duration_seconds
+                if duration_seconds > _DEFAULT_DURATION_SECONDS
+                else _DEFAULT_DURATION_SECONDS
+            ),
+        }
+
+        if role_arn:
+            query_params["RoleArn"] = role_arn
+        if role_session_name:
+            query_params["RoleSessionName"] = role_session_name
+        if policy:
+            query_params["Policy"] = policy
+        if external_id:
+            query_params["ExternalId"] = external_id
+
+        self._body = urlencode(query_params)
+        self._content_sha256 = get_sha256_hexdigest(self._body)
+        self._credentials = None
 
     def retrieve(self):
-        """Retrieve credential value and its expiry from provider callback."""
-        if (
-                not self._value or
-                (self._expiry and self._expiry < datetime.utcnow())
-        ):
-            self._value, self._expiry = self._provider_func()
-        return self._value, self._expiry
+        """Retrieve credentials."""
+        if self._credentials and not self._credentials.is_expired():
+            return self._credentials
+
+        headers = sign_v4(
+            "POST",
+            self._sts_endpoint,
+            self._region,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            credentials=Credentials(self._access_key, self._secret_key),
+            content_sha256=self._content_sha256,
+            request_datetime=datetime.utcnow(),
+            sts=True,
+        )
+
+        res = _urlopen(
+            self._http_client,
+            "POST",
+            self._sts_endpoint,
+            body=self._body,
+            headers=headers,
+        )
+
+        self._credentials = _parse_credentials(
+            res.data.decode(), "AssumeRoleResult",
+        )
+
+        return self._credentials
 
 
-class Chain(Provider):
+class ChainedProvider(Provider):
     """Chained credential provider."""
 
     def __init__(self, providers):
         self._providers = providers
         self._provider = None
+        self._credentials = None
 
     def retrieve(self):
-        """
-        Retrieve credential value and its expiry from one of available
-        provider.
-        """
-        value_error = ValueError("no credentials retrieved")
-        try:
-            if self._provider:
-                return self._provider.retrieve()
-        except ValueError as exc:
-            value_error = exc
+        """Retrieve credentials from one of available provider."""
+        if self._credentials and not self._credentials.is_expired():
+            return self._credentials
+
+        if self._provider:
+            try:
+                self._credentials = self._provider.retrieve()
+                return self._credentials
+            except ValueError:
+                # Ignore this error and iterate other providers.
+                pass
 
         for provider in self._providers:
             try:
-                creds, expiry = provider.retrieve()
-                if creds:
-                    self._provider = provider
-                    return creds, expiry
-            except ValueError as exc:
-                value_error = exc
+                self._credentials = provider.retrieve()
+                self._provider = provider
+                return self._credentials
+            except ValueError:
+                # Ignore this error and iterate other providers.
+                pass
 
-        raise value_error
+        return ValueError("All providers fail to fetch credentials")
 
 
-class EnvAWS(Provider):
+class EnvAWSProvider(Provider):
     """Credential provider from AWS environment variables."""
 
     def __init__(self):
@@ -92,33 +203,32 @@ class EnvAWS(Provider):
             os.environ.get("AWS_SECRET_ACCESS_KEY") or
             os.environ.get("AWS_SECRET_KEY")
         )
-        session_token = os.environ.get("AWS_SESSION_TOKEN")
-        self._value = Value(
+        self._credentials = Credentials(
             access_key,
             secret_key,
-            session_token=session_token,
+            session_token=os.environ.get("AWS_SESSION_TOKEN"),
         )
 
     def retrieve(self):
-        """Retrieve credential value."""
-        return self._value, None
+        """Retrieve credentials."""
+        return self._credentials
 
 
-class EnvMinio(Provider):
+class EnvMinioProvider(Provider):
     """Credential provider from MinIO environment variables."""
 
     def __init__(self):
-        self._value = Value(
+        self._credentials = Credentials(
             os.environ.get("MINIO_ACCESS_KEY"),
             os.environ.get("MINIO_SECRET_KEY"),
         )
 
     def retrieve(self):
-        """Retrieve credential value."""
-        return self._value, None
+        """Retrieve credentials."""
+        return self._credentials
 
 
-class FileAWSCredentials(Provider):
+class AWSConfigProvider(Provider):
     """Credential provider from AWS credential file."""
 
     def __init__(self, filename=None, profile=None):
@@ -130,7 +240,7 @@ class FileAWSCredentials(Provider):
         self._profile = profile or os.environ.get("AWS_PROFILE") or "default"
 
     def retrieve(self):
-        """Retrieve credential value from AWS configuration file."""
+        """Retrieve credentials from AWS configuration file."""
         parser = configparser.ConfigParser()
         parser.read(self._filename)
         access_key = parser.get(
@@ -148,14 +258,35 @@ class FileAWSCredentials(Provider):
             "aws_session_token",
             fallback=None,
         )
-        return Value(
+
+        if not access_key:
+            raise ValueError(
+                (
+                    "access key does not exist in profile "
+                    "{0} in AWS credential file {1}"
+                ).format(
+                    self._profile, self._filename,
+                ),
+            )
+
+        if not secret_key:
+            raise ValueError(
+                (
+                    "secret key does not exist in profile "
+                    "{0} in AWS credential file {1}"
+                ).format(
+                    self._profile, self._filename,
+                ),
+            )
+
+        return Credentials(
             access_key,
             secret_key,
             session_token=session_token,
-        ), None
+        )
 
 
-class FileMinioClient(Provider):
+class MinioClientConfigProvider(Provider):
     """Credential provider from MinIO Client configuration file."""
 
     def __init__(self, filename=None, alias=None):
@@ -174,47 +305,57 @@ class FileMinioClient(Provider):
         try:
             with open(self._filename) as conf_file:
                 config = json.load(conf_file)
-                creds = config.get("hosts", {}).get(self._alias, {})
-        except (OSError, ValueError):
-            creds = {}
+            if not config.get("hosts"):
+                raise ValueError(
+                    "invalid configuration in file {0}".format(
+                        self._filename,
+                    ),
+                )
+            creds = config.get("hosts").get(self._alias)
+            if not creds:
+                raise ValueError(
+                    (
+                        "alias {0} not found in MinIO client"
+                        "configuration file {1}"
+                    ).format(
+                        self._alias, self._filename,
+                    ),
+                )
+            return Credentials(creds.get("accessKey"), creds.get("secretKey"))
+        except (IOError, OSError) as exc:
+            raise ValueError(
+                "error in reading file {0}".format(self._filename),
+            ) from exc
 
-        return Value(
-            creds.get("accessKey"),
-            creds.get("secretKey"),
-        ), None
+
+def _check_loopback_host(url):
+    """Check whether host in url points only to localhost."""
+    host = urllib3.util.parse_url(url).host
+    try:
+        addrs = set(info[4][0] for info in socket.getaddrinfo(host, None))
+        for addr in addrs:
+            if not ipaddress.ip_address(addr).is_loopback:
+                raise ValueError(host + " is not loopback only host")
+    except socket.gaierror as exc:
+        raise ValueError("Host " + host + " is not loopback address") from exc
 
 
-class IAMProvider(Provider):
-    """
-        IAM EC2/ECS credential provider.
+def _get_jwt_token(token_file):
+    """Read and return content of token file. """
+    try:
+        with open(token_file) as file:
+            return {"access_token": file.read(), "expires_in": "0"}
+    except (IOError, OSError) as exc:
+        raise ValueError(
+            "error in reading file {0}".format(token_file),
+        ) from exc
 
-        expiry_delta param is used to create a window to the token
-        expiration time. If expiry_delta is greater than 0 the
-        expiration time will be reduced by the delta value.
 
-        Using a delta value is helpful to trigger credentials to
-        expire sooner than the expiration time given to ensure no
-        requests are made with expired token.
+class IamAwsProvider(Provider):
+    """Credential provider using IAM roles for Amazon EC2/ECS."""
 
-    """
-
-    def __init__(self,
-                 endpoint=None,
-                 http_client=None,
-                 expiry_delta=None,
-                 is_ecs_task=False):
-
-        default_iam_role_endpoint = "http://169.254.169.254"
-        default_ecs_role_endpoint = "http://169.254.170.2"
-
-        self._is_ecs_task = is_ecs_task
-
-        if self._is_ecs_task:
-            default_endpoint = default_ecs_role_endpoint
-        else:
-            default_endpoint = default_iam_role_endpoint
-
-        self._endpoint = endpoint or default_endpoint
+    def __init__(self, custom_endpoint=None, http_client=None):
+        self._custom_endpoint = custom_endpoint
         self._http_client = http_client or urllib3.PoolManager(
             retries=urllib3.Retry(
                 total=5,
@@ -222,69 +363,256 @@ class IAMProvider(Provider):
                 status_forcelist=[500, 502, 503, 504],
             ),
         )
-        if expiry_delta is None:
-            self._expiry_delta = timedelta(seconds=10)
-        else:
-            self._expiry_delta = expiry_delta
+        self._token_file = os.environ.get("AWS_WEB_IDENTITY_TOKEN_FILE")
+        self._aws_region = os.environ.get("AWS_REGION")
+        self._role_arn = os.environ.get("AWS_ROLE_ARN")
+        self._role_session_name = os.environ.get("AWS_ROLE_SESSION_NAME")
+        self._relative_uri = os.environ.get(
+            "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI",
+        )
+        if self._relative_uri and not self._relative_uri.startswith("/"):
+            self._relative_uri = "/" + self._relative_uri
+        self._full_uri = os.environ.get("AWS_CONTAINER_CREDENTIALS_FULL_URI")
+        self._credentials = None
 
-    def retrieve(self):
-        """
-            Retrieve credential value and its expiry from IAM EC2 instance role
-            or ECS task role.
-        """
-        if not self._is_ecs_task:
-            # Get role names and get the first role for EC2.
-            creds_path = "/latest/meta-data/iam/security-credentials"
-            url = self._endpoint + creds_path
-            res = self._http_client.urlopen("GET", url)
-            if res.status != 200:
-                raise HTTPError(
-                    "request failed with status {0}".format(res.status),
-                )
-            role_names = res.data.decode("utf-8").split("\n")
-            if not role_names:
-                raise ResponseError("no role names found in response")
-            credentials_url = self._endpoint + creds_path + "/" + role_names[0]
-        else:
-            # This URL directly gives the credentials for an ECS task
-            relative_url_var = "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"
-            creds_path = os.environ.get(relative_url_var) or ""
-            credentials_url = self._endpoint + creds_path
+    def fetch(self, url):
+        """Fetch credentials from EC2/ECS. """
 
-        # Get credentials of role.
-        res = self._http_client.urlopen("GET", credentials_url)
-        if res.status != 200:
-            raise HTTPError(
-                "request failed with status {0}".format(res.status),
-            )
+        res = _urlopen(self._http_client, "GET", url)
         data = json.loads(res.data)
-
-        # Note the response in ECS does not include the "Code" key.
-        if not self._is_ecs_task and data["Code"] != "Success":
-            raise ResponseError(
-                "credential retrieval failed with code {0}".format(
-                    data["Code"]),
+        if data["Code"] != "Success":
+            raise ValueError(
+                "{0} failed with code {1} message {2}".format(
+                    url, data["Code"], data["Message"],
+                ),
             )
-
         try:
-            expiration = datetime.strptime(data["Expiration"], RFC3339NANO)
+            data["Expiration"] = datetime.strptime(
+                data["Expiration"], RFC3339NANO,
+            )
         except ValueError:
-            expiration = datetime.strptime(data["Expiration"], RFC3339)
-        return Value(
+            data["Expiration"] = datetime.strptime(data["Expiration"], RFC3339)
+
+        return Credentials(
             data["AccessKeyId"],
             data["SecretAccessKey"],
-            session_token=data["Token"],
-        ), expiration - self._expiry_delta
-
-
-class Static(Provider):
-    """Fixed credential provider."""
-
-    def __init__(self, access_key, secret_key, session_token=None,
-                 expiry=None):
-        self._value = Value(access_key, secret_key, session_token)
-        self._expiry = expiry
+            data["Token"],
+            data["Expiration"],
+        )
 
     def retrieve(self):
-        """Retrieve credential value and its expiry."""
-        return self._value, self._expiry
+        """Retrieve credentials from WebIdentity/EC2/ECS."""
+
+        if self._credentials and not self._credentials.is_expired():
+            return self._credentials
+
+        url = self._custom_endpoint
+        if self._token_file:
+            if not url:
+                url = "https://sts.{0}{1}amazonaws.com".format(
+                    self._aws_region, "." if self._aws_region else "",
+                )
+
+            provider = WebIdentityProvider(
+                lambda: _get_jwt_token(self._token_file),
+                url,
+                role_arn=self._role_arn,
+                role_session_name=self._role_session_name,
+                http_client=self._http_client,
+            )
+            self._credentials = provider.retrieve()
+            return self._credentials
+
+        if self._relative_uri:
+            if not url:
+                url = "http://169.254.170.2" + self._relative_uri
+        elif self._full_uri:
+            if not url:
+                url = self._full_uri
+            _check_loopback_host(url)
+        else:
+            if not url:
+                url = (
+                    "http://169.254.169.254" +
+                    "/latest/meta-data/iam/security-credentials/"
+                )
+
+            res = _urlopen(self._http_client, "GET", url)
+            role_names = res.data.decode("utf-8").split("\n")
+            if not role_names:
+                raise ValueError(
+                    "no IAM roles attached to EC2 service {0}".format(url),
+                )
+            url += "/" + role_names[0].strip("\r")
+
+        self._credentials = self.fetch(url)
+        return self._credentials
+
+
+class LdapIdentityProvider(Provider):
+    """Credential provider using AssumeRoleWithLDAPIdentity API."""
+
+    def __init__(
+            self, sts_endpoint, ldap_username, ldap_password, http_client=None,
+    ):
+        self._sts_endpoint = sts_endpoint
+        self._http_client = http_client or urllib3.PoolManager(
+            retries=urllib3.Retry(
+                total=5,
+                backoff_factor=0.2,
+                status_forcelist=[500, 502, 503, 504],
+            ),
+        )
+        self._body = urlencode(
+            {
+                "Action": "AssumeRoleWithLDAPIdentity",
+                "Version": "2011-06-15",
+                "LDAPUsername": ldap_username,
+                "LDAPPassword": ldap_password,
+            },
+        )
+        self._credentials = None
+
+    def retrieve(self):
+        """Retrieve credentials."""
+
+        if self._credentials and not self._credentials.is_expired():
+            return self._credentials
+
+        res = _urlopen(
+            self._http_client,
+            "POST",
+            self._sts_endpoint,
+            body=self._body,
+            headers={"Content-Type", "application/x-www-form-urlencoded"},
+        )
+
+        self._credentials = _parse_credentials(
+            res.data.decode(), "AssumeRoleWithLDAPIdentityResult",
+        )
+
+        return self._credentials
+
+
+class StaticProvider(Provider):
+    """Fixed credential provider."""
+
+    def __init__(self, access_key, secret_key, session_token=None):
+        self._credentials = Credentials(access_key, secret_key, session_token)
+
+    def retrieve(self):
+        """Return passed credentials."""
+        return self._credentials
+
+
+class WebIdentityClientGrantsProvider(Provider):
+    """Base class for WebIdentity and ClientGrants credentials provider."""
+    __metaclass__ = ABCMeta
+
+    def __init__(
+            self, jwt_provider_func, sts_endpoint,
+            duration_seconds=0, policy=None, role_arn=None,
+            role_session_name=None, http_client=None,
+    ):
+        self._jwt_provider_func = jwt_provider_func
+        self._sts_endpoint = sts_endpoint
+        self._duration_seconds = duration_seconds
+        self._policy = policy
+        self._role_arn = role_arn
+        self._role_session_name = role_session_name
+        self._http_client = http_client or urllib3.PoolManager(
+            retries=urllib3.Retry(
+                total=5,
+                backoff_factor=0.2,
+                status_forcelist=[500, 502, 503, 504],
+            ),
+        )
+        self._credentials = None
+
+    @abstractmethod
+    def _is_web_identity(self):
+        """Check if derived class deal with WebIdentity."""
+
+    def _get_duration_seconds(self, expiry):
+        """Get DurationSeconds optimal value."""
+
+        if self._duration_seconds:
+            expiry = self._duration_seconds
+
+        if expiry > _MAX_DURATION_SECONDS:
+            return _MAX_DURATION_SECONDS
+
+        if expiry <= 0:
+            return expiry
+
+        return (
+            _MIN_DURATION_SECONDS if expiry < _MIN_DURATION_SECONDS else expiry
+        )
+
+    def retrieve(self):
+        """Retrieve credentials."""
+
+        if self._credentials and not self._credentials.is_expired():
+            return self._credentials
+
+        jwt = self._jwt_provider_func()
+
+        query_params = {"Version", "2011-06-15"}
+        duration_seconds = self._get_duration_seconds(
+            int(jwt.get("expires_in", "0")),
+        )
+        if duration_seconds:
+            query_params["DurationSeconds"] = str(duration_seconds)
+        if self._policy:
+            query_params["Policy"] = self._policy
+
+        if self._is_web_identity():
+            query_params["Action"] = "AssumeRoleWithWebIdentity"
+            query_params["WebIdentityToken"] = jwt.get("access_token")
+            if self._role_arn:
+                query_params["RoleArn"] = self._role_arn
+                query_params["RoleSessionName"] = (
+                    self._role_session_name
+                    if self._role_session_name
+                    else str(time.time()).replace(".", "")
+                )
+        else:
+            query_params["Action"] = "AssumeRoleWithClientGrants"
+            query_params["Token"] = jwt.get("access_token")
+
+        url = self._sts_endpoint + "?" + urlencode(query_params)
+        res = _urlopen(self._http_client, "POST", url)
+
+        self._credentials = _parse_credentials(
+            res.data.decode(),
+            (
+                "AssumeRoleWithWebIdentityResult"
+                if self._is_web_identity()
+                else "AssumeRoleWithClientGrantsResult"
+            ),
+        )
+
+        return self._credentials
+
+
+class ClientGrantsProvider(WebIdentityClientGrantsProvider):
+    """Credential provider using AssumeRoleWithClientGrants API."""
+
+    def __init__(
+            self, jwt_provider_func, sts_endpoint,
+            duration_seconds=0, policy=None, http_client=None,
+    ):
+        super().__init__(
+            jwt_provider_func, sts_endpoint, duration_seconds, policy,
+            http_client=http_client,
+        )
+
+    def _is_web_identity(self):
+        return False
+
+
+class WebIdentityProvider(WebIdentityClientGrantsProvider):
+    """Credential provider using AssumeRoleWithWebIdentity API."""
+
+    def _is_web_identity(self):
+        return True

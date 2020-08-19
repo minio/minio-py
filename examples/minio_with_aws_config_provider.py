@@ -13,13 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
-"""Credential module."""
+from minio import Minio
+from minio.credentials import AWSConfigProvider
 
-# pylint: disable=unused-import
-from .credentials import Credentials
-from .providers import (AssumeRoleProvider, AWSConfigProvider, ChainedProvider,
-                        ClientGrantsProvider, EnvAWSProvider, EnvMinioProvider,
-                        IamAwsProvider, LdapIdentityProvider,
-                        MinioClientConfigProvider, Provider, StaticProvider,
-                        WebIdentityProvider)
+client = Minio('s3.amazonaws.com', credentials=AWSConfigProvider())
+
+# Get information of an object.
+stat = client.stat_object("my-bucketname", "my-objectname")
+print(stat)

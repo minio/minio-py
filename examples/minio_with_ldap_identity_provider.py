@@ -13,21 +13,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# A Chain credentials provider, provides a way of chaining multiple providers
-# together and will pick the first available using priority order of the
-# 'providers' list
+#
 
 from minio import Minio
-from minio.credentials import Chain, Credentials, EnvAWS, EnvMinio, IAMProvider
+from minio.credentials import LdapIdentityProvider
 
-client = Minio('s3.amazonaws.com',
-               credentials=Credentials(
-                   provider=Chain(
-                       providers=[
-                           IAMProvider(),
-                           EnvAWS(),
-                           EnvMinio()
-                       ]
-                   )
-               ))
+# STS endpoint usually point to MinIO server.
+sts_endpoint = "http://STS-HOST:STS-PORT/"
+
+# LDAP username.
+ldap_username = "LDAP-USERNAME"
+
+# LDAP password.
+ldap_password = "LDAP-PASSWORD"
+
+provider = LdapIdentityProvider(sts_endpoint, ldap_username, ldap_password)
+
+client = Minio("MINIO-HOST:MINIO-PORT", credentials=provider)
+
+# Get information of an object.
+stat = client.stat_object("my-bucketname", "my-objectname")
+print(stat)

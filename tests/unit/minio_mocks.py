@@ -46,8 +46,9 @@ class MockResponse(object):
     def mock_verify(self, method, url, headers):
         eq_(self.method, method)
         eq_(self.url, url)
-        for header in headers:
-            eq_(self.request_headers[header], headers[header])
+        if headers:
+            for header in headers:
+                eq_(self.request_headers[header], headers[header])
 
     # noinspection PyUnusedLocal
     def stream(self, chunk_size=1, decode_unicode=False):
