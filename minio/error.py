@@ -39,7 +39,7 @@ class MinioError(Exception):
     """
 
     def __init__(self, message, **kwargs):
-        super(MinioError, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.message = message
 
     def __str__(self):
@@ -94,7 +94,7 @@ class MultiDeleteError(MinioError):
     """
 
     def __init__(self, object_name, err_code, err_message):
-        super(MultiDeleteError, self).__init__(err_message)
+        super().__init__(err_message)
         self.object_name = object_name
         self.error_code = err_code
         self.error_message = err_message
@@ -114,7 +114,7 @@ class KnownResponseError(MinioError):
     """
 
     def __init__(self, response_error, **kwargs):
-        super(KnownResponseError, self).__init__(
+        super().__init__(
             message=self.message, **kwargs)
         self.response_error = response_error
 
@@ -124,7 +124,7 @@ class AccessDenied(KnownResponseError):
     message = 'Access Denied'
 
     def __init__(self):
-        super(AccessDenied, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class AccountProblem(KnownResponseError):
@@ -133,7 +133,7 @@ class AccountProblem(KnownResponseError):
                'operation from completing successfully.')
 
     def __init__(self):
-        super(AccountProblem, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class AmbiguousGrantByEmailAddress(KnownResponseError):
@@ -142,7 +142,7 @@ class AmbiguousGrantByEmailAddress(KnownResponseError):
                'more than one account.')
 
     def __init__(self):
-        super(AmbiguousGrantByEmailAddress, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class BadDigest(KnownResponseError):
@@ -150,7 +150,7 @@ class BadDigest(KnownResponseError):
     message = 'The Content-MD5 you specified did not match what we received.'
 
     def __init__(self):
-        super(BadDigest, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class BucketAlreadyExists(KnownResponseError):
@@ -160,7 +160,7 @@ class BucketAlreadyExists(KnownResponseError):
                'Please select a different name and try again.')
 
     def __init__(self):
-        super(BucketAlreadyExists, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class BucketAlreadyOwnedByYou(KnownResponseError):
@@ -169,7 +169,7 @@ class BucketAlreadyOwnedByYou(KnownResponseError):
                'succeeded and you already own it.')
 
     def __init__(self):
-        super(BucketAlreadyOwnedByYou, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class BucketNotEmpty(KnownResponseError):
@@ -177,7 +177,7 @@ class BucketNotEmpty(KnownResponseError):
     message = 'The bucket you tried to delete is not empty.'
 
     def __init__(self):
-        super(BucketNotEmpty, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class CredentialNotSupported(KnownResponseError):
@@ -185,7 +185,7 @@ class CredentialNotSupported(KnownResponseError):
     message = 'This request does not support credentials.'
 
     def __init__(self):
-        super(CredentialNotSupported, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class CrossLocationLoggingProhibited(KnownResponseError):
@@ -195,7 +195,7 @@ class CrossLocationLoggingProhibited(KnownResponseError):
                'in another location.')
 
     def __init__(self):
-        super(CrossLocationLoggingProhibited, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class EntityTooSmall(KnownResponseError):
@@ -204,7 +204,7 @@ class EntityTooSmall(KnownResponseError):
                'allowed object size.')
 
     def __init__(self):
-        super(EntityTooSmall, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class EntityTooLarge(KnownResponseError):
@@ -212,7 +212,7 @@ class EntityTooLarge(KnownResponseError):
     message = 'Your proposed upload exceeds the maximum allowed object size.'
 
     def __init__(self):
-        super(EntityTooLarge, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class ExpiredToken(KnownResponseError):
@@ -220,7 +220,7 @@ class ExpiredToken(KnownResponseError):
     message = 'The provided token has expired.'
 
     def __init__(self):
-        super(ExpiredToken, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class IllegalVersioningConfigurationException(KnownResponseError):
@@ -229,8 +229,7 @@ class IllegalVersioningConfigurationException(KnownResponseError):
                'in the request is invalid.')
 
     def __init__(self):
-        super(IllegalVersioningConfigurationException, self).__init__(
-            self.message)
+        super().__init__(self.message)
 
 
 class IncompleteBody(KnownResponseError):
@@ -239,7 +238,7 @@ class IncompleteBody(KnownResponseError):
                'Content-Length HTTP header')
 
     def __init__(self):
-        super(IncompleteBody, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class IncorrectNumberOfFilesInPostRequest(KnownResponseError):
@@ -247,7 +246,7 @@ class IncorrectNumberOfFilesInPostRequest(KnownResponseError):
     message = 'POST requires exactly one file upload per request.'
 
     def __init__(self):
-        super(IncorrectNumberOfFilesInPostRequest, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InlineDataTooLarge(KnownResponseError):
@@ -255,7 +254,7 @@ class InlineDataTooLarge(KnownResponseError):
     message = 'Inline data exceeds the maximum allowed size.'
 
     def __init__(self):
-        super(InlineDataTooLarge, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InternalError(KnownResponseError):
@@ -263,7 +262,7 @@ class InternalError(KnownResponseError):
     message = 'We encountered an internal error. Please try again.'
 
     def __init__(self):
-        super(InternalError, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidAccessKeyId(KnownResponseError):
@@ -271,7 +270,7 @@ class InvalidAccessKeyId(KnownResponseError):
     message = 'The access key Id you provided does not exist in our records.'
 
     def __init__(self):
-        super(InvalidAccessKeyId, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidAddressingHeader(KnownResponseError):
@@ -279,7 +278,7 @@ class InvalidAddressingHeader(KnownResponseError):
     message = 'You must specify the Anonymous role.'
 
     def __init__(self):
-        super(InvalidAddressingHeader, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidArgument(KnownResponseError):
@@ -287,7 +286,7 @@ class InvalidArgument(KnownResponseError):
     message = 'Invalid Argument'
 
     def __init__(self):
-        super(InvalidArgument, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidBucketName(KnownResponseError):
@@ -295,7 +294,7 @@ class InvalidBucketName(KnownResponseError):
     message = 'The specified bucket is not valid.'
 
     def __init__(self):
-        super(InvalidBucketName, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidBucketState(KnownResponseError):
@@ -303,7 +302,7 @@ class InvalidBucketState(KnownResponseError):
     message = 'The request is not valid with the current state of the bucket.'
 
     def __init__(self):
-        super(InvalidBucketState, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidDigest(KnownResponseError):
@@ -311,7 +310,7 @@ class InvalidDigest(KnownResponseError):
     message = 'The Content-MD5 you specified is not valid.'
 
     def __init__(self):
-        super(InvalidDigest, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidEncryptionAlgorithmError(KnownResponseError):
@@ -320,7 +319,7 @@ class InvalidEncryptionAlgorithmError(KnownResponseError):
                'The valid value is AES256.')
 
     def __init__(self):
-        super(InvalidEncryptionAlgorithmError, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidLocationConstraint(KnownResponseError):
@@ -328,7 +327,7 @@ class InvalidLocationConstraint(KnownResponseError):
     message = 'The specified location constraint is not valid.'
 
     def __init__(self):
-        super(InvalidLocationConstraint, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidObjectState(KnownResponseError):
@@ -336,7 +335,7 @@ class InvalidObjectState(KnownResponseError):
     message = 'The operation is not valid for the current state of the object.'
 
     def __init__(self):
-        super(InvalidObjectState, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidPart(KnownResponseError):
@@ -346,7 +345,7 @@ class InvalidPart(KnownResponseError):
                'entity tag might not have matched the part\'s entity tag')
 
     def __init__(self):
-        super(InvalidPart, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidPartOrder(KnownResponseError):
@@ -355,7 +354,7 @@ class InvalidPartOrder(KnownResponseError):
                'must specified in order by part number.')
 
     def __init__(self):
-        super(InvalidPartOrder, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidPayer(KnownResponseError):
@@ -363,7 +362,7 @@ class InvalidPayer(KnownResponseError):
     message = 'All access to this object has been disabled.'
 
     def __init__(self):
-        super(InvalidPayer, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidPolicyDocument(KnownResponseError):
@@ -372,7 +371,7 @@ class InvalidPolicyDocument(KnownResponseError):
                'specified in the policy document.')
 
     def __init__(self):
-        super(InvalidPolicyDocument, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidRange(KnownResponseError):
@@ -380,7 +379,7 @@ class InvalidRange(KnownResponseError):
     message = 'The requested range cannot be satisfied.'
 
     def __init__(self):
-        super(InvalidRange, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidRequest(KnownResponseError):
@@ -388,7 +387,7 @@ class InvalidRequest(KnownResponseError):
     message = 'Invalid Request'
 
     def __init__(self):
-        super(InvalidRequest, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidSecurity(KnownResponseError):
@@ -396,7 +395,7 @@ class InvalidSecurity(KnownResponseError):
     message = 'The provided security credentials are not valid.'
 
     def __init__(self):
-        super(InvalidSecurity, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidSOAPRequest(KnownResponseError):
@@ -404,7 +403,7 @@ class InvalidSOAPRequest(KnownResponseError):
     message = 'The SOAP request body is invalid.'
 
     def __init__(self):
-        super(InvalidSOAPRequest, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidStorageClass(KnownResponseError):
@@ -412,7 +411,7 @@ class InvalidStorageClass(KnownResponseError):
     message = 'The storage class you specified is not valid.'
 
     def __init__(self):
-        super(InvalidStorageClass, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidTargetBucketForLogging(KnownResponseError):
@@ -422,7 +421,7 @@ class InvalidTargetBucketForLogging(KnownResponseError):
                'grants for the log-delivery group.')
 
     def __init__(self):
-        super(InvalidTargetBucketForLogging, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidToken(KnownResponseError):
@@ -430,7 +429,7 @@ class InvalidToken(KnownResponseError):
     message = 'The provided token is malformed or otherwise invalid.'
 
     def __init__(self):
-        super(InvalidToken, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class InvalidURI(KnownResponseError):
@@ -438,7 +437,7 @@ class InvalidURI(KnownResponseError):
     message = 'Couldn\'t parse the specified URI.'
 
     def __init__(self):
-        super(InvalidURI, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class KeyTooLong(KnownResponseError):
@@ -446,7 +445,7 @@ class KeyTooLong(KnownResponseError):
     message = 'Your key is too long.'
 
     def __init__(self):
-        super(KeyTooLong, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class MalformedACLError(KnownResponseError):
@@ -455,7 +454,7 @@ class MalformedACLError(KnownResponseError):
                'or did not validate against our published schema.')
 
     def __init__(self):
-        super(MalformedACLError, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class MalformedPOSTRequest(KnownResponseError):
@@ -464,7 +463,7 @@ class MalformedPOSTRequest(KnownResponseError):
                'well-formed multipart/form-data.')
 
     def __init__(self):
-        super(MalformedPOSTRequest, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class MalformedXML(KnownResponseError):
@@ -473,7 +472,7 @@ class MalformedXML(KnownResponseError):
                "doesn't conform to the published xsd) for the configuration.")
 
     def __init__(self):
-        super(MalformedXML, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class MaxMessageLengthExceeded(KnownResponseError):
@@ -481,7 +480,7 @@ class MaxMessageLengthExceeded(KnownResponseError):
     message = 'Your request was too big.'
 
     def __init__(self):
-        super(MaxMessageLengthExceeded, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class MaxPostPreDataLengthExceededError(KnownResponseError):
@@ -490,7 +489,7 @@ class MaxPostPreDataLengthExceededError(KnownResponseError):
                'upload file were too large.')
 
     def __init__(self):
-        super(MaxPostPreDataLengthExceededError, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class MetadataTooLarge(KnownResponseError):
@@ -498,7 +497,7 @@ class MetadataTooLarge(KnownResponseError):
     message = 'Your metadata headers exceed the maximum allowed metadata size.'
 
     def __init__(self):
-        super(MetadataTooLarge, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class MethodNotAllowed(KnownResponseError):
@@ -506,7 +505,7 @@ class MethodNotAllowed(KnownResponseError):
     message = 'The specified method is not allowed against this resource'
 
     def __init__(self):
-        super(MethodNotAllowed, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class MissingAttachment(KnownResponseError):
@@ -514,7 +513,7 @@ class MissingAttachment(KnownResponseError):
     message = 'A SOAP attachment was expected, but none were found.'
 
     def __init__(self):
-        super(MissingAttachment, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class MissingContentLength(KnownResponseError):
@@ -522,7 +521,7 @@ class MissingContentLength(KnownResponseError):
     message = 'You must provide the Content-Length HTTP header.'
 
     def __init__(self):
-        super(MissingContentLength, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class MissingRequestBodyError(KnownResponseError):
@@ -531,7 +530,7 @@ class MissingRequestBodyError(KnownResponseError):
                'as a request. The error message is, "Request body is empty."')
 
     def __init__(self):
-        super(MissingRequestBodyError, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class MissingSecurityElement(KnownResponseError):
@@ -539,7 +538,7 @@ class MissingSecurityElement(KnownResponseError):
     message = 'The SOAP 1.1 request is missing a security element.'
 
     def __init__(self):
-        super(MissingSecurityElement, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class MissingSecurityHeader(KnownResponseError):
@@ -547,7 +546,7 @@ class MissingSecurityHeader(KnownResponseError):
     message = 'Your request is missing a required header.'
 
     def __init__(self):
-        super(MissingSecurityHeader, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class NoLoggingStatusForKey(KnownResponseError):
@@ -556,7 +555,7 @@ class NoLoggingStatusForKey(KnownResponseError):
                'status subresource for a key.')
 
     def __init__(self):
-        super(NoLoggingStatusForKey, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class NoSuchBucket(KnownResponseError):
@@ -564,7 +563,7 @@ class NoSuchBucket(KnownResponseError):
     message = 'The specified bucket does not exist.'
 
     def __init__(self):
-        super(NoSuchBucket, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class NoSuchKey(KnownResponseError):
@@ -572,7 +571,7 @@ class NoSuchKey(KnownResponseError):
     message = 'The specified key does not exist.'
 
     def __init__(self):
-        super(NoSuchKey, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class NoSuchLifecycleConfiguration(KnownResponseError):
@@ -580,7 +579,7 @@ class NoSuchLifecycleConfiguration(KnownResponseError):
     message = 'The lifecycle configuration does not exist.'
 
     def __init__(self):
-        super(NoSuchLifecycleConfiguration, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class NoSuchUpload(KnownResponseError):
@@ -590,7 +589,7 @@ class NoSuchUpload(KnownResponseError):
                'upload might have been aborted or completed.')
 
     def __init__(self):
-        super(NoSuchUpload, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class NoSuchVersion(KnownResponseError):
@@ -599,7 +598,7 @@ class NoSuchVersion(KnownResponseError):
                'request does not match an existing version.')
 
     def __init__(self):
-        super(NoSuchVersion, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class APINotImplemented(KnownResponseError):
@@ -608,7 +607,7 @@ class APINotImplemented(KnownResponseError):
                'that is not implemented.')
 
     def __init__(self):
-        super(APINotImplemented, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class NotSignedUp(KnownResponseError):
@@ -616,7 +615,7 @@ class NotSignedUp(KnownResponseError):
     message = 'Your account is not signed up.'
 
     def __init__(self):
-        super(NotSignedUp, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class NoSuchBucketPolicy(KnownResponseError):
@@ -624,7 +623,7 @@ class NoSuchBucketPolicy(KnownResponseError):
     message = 'The specified bucket does not have a bucket policy.'
 
     def __init__(self):
-        super(NoSuchBucketPolicy, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class OperationAborted(KnownResponseError):
@@ -633,7 +632,7 @@ class OperationAborted(KnownResponseError):
                'progress against this resource. Try again.')
 
     def __init__(self):
-        super(OperationAborted, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class PermanentRedirect(KnownResponseError):
@@ -643,7 +642,7 @@ class PermanentRedirect(KnownResponseError):
                'to this endpoint.')
 
     def __init__(self):
-        super(PermanentRedirect, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class PreconditionFailed(KnownResponseError):
@@ -651,7 +650,7 @@ class PreconditionFailed(KnownResponseError):
     message = 'At least one of the preconditions you specified did not hold.'
 
     def __init__(self):
-        super(PreconditionFailed, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class Redirect(KnownResponseError):
@@ -659,7 +658,7 @@ class Redirect(KnownResponseError):
     message = 'Temporary redirect.'
 
     def __init__(self):
-        super(Redirect, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class RestoreAlreadyInProgress(KnownResponseError):
@@ -667,7 +666,7 @@ class RestoreAlreadyInProgress(KnownResponseError):
     message = 'Object restore is already in progress.'
 
     def __init__(self):
-        super(RestoreAlreadyInProgress, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class RequestIsNotMultiPartContent(KnownResponseError):
@@ -675,7 +674,7 @@ class RequestIsNotMultiPartContent(KnownResponseError):
     message = 'Bucket POST must be of the enclosure-type multipart/form-data.'
 
     def __init__(self):
-        super(RequestIsNotMultiPartContent, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class RequestTimeout(KnownResponseError):
@@ -684,7 +683,7 @@ class RequestTimeout(KnownResponseError):
                'from or written to within the timeout period.')
 
     def __init__(self):
-        super(RequestTimeout, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class RequestTimeTooSkewed(KnownResponseError):
@@ -693,7 +692,7 @@ class RequestTimeTooSkewed(KnownResponseError):
                "server's time is too large.")
 
     def __init__(self):
-        super(RequestTimeTooSkewed, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class RequestTorrentOfBucketError(KnownResponseError):
@@ -701,7 +700,7 @@ class RequestTorrentOfBucketError(KnownResponseError):
     message = 'Requesting the torrent file of a bucket is not permitted.'
 
     def __init__(self):
-        super(RequestTorrentOfBucketError, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class SignatureDoesNotMatch(KnownResponseError):
@@ -710,7 +709,7 @@ class SignatureDoesNotMatch(KnownResponseError):
                'signature you provided.')
 
     def __init__(self):
-        super(SignatureDoesNotMatch, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class ServiceUnavailable(KnownResponseError):
@@ -718,7 +717,7 @@ class ServiceUnavailable(KnownResponseError):
     message = "Service unavailable. Retry again."
 
     def __init__(self):
-        super(ServiceUnavailable, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class SlowDown(KnownResponseError):
@@ -726,7 +725,7 @@ class SlowDown(KnownResponseError):
     message = 'Reduce your request rate.'
 
     def __init__(self):
-        super(SlowDown, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class TemporaryRedirect(KnownResponseError):
@@ -734,7 +733,7 @@ class TemporaryRedirect(KnownResponseError):
     message = 'You are being redirected to the bucket while DNS updates.'
 
     def __init__(self):
-        super(TemporaryRedirect, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class TokenRefreshRequired(KnownResponseError):
@@ -742,7 +741,7 @@ class TokenRefreshRequired(KnownResponseError):
     message = 'The provided token must be refreshed.'
 
     def __init__(self):
-        super(TokenRefreshRequired, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class TooManyBuckets(KnownResponseError):
@@ -750,7 +749,7 @@ class TooManyBuckets(KnownResponseError):
     message = 'You have attempted to create more buckets than allowed.'
 
     def __init__(self):
-        super(TooManyBuckets, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class UnexpectedContent(KnownResponseError):
@@ -758,7 +757,7 @@ class UnexpectedContent(KnownResponseError):
     message = 'This request does not support content.'
 
     def __init__(self):
-        super(UnexpectedContent, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class UnresolvableGrantByEmailAddress(KnownResponseError):
@@ -767,7 +766,7 @@ class UnresolvableGrantByEmailAddress(KnownResponseError):
                'on record.')
 
     def __init__(self):
-        super(UnresolvableGrantByEmailAddress, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 class UserKeyMustBeSpecified(KnownResponseError):
@@ -776,7 +775,7 @@ class UserKeyMustBeSpecified(KnownResponseError):
                'If it is specified, check the order of the fields.')
 
     def __init__(self):
-        super(UserKeyMustBeSpecified, self).__init__(self.message)
+        super().__init__(self.message)
 
 
 _KNOWN_ERRORS = {
@@ -872,7 +871,7 @@ class ResponseError(MinioError):
 
     def __init__(self, response, method, bucket_name=None,
                  object_name=None):
-        super(ResponseError, self).__init__(message='')
+        super().__init__(message='')
         # initialize parameter fields
         self._response = response
         self._xml = response.data
@@ -922,9 +921,8 @@ class ResponseError(MinioError):
             raise ValueError('response data has no body.')
         try:
             root = ElementTree.fromstring(self._response.data)
-        except (ParseError, AttributeError, ValueError, TypeError) as error:
-            raise InvalidXMLError('"Error" XML is not parsable. '
-                                  'Message: {0}'.format(error))
+        except (ParseError, AttributeError, ValueError, TypeError) as exc:
+            raise InvalidXMLError('"Error" XML is not parsable.') from exc
 
         # Deal with namespaced response from sts
         tag_prefix = "{https://sts.amazonaws.com/doc/2011-06-15/}"

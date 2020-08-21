@@ -377,10 +377,10 @@ class Minio:  # pylint: disable=too-many-public-methods
             raise ResponseError(response, method).get_exception()
         try:
             return parse_list_buckets(response.data)
-        except InvalidXMLError:
+        except InvalidXMLError as exc:
             if self._endpoint_url.endswith("s3.amazonaws.com") and (
                     not self._access_key or not self._secret_key):
-                raise AccessDenied(response)
+                raise AccessDenied(response) from exc
 
     def bucket_exists(self, bucket_name):
         """
