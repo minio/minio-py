@@ -29,8 +29,8 @@ from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
 
 from .compat import unquote
-from .definitions import (Bucket, CopyObjectResult, IncompleteUpload,
-                          MultipartUploadResult, Object, UploadPart)
+from .definitions import (Bucket, CopyObjectResult, ListMultipartUploadsResult,
+                          ListPartsResult, MultipartUploadResult, Object)
 # minio specific.
 from .error import InvalidXMLError, MultiDeleteError
 from .helpers import _iso8601_to_utc_datetime
@@ -345,65 +345,6 @@ def parse_list_object_versions(data, bucket_name):
     )
 
 
-def parse_list_multipart_uploads(data, bucket_name):
-    """
-    Parser for list multipart uploads response.
-
-    :param data: Response data for list multipart uploads.
-    :param bucket_name: Response for the bucket.
-    :return: Replies back four distinctive components.
-       - List of :class:`IncompleteUpload <IncompleteUpload>`
-       - True if list is truncated, False otherwise.
-       - Object name marker for the next request.
-       - Upload id marker for the next request.
-    """
-    root = S3Element.fromstring('ListMultipartUploadsResult', data)
-
-    is_truncated = root.get_child_text('IsTruncated').lower() == 'true'
-    key_marker = root.get_urldecoded_elem_text('NextKeyMarker', strict=False)
-    upload_id_marker = root.get_child_text('NextUploadIdMarker', strict=False)
-    uploads = [
-        IncompleteUpload(bucket_name,
-                         upload.get_urldecoded_elem_text('Key'),
-                         upload.get_child_text('UploadId'),
-                         upload.get_localized_time_elem('Initiated'))
-        for upload in root.findall('Upload')
-    ]
-
-    return uploads, is_truncated, key_marker, upload_id_marker
-
-
-def parse_list_parts(data, bucket_name, object_name, upload_id):
-    """
-    Parser for list parts response.
-
-    :param data: Response data for list parts.
-    :param bucket_name: Response for the bucket.
-    :param object_name: Response for the object.
-    :param upload_id: Upload id of object name for
-       the active multipart session.
-    :return: Replies back three distinctive components.
-       - List of :class:`UploadPart <UploadPart>`.
-       - True if list is truncated, False otherwise.
-       - Next part marker for the next request if the
-         list was truncated.
-    """
-    root = S3Element.fromstring('ListPartsResult', data)
-
-    is_truncated = root.get_child_text('IsTruncated').lower() == 'true'
-    part_marker = root.get_child_text('NextPartNumberMarker', strict=False)
-    parts = [
-        UploadPart(bucket_name, object_name, upload_id,
-                   part.get_int_elem('PartNumber'),
-                   part.get_etag_elem(),
-                   part.get_localized_time_elem('LastModified'),
-                   part.get_int_elem('Size'))
-        for part in root.findall('Part')
-    ]
-
-    return parts, is_truncated, part_marker
-
-
 def parse_new_multipart_upload(data):
     """
     Parser for new multipart upload response.
@@ -505,3 +446,15 @@ def parse_multi_delete_response(data):
                          errtag.get_child_text('Message'))
         for errtag in root.findall('Error')
     ]
+
+
+def parse_list_multipart_uploads(data):
+    """Parse ListMultipartUploads API resppnse XML."""
+    return ListMultipartUploadsResult(
+        S3Element.fromstring("ListMultipartUploadsResult", data),
+    )
+
+
+def parse_list_parts(data):
+    """Parse ListParts API resppnse XML."""
+    return ListPartsResult(S3Element.fromstring("ListPartsResult", data))

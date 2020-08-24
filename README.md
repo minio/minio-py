@@ -112,7 +112,6 @@ The full API Reference is available here.
 * [`bucket_exists`](https://docs.min.io/docs/python-client-api-reference#bucket_exists)
 * [`remove_bucket`](https://docs.min.io/docs/python-client-api-reference#remove_bucket)
 * [`list_objects`](https://docs.min.io/docs/python-client-api-reference#list_objects)
-* [`list_incomplete_uploads`](https://docs.min.io/docs/python-client-api-reference#list_incomplete_uploads)
 
 ### API Reference : Bucket policy Operations
 
@@ -145,7 +144,6 @@ The full API Reference is available here.
 * [`copy_object`](https://docs.min.io/docs/python-client-api-reference#copy_object)
 * [`remove_object`](https://docs.min.io/docs/python-client-api-reference#remove_object)
 * [`remove_objects`](https://docs.min.io/docs/python-client-api-reference#remove_objects)
-* [`remove_incomplete_upload`](https://docs.min.io/docs/python-client-api-reference#remove_incomplete_upload)
 
 ### API Reference : Presigned Operations
 
@@ -162,7 +160,6 @@ The full API Reference is available here.
 * [bucket_exists.py](https://github.com/minio/minio-py/blob/master/examples/bucket_exists.py)
 * [list_objects.py](https://github.com/minio/minio-py/blob/master/examples/list_objects.py)
 * [remove_bucket.py](https://github.com/minio/minio-py/blob/master/examples/remove_bucket.py)
-* [list_incomplete_uploads.py](https://github.com/minio/minio-py/blob/master/examples/list_incomplete_uploads.py)
 
 #### Full Examples : Bucket policy Operations
 
@@ -195,7 +192,6 @@ The full API Reference is available here.
 * [copy_object.py](https://github.com/minio/minio-py/blob/master/examples/copy_object.py)
 * [remove_object.py](https://github.com/minio/minio-py/blob/master/examples/remove_object.py)
 * [remove_objects.py](https://github.com/minio/minio-py/blob/master/examples/remove_objects.py)
-* [remove_incomplete_upload.py](https://github.com/minio/minio-py/blob/master/examples/remove_incomplete_upload.py)
 
 #### Full Examples : Presigned Operations
 
