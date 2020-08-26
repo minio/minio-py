@@ -335,8 +335,8 @@ def is_valid_endpoint(endpoint):
 
         if not _ALLOWED_HOSTNAME_REGEX.match(url.hostname):
             raise InvalidEndpointError('Hostname does not meet URL standards.')
-    except AttributeError as error:
-        raise TypeError(error)
+    except AttributeError as exc:
+        raise TypeError() from exc
 
     return True
 
@@ -406,7 +406,7 @@ def check_non_empty_string(string):
         if not string.strip():
             raise ValueError()
     except AttributeError as exc:
-        raise TypeError(exc)
+        raise TypeError() from exc
 
 
 def is_valid_policy_type(policy):
@@ -684,8 +684,10 @@ def amzprefix_user_metadata(metadata):
         try:
             if isinstance(value, future_str):
                 value.encode('us-ascii')
-        except UnicodeEncodeError:
-            raise ValueError('Metadata supports only US-ASCII characters.')
+        except UnicodeEncodeError as exc:
+            raise ValueError(
+                'Metadata supports only US-ASCII characters.',
+            ) from exc
 
         if (is_amz_header(key) or is_supported_header(key) or
                 is_storageclass_header(key)):

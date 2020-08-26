@@ -42,7 +42,7 @@ class FoldCaseDict(dict):
     """Dictionary deals with case insensitive key."""
 
     def __init__(self, dictionary=None):
-        super(FoldCaseDict, self).__init__()
+        super().__init__()
         self._data = _to_dict(dictionary) if dictionary else {}
 
     def __getitem__(self, key):

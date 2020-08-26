@@ -67,12 +67,10 @@ class S3Element:
         """
         try:
             return cls(root_name, ElementTree.fromstring(data.strip()))
-        except (ParseError, AttributeError, ValueError, TypeError) as error:
+        except (ParseError, AttributeError, ValueError, TypeError) as exc:
             raise InvalidXMLError(
-                '"{}" XML is not parsable. Message: {}'.format(
-                    root_name, error
-                )
-            )
+                '"{}" XML is not parsable.'.format(root_name),
+            ) from exc
 
     def findall(self, name):
         """Similar to ElementTree.Element.findall()
@@ -99,11 +97,12 @@ class S3Element:
         if strict:
             try:
                 return self.element.find('s3:{}'.format(name), _XML_NS).text
-            except (ParseError, AttributeError, ValueError, TypeError) as error:
+            except (ParseError, AttributeError, ValueError, TypeError) as exc:
                 raise InvalidXMLError(
-                    ('Invalid XML provided for "{}" - erroring tag <{}>. '
-                     'Message: {}').format(self.root_name, name, error)
-                )
+                    (
+                        'Invalid XML provided for "{}" - erroring tag <{}>'
+                    ).format(self.root_name, name),
+                ) from exc
         else:
             return self.element.findtext('s3:{}'.format(name), None, _XML_NS)
 
