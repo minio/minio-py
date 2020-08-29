@@ -21,7 +21,6 @@ from nose.tools import raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
-from minio.error import InvalidBucketError
 
 from .minio_mocks import MockConnection, MockResponse
 
@@ -37,7 +36,7 @@ class StatObject(TestCase):
         client = Minio('localhost:9000')
         client.stat_object('hello', '  \t \n  ')
 
-    @raises(InvalidBucketError)
+    @raises(ValueError)
     def test_stat_object_invalid_name(self):
         client = Minio('localhost:9000')
         client.stat_object('AB#CD', 'world')

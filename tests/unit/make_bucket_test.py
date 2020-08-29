@@ -21,7 +21,7 @@ from nose.tools import raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
-from minio.error import InvalidBucketError, ResponseError
+from minio.error import S3Error
 
 from .helpers import generate_error
 from .minio_mocks import MockConnection, MockResponse
@@ -33,7 +33,7 @@ class MakeBucket(TestCase):
         client = Minio('localhost:9000')
         client.make_bucket(1234)
 
-    @raises(InvalidBucketError)
+    @raises(ValueError)
     def test_bucket_is_not_empty_string(self):
         client = Minio('localhost:9000')
         client.make_bucket('  \t \n  ')
@@ -44,14 +44,14 @@ class MakeBucket(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('PUT',
-                         'https://localhost:9000/hello/',
+                         'https://localhost:9000/hello',
                          {'User-Agent': _DEFAULT_USER_AGENT},
                          200)
         )
         Minio('localhost:9000')
 
     @mock.patch('urllib3.PoolManager')
-    @raises(ResponseError)
+    @raises(S3Error)
     def test_make_bucket_throws_fail(self, mock_connection):
         error_xml = generate_error('code', 'message', 'request_id',
                                    'host_id', 'resource', 'bucket',
@@ -60,9 +60,11 @@ class MakeBucket(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('PUT',
-                         'https://localhost:9000/hello/',
+                         'https://localhost:9000/hello',
                          {'User-Agent': _DEFAULT_USER_AGENT},
-                         409, content=error_xml)
+                         409,
+                         response_headers={"Content-Type": "application/xml"},
+                         content=error_xml.encode())
         )
         client = Minio('localhost:9000')
         client.make_bucket('hello')

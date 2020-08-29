@@ -21,7 +21,6 @@ from nose.tools import raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
-from minio.error import InvalidBucketError
 
 from .minio_mocks import MockConnection, MockResponse
 
@@ -32,12 +31,12 @@ class RemoveBucket(TestCase):
         client = Minio('localhost:9000')
         client.remove_bucket(1234)
 
-    @raises(InvalidBucketError)
+    @raises(ValueError)
     def test_bucket_is_not_empty_string(self):
         client = Minio('localhost:9000')
         client.remove_bucket('  \t \n  ')
 
-    @raises(InvalidBucketError)
+    @raises(ValueError)
     def test_remove_bucket_invalid_name(self):
         client = Minio('localhost:9000')
         client.remove_bucket('AB*CD')
@@ -48,7 +47,7 @@ class RemoveBucket(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('DELETE',
-                         'https://localhost:9000/hello/',
+                         'https://localhost:9000/hello',
                          {'User-Agent': _DEFAULT_USER_AGENT}, 204)
         )
         client = Minio('localhost:9000')

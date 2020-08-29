@@ -21,7 +21,7 @@ from nose.tools import raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
-from minio.error import ResponseError
+from minio.error import S3Error
 
 from .helpers import generate_error
 from .minio_mocks import MockConnection, MockResponse
@@ -39,7 +39,7 @@ class GetObjectTest(TestCase):
         client.get_object('hello', ' \t \n ')
 
     @mock.patch('urllib3.PoolManager')
-    @raises(ResponseError)
+    @raises(S3Error)
     def test_get_object_throws_fail(self, mock_connection):
         error_xml = generate_error('code', 'message', 'request_id',
                                    'host_id', 'resource', 'bucket',
@@ -50,7 +50,9 @@ class GetObjectTest(TestCase):
             MockResponse('GET',
                          'https://localhost:9000/hello/key',
                          {'User-Agent': _DEFAULT_USER_AGENT},
-                         404, content=error_xml)
+                         404,
+                         response_headers={"Content-Type": "application/xml"},
+                         content=error_xml.encode())
         )
         client = Minio('localhost:9000')
         client.get_object('hello', 'key')

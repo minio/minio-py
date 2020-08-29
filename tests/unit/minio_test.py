@@ -15,78 +15,111 @@
 # limitations under the License.
 
 from unittest import TestCase
+from urllib.parse import urlunsplit
 
 from nose.tools import eq_, raises
 
 from minio import Minio
 from minio import __version__ as minio_version
 from minio.api import _DEFAULT_USER_AGENT
-from minio.error import InvalidBucketError, InvalidEndpointError
-from minio.helpers import (check_bucket_name, get_s3_region_from_endpoint,
-                           get_target_url)
+from minio.definitions import BaseURL
+from minio.helpers import check_bucket_name
 
 
 class ValidBucketName(TestCase):
-    @raises(InvalidBucketError)
+    @raises(ValueError)
     def test_bucket_name(self):
         check_bucket_name('bucketName=', False)
 
-    @raises(InvalidBucketError)
+    @raises(ValueError)
     def test_bucket_name_invalid_characters(self):
         check_bucket_name('$$$bcuket', False)
 
-    @raises(InvalidBucketError)
+    @raises(ValueError)
     def test_bucket_name_length(self):
         check_bucket_name('dd', False)
 
-    @raises(InvalidBucketError)
+    @raises(ValueError)
     def test_bucket_name_periods(self):
         check_bucket_name('dd..mybucket', False)
 
-    @raises(InvalidBucketError)
+    @raises(ValueError)
     def test_bucket_name_begins_period(self):
         check_bucket_name('.ddmybucket', False)
 
 
 class GetURLTests(TestCase):
-    def test_get_target_url_works(self):
-        url = 'http://localhost:9000'
-        eq_(get_target_url(url, 'bucket-name'),
-            'http://localhost:9000/bucket-name/')
-        eq_(get_target_url(url, 'bucket-name', 'objectName'),
-            'http://localhost:9000/bucket-name/objectName')
-        eq_(get_target_url(url, 'bucket-name', 'objectName', None),
-            'http://localhost:9000/bucket-name/objectName')
-        eq_(get_target_url(url, 'bucket-name', 'objectName', 'us-east-1',
-                           {'foo': 'bar'}),
-            'http://localhost:9000/bucket-name/objectName?foo=bar')
-        eq_(get_target_url(url, 'bucket-name', 'objectName', 'us-east-1',
-                           {'foo': 'bar',
-                            'b': 'c',
-                            'a': 'b'}),
-            'http://localhost:9000/bucket-name/objectName?a=b&b=c&foo=bar')
+    def test_url_build(self):
+        url = BaseURL('http://localhost:9000', None)
+        eq_(
+            urlunsplit(url.build("GET", None, bucket_name='bucket-name')),
+            'http://localhost:9000/bucket-name',
+        )
+        eq_(
+            urlunsplit(
+                url.build("GET", None, bucket_name='bucket-name',
+                          object_name='objectName'),
+            ),
+            'http://localhost:9000/bucket-name/objectName',
+        )
+        eq_(
+            urlunsplit(
+                url.build("GET", 'us-east-1', bucket_name='bucket-name',
+                          object_name='objectName',
+                          query_params={'foo': 'bar'}),
+            ),
+            'http://localhost:9000/bucket-name/objectName?foo=bar',
+        )
+        eq_(
+            urlunsplit(
+                url.build("GET", 'us-east-1', bucket_name='bucket-name',
+                          object_name='objectName',
+                          query_params={'foo': 'bar', 'b': 'c', 'a': 'b'}),
+            ),
+            'http://localhost:9000/bucket-name/objectName?a=b&b=c&foo=bar',
+        )
+        eq_(
+            urlunsplit(
+                url.build("GET", 'us-east-1', bucket_name='bucket-name',
+                          object_name='path/to/objectName/'),
+            ),
+            'http://localhost:9000/bucket-name/path/to/objectName/',
+        )
+
         # S3 urls.
-        s3_url = 'https://s3.amazonaws.com'
-        eq_(get_target_url(s3_url), 'https://s3.amazonaws.com/')
-        eq_(get_target_url(s3_url, 'my.bucket.name'),
-            'https://s3.amazonaws.com/my.bucket.name/')
-        eq_(get_target_url(s3_url,
-                           'bucket-name',
-                           'objectName',
-                           'us-west-2', None),
-            'https://bucket-name.s3-us-west-2.amazonaws.com/objectName')
-        eq_(get_target_url('http://localhost:9000',
-                           'bucket-name',
-                           'objectName',
-                           'us-east-1',
-                           {'versionId': 'uuid'}),
-            'http://localhost:9000/bucket-name/objectName?versionId=uuid')
+        url = BaseURL('https://s3.amazonaws.com', None)
+        eq_(
+            urlunsplit(url.build("GET", "us-east-1")),
+            'https://s3.us-east-1.amazonaws.com/',
+        )
+        eq_(
+            urlunsplit(
+                url.build("GET", "eu-west-1", bucket_name='my.bucket.name'),
+            ),
+            'https://s3.eu-west-1.amazonaws.com/my.bucket.name',
+        )
+        eq_(
+            urlunsplit(
+                url.build("GET", 'us-west-2', bucket_name='bucket-name',
+                          object_name='objectName'),
+            ),
+            'https://bucket-name.s3.us-west-2.amazonaws.com/objectName',
+        )
+        eq_(
+            urlunsplit(
+                url.build("GET", "us-east-1", bucket_name='bucket-name',
+                          object_name='objectName',
+                          query_params={'versionId': 'uuid'}),
+            ),
+            "https://bucket-name.s3.us-east-1.amazonaws.com"
+            "/objectName?versionId=uuid",
+        )
 
     @raises(TypeError)
     def test_minio_requires_string(self):
         Minio(10)
 
-    @raises(InvalidEndpointError)
+    @raises(ValueError)
     def test_minio_requires_hostname(self):
         Minio('http://')
 
@@ -115,26 +148,27 @@ class UserAgentTests(TestCase):
 
 class GetRegionTests(TestCase):
     def test_region_none(self):
-        region = get_s3_region_from_endpoint('localhost')
+        region = BaseURL('http://localhost', None).region
         eq_(region, None)
 
     def test_region_us_west(self):
-        region = get_s3_region_from_endpoint('s3-us-west-1.amazonaws.com')
-        eq_(region, 'us-west-1')
+        region = BaseURL('https://s3-us-west-1.amazonaws.com', None).region
+        eq_(region, None)
 
     def test_region_with_dot(self):
-        region = get_s3_region_from_endpoint('s3.us-west-1.amazonaws.com')
+        region = BaseURL('https://s3.us-west-1.amazonaws.com', None).region
         eq_(region, 'us-west-1')
 
     def test_region_with_dualstack(self):
-        region = get_s3_region_from_endpoint(
-            's3.dualstack.us-west-1.amazonaws.com')
+        region = BaseURL(
+            'https://s3.dualstack.us-west-1.amazonaws.com', None,
+        ).region
         eq_(region, 'us-west-1')
 
     def test_region_us_east(self):
-        region = get_s3_region_from_endpoint('s3.amazonaws.com')
+        region = BaseURL('http://s3.amazonaws.com', None).region
         eq_(region, None)
 
-    @raises(TypeError)
+    @raises(ValueError)
     def test_invalid_value(self):
-        region = get_s3_region_from_endpoint(None)
+        BaseURL(None, None)

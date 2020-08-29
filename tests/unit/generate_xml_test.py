@@ -18,7 +18,7 @@ from unittest import TestCase
 
 from nose.tools import eq_
 
-from minio.definitions import UploadPart
+from minio.definitions import Part
 from minio.select.options import (CSVInput, CSVOutput, InputSerialization,
                                   OutputSerialization, RequestProgress,
                                   SelectObjectOptions)
@@ -51,15 +51,9 @@ class GenerateRequestTest(TestCase):
                            b'</CompleteMultipartUpload>')
 
         etags = [
-            UploadPart('bucket', 'object', 'upload_id', 1,
-                       'a54357aff0632cce46d942af68356b38',
-                       None, 0),
-            UploadPart('bucket', 'object', 'upload_id', 2,
-                       '0c78aef83f66abc1fa1e8477f296d394',
-                       None, 0),
-            UploadPart('bucket', 'object', 'upload_id', 3,
-                       'acbd18db4cc2f85cedef654fccc4a4d8',
-                       None, 0),
+            Part(1, 'a54357aff0632cce46d942af68356b38'),
+            Part(2, '0c78aef83f66abc1fa1e8477f296d394'),
+            Part(3, 'acbd18db4cc2f85cedef654fccc4a4d8'),
         ]
         actual_string = marshal_complete_multipart(etags)
         eq_(expected_string, actual_string)

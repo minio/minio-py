@@ -21,7 +21,6 @@ from nose.tools import raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
-from minio.error import InvalidArgumentError
 
 from .minio_mocks import MockConnection, MockResponse
 
@@ -37,7 +36,7 @@ class SetBucketNotificationTest(TestCase):
         client = Minio('localhost:9000')
         client.set_bucket_notification('my-test-bucket', ['myconfig1'])
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_notification_config_is_nonempty(self):
         client = Minio('localhost:9000')
         client.set_bucket_notification(
@@ -45,7 +44,7 @@ class SetBucketNotificationTest(TestCase):
             {}
         )
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_notification_config_has_valid_keys(self):
         client = Minio('localhost:9000')
         client.set_bucket_notification(
@@ -61,7 +60,7 @@ class SetBucketNotificationTest(TestCase):
             }
         )
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_notification_config_arn_key_is_present(self):
         client = Minio('localhost:9000')
         client.set_bucket_notification(
@@ -76,7 +75,7 @@ class SetBucketNotificationTest(TestCase):
             }
         )
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_notification_config_id_key_is_string(self):
         client = Minio('localhost:9000')
         client.set_bucket_notification(
@@ -92,7 +91,7 @@ class SetBucketNotificationTest(TestCase):
             }
         )
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_notification_config_events_key_is_present(self):
         client = Minio('localhost:9000')
         client.set_bucket_notification(
@@ -107,7 +106,7 @@ class SetBucketNotificationTest(TestCase):
             }
         )
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_notification_config_event_values_are_valid(self):
         client = Minio('localhost:9000')
         client.set_bucket_notification(
@@ -130,10 +129,9 @@ class SetBucketNotificationTest(TestCase):
         mock_server.mock_add_request(
             MockResponse(
                 'PUT',
-                'https://localhost:9000/my-test-bucket/?notification=',
+                'https://localhost:9000/my-test-bucket?notification=',
                 {
                     'Content-Md5': 'f+TfVp/A4pNnI7S4S+MkFg==',
-                    'Content-Length': '196',
                     'User-Agent': _DEFAULT_USER_AGENT,
                 },
                 200, content=""
@@ -152,7 +150,7 @@ class SetBucketNotificationTest(TestCase):
             }
         )
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_notification_config_has_valid_event_names(self):
         client = Minio('localhost:9000')
         client.set_bucket_notification(
@@ -168,7 +166,7 @@ class SetBucketNotificationTest(TestCase):
             }
         )
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_notification_config_filterspec_is_valid_1(self):
         client = Minio('localhost:9000')
         client.set_bucket_notification(
@@ -185,7 +183,7 @@ class SetBucketNotificationTest(TestCase):
             }
         )
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_notification_config_filterspec_is_valid_2(self):
         client = Minio('localhost:9000')
         client.set_bucket_notification(
@@ -205,7 +203,7 @@ class SetBucketNotificationTest(TestCase):
             }
         )
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_notification_config_filterspec_is_valid_3(self):
         client = Minio('localhost:9000')
         client.set_bucket_notification(
@@ -225,7 +223,7 @@ class SetBucketNotificationTest(TestCase):
             }
         )
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_notification_config_filterspec_is_valid_4(self):
         client = Minio('localhost:9000')
         client.set_bucket_notification(
@@ -246,7 +244,7 @@ class SetBucketNotificationTest(TestCase):
             }
         )
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_notification_config_filterspec_is_valid_5(self):
         client = Minio('localhost:9000')
         client.set_bucket_notification(
@@ -272,7 +270,7 @@ class SetBucketNotificationTest(TestCase):
             }
         )
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_notification_config_filterspec_is_valid_6(self):
         client = Minio('localhost:9000')
         client.set_bucket_notification(
@@ -305,11 +303,10 @@ class SetBucketNotificationTest(TestCase):
         mock_server.mock_add_request(
             MockResponse(
                 'PUT',
-                'https://localhost:9000/my-test-bucket/?notification=',
+                'https://localhost:9000/my-test-bucket?notification=',
                 {
                     'Content-Md5': 'k97dHBBUq9MR7ZViy7oUsw==',
                     'User-Agent': _DEFAULT_USER_AGENT,
-                    'Content-Length': '300',
                 },
                 200, content=""
             )
@@ -345,9 +342,8 @@ class SetBucketNotificationTest(TestCase):
         mock_server.mock_add_request(
             MockResponse(
                 'PUT',
-                'https://localhost:9000/my-test-bucket/?notification=',
+                'https://localhost:9000/my-test-bucket?notification=',
                 {
-                    'Content-Length': '300',
                     'Content-Md5': '2aIwAt1lAd5JShphHCD4GA==',
                     'User-Agent': _DEFAULT_USER_AGENT,
                 },

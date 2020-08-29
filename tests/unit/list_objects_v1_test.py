@@ -42,7 +42,7 @@ class ListObjectsV1Test(TestCase):
         mock_server.mock_add_request(
             MockResponse(
                 "GET",
-                "https://localhost:9000/bucket/"
+                "https://localhost:9000/bucket"
                 "?delimiter=&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
@@ -97,7 +97,7 @@ class ListObjectsV1Test(TestCase):
         mock_server.mock_add_request(
             MockResponse(
                 "GET",
-                "https://localhost:9000/bucket/"
+                "https://localhost:9000/bucket"
                 "?delimiter=%2F&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
@@ -112,7 +112,7 @@ class ListObjectsV1Test(TestCase):
             mock_server.mock_add_request(
                 MockResponse(
                     "GET",
-                    "https://localhost:9000/bucket/"
+                    "https://localhost:9000/bucket"
                     "?delimiter=%2F&max-keys=1000&prefix=",
                     {"User-Agent": _DEFAULT_USER_AGENT},
                     200,
@@ -194,7 +194,7 @@ class ListObjectsV1Test(TestCase):
         mock_server.mock_add_request(
             MockResponse(
                 "GET",
-                "https://localhost:9000/bucket/"
+                "https://localhost:9000/bucket"
                 "?delimiter=&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
@@ -210,7 +210,7 @@ class ListObjectsV1Test(TestCase):
             mock_server.mock_add_request(
                 MockResponse(
                     "GET",
-                    "https://localhost:9000/bucket/"
+                    "https://localhost:9000/bucket"
                     "?delimiter=&marker=marker&max-keys=1000&prefix=",
                     {"User-Agent": _DEFAULT_USER_AGENT},
                     200,

@@ -15,6 +15,7 @@
 # limitations under the License.
 
 
+import json
 from unittest import TestCase
 
 import mock
@@ -22,23 +23,32 @@ from nose.tools import eq_, raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
-from minio.error import NoSuchBucket
+from minio.error import S3Error
 from tests.unit.minio_mocks import MockConnection, MockResponse
 
 
 class GetBucketPolicyTest(TestCase):
     @mock.patch('urllib3.PoolManager')
-    @raises(NoSuchBucket)
+    @raises(S3Error)
     def test_get_policy_for_non_existent_bucket(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         bucket_name = 'non-existent-bucket'
+        error = ("<ErrorResponse>"
+                 "<Code>NoSuchBucket</Code>"
+                 "<Message>No such bucket</Message><RequestId>1234</RequestId>"
+                 "<Resource>/non-existent-bucket</Resource>"
+                 "<HostId>abcd</HostId>"
+                 "<BucketName>non-existent-bucket</BucketName>"
+                 "</ErrorResponse>")
         mock_server.mock_add_request(
             MockResponse(
                 'GET',
-                'https://localhost:9000/' + bucket_name + '/?policy=',
+                'https://localhost:9000/' + bucket_name + '?policy=',
                 {'User-Agent': _DEFAULT_USER_AGENT},
                 404,
+                response_headers={"Content-Type": "application/xml"},
+                content=error.encode()
             )
         )
         client = Minio('localhost:9000')
@@ -46,7 +56,7 @@ class GetBucketPolicyTest(TestCase):
 
     @mock.patch('urllib3.PoolManager')
     def test_get_policy_for_existent_bucket(self, mock_connection):
-        mock_data = {
+        mock_data = json.dumps({
             "Version": "2012-10-17",
             "Statement": [
                 {
@@ -71,14 +81,14 @@ class GetBucketPolicyTest(TestCase):
                     "Resource": "arn:aws:s3:::test-bucket/*"
                 }
             ]
-        }
+        }).encode()
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         bucket_name = 'test-bucket'
         mock_server.mock_add_request(
             MockResponse(
                 'GET',
-                'https://localhost:9000/' + bucket_name + '/?policy=',
+                'https://localhost:9000/' + bucket_name + '?policy=',
                 {'User-Agent': _DEFAULT_USER_AGENT},
                 200,
                 content=mock_data
@@ -86,4 +96,4 @@ class GetBucketPolicyTest(TestCase):
         )
         client = Minio('localhost:9000')
         response = client.get_bucket_policy(bucket_name)
-        eq_(response, mock_data)
+        eq_(response, mock_data.decode())
