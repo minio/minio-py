@@ -33,8 +33,9 @@ __version__ = '7.0.0'
 __license__ = 'Apache 2.0'
 __copyright__ = 'Copyright 2015, 2016, 2017, 2018, 2019, 2020 MinIO, Inc.'
 
-from .api import Minio  # pylint: disable=unused-import
-from .copy_conditions import CopyConditions  # pylint: disable=unused-import
-from .definitions import Bucket, Object  # pylint: disable=unused-import
-from .error import ResponseError  # pylint: disable=unused-import
-from .post_policy import PostPolicy  # pylint: disable=unused-import
+# pylint: disable=unused-import
+from .api import Minio
+from .copy_conditions import CopyConditions
+from .definitions import Bucket, Object
+from .error import InvalidResponseError, S3Error, ServerError
+from .post_policy import PostPolicy

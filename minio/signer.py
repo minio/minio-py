@@ -26,353 +26,310 @@ This module implements all helpers for AWS Signature version '4' support.
 
 """
 
-import collections
 import hashlib
 import hmac
-from datetime import datetime
-from urllib.parse import parse_qs, urlencode, urlsplit
+import re
+from collections import OrderedDict
+from urllib.parse import SplitResult
 
-from .error import InvalidArgumentError
-from .fold_case_dict import FoldCaseDict
-from .helpers import get_sha256_hexdigest, queryencode
+from .helpers import queryencode, sha256_hash
 
-# Signature version '4' algorithm.
-_SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'
-
-# Hardcoded S3 header value for X-Amz-Content-Sha256
-_UNSIGNED_PAYLOAD = u'UNSIGNED-PAYLOAD'
-
-# Hardcoded service name for pre-signed S3 urls
-_PRESIGNED_SERVICE_NAME = "s3"
-
-# Default service name for all signature
-_DEFAULT_SERVICE_NAME = "s3"
+SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'
+AMZ_DATE_FORMAT = "%Y%m%dT%H%M%SZ"
+_MULTI_SPACE_REGEX = re.compile(r"( +)")
+_SIGNER_DATE_FORMAT = "%Y%m%d"
 
 
-def post_presign_signature(date, region, secret_key, policy_str):
-    """
-    Calculates signature version '4' for POST policy string.
+def _hmac_hash(key, data, hexdigest=False):
+    """Return HMacSHA256 digest of given key and data."""
 
-    :param date: datetime formatted date.
-    :param region: region of the bucket for the policy.
-    :param secret_key: Amazon S3 secret access key.
-    :param policy_str: policy string.
-    :return: hexlified sha256 signature digest.
-    """
-    signing_key = generate_signing_key(date, region, secret_key)
-    signature = hmac.new(signing_key, policy_str.encode('utf-8'),
-                         hashlib.sha256).hexdigest()
-
-    return signature
+    hasher = hmac.new(key, data, hashlib.sha256)
+    return hasher.hexdigest() if hexdigest else hasher.digest()
 
 
-def presign_v4(method, url, credentials,
-               region=None, headers=None, expires=None,
-               response_headers=None, request_date=None):
-    """
-    Calculates signature version '4' for regular presigned URLs.
+def _get_scope(date, region, service_name):
+    """Get scope string."""
 
-    :param method: Method to be presigned examples 'PUT', 'GET'.
-    :param url: URL to be presigned.
-    :param credentials: Credentials object with your AWS s3 account info.
-    :param region: region of the bucket, it is optional.
-    :param headers: any additional HTTP request headers to
-       be presigned, it is optional.
-    :param expires: final expiration of the generated URL. Maximum is 7days.
-    :param response_headers: Specify additional query string parameters.
-    :param request_date: the date of the request.
-    """
-
-    # Validate input arguments.
-    if not credentials:
-        raise InvalidArgumentError('Invalid access_key and secret_key.')
-
-    region = region or 'us-east-1'
-    headers = headers or {}
-    expires = expires or '604800'
-    request_date = request_date or datetime.utcnow()
-
-    # If a sha256sum is known, add to headers to include with signature
-    content_hash_hex = _UNSIGNED_PAYLOAD
-    for k in headers:
-        if k.lower() == 'x-amz-content-sha256':
-            content_hash_hex = headers[k] or _UNSIGNED_PAYLOAD
-            del headers[k]
-            break
-
-    parsed_url = urlsplit(url)
-    host = remove_default_port(parsed_url)
-    headers['Host'] = host
-    iso8601_date = request_date.strftime("%Y%m%dT%H%M%SZ")
-
-    headers_to_sign = headers
-    # Construct queries.
-    query = {}
-    query['X-Amz-Algorithm'] = _SIGN_V4_ALGORITHM
-    query['X-Amz-Credential'] = generate_credential_string(
-        credentials.access_key,
-        request_date,
-        region,
-        _PRESIGNED_SERVICE_NAME,
+    return "{0}/{1}/{2}/aws4_request".format(
+        date.strftime(_SIGNER_DATE_FORMAT), region, service_name,
     )
-    query['X-Amz-Date'] = iso8601_date
-    query['X-Amz-Expires'] = str(expires)
-    if credentials.session_token:
-        query['X-Amz-Security-Token'] = credentials.session_token
-
-    signed_headers = get_signed_headers(headers_to_sign)
-    query['X-Amz-SignedHeaders'] = ';'.join(signed_headers)
-
-    if response_headers:
-        query.update(response_headers)
-
-    provided_query = parse_qs(parsed_url.query)
-    query.update(provided_query)
-
-    # URL components.
-    ordered_query = collections.OrderedDict(sorted(query.items()))
-    ordered_query.update(query)
-
-    query_str = urlencode(ordered_query, doseq=True, quote_via=queryencode)
-    new_url = parsed_url.scheme + '://' + parsed_url.netloc + \
-        parsed_url.path + '?' + query_str
-    new_parsed_url = urlsplit(new_url)
-    canonical_request = generate_canonical_request(method,
-                                                   new_parsed_url,
-                                                   headers_to_sign,
-                                                   signed_headers,
-                                                   content_hash_hex)
-    print(canonical_request)
-    string_to_sign = generate_string_to_sign(request_date, region,
-                                             canonical_request,
-                                             _PRESIGNED_SERVICE_NAME)
-    signing_key = generate_signing_key(request_date, region,
-                                       credentials.secret_key)
-    signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
-                         hashlib.sha256).hexdigest()
-
-    return new_parsed_url.geturl()+"&X-Amz-Signature="+signature
 
 
-def get_signed_headers(headers):
-    """
-    Get signed headers.
+def _get_canonical_headers(headers):
+    """Get canonical headers."""
 
-    :param headers: input dictionary to be sorted.
-    """
-    return sorted([h.lower().strip() for h in headers])
+    canonical_headers = {}
+    for key, values in headers.items():
+        key = key.lower()
+        if key not in (
+                "authorization", "content-type",
+                "content-length", "user-agent",
+        ):
+            values = values if isinstance(values, (list, tuple)) else [values]
+            canonical_headers[key] = ",".join([
+                _MULTI_SPACE_REGEX.sub(" ", value) for value in values
+            ])
+
+    canonical_headers = OrderedDict(sorted(canonical_headers.items()))
+    signed_headers = ";".join(canonical_headers.keys())
+    canonical_headers = "\n".join(
+        [
+            "{0}:{1}".format(key, value)
+            for key, value in canonical_headers.items()
+        ],
+    )
+    return canonical_headers, signed_headers
 
 
-def sign_v4(
-        method, url, region,
-        headers=None,
-        credentials=None,
-        content_sha256=None,
-        request_datetime=None,
-        service_name=_DEFAULT_SERVICE_NAME,
-        sts=False,
+def _get_canonical_query_string(query):
+    """Get canonical query string."""
+
+    query = query or ""
+    return "&".join(
+        [
+            "=".join(pair) for pair in sorted(
+                [params.split("=") for params in query.split("&")],
+            )
+        ],
+    )
+
+
+def _get_canonical_request_hash(method, url, headers, content_sha256):
+    """Get canonical request hash."""
+
+    canonical_headers, signed_headers = _get_canonical_headers(headers)
+    canonical_query_string = _get_canonical_query_string(url.query)
+
+    # CanonicalRequest =
+    #   HTTPRequestMethod + '\n' +
+    #   CanonicalURI + '\n' +
+    #   CanonicalQueryString + '\n' +
+    #   CanonicalHeaders + '\n\n' +
+    #   SignedHeaders + '\n' +
+    #   HexEncode(Hash(RequestPayload))
+    canonical_request = (
+        "{method}\n"
+        "{canonical_uri}\n"
+        "{canonical_query_string}\n"
+        "{canonical_headers}\n\n"
+        "{signed_headers}\n"
+        "{content_sha256}"
+    ).format(
+        method=method,
+        canonical_uri=url.path,
+        canonical_query_string=canonical_query_string,
+        canonical_headers=canonical_headers,
+        signed_headers=signed_headers,
+        content_sha256=content_sha256,
+    )
+    return sha256_hash(canonical_request), signed_headers
+
+
+def _get_string_to_sign(date, scope, canonical_request_hash):
+    """Get string-to-sign."""
+
+    return (
+        "AWS4-HMAC-SHA256\n{date}\n{scope}\n{canonical_request_hash}".format(
+            date=date.strftime(AMZ_DATE_FORMAT),
+            scope=scope,
+            canonical_request_hash=canonical_request_hash,
+        )
+    )
+
+
+def _get_signing_key(secret_key, date, region, service_name):
+    """Get signing key."""
+
+    date_key = _hmac_hash(
+        ("AWS4" + secret_key).encode(),
+        date.strftime(_SIGNER_DATE_FORMAT).encode(),
+    )
+    date_region_key = _hmac_hash(date_key, region.encode())
+    date_region_service_key = _hmac_hash(
+        date_region_key, service_name.encode(),
+    )
+    return _hmac_hash(date_region_service_key, b"aws4_request")
+
+
+def _get_signature(signing_key, string_to_sign):
+    """Get signature."""
+
+    return _hmac_hash(signing_key, string_to_sign.encode(), hexdigest=True)
+
+
+def _get_authorization(access_key, scope, signed_headers, signature):
+    """Get authorization."""
+
+    return (
+        "AWS4-HMAC-SHA256 Credential={access_key}/{scope}, "
+        "SignedHeaders={signed_headers}, Signature={signature}"
+    ).format(
+        access_key=access_key,
+        scope=scope,
+        signed_headers=signed_headers,
+        signature=signature,
+    )
+
+
+def _sign_v4(
+        service_name,
+        method,
+        url,
+        region,
+        headers,
+        credentials,
+        content_sha256,
+        date,
 ):
-    """
-    Signature version 4.
+    """Do signature V4 of given request for given service name."""
 
-    :param method: HTTP method used for signature.
-    :param url: Final url which needs to be signed.
-    :param region: Region should be set to bucket region.
-    :param headers: Optional headers for the method.
-    :param credentials: Optional Credentials object with your AWS s3 account
-                        info.
-    :param content_sha256: Optional body sha256.
-    :param request_datetime: Optional request date/time
-    :param service_name: Optional service to sign request for (defaults to S3)
-    """
-
-    # If no access key or secret key is provided return headers.
-    if not credentials:
-        return headers
-
-    headers = headers or FoldCaseDict()
-    region = region or 'us-east-1'
-
-    parsed_url = urlsplit(url)
-    secure = parsed_url.scheme == 'https'
-    if secure and not content_sha256:
-        content_sha256 = _UNSIGNED_PAYLOAD
-    content_sha256 = content_sha256 or get_sha256_hexdigest('')
-
-    host = remove_default_port(parsed_url)
-    headers['Host'] = host
-
-    request_datetime = request_datetime or datetime.utcnow()
-
-    headers['X-Amz-Date'] = request_datetime.strftime("%Y%m%dT%H%M%SZ")
-    if not sts:
-        headers['X-Amz-Content-Sha256'] = content_sha256
-    if credentials.session_token:
-        headers['X-Amz-Security-Token'] = credentials.session_token
-
-    headers_to_sign = headers
-
-    signed_headers = get_signed_headers(headers_to_sign)
-    canonical_req = generate_canonical_request(method,
-                                               parsed_url,
-                                               headers_to_sign,
-                                               signed_headers,
-                                               content_sha256
-                                               )
-
-    string_to_sign = generate_string_to_sign(request_datetime, region,
-                                             canonical_req, service_name)
-    signing_key = generate_signing_key(
-        request_datetime, region, credentials.secret_key, service_name)
-    signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
-                         hashlib.sha256).hexdigest()
-
-    authorization_header = generate_authorization_header(
-        credentials.access_key, request_datetime, region, signed_headers,
-        signature, service_name)
-
-    headers['Authorization'] = authorization_header
+    scope = _get_scope(date, region, service_name)
+    canonical_request_hash, signed_headers = _get_canonical_request_hash(
+        method, url, headers, content_sha256,
+    )
+    string_to_sign = _get_string_to_sign(date, scope, canonical_request_hash)
+    signing_key = _get_signing_key(
+        credentials.secret_key, date, region, service_name,
+    )
+    signature = _get_signature(signing_key, string_to_sign)
+    authorization = _get_authorization(
+        credentials.access_key, scope, signed_headers, signature,
+    )
+    headers["Authorization"] = authorization
     return headers
 
 
-def generate_canonical_request(method, parsed_url, headers, signed_headers,
-                               content_sha256):
-    """
-    Generate canonical request.
-
-    :param method: HTTP method.
-    :param parsed_url: Parsed url is input from :func:`urlsplit`
-    :param headers: HTTP header dictionary.
-    :param content_sha256: Content sha256 hexdigest string.
-    """
-    # Should not encode ~. Decode it back if present.
-    parsed_url_path = parsed_url.path.replace("%7E", "~")
-    parsed_url_query = parsed_url.query.replace("%7E", "~")
-    lines = [method, parsed_url_path, parsed_url_query]
-
-    # Headers added to canonical request.
-    header_lines = []
-    for header in signed_headers:
-        value = headers[header.title()]
-        value = str(value).strip()
-        header_lines.append(header + ':' + value)
-
-    lines = lines + header_lines
-    lines.append('')
-
-    lines.append(';'.join(signed_headers))
-    lines.append(content_sha256)
-    return '\n'.join(lines)
+def sign_v4_s3(
+        method,
+        url,
+        region,
+        headers,
+        credentials,
+        content_sha256,
+        date,
+):
+    """Do signature V4 of given request for S3 service."""
+    return _sign_v4(
+        "s3",
+        method,
+        url,
+        region,
+        headers,
+        credentials,
+        content_sha256,
+        date,
+    )
 
 
-def generate_string_to_sign(date, region, canonical_request,
-                            service_name=_DEFAULT_SERVICE_NAME):
-    """
-    Generate string to sign.
-
-    :param date: Date is input from :meth:`datetime.datetime`
-    :param region: Region should be set to bucket region.
-    :param canonical_request: Canonical request generated previously.
-    :param service_name: Service to scope request for.
-    """
-    formatted_date_time = date.strftime("%Y%m%dT%H%M%SZ")
-
-    canonical_request_hasher = hashlib.sha256()
-    canonical_request_hasher.update(canonical_request.encode('utf-8'))
-    canonical_request_sha256 = canonical_request_hasher.hexdigest()
-    scope = generate_scope_string(date, region, service_name)
-
-    return '\n'.join([_SIGN_V4_ALGORITHM,
-                      formatted_date_time,
-                      scope,
-                      canonical_request_sha256])
-
-
-def generate_signing_key(date, region, secret_key,
-                         service_name=_DEFAULT_SERVICE_NAME):
-    """
-    Generate signing key.
-
-    :param date: Date is input from :meth:`datetime.datetime`
-    :param region: Region should be set to bucket region.
-    :param secret_key: Secret access key.
-    :param service_name: The signing key is scoped to a service e.g. s3
-    """
-    formatted_date = date.strftime("%Y%m%d")
-
-    key1_string = 'AWS4' + secret_key
-    key1 = key1_string.encode('utf-8')
-    key2 = hmac.new(key1, formatted_date.encode('utf-8'),
-                    hashlib.sha256).digest()
-    key3 = hmac.new(key2, region.encode('utf-8'), hashlib.sha256).digest()
-    key4 = hmac.new(key3, service_name.encode(
-        'utf-8'), hashlib.sha256).digest()
-
-    return hmac.new(key4, 'aws4_request'.encode('utf-8'),
-                    hashlib.sha256).digest()
+def sign_v4_sts(
+        method,
+        url,
+        region,
+        headers,
+        credentials,
+        content_sha256,
+        date,
+):
+    """Do signature V4 of given request for STS service."""
+    return _sign_v4(
+        "sts",
+        method,
+        url,
+        region,
+        headers,
+        credentials,
+        content_sha256,
+        date,
+    )
 
 
-def generate_scope_string(date, region, service_name):
-    """
-    Generate scope string.
+def _get_presign_canonical_request_hash(  # pylint: disable=invalid-name
+        method, url, access_key, scope, date, expires,
+):
+    """Get canonical request hash for presign request."""
 
-    :param date: Date is input from :meth:`datetime.datetime`
-    :param region: Region should be set to bucket region.
-    :param service_name: Service for scope string, e.g., "s3".
-    """
-    formatted_date = date.strftime("%Y%m%d")
-    scope = '/'.join([formatted_date,
-                      region,
-                      service_name,
-                      'aws4_request'])
-    return scope
+    canonical_headers, signed_headers = "host:" + url.netloc, "host"
+
+    query = url.query+"&" if url.query else ""
+    query += (
+        "X-Amz-Algorithm=AWS4-HMAC-SHA256"
+        "&X-Amz-Credential={0}"
+        "&X-Amz-Date={1}"
+        "&X-Amz-Expires={2}"
+        "&X-Amz-SignedHeaders={3}"
+    ).format(
+        queryencode(access_key + "/" + scope),
+        date.strftime(AMZ_DATE_FORMAT),
+        expires,
+        signed_headers,
+    )
+    parts = list(url)
+    parts[3] = query
+    url = SplitResult(*parts)
+
+    canonical_query_string = _get_canonical_query_string(query)
+
+    # CanonicalRequest =
+    #   HTTPRequestMethod + '\n' +
+    #   CanonicalURI + '\n' +
+    #   CanonicalQueryString + '\n' +
+    #   CanonicalHeaders + '\n\n' +
+    #   SignedHeaders + '\n' +
+    #   HexEncode(Hash(RequestPayload))
+    canonical_request = (
+        "{method}\n"
+        "{canonical_uri}\n"
+        "{canonical_query_string}\n"
+        "{canonical_headers}\n\n"
+        "{signed_headers}\n"
+        "{content_sha256}"
+    ).format(
+        method=method,
+        canonical_uri=url.path,
+        canonical_query_string=canonical_query_string,
+        canonical_headers=canonical_headers,
+        signed_headers=signed_headers,
+        content_sha256="UNSIGNED-PAYLOAD",
+    )
+    return sha256_hash(canonical_request), url
 
 
-def generate_credential_string(access_key, date, region,
-                               service_name=_DEFAULT_SERVICE_NAME):
-    """
-    Generate credential string.
+def presign_v4(
+        method,
+        url,
+        region,
+        credentials,
+        date,
+        expires,
+):
+    """Do signature V4 of given presign request."""
 
-    :param access_key: Server access key.
-    :param date: Date is input from :meth:`datetime.datetime`
-    :param region: Region should be set to bucket region.
-    :param service_name: Service to scope credentials to.
-    """
-    return access_key + '/' + generate_scope_string(date, region, service_name)
+    scope = _get_scope(date, region, "s3")
+    canonical_request_hash, url = _get_presign_canonical_request_hash(
+        method, url, credentials.access_key, scope, date, expires,
+    )
+    string_to_sign = _get_string_to_sign(date, scope, canonical_request_hash)
+    signing_key = _get_signing_key(credentials.secret_key, date, region, "s3")
+    signature = _get_signature(signing_key, string_to_sign)
 
-
-def generate_authorization_header(access_key, date, region,
-                                  signed_headers, signature,
-                                  service_name=_DEFAULT_SERVICE_NAME):
-    """
-    Generate authorization header.
-
-    :param access_key: Server access key.
-    :param date: Date is input from :meth:`datetime.datetime`
-    :param region: Region should be set to bucket region.
-    :param signed_headers: Signed headers.
-    :param signature: Calculated signature.
-    :param service_name: Optional service to sign request for.
-    """
-    signed_headers_string = ';'.join(signed_headers)
-    credential = generate_credential_string(
-        access_key, date, region, service_name)
-    auth_header = [_SIGN_V4_ALGORITHM, 'Credential=' + credential + ',',
-                   'SignedHeaders=' + signed_headers_string + ',',
-                   'Signature=' + signature]
-    return ' '.join(auth_header)
+    parts = list(url)
+    parts[3] = url.query + "&X-Amz-Signature=" + queryencode(signature)
+    url = SplitResult(*parts)
+    return url
 
 
-def remove_default_port(parsed_url):
-    """Remove default port in URL."""
-    default_ports = {
-        'http': 80,
-        'https': 443
-    }
-    if any(parsed_url.scheme == scheme and parsed_url.port == port
-           for scheme, port in default_ports.items()):
-        # omit default port (i.e. 80 or 443)
-        host = parsed_url.hostname
-    else:
-        host = parsed_url.netloc
-    return host
+def get_credential_string(access_key, date, region):
+    """Get credential string of given access key, date and region."""
+
+    return "{0}/{1}/{2}/s3/aws4_request".format(
+        access_key,
+        date.strftime(_SIGNER_DATE_FORMAT),
+        region,
+    )
+
+
+def post_presign_v4(string_to_sign, credentials, date, region):
+    """Do signature V4 of given presign POST form-data."""
+
+    signing_key = _get_signing_key(credentials.secret_key, date, region, "s3")
+    return _get_signature(signing_key, string_to_sign)

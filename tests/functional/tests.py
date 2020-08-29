@@ -39,9 +39,7 @@ import certifi
 import urllib3
 
 from minio import CopyConditions, Minio, PostPolicy
-from minio.error import (APINotImplemented, InvalidBucketError,
-                         NoSuchBucketPolicy, PreconditionFailed, ResponseError)
-from minio.fold_case_dict import FoldCaseDict
+from minio.error import S3Error
 from minio.select.helpers import calculate_crc
 from minio.select.options import (CSVInput, CSVOutput, InputSerialization,
                                   OutputSerialization, RequestProgress,
@@ -145,9 +143,14 @@ def _call_test(func, *args, **kwargs):
     start_time = time.time()
     try:
         func(log_entry, *args, **kwargs)
-    except APINotImplemented:
-        log_entry["alert"] = "Not Implemented"
-        log_entry["status"] = "NA"
+    except S3Error as exc:
+        if exc.code == "NotImplemented":
+            log_entry["alert"] = "Not Implemented"
+            log_entry["status"] = "NA"
+        else:
+            log_entry["message"] = "{0}".format(exc)
+            log_entry["error"] = traceback.format_exc()
+            log_entry["status"] = "FAIL"
     except Exception as exc:  # pylint: disable=broad-except
         log_entry["message"] = "{0}".format(exc)
         log_entry["error"] = traceback.format_exc()
@@ -243,7 +246,7 @@ def test_negative_make_bucket_invalid_name(  # pylint: disable=invalid-name
             _call(log_entry, _CLIENT.bucket_exists, name)
             # Remove bucket
             _call(log_entry, _CLIENT.remove_bucket, name)
-        except InvalidBucketError:
+        except ValueError:
             pass
     # Test passes
     log_entry["method"] = _CLIENT.make_bucket
@@ -412,9 +415,14 @@ def test_fput_object_with_content_type(  # pylint: disable=invalid-name
 def _validate_stat(st_obj, expected_size, expected_meta, version_id=None):
     """Validate stat information."""
 
+    expected_meta = {
+        key.lower(): value for key, value in (expected_meta or {}).items()
+    }
     received_modification_time = st_obj.last_modified
     received_etag = st_obj.etag
-    received_metadata = FoldCaseDict(st_obj.metadata)
+    received_metadata = {
+        key.lower(): value for key, value in (st_obj.metadata or {}).items()
+    }
     received_content_type = st_obj.content_type
     received_size = st_obj.size
     received_is_dir = st_obj.is_dir
@@ -598,10 +606,8 @@ def test_copy_object_negative_etag_match(  # pylint: disable=invalid-name
             _CLIENT.copy_object(bucket_name, object_copy,
                                 '/' + bucket_name + '/' + object_source,
                                 copy_conditions)
-        except PreconditionFailed as exc:
-            if exc.message != (
-                    "At least one of the preconditions you specified "
-                    "did not hold."):
+        except S3Error as exc:
+            if exc.code != "PreconditionFailed":
                 raise
     finally:
         _CLIENT.remove_object(bucket_name, object_source)
@@ -682,10 +688,8 @@ def test_copy_object_unmodified_since(  # pylint: disable=invalid-name
             _CLIENT.copy_object(bucket_name, object_copy,
                                 '/' + bucket_name + '/' + object_source,
                                 copy_conditions)
-        except PreconditionFailed as exc:
-            if exc.message != (
-                    "At least one of the preconditions you specified "
-                    "did not hold."):
+        except S3Error as exc:
+            if exc.code != "PreconditionFailed":
                 raise
     finally:
         _CLIENT.remove_object(bucket_name, object_source)
@@ -734,7 +738,10 @@ def test_put_object(log_entry, sse=None):
         # metadata.
         st_obj = _CLIENT.stat_object(bucket_name, object_name + "-metadata",
                                      sse=sse)
-        normalized_meta = FoldCaseDict(st_obj.metadata)
+        normalized_meta = {
+            key.lower(): value for key, value in (
+                st_obj.metadata or {}).items()
+        }
         if 'x-amz-meta-testing' not in normalized_meta:
             raise ValueError("Metadata key 'x-amz-meta-testing' not found")
         value = normalized_meta['x-amz-meta-testing']
@@ -769,7 +776,7 @@ def test_negative_put_object_with_path_segment(  # pylint: disable=invalid-name
         _CLIENT.make_bucket(bucket_name)
         _CLIENT.put_object(bucket_name, object_name, io.BytesIO(b''), 0)
         _CLIENT.remove_object(bucket_name, object_name)
-    except ResponseError as err:
+    except S3Error as err:
         if err.code != 'XMinioInvalidObjectName':
             raise
     finally:
@@ -832,7 +839,7 @@ def _test_stat_object(log_entry, sse=None, version_check=False):
         )
         # Verify the collected stat data.
         _validate_stat(
-            st_obj, length, FoldCaseDict(metadata), version_id=version_id2,
+            st_obj, length, metadata, version_id=version_id2,
         )
     finally:
         _CLIENT.remove_object(bucket_name, object_name, version_id=version_id1)
@@ -1294,10 +1301,14 @@ def test_presigned_get_object_default_expiry(  # pylint: disable=invalid-name
             bucket_name, object_name)
         response = HTTP.urlopen('GET', presigned_get_object_url)
         if response.status != 200:
-            raise ResponseError(response,
-                                'GET',
-                                bucket_name,
-                                object_name).get_exception()
+            raise Exception(
+                (
+                    "Presigned GET object URL {0} failed; "
+                    "code: {1}, error: {2}"
+                ).format(
+                    presigned_get_object_url, response.code, response.data,
+                ),
+            )
     finally:
         _CLIENT.remove_object(bucket_name, object_name)
         _CLIENT.remove_bucket(bucket_name)
@@ -1325,10 +1336,14 @@ def test_presigned_get_object_expiry(  # pylint: disable=invalid-name
             bucket_name, object_name, timedelta(seconds=120))
         response = HTTP.urlopen('GET', presigned_get_object_url)
         if response.status != 200:
-            raise ResponseError(response,
-                                'GET',
-                                bucket_name,
-                                object_name).get_exception()
+            raise Exception(
+                (
+                    "Presigned GET object URL {0} failed; "
+                    "code: {1}, error: {2}"
+                ).format(
+                    presigned_get_object_url, response.code, response.data,
+                ),
+            )
 
         log_entry["args"]["presigned_get_object_url"] = (
             presigned_get_object_url)
@@ -1343,10 +1358,14 @@ def test_presigned_get_object_expiry(  # pylint: disable=invalid-name
         log_entry["args"]['response._body'] = response._body.decode('utf-8')
 
         if response.status != 200:
-            raise ResponseError(response,
-                                'GET',
-                                bucket_name,
-                                object_name).get_exception()
+            raise Exception(
+                (
+                    "Presigned GET object URL {0} failed; "
+                    "code: {1}, error: {2}"
+                ).format(
+                    presigned_get_object_url, response.code, response.data,
+                ),
+            )
 
         presigned_get_object_url = _CLIENT.presigned_get_object(
             bucket_name, object_name, timedelta(seconds=1))
@@ -1421,10 +1440,14 @@ def test_presigned_get_object_response_headers(  # pylint: disable=invalid-name
         if (response.status != 200 or
                 returned_content_type != content_type or
                 returned_content_language != content_language):
-            raise ResponseError(response,
-                                'GET',
-                                bucket_name,
-                                object_name).get_exception()
+            raise Exception(
+                (
+                    "Presigned GET object URL {0} failed; "
+                    "code: {1}, error: {2}"
+                ).format(
+                    presigned_get_object_url, response.code, response.data,
+                ),
+            )
     finally:
         _CLIENT.remove_object(bucket_name, object_name)
         _CLIENT.remove_bucket(bucket_name)
@@ -1456,10 +1479,14 @@ def test_presigned_get_object_version(  # pylint: disable=invalid-name
         )
         response = HTTP.urlopen('GET', presigned_get_object_url)
         if response.status != 200:
-            raise ResponseError(response,
-                                'GET',
-                                bucket_name,
-                                object_name).get_exception()
+            raise Exception(
+                (
+                    "Presigned GET object URL {0} failed; "
+                    "code: {1}, error: {2}"
+                ).format(
+                    presigned_get_object_url, response.code, response.data,
+                ),
+            )
     finally:
         _CLIENT.remove_object(bucket_name, object_name, version_id=version_id)
         _CLIENT.remove_bucket(bucket_name)
@@ -1486,10 +1513,14 @@ def test_presigned_put_object_default_expiry(  # pylint: disable=invalid-name
                                 presigned_put_object_url,
                                 LimitedRandomReader(1 * KB))
         if response.status != 200:
-            raise ResponseError(response,
-                                'PUT',
-                                bucket_name,
-                                object_name).get_exception()
+            raise Exception(
+                (
+                    "Presigned PUT object URL {0} failed; "
+                    "code: {1}, error: {2}"
+                ).format(
+                    presigned_put_object_url, response.code, response.data,
+                ),
+            )
         _CLIENT.stat_object(bucket_name, object_name)
     finally:
         _CLIENT.remove_object(bucket_name, object_name)
@@ -1639,8 +1670,9 @@ def test_get_bucket_policy(log_entry):
     _CLIENT.make_bucket(bucket_name)
     try:
         _CLIENT.get_bucket_policy(bucket_name)
-    except NoSuchBucketPolicy:
-        pass
+    except S3Error as exc:
+        if exc.code != "NoSuchBucketPolicy":
+            raise
     finally:
         _CLIENT.remove_bucket(bucket_name)
 
@@ -1660,8 +1692,7 @@ def _get_policy_actions(stat):
 
 def _validate_policy(bucket_name, policy):
     """Validate policy."""
-    policy_dict = json.loads(
-        _CLIENT.get_bucket_policy(bucket_name).decode("utf-8"))
+    policy_dict = json.loads(_CLIENT.get_bucket_policy(bucket_name))
     actions = _get_policy_actions(policy_dict.get('Statement'))
     expected_actions = _get_policy_actions(policy.get('Statement'))
     return expected_actions == actions
