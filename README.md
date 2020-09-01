@@ -112,7 +112,6 @@ The full API Reference is available here.
 * [`bucket_exists`](https://docs.min.io/docs/python-client-api-reference#bucket_exists)
 * [`remove_bucket`](https://docs.min.io/docs/python-client-api-reference#remove_bucket)
 * [`list_objects`](https://docs.min.io/docs/python-client-api-reference#list_objects)
-* [`list_objects_v2`](https://docs.min.io/docs/python-client-api-reference#list_objects_v2)
 * [`list_incomplete_uploads`](https://docs.min.io/docs/python-client-api-reference#list_incomplete_uploads)
 
 ### API Reference : Bucket policy Operations
@@ -144,7 +143,6 @@ The full API Reference is available here.
 * [`put_object`](https://docs.min.io/docs/python-client-api-reference#put_object)
 * [`stat_object`](https://docs.min.io/docs/python-client-api-reference#stat_object)
 * [`copy_object`](https://docs.min.io/docs/python-client-api-reference#copy_object)
-* [`get_partial_object`](https://docs.min.io/docs/python-client-api-reference#get_partial_object)
 * [`remove_object`](https://docs.min.io/docs/python-client-api-reference#remove_object)
 * [`remove_objects`](https://docs.min.io/docs/python-client-api-reference#remove_objects)
 * [`remove_incomplete_upload`](https://docs.min.io/docs/python-client-api-reference#remove_incomplete_upload)
@@ -195,7 +193,6 @@ The full API Reference is available here.
 * [put_object.py](https://github.com/minio/minio-py/blob/master/examples/put_object.py)
 * [stat_object.py](https://github.com/minio/minio-py/blob/master/examples/stat_object.py)
 * [copy_object.py](https://github.com/minio/minio-py/blob/master/examples/copy_object.py)
-* [get_partial_object.py](https://github.com/minio/minio-py/blob/master/examples/get_partial_object.py)
 * [remove_object.py](https://github.com/minio/minio-py/blob/master/examples/remove_object.py)
 * [remove_objects.py](https://github.com/minio/minio-py/blob/master/examples/remove_objects.py)
 * [remove_incomplete_upload.py](https://github.com/minio/minio-py/blob/master/examples/remove_incomplete_upload.py)

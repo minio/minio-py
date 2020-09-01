@@ -28,7 +28,7 @@ client = Minio('s3.amazonaws.com',
 try:
     names = map(
         lambda x: x.object_name,
-        client.list_objects_v2('my-bucketname', 'my-prefix', recursive=True)
+        client.list_objects('my-bucketname', 'my-prefix', recursive=True)
     )
     for err in client.remove_objects('my-bucketname', names):
         print("Deletion Error: {}".format(err))

@@ -865,7 +865,7 @@ class Minio:  # pylint: disable=too-many-public-methods
 
             // Get object data for offset/length.
             try:
-                response = minio.get_partial_object('foo', 'bar', 2, 4)
+                response = minio.get_object('foo', 'bar', 2, 4)
                 // Read data from response.
             finally:
                 response.close()
@@ -1033,16 +1033,21 @@ class Minio:  # pylint: disable=too-many-public-methods
                                    progress=progress)
 
     def list_objects(self, bucket_name, prefix=None, recursive=False,
-                     include_version=False):
+                     start_after=None, include_user_meta=False,
+                     include_version=False, use_api_v1=False):
         """
-        Lists object information of a bucket using S3 API version 1, optionally
+        Lists object information of a bucket using S3 API version 2, optionally
         for prefix recursively.
 
         :param bucket_name: Name of the bucket.
         :param prefix: Object name starts with prefix.
         :param recursive: List recursively than directory structure emulation.
+        :param start_after: List objects after this key name.
+        :param include_user_meta: MinIO specific flag to control to include
+                                 user metadata.
         :param include_version: Flag to control whether include object
                                 versions.
+        :param use_api_v1: Flag to control to use ListObjectV1 S3 API or not.
         :return: An iterator contains object information.
 
         Example::
@@ -1068,59 +1073,10 @@ class Minio:  # pylint: disable=too-many-public-methods
             )
             for object in objects:
                 print(object)
-        """
-        return self._list_objects(
-            bucket_name,
-            delimiter=None if recursive else "/",
-            prefix=prefix,
-            use_version1=True,
-            include_version=include_version,
-        )
-
-    def list_objects_v2(self, bucket_name, prefix=None, recursive=False,
-                        start_after=None, include_user_meta=False,
-                        include_version=False):
-        """
-        Lists object information of a bucket using S3 API version 2, optionally
-        for prefix recursively.
-
-        :param bucket_name: Name of the bucket.
-        :param prefix: Object name starts with prefix.
-        :param recursive: List recursively than directory structure emulation.
-        :param start_after: List objects after this key name.
-        :param include_user_meta: MinIO specific flag to control to include
-                                 user metadata.
-        :param include_version: Flag to control whether include object
-                                versions.
-        :return: An iterator contains object information.
-
-        Example::
-            # List objects information.
-            objects = minio.list_objects_v2('foo')
-            for object in objects:
-                print(object)
-
-            # List objects information those names starts with 'hello/'.
-            objects = minio.list_objects_v2('foo', prefix='hello/')
-            for object in objects:
-                print(object)
-
-            # List objects information recursively.
-            objects = minio.list_objects_v2('foo', recursive=True)
-            for object in objects:
-                print(object)
-
-            # List objects information recursively those names starts with
-            # 'hello/'.
-            objects = minio.list_objects_v2(
-                'foo', prefix='hello/', recursive=True,
-            )
-            for object in objects:
-                print(object)
 
             # List objects information recursively after object name
             # 'hello/world/1'.
-            objects = minio.list_objects_v2(
+            objects = minio.list_objects(
                 'foo', recursive=True, start_after='hello/world/1',
             )
             for object in objects:
@@ -1132,6 +1088,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             include_user_meta=include_user_meta,
             prefix=prefix,
             start_after=start_after,
+            use_api_v1=use_api_v1,
             include_version=include_version,
         )
 
@@ -2103,7 +2060,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             prefix=None,  # all
             start_after=None,  # all: v1:marker, versioned:key_marker
             version_id_marker=None,  # versioned
-            use_version1=False,
+            use_api_v1=False,
             include_version=False,
     ):
         """
@@ -2124,10 +2081,10 @@ class Minio:  # pylint: disable=too-many-public-methods
             query = {}
             if include_version:
                 query["versions"] = ""
-            elif not use_version1:
+            elif not use_api_v1:
                 query["list-type"] = "2"
 
-            if not include_version and not use_version1:
+            if not include_version and not use_api_v1:
                 if continuation_token:
                     query["continuation-token"] = continuation_token
                 if fetch_owner:
@@ -2142,7 +2099,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             if start_after:
                 if include_version:
                     query["key-marker"] = start_after
-                elif use_version1:
+                elif use_api_v1:
                     query["marker"] = start_after
                 else:
                     query["start-after"] = start_after
@@ -2159,7 +2116,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 objects, is_truncated, start_after, version_id_marker = (
                     parse_list_object_versions(response.data, bucket_name)
                 )
-            elif use_version1:
+            elif use_api_v1:
                 objects, is_truncated, start_after = parse_list_objects(
                     response.data,
                     bucket_name,
