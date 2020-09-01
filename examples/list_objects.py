@@ -31,9 +31,9 @@ for obj in objects:
           obj.etag, obj.size, obj.content_type)
 
 # List all object paths in bucket that begin with my-prefixname using
-# V2 listing API.
-objects = client.list_objects_v2('my-bucketname', prefix='my-prefixname',
-                                 recursive=True)
+# API V1 listing API.
+objects = client.list_objects('my-bucketname', prefix='my-prefixname',
+                              recursive=True, use_api_v1=True)
 for obj in objects:
     print(obj.bucket_name, obj.object_name.encode('utf-8'), obj.last_modified,
           obj.etag, obj.size, obj.content_type)
