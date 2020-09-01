@@ -84,7 +84,7 @@ def presign_v4(method, url, credentials,
     """
 
     # Validate input arguments.
-    if not credentials.get().access_key or not credentials.get().secret_key:
+    if not credentials:
         raise InvalidArgumentError('Invalid access_key and secret_key.')
 
     region = region or 'us-east-1'
@@ -110,15 +110,15 @@ def presign_v4(method, url, credentials,
     query = {}
     query['X-Amz-Algorithm'] = _SIGN_V4_ALGORITHM
     query['X-Amz-Credential'] = generate_credential_string(
-        credentials.get().access_key,
+        credentials.access_key,
         request_date,
         region,
         _PRESIGNED_SERVICE_NAME,
     )
     query['X-Amz-Date'] = iso8601_date
     query['X-Amz-Expires'] = str(expires)
-    if credentials.get().session_token:
-        query['X-Amz-Security-Token'] = credentials.get().session_token
+    if credentials.session_token:
+        query['X-Amz-Security-Token'] = credentials.session_token
 
     signed_headers = get_signed_headers(headers_to_sign)
     query['X-Amz-SignedHeaders'] = ';'.join(signed_headers)
@@ -147,7 +147,7 @@ def presign_v4(method, url, credentials,
                                              canonical_request,
                                              _PRESIGNED_SERVICE_NAME)
     signing_key = generate_signing_key(request_date, region,
-                                       credentials.get().secret_key)
+                                       credentials.secret_key)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
 
@@ -163,12 +163,15 @@ def get_signed_headers(headers):
     return sorted([h.lower().strip() for h in headers])
 
 
-def sign_v4(method, url, region, headers=None,
-            credentials=None,
-            content_sha256=None,
-            request_datetime=None,
-            service_name=_DEFAULT_SERVICE_NAME
-            ):
+def sign_v4(
+        method, url, region,
+        headers=None,
+        credentials=None,
+        content_sha256=None,
+        request_datetime=None,
+        service_name=_DEFAULT_SERVICE_NAME,
+        sts=False,
+):
     """
     Signature version 4.
 
@@ -184,7 +187,7 @@ def sign_v4(method, url, region, headers=None,
     """
 
     # If no access key or secret key is provided return headers.
-    if not credentials.get().access_key or not credentials.get().secret_key:
+    if not credentials:
         return headers
 
     headers = headers or FoldCaseDict()
@@ -202,9 +205,10 @@ def sign_v4(method, url, region, headers=None,
     request_datetime = request_datetime or datetime.utcnow()
 
     headers['X-Amz-Date'] = request_datetime.strftime("%Y%m%dT%H%M%SZ")
-    headers['X-Amz-Content-Sha256'] = content_sha256
-    if credentials.get().session_token:
-        headers['X-Amz-Security-Token'] = credentials.get().session_token
+    if not sts:
+        headers['X-Amz-Content-Sha256'] = content_sha256
+    if credentials.session_token:
+        headers['X-Amz-Security-Token'] = credentials.session_token
 
     headers_to_sign = headers
 
@@ -219,12 +223,12 @@ def sign_v4(method, url, region, headers=None,
     string_to_sign = generate_string_to_sign(request_datetime, region,
                                              canonical_req, service_name)
     signing_key = generate_signing_key(
-        request_datetime, region, credentials.get().secret_key, service_name)
+        request_datetime, region, credentials.secret_key, service_name)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
                          hashlib.sha256).hexdigest()
 
     authorization_header = generate_authorization_header(
-        credentials.get().access_key, request_datetime, region, signed_headers,
+        credentials.access_key, request_datetime, region, signed_headers,
         signature, service_name)
 
     headers['Authorization'] = authorization_header

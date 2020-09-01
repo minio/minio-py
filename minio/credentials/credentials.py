@@ -16,19 +16,31 @@
 
 """Credential definitions to access S3 service."""
 
-from abc import ABCMeta, abstractmethod
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 
-class Value:
+class Credentials:
     """
-    Denotes credential values such as access key, secret key and session token.
+    Represents credentials access key, secret key and session token.
     """
 
-    def __init__(self, access_key, secret_key, session_token=None):
+    def __init__(
+            self, access_key, secret_key, session_token=None, expiration=None,
+    ):
+        if not access_key:
+            raise ValueError("Access key must not be empty")
+
+        if not secret_key:
+            raise ValueError("Secret key must not be empty")
+
         self._access_key = access_key
         self._secret_key = secret_key
         self._session_token = session_token
+        if expiration and expiration.tzinfo:
+            expiration = (
+                expiration.astimezone(timezone.utc).replace(tzinfo=None)
+            )
+        self._expiration = expiration
 
     @property
     def access_key(self):
@@ -45,30 +57,9 @@ class Value:
         """Get session token."""
         return self._session_token
 
-
-class Provider:  # pylint: disable=too-few-public-methods
-    """Credential retriever."""
-    __metaclass__ = ABCMeta
-
-    @abstractmethod
-    def retrieve(self):
-        """Retrieve credential value and its expiry."""
-
-
-class Credentials:  # pylint: disable=too-few-public-methods
-    """Denotes credentials for S3 service."""
-
-    def __init__(self, provider):
-        self._provider = provider
-        self._value = None
-        self._expiry = None
-
-    def get(self, force=False):
-        """Get credentials from provider if needed."""
-        if (
-                force or
-                not self._value or
-                (self._expiry and self._expiry < datetime.utcnow())
-        ):
-            self._value, self._expiry = self._provider.retrieve()
-        return self._value
+    def is_expired(self):
+        """Check whether this credentials expired or not."""
+        return (
+            self._expiration < (datetime.utcnow() + timedelta(seconds=10))
+            if self._expiration else False
+        )

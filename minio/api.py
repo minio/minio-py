@@ -43,8 +43,8 @@ import urllib3
 
 from . import __title__, __version__
 from .compat import range  # pylint: disable=redefined-builtin
-from .compat import basestring, quote, urlencode, urlsplit
-from .credentials import Chain, Credentials, EnvAWS, EnvMinio, Static
+from .compat import basestring, quote, urlsplit
+from .credentials import StaticProvider
 from .definitions import Object, UploadPart
 from .error import (AccessDenied, InvalidArgumentError, InvalidSizeError,
                     InvalidXMLError, NoSuchBucket, ResponseError)
@@ -58,12 +58,11 @@ from .helpers import (DEFAULT_PART_SIZE, MAX_MULTIPART_COUNT, MAX_PART_SIZE,
                       is_supported_header, is_valid_endpoint,
                       is_valid_notification_config, is_valid_policy_type,
                       mkdir_p, optimal_part_info, read_full)
-from .parsers import (parse_assume_role, parse_copy_object,
-                      parse_get_bucket_notification, parse_list_buckets,
-                      parse_list_multipart_uploads, parse_list_object_versions,
-                      parse_list_objects, parse_list_objects_v2,
-                      parse_list_parts, parse_location_constraint,
-                      parse_multi_delete_response,
+from .parsers import (parse_copy_object, parse_get_bucket_notification,
+                      parse_list_buckets, parse_list_multipart_uploads,
+                      parse_list_object_versions, parse_list_objects,
+                      parse_list_objects_v2, parse_list_parts,
+                      parse_location_constraint, parse_multi_delete_response,
                       parse_multipart_upload_result,
                       parse_new_multipart_upload)
 from .select import SelectObjectReader
@@ -110,7 +109,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         service or not.
     :param region: Region name of buckets in S3 service.
     :param http_client: Customized HTTP client.
-    :param credentials: Credentials of your account in S3 service.
+    :param credentials: Credentials provider of your account in S3 service.
     :return: :class:`Minio <Minio>` object
 
     Example::
@@ -154,22 +153,13 @@ class Minio:  # pylint: disable=too-many-public-methods
         self._region_map = dict()
         self._endpoint_url = urlsplit(scheme + endpoint).geturl()
         self._is_ssl = secure
-        self._access_key = access_key
-        self._secret_key = secret_key
-        self._session_token = session_token
         self._user_agent = _DEFAULT_USER_AGENT
         self._trace_output_stream = None
         self._enable_s3_accelerate = False
         self._accelerate_endpoint_url = scheme + 's3-accelerate.amazonaws.com'
-        self._credentials = credentials or Credentials(
-            provider=Chain(
-                providers=[
-                    Static(access_key, secret_key, session_token),
-                    EnvAWS(),
-                    EnvMinio(),
-                ]
-            )
-        )
+        if access_key:
+            credentials = StaticProvider(access_key, secret_key, session_token)
+        self._provider = credentials
 
         # Load CA certificates from SSL_CERT_FILE file if set
         ca_certs = os.environ.get('SSL_CERT_FILE') or certifi.where()
@@ -312,11 +302,12 @@ class Minio:  # pylint: disable=too-many-public-methods
         url = self._endpoint_url + '/' + bucket_name + '/'
 
         # Get signature headers if any.
-        headers = sign_v4(method, url, region,
-                          headers,
-                          self._credentials,
-                          content_sha256_hex,
-                          datetime.utcnow())
+        if self._provider:
+            headers = sign_v4(method, url, region,
+                              headers,
+                              self._provider.retrieve(),
+                              content_sha256_hex,
+                              datetime.utcnow())
 
         if self._trace_output_stream:
             dump_http(method, url, headers, None,
@@ -356,10 +347,11 @@ class Minio:  # pylint: disable=too-many-public-methods
         region = self._region or 'us-east-1'
 
         # Get signature headers if any.
-        headers = sign_v4(method, url, region,
-                          headers,
-                          self._credentials,
-                          None, datetime.utcnow())
+        if self._provider:
+            headers = sign_v4(method, url, region,
+                              headers,
+                              self._provider.retrieve(),
+                              None, datetime.utcnow())
 
         if self._trace_output_stream:
             dump_http(method, url, headers, None,
@@ -378,8 +370,10 @@ class Minio:  # pylint: disable=too-many-public-methods
         try:
             return parse_list_buckets(response.data)
         except InvalidXMLError as exc:
-            if self._endpoint_url.endswith("s3.amazonaws.com") and (
-                    not self._access_key or not self._secret_key):
+            if (
+                    self._endpoint_url.endswith("s3.amazonaws.com") and
+                    not self._provider
+            ):
                 raise AccessDenied(response) from exc
 
     def bucket_exists(self, bucket_name):
@@ -1505,8 +1499,11 @@ class Minio:  # pylint: disable=too-many-public-methods
             query=extra_query_params,
         )
 
+        if not self._provider:
+            return url
+
         return presign_v4(method, url,
-                          credentials=self._credentials,
+                          credentials=self._provider.retrieve(),
                           region=region,
                           expires=int(expires.total_seconds()),
                           response_headers=response_headers,
@@ -1607,24 +1604,31 @@ class Minio:  # pylint: disable=too-many-public-methods
             print(form_data)
         """
         post_policy.is_valid()
+        if not self._provider:
+            raise ValueError(
+                "anonymous access does not require presigned post form-data",
+            )
 
         date = datetime.utcnow()
         iso8601_date = date.strftime("%Y%m%dT%H%M%SZ")
         region = self._get_bucket_region(post_policy.form_data['bucket'])
+        credentials = self._provider.retrieve()
         credential_string = generate_credential_string(
-            self._credentials.get().access_key, date, region)
+            credentials.access_key, date, region)
 
         policy = [
             ('eq', '$x-amz-date', iso8601_date),
             ('eq', '$x-amz-algorithm', _SIGN_V4_ALGORITHM),
             ('eq', '$x-amz-credential', credential_string),
         ]
-        if self._session_token:
-            policy.append(('eq', '$x-amz-security-token', self._session_token))
+        if credentials.session_token:
+            policy.append(
+                ('eq', '$x-amz-security-token', credentials.session_token),
+            )
 
         post_policy_base64 = post_policy.base64(extras=policy)
         signature = post_presign_signature(date, region,
-                                           self._credentials.get().secret_key,
+                                           credentials.secret_key,
                                            post_policy_base64)
         form_data = {
             'policy': post_policy_base64,
@@ -1633,8 +1637,8 @@ class Minio:  # pylint: disable=too-many-public-methods
             'x-amz-date': iso8601_date,
             'x-amz-signature': signature,
         }
-        if self._session_token:
-            form_data['x-amz-security-token'] = self._session_token
+        if credentials.session_token:
+            form_data['x-amz-security-token'] = credentials.session_token
 
         post_policy.form_data.update(form_data)
         url_str = get_target_url(self._endpoint_url,
@@ -1943,8 +1947,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             return self._region
 
         # For anonymous requests no need to get bucket location.
-        if not (self._credentials.get().access_key and
-                self._credentials.get().secret_key):
+        if not self._provider:
             return 'us-east-1'
 
         method = 'GET'
@@ -1953,7 +1956,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         # Get signature headers if any.
         headers = sign_v4(method, url, "us-east-1",
                           {},
-                          self._credentials,
+                          self._provider.retrieve(),
                           None, datetime.utcnow())
 
         if self._trace_output_stream:
@@ -1980,58 +1983,6 @@ class Minio:  # pylint: disable=too-many-public-methods
             return 'eu-west-1'
         return location
 
-    def get_assume_role_creds(self, arn=None, session_name=None,
-                              policy=None, duration=None):
-        """
-        A callback to retrieve assume role credentials
-        """
-        query = {
-            "Action": "AssumeRole",
-            "Version": "2011-06-15",
-            "RoleArn": arn or "arn:xxx:xxx:xxx:xxxx",
-            "RoleSessionName": session_name or "anything",
-        }
-
-        # Add optional elements to the request
-        if policy:
-            query["Policy"] = policy
-
-        if duration:
-            query["DurationSeconds"] = str(duration)
-
-        url = self._endpoint_url + "/"
-        content = urlencode(query)
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
-            "User-Agent": self._user_agent
-        }
-
-        # Create signature headers
-        content_sha256_hex = get_sha256_hexdigest(content)
-        signed_headers = sign_v4(
-            "POST",
-            url,
-            "us-east-1",
-            headers,
-            self._credentials,
-            content_sha256=content_sha256_hex,
-            request_datetime=datetime.utcnow(),
-            service_name="sts"
-        )
-        response = self._http.urlopen(
-            "POST",
-            url,
-            body=content,
-            headers=signed_headers,
-            preload_content=True
-        )
-
-        if response.status != 200:
-            raise ResponseError(response, "POST").get_exception()
-
-        # Parse the XML Response - getting the credentials as a Values instance.
-        return parse_assume_role(response.data)
-
     def _url_open(self, method, bucket_name=None, object_name=None,
                   query=None, body=None, headers=None, content_sha256=None,
                   preload_content=True):
@@ -2056,11 +2007,12 @@ class Minio:  # pylint: disable=too-many-public-methods
                              object_name=object_name, bucket_region=region,
                              query=query)
 
-        # Get signature headers if any.
-        headers = sign_v4(method, url, region,
-                          fold_case_headers,
-                          self._credentials,
-                          content_sha256, datetime.utcnow())
+        if self._provider:
+            # Get signature headers if any.
+            headers = sign_v4(method, url, region,
+                              fold_case_headers,
+                              self._provider.retrieve(),
+                              content_sha256, datetime.utcnow())
 
         if self._trace_output_stream:
             dump_http(method, url, headers, None,

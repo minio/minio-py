@@ -22,7 +22,7 @@ import pytz as pytz
 from nose.tools import eq_, raises
 
 from minio.compat import queryencode, quote, urlsplit
-from minio.credentials import Credentials, Static, Value
+from minio.credentials import Credentials
 from minio.error import InvalidArgumentError
 from minio.fold_case_dict import FoldCaseDict
 from minio.helpers import get_target_url
@@ -126,23 +126,15 @@ class AuthorizationHeaderTest(TestCase):
 class PresignURLTest(TestCase):
     @raises(InvalidArgumentError)
     def test_presigned_no_access_key(self):
-        credentials = Credentials(
-            provider=Static(None, None),
-        )
-        presign_v4('GET', 'http://localhost:9000/hello', credentials, None)
+        presign_v4('GET', 'http://localhost:9000/hello', None, None)
 
     @raises(InvalidArgumentError)
     def test_presigned_invalid_expires(self):
-        credentials = Credentials(
-            provider=Static(None, None),
-        )
         presign_v4('GET', 'http://localhost:9000/hello',
-                   credentials, region=None, headers={}, expires=0)
+                   None, region=None, headers={}, expires=0)
 
     def test_presigned_versioned_id(self):
-        credentials = Credentials(
-            provider=Static("minio", "minio123"),
-        )
+        credentials = Credentials("minio", "minio123")
         url = presign_v4('GET', 'http://localhost:9000/bucket-name/objectName?versionId=uuid',
                          credentials, region='us-east-1', headers={}, request_date=dt)
 
@@ -152,9 +144,7 @@ class PresignURLTest(TestCase):
 class SignV4Test(TestCase):
     def test_signv4(self):
         # Construct target url.
-        credentials = Credentials(
-            provider=Static("minio", "minio123"),
-        )
+        credentials = Credentials("minio", "minio123")
         url = get_target_url('http://localhost:9000',
                              bucket_name='testbucket',
                              object_name='~testobject',

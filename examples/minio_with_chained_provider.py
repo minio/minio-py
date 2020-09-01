@@ -14,12 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Credential module."""
+# A Chain credentials provider, provides a way of chaining multiple providers
+# together and will pick the first available using priority order of the
+# 'providers' list
 
-# pylint: disable=unused-import
-from .credentials import Credentials
-from .providers import (AssumeRoleProvider, AWSConfigProvider, ChainedProvider,
-                        ClientGrantsProvider, EnvAWSProvider, EnvMinioProvider,
-                        IamAwsProvider, LdapIdentityProvider,
-                        MinioClientConfigProvider, Provider, StaticProvider,
-                        WebIdentityProvider)
+from minio import Minio
+from minio.credentials import (AWSConfigProvider, ChainedProvider,
+                               EnvAWSProvider, IamAwsProvider)
+
+client = Minio(
+    's3.amazonaws.com',
+    credentials=ChainedProvider(
+        [
+            IamAwsProvider(),
+            AWSConfigProvider(),
+            EnvAWSProvider(),
+        ]
+    )
+)
+
+# Get information of an object.
+stat = client.stat_object("my-bucketname", "my-objectname")
+print(stat)
