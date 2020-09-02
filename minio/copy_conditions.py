@@ -25,10 +25,7 @@ This module contains :class:`CopyConditions <CopyConditions>` implementation.
 
 """
 
-try:
-    from collections import MutableMapping
-except ImportError:
-    from collections.abc import MutableMapping
+from collections.abc import MutableMapping
 
 from .helpers import check_non_empty_string
 
