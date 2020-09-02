@@ -17,9 +17,9 @@
 
 from unittest import TestCase
 
+import mock
 from nose.tools import eq_, raises
 
-import mock
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
 from minio.error import NoSuchBucket

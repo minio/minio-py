@@ -17,9 +17,9 @@
 from datetime import timedelta
 from unittest import TestCase
 
+import mock
 from nose.tools import raises
 
-import mock
 from minio import Minio
 from minio.error import InvalidArgumentError
 

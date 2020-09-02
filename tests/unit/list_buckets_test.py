@@ -17,10 +17,10 @@
 from datetime import datetime
 from unittest import TestCase
 
+import mock
 import pytz
 from nose.tools import eq_
 
-import mock
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
 
