@@ -1272,48 +1272,6 @@ def test_list_object_versions(log_entry):
     _test_list_objects(log_entry, version_check=True)
 
 
-def _create_upload_ids(bucket_name, object_name, count):
-    """Create new upload IDs for given bucket and object of given count."""
-    return [_CLIENT._new_multipart_upload(  # pylint: disable=protected-access
-        bucket_name, object_name, {}) for _ in range(count)]
-
-
-def _get_incomplete_upload_ids(bucket_name, object_name):
-    """Get all upload IDs of given bucket and object."""
-    return [obj.upload_id for obj in _CLIENT.list_incomplete_uploads(
-        bucket_name, object_name, False)]
-
-
-def test_remove_incomplete_upload(log_entry):
-    """Test remove_incomplete_upload()."""
-
-    # Get a unique bucket_name and object_name
-    bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
-
-    log_entry["args"] = {
-        "bucket_name": bucket_name,
-        "object_name": object_name,
-    }
-
-    _CLIENT.make_bucket(bucket_name)
-    try:
-        # Create 'no_of_upload_ids' many incomplete upload ids
-        _create_upload_ids(bucket_name, object_name, 3)
-        # Remove all of the created upload ids
-        _CLIENT.remove_incomplete_upload(bucket_name, object_name)
-        # Get the list of incomplete upload ids for object_name
-        # using 'list_incomplete_uploads' command
-        upload_ids_listed = _get_incomplete_upload_ids(bucket_name,
-                                                       object_name)
-        # Verify listed/returned upload id list
-        if upload_ids_listed:
-            # The list is not empty
-            raise ValueError("There are still upload ids not removed")
-    finally:
-        _CLIENT.remove_bucket(bucket_name)
-
-
 def test_presigned_get_object_default_expiry(  # pylint: disable=invalid-name
         log_entry):
     """Test presigned_get_object() with default expiry."""
@@ -1982,7 +1940,6 @@ def main():
             test_list_object_v1_versions: None,
             test_list_objects_with_prefix: None,
             test_list_objects_with_1001_files: None,
-            test_remove_incomplete_upload: None,
             test_list_objects: None,
             test_list_object_versions: None,
             test_presigned_get_object_default_expiry: None,
@@ -2009,7 +1966,6 @@ def main():
             test_get_object: {"sse": ssec} if ssec else None,
             test_get_object_version: {"sse": ssec} if ssec else None,
             test_list_objects: None,
-            test_remove_incomplete_upload: None,
             test_presigned_get_object_default_expiry: None,
             test_presigned_put_object_default_expiry: None,
             test_presigned_post_policy: None,

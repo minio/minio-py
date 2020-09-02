@@ -151,32 +151,6 @@ class CopyObjectResult:
                                     self.etag, self.last_modified)
 
 
-class IncompleteUpload:
-    """
-    A partially uploaded object's metadata
-         :class:`IncompleteUpload <IncompleteUpload>`.
-
-    :param bucket_name: Bucket name.
-    :param object_name: Object name.
-    :param upload_id: Partially uploaded object's upload id.
-    :param initiated: Date when the multipart was initiated.
-    """
-
-    def __init__(self, bucket_name, object_name, upload_id, initiated):
-        self.bucket_name = bucket_name
-        self.object_name = object_name
-        self.upload_id = upload_id
-        self.initiated = initiated
-        self.size = 0
-
-    def __str__(self):
-        string_format = ("<IncompleteUpload: bucket_name: {0}"
-                         " object_name: {1} upload_id: {2}"
-                         " initiated:{3} size: {4}>")
-        return string_format.format(self.bucket_name, self.object_name,
-                                    self.upload_id, self.initiated, self.size)
-
-
 class UploadPart:
     """
     A multipart upload part metadata :class:`UploadPart <UploadPart>`
@@ -211,3 +185,95 @@ class UploadPart:
                                     self.etag,
                                     self.last_modified,
                                     self.size)
+
+
+class Upload:
+    """ Upload information of a multipart upload."""
+
+    def __init__(self, root):
+        self.object_name = root.get_urldecoded_elem_text("Key")
+        self.upload_id = root.get_child_text("UploadId")
+        self.initiator_id, self.initator_name = (
+            root.find("Initiator").get_child_text("ID", strict=False),
+            root.find("Initiator").get_child_text(
+                "DisplayName", strict=False,
+            ),
+        ) if root.find("Initiator") else (None, None)
+        self.owner_id, self.owner_name = (
+            root.find("Owner").get_child_text("ID", strict=False),
+            root.find("Owner").get_child_text("DisplayName", strict=False),
+        ) if root.find("Owner") else (None, None)
+        self.storage_class = root.get_child_text("StorageClass")
+        self.initiated_time = root.get_localized_time_elem("Initiated")
+
+
+class ListMultipartUploadsResult:
+    """ListMultipartUploads API result."""
+
+    def __init__(self, root):
+        self.bucket_name = root.get_child_text("Bucket")
+        self.key_marker = root.get_urldecoded_elem_text(
+            "KeyMarker", strict=False,
+        )
+        self.upload_id_marker = root.get_child_text(
+            "UploadIdMarker", strict=False,
+        )
+        self.next_key_marker = root.get_urldecoded_elem_text(
+            "NextKeyMarker", strict=False,
+        )
+        self.next_upload_id_marker = root.get_child_text(
+            "NextUploadIdMarker", strict=False,
+        )
+        self.max_uploads = root.get_int_elem("MaxUploads")
+        self._is_truncated = (
+            root.get_child_text("IsTruncated", strict=False).lower() == "true"
+        )
+        self.uploads = [
+            Upload(upload_element) for upload_element in root.findall("Upload")
+        ]
+
+
+class Part:
+    """Part information of a multipart upload."""
+
+    def __init__(self, part_number=None, etag=None, root=None):
+        if not root and not part_number and not etag:
+            raise ValueError("part_number/etag or root element must be passed")
+
+        if root:
+            part_number = root.get_child_text("PartNumber")
+            etag = root.get_child_text("ETag")
+            self.last_modified = root.get_localized_time_elem("LastModified")
+            self.size = root.get_int_elem("Size")
+        self.part_number = part_number
+        self.etag = etag
+
+
+class ListPartsResult:
+    """ListParts API result."""
+
+    def __init__(self, root):
+        self.bucket_name = root.get_child_text("Bucket")
+        self.object_name = root.get_child_text("Key")
+        self.initiator_id, self.initator_name = (
+            root.find("Initiator").get_child_text("ID", strict=False),
+            root.find("Initiator").get_child_text(
+                "DisplayName", strict=False,
+            ),
+        ) if root.find("Initiator") else (None, None)
+        self.owner_id, self.owner_name = (
+            root.find("Owner").get_child_text("ID", strict=False),
+            root.find("Owner").get_child_text("DisplayName", strict=False),
+        ) if root.find("Owner") else (None, None)
+        self.storage_class = root.get_child_text("StorageClass")
+        self.part_number_marker = root.get_int_elem("PartNumberMarker")
+        self.next_part_number_marker = root.get_int_elem(
+            "NextPartNumberMarker",
+        )
+        self.max_parts = root.get_int_elem("MaxParts")
+        self._is_truncated = (
+            root.get_child_text("IsTruncated", strict=False).lower() == "true"
+        )
+        self.parts = [
+            Part(part_element) for part_element in root.findall("Part")
+        ]

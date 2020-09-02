@@ -30,18 +30,18 @@ s3Client = Minio(
 )
 ```
 
-| Bucket operations                                         | Object operations                                       | Presigned operations                              | Bucket policy/notification/encryption operations                    |
-|:----------------------------------------------------------|:--------------------------------------------------------|:--------------------------------------------------|:--------------------------------------------------------------------|
-| [`make_bucket`](#make_bucket)                             | [`get_object`](#get_object)                             | [`presigned_get_object`](#presigned_get_object)   | [`get_bucket_policy`](#get_bucket_policy)                           |
-| [`list_buckets`](#list_buckets)                           | [`put_object`](#put_object)                             | [`presigned_put_object`](#presigned_put_object)   | [`set_bucket_policy`](#set_bucket_policy)                           |
-| [`bucket_exists`](#bucket_exists)                         | [`copy_object`](#copy_object)                           | [`presigned_post_policy`](#presigned_post_policy) | [`delete_bucket_policy`](#delete_bucket_policy)                     |
-| [`remove_bucket`](#remove_bucket)                         | [`stat_object`](#stat_object)                           |                                                   | [`get_bucket_notification`](#get_bucket_notification)               |
-| [`list_objects`](#list_objects)                           | [`remove_object`](#remove_object)                       |                                                   | [`set_bucket_notification`](#set_bucket_notification)               |
-| [`list_incomplete_uploads`](#list_incomplete_uploads)     | [`remove_objects`](#remove_objects)                     |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
-| [`enable_bucket_versioning`](#enable_bucket_versioning)   | [`remove_incomplete_upload`](#remove_incomplete_upload) |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
-| [`disable_bucket_versioning`](#disable_bucket_versioning) | [`fput_object`](#fput_object)                           |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
-|                                                           | [`fget_object`](#fget_object)                           |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
-|                                                           | [`select_object_content`](#select_object_content)       |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
+| Bucket operations                                         | Object operations                                 | Presigned operations                              | Bucket policy/notification/encryption operations                    |
+|:----------------------------------------------------------|:--------------------------------------------------|:--------------------------------------------------|:--------------------------------------------------------------------|
+| [`make_bucket`](#make_bucket)                             | [`get_object`](#get_object)                       | [`presigned_get_object`](#presigned_get_object)   | [`get_bucket_policy`](#get_bucket_policy)                           |
+| [`list_buckets`](#list_buckets)                           | [`put_object`](#put_object)                       | [`presigned_put_object`](#presigned_put_object)   | [`set_bucket_policy`](#set_bucket_policy)                           |
+| [`bucket_exists`](#bucket_exists)                         | [`copy_object`](#copy_object)                     | [`presigned_post_policy`](#presigned_post_policy) | [`delete_bucket_policy`](#delete_bucket_policy)                     |
+| [`remove_bucket`](#remove_bucket)                         | [`stat_object`](#stat_object)                     |                                                   | [`get_bucket_notification`](#get_bucket_notification)               |
+| [`list_objects`](#list_objects)                           | [`remove_object`](#remove_object)                 |                                                   | [`set_bucket_notification`](#set_bucket_notification)               |
+| [`enable_bucket_versioning`](#enable_bucket_versioning)   | [`remove_objects`](#remove_objects)               |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
+| [`disable_bucket_versioning`](#disable_bucket_versioning) | [`fput_object`](#fput_object)                     |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
+|                                                           | [`fget_object`](#fget_object)                     |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
+|                                                           | [`select_object_content`](#select_object_content) |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
+|                                                           |                                                   |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
 
 ## 1. Constructor
 
@@ -250,54 +250,6 @@ for object in objects:
 # List objects information recursively those names starts with
 # 'hello/'.
 objects = minio.list_objects(
-    'foo', prefix='hello/', recursive=True,
-)
-for object in objects:
-    print(object)
-```
-
-<a name="list_incomplete_uploads"></a>
-
-### list_incomplete_uploads(bucket_name, prefix='', recursive=False)
-
-List incomplete object upload information of a bucket, optionally for prefix recursively.
-
-__Parameters__
-
-| Param         | Type   | Description                                          |
-|:--------------|:-------|:-----------------------------------------------------|
-| `bucket_name` | _str_  | Name of the bucket.                                  |
-| `prefix`      | _str_  | Object name starts with prefix.                      |
-| `recursive`   | _bool_ | List recursively than directory structure emulation. |
-
-__Return Value__
-
-| Return                                                              |
-|:--------------------------------------------------------------------|
-| An iterator contains object information as _minio.IncompleteUpload_ |
-
-__Example__
-
-```py
-# List incomplete object upload information.
-objects = minio.list_incomplete_uploads('foo')
-for object in objects:
-    print(object)
-
-# List incomplete object upload information those names starts with
-# 'hello/'.
-objects = minio.list_incomplete_uploads('foo', prefix='hello/')
-for object in objects:
-    print(object)
-
-# List incomplete object upload information recursively.
-objects = minio.list_incomplete_uploads('foo', recursive=True)
-for object in objects:
-    print(object)
-
-# List incomplete object upload information recursively those names
-# starts with 'hello/'.
-objects = minio.list_incomplete_uploads(
     'foo', prefix='hello/', recursive=True,
 )
 for object in objects:
@@ -1010,25 +962,6 @@ minio.remove_objects(
         ("my-objectname3", "13f88b18-8dcd-4c83-88f2-8631fdb6250c"),
     ],
 )
-```
-
-<a name="remove_incomplete_upload"></a>
-
-### remove_incomplete_upload(bucket_name, object_name)
-
-Remove all incomplete uploads of an object.
-
-__Parameters__
-
-| Param         | Type  | Description                |
-|:--------------|:------|:---------------------------|
-| `bucket_name` | _str_ | Name of the bucket.        |
-| `object_name` | _str_ | Object name in the bucket. |
-
-__Example__
-
-```py
-minio.remove_incomplete_upload("my-bucketname", "my-objectname")
 ```
 
 ## 4. Presigned operations

@@ -1255,163 +1255,6 @@ class Minio:  # pylint: disable=too-many-public-methods
             for err_result in errs_result:
                 yield err_result
 
-    def list_incomplete_uploads(self, bucket_name, prefix='', recursive=False):
-        """
-        List incomplete object upload information of a bucket, optionally for
-        prefix recursively.
-
-        :param bucket_name: Name of the bucket.
-        :param prefix: Object name starts with prefix.
-        :param recursive: List recursively than directory structure emulation.
-        :return: An iterator contains incomplete object upload information.
-
-        Example::
-            # List incomplete object upload information.
-            objects = minio.list_incomplete_uploads('foo')
-            for object in objects:
-                print(object)
-
-            # List incomplete object upload information those names starts with
-            # 'hello/'.
-            objects = minio.list_incomplete_uploads('foo', prefix='hello/')
-            for object in objects:
-                print(object)
-
-            # List incomplete object upload information recursively.
-            objects = minio.list_incomplete_uploads('foo', recursive=True)
-            for object in objects:
-                print(object)
-
-            # List incomplete object upload information recursively those names
-            # starts with 'hello/'.
-            objects = minio.list_incomplete_uploads(
-                'foo', prefix='hello/', recursive=True,
-            )
-            for object in objects:
-                print(object)
-        """
-        check_bucket_name(bucket_name)
-
-        return self._list_incomplete_uploads(bucket_name, prefix, recursive)
-
-    def _list_incomplete_uploads(self, bucket_name, prefix='',
-                                 recursive=False, is_aggregate_size=True):
-        """
-        List incomplete uploads list all previously uploaded incomplete
-        multipart objects.
-
-        :param bucket_name: Bucket name to list uploaded objects.
-        :param prefix: String specifying objects returned must begin with.
-        :param recursive: If yes, returns all incomplete objects for a
-                          specified prefix.
-        :return: An generator of incomplete uploads in alphabetical order.
-        """
-        check_bucket_name(bucket_name)
-
-        # If someone explicitly set prefix to None convert it to empty string.
-        prefix = prefix or ''
-
-        # Initialize query parameters.
-        query = {
-            'uploads': '',
-            'prefix': prefix
-        }
-
-        if not recursive:
-            query['delimiter'] = '/'
-
-        key_marker, upload_id_marker = '', ''
-        is_truncated = True
-        while is_truncated:
-            if key_marker:
-                query['key-marker'] = key_marker
-            if upload_id_marker:
-                query['upload-id-marker'] = upload_id_marker
-
-            response = self._url_open('GET',
-                                      bucket_name=bucket_name,
-                                      query=query)
-            (uploads, is_truncated, key_marker,
-             upload_id_marker) = parse_list_multipart_uploads(response.data,
-                                                              bucket_name)
-            for upload in uploads:
-                if is_aggregate_size:
-                    upload.size = self._get_all_parts_size(
-                        upload.bucket_name,
-                        upload.object_name,
-                        upload.upload_id)
-                yield upload
-
-    def _get_all_parts_size(self, bucket_name, object_name, upload_id):
-        """
-        Get total multipart upload size.
-
-        :param bucket_name: Bucket name to list parts for.
-        :param object_name: Object name to list parts for.
-        :param upload_id: Upload id of the previously uploaded object name.
-        """
-        return sum(
-            [part.size for part in
-             self._list_object_parts(bucket_name, object_name, upload_id)]
-        )
-
-    def _list_object_parts(self, bucket_name, object_name, upload_id):
-        """
-        List all parts.
-
-        :param bucket_name: Bucket name to list parts for.
-        :param object_name: Object name to list parts for.
-        :param upload_id: Upload id of the previously uploaded object name.
-        """
-        check_bucket_name(bucket_name)
-        check_non_empty_string(object_name)
-        check_non_empty_string(upload_id)
-
-        query = {
-            'uploadId': upload_id,
-        }
-
-        is_truncated = True
-        part_number_marker = ''
-        while is_truncated:
-            if part_number_marker:
-                query['part-number-marker'] = str(part_number_marker)
-
-            response = self._url_open('GET',
-                                      bucket_name=bucket_name,
-                                      object_name=object_name,
-                                      query=query)
-
-            parts, is_truncated, part_number_marker = parse_list_parts(
-                response.data,
-                bucket_name=bucket_name,
-                object_name=object_name,
-                upload_id=upload_id
-            )
-            for part in parts:
-                yield part
-
-    def remove_incomplete_upload(self, bucket_name, object_name):
-        """
-        Remove all incomplete uploads of an object.
-
-        :param bucket_name: Name of the bucket.
-        :param object_name: Object name in the bucket.
-
-        Example::
-            minio.remove_incomplete_upload("my-bucketname", "my-objectname")
-        """
-        check_bucket_name(bucket_name)
-        check_non_empty_string(object_name)
-
-        uploads = self._list_incomplete_uploads(bucket_name, object_name,
-                                                recursive=True,
-                                                is_aggregate_size=False)
-        for upload in uploads:
-            if object_name == upload.object_name:
-                self._remove_incomplete_upload(bucket_name, object_name,
-                                               upload.upload_id)
-
     def presigned_url(self, method,
                       bucket_name,
                       object_name,
@@ -2128,3 +1971,89 @@ class Minio:  # pylint: disable=too-many-public-methods
 
             for obj in objects:
                 yield obj
+
+    def _list_multipart_uploads(self, bucket_name, delimiter=None,
+                                encoding_type=None, key_marker=None,
+                                max_uploads=None, prefix=None,
+                                upload_id_marker=None, extra_headers=None,
+                                extra_query_params=None):
+        """
+        Execute ListMultipartUploads S3 API.
+
+        :param bucket_name: Name of the bucket.
+        :param region: (Optional) Region of the bucket.
+        :param delimiter: (Optional) Delimiter on listing.
+        :param encoding_type: (Optional) Encoding type.
+        :param key_marker: (Optional) Key marker.
+        :param max_uploads: (Optional) Maximum upload information to fetch.
+        :param prefix: (Optional) Prefix on listing.
+        :param upload_id_marker: (Optional) Upload ID marker.
+        :param extra_headers: (Optional) Extra headers for advanced usage.
+        :param extra_query_params: (Optional) Extra query parameters for
+            advanced usage.
+        :return:
+            :class:`ListMultipartUploadsResult <ListMultipartUploadsResult>`
+                object
+        """
+
+        query_params = extra_query_params or {}
+        query_params.update(
+            {
+                "uploads": "",
+                "delimiter": delimiter or "",
+                "max-uploads": str(max_uploads or 1000),
+                "prefix": prefix or "",
+                "encoding-type": "url",
+            },
+        )
+        if encoding_type:
+            query_params["encoding-type"] = encoding_type
+        if key_marker:
+            query_params["key-marker"] = key_marker
+        if upload_id_marker:
+            query_params["upload-id-marker"] = upload_id_marker
+
+        response = self._url_open(
+            method="GET",
+            bucket_name=bucket_name,
+            query=query_params,
+            headers=extra_headers,
+        )
+        return parse_list_multipart_uploads(response.data)
+
+    def _list_parts(self, bucket_name, object_name, upload_id,
+                    max_parts=None, part_number_marker=None,
+                    extra_headers=None, extra_query_params=None):
+        """
+        Execute ListParts S3 API.
+
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param upload_id: Upload ID.
+        :param region: (Optional) Region of the bucket.
+        :param max_parts: (Optional) Maximum parts information to fetch.
+        :param part_number_marker: (Optional) Part number marker.
+        :param extra_headers: (Optional) Extra headers for advanced usage.
+        :param extra_query_params: (Optional) Extra query parameters for
+            advanced usage.
+        :return: :class:`ListPartsResult <ListPartsResult>` object
+        """
+
+        query_params = extra_query_params or {}
+        query_params.update(
+            {
+                "uploadId": upload_id,
+                "max-parts": str(max_parts or 1000),
+            },
+        )
+        if part_number_marker:
+            query_params["part-number-marker"] = part_number_marker
+
+        response = self._url_open(
+            method="GET",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            query=query_params,
+            headers=extra_headers,
+        )
+        return parse_list_parts(response.data)
