@@ -55,8 +55,10 @@ if PYTHON2:
     # pylint: disable=self-assigning-variable, undefined-variable, invalid-name
     basestring = basestring
 else:
-    from urllib.parse import parse_qs, unquote, urlencode, urlsplit  # pylint: disable=ungrouped-imports
-    from urllib.parse import quote as _quote  # pylint: disable=ungrouped-imports
+    from urllib.parse import parse_qs  # pylint: disable=ungrouped-imports
+    from urllib.parse import \
+        quote as _quote  # pylint: disable=ungrouped-imports
+    from urllib.parse import unquote, urlencode, urlsplit
 
     # Create types to compat with python v2.
     builtin_range = range  # pylint: disable=invalid-name

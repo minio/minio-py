@@ -17,9 +17,9 @@
 import itertools
 from unittest import TestCase
 
+import mock
 from nose.tools import raises
 
-import mock
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
 from minio.error import InvalidBucketError

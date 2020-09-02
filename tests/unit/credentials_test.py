@@ -19,9 +19,9 @@ import os
 from datetime import datetime, timedelta
 from unittest import TestCase
 
+import mock
 from nose.tools import eq_, raises
 
-import mock
 from minio.credentials.credentials import Credentials
 from minio.credentials.providers import (AWSConfigProvider, ChainedProvider,
                                          EnvAWSProvider, EnvMinioProvider,
