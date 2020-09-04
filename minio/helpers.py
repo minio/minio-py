@@ -37,15 +37,12 @@ import io
 import math
 import os
 import re
-# future_str is unicode or str in both Python 2 and 3
-from builtins import str as future_str
+import urllib.parse
 from datetime import datetime
 
 import pytz
 
 # pylint: disable=redefined-builtin
-from .compat import (PYTHON2, basestring, bytes, queryencode, quote, str,
-                     urlsplit)
 from .error import (InvalidArgumentError, InvalidBucketError,
                     InvalidEndpointError)
 from .sse import Sse, SseCustomerKey
@@ -70,6 +67,24 @@ _ALLOWED_HOSTNAME_REGEX = re.compile(
     re.IGNORECASE)
 
 _EXTRACT_REGION_REGEX = re.compile('s3[.-]?(.+?).amazonaws.com')
+
+
+def quote(resource, safe='/', encoding=None, errors=None):
+    """
+    Wrapper to urllib.parse.quote() replacing back to '~' for older python
+    versions.
+    """
+    return urllib.parse.quote(
+        resource,
+        safe=safe,
+        encoding=encoding,
+        errors=errors,
+    ).replace("%7E", "~")
+
+
+def queryencode(query, safe='', encoding=None, errors=None):
+    """Encode query parameter value."""
+    return quote(query, safe, encoding, errors)
 
 
 def get_s3_region_from_endpoint(endpoint):
@@ -123,7 +138,7 @@ def dump_http(method, url, request_headers, response, output_stream):
     output_stream.write('---------START-HTTP---------\n')
 
     # Get parsed url.
-    parsed_url = urlsplit(url)
+    parsed_url = urllib.parse.urlsplit(url)
 
     # Dump all request headers recursively.
     http_path = parsed_url.path
@@ -256,7 +271,7 @@ def get_target_url(endpoint_url, bucket_name=None, object_name=None,
     url = None
 
     # Parse url
-    parsed_url = urlsplit(endpoint_url)
+    parsed_url = urllib.parse.urlsplit(endpoint_url)
     scheme, host = get_scheme_host(parsed_url)
     if 's3.amazonaws.com' in host:
         host = get_s3_endpoint(bucket_region)
@@ -320,7 +335,7 @@ def is_valid_endpoint(endpoint):
             #    to start with a path component.
             endpoint = '//' + endpoint
 
-        url = urlsplit(endpoint)
+        url = urllib.parse.urlsplit(endpoint)
         if url.scheme:
             raise InvalidEndpointError('Hostname cannot have a scheme.')
 
@@ -351,7 +366,7 @@ def is_virtual_host(endpoint_url, bucket_name):
     """
     check_bucket_name(bucket_name)
 
-    parsed_url = urlsplit(endpoint_url)
+    parsed_url = urllib.parse.urlsplit(endpoint_url)
     # bucket_name can be valid but '.' in the hostname will fail
     # SSL certificate validation. So do not use host-style for
     # such buckets.
@@ -417,9 +432,8 @@ def is_valid_policy_type(policy):
     :return: True if policy parameter is of a valid type, 'string'.
     Raise :exc:`TypeError` otherwise.
     """
-    string_type = basestring if PYTHON2 else str
-    if not isinstance(policy, string_type):
-        raise TypeError('policy can only be of type str')
+    if not isinstance(policy, (str, bytes)):
+        raise TypeError("policy must be str or bytes type")
 
     check_non_empty_string(policy)
 
@@ -470,7 +484,7 @@ def is_valid_notification_config(config):
                 raise InvalidArgumentError(msg.format(skey))
 
         # check if "Id" key is present, it should be string or bytes.
-        if not isinstance(config.get("Id", ""), basestring):
+        if not isinstance(config.get("Id", ""), str):
             raise InvalidArgumentError("'Id' key must be a string")
 
         # check for required keys
@@ -682,7 +696,7 @@ def amzprefix_user_metadata(metadata):
         # exception message when users pass unsupported characters
         # in metadata values.
         try:
-            if isinstance(value, future_str):
+            if isinstance(value, str):
                 value.encode('us-ascii')
         except UnicodeEncodeError as exc:
             raise ValueError(

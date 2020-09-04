@@ -35,15 +35,15 @@ import json
 import os
 import platform
 from datetime import datetime, timedelta
+from json.decoder import JSONDecodeError
 from threading import Thread
+from urllib.parse import urlsplit
 
 import certifi
 import dateutil.parser
 import urllib3
 
 from . import __title__, __version__
-from .compat import range  # pylint: disable=redefined-builtin
-from .compat import basestring, quote, urlsplit
 from .credentials import StaticProvider
 from .definitions import Object, UploadPart
 from .error import (AccessDenied, InvalidArgumentError, InvalidSizeError,
@@ -57,7 +57,7 @@ from .helpers import (DEFAULT_PART_SIZE, MAX_MULTIPART_COUNT, MAX_PART_SIZE,
                       get_sha256_hexdigest, get_target_url, is_amz_header,
                       is_supported_header, is_valid_endpoint,
                       is_valid_notification_config, is_valid_policy_type,
-                      mkdir_p, optimal_part_info, read_full)
+                      mkdir_p, optimal_part_info, quote, read_full)
 from .parsers import (parse_copy_object, parse_get_bucket_notification,
                       parse_list_buckets, parse_list_multipart_uploads,
                       parse_list_object_versions, parse_list_objects,
@@ -76,12 +76,6 @@ from .xml_marshal import (marshal_bucket_notifications,
                           xml_marshal_bucket_encryption,
                           xml_marshal_delete_objects, xml_marshal_select,
                           xml_to_dict)
-
-try:
-    from json.decoder import JSONDecodeError
-except ImportError:
-    JSONDecodeError = ValueError
-
 
 _DEFAULT_USER_AGENT = "MinIO ({os}; {arch}) {lib}/{ver}".format(
     os=platform.system(), arch=platform.machine(),
@@ -1222,7 +1216,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             )
         """
         check_bucket_name(bucket_name)
-        if isinstance(objects_iter, basestring):
+        if isinstance(objects_iter, (str, bytes)):
             raise TypeError(
                 'objects_iter cannot be `str` or `bytes` instance. It must be '
                 'a list, tuple or iterator of object names'
@@ -1232,7 +1226,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         objects_iter = itertools.chain(objects_iter)
 
         def check_name(name):
-            if not isinstance(name, basestring):
+            if not isinstance(name, (str, bytes)):
                 name = name[0]
             check_non_empty_string(name)
             return True

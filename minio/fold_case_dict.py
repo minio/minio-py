@@ -24,8 +24,6 @@ This module implements a case insensitive dictionary.
 
 """
 
-from .compat import PYTHON2
-
 
 def _to_dict(value):
     """Create value to dictionary."""
@@ -94,8 +92,6 @@ class FoldCaseDict(dict):
 
     def iteritems(self):
         """Return an iterator over the dictionary’s (key, value) pairs."""
-        if PYTHON2:
-            return self._data.iteritems()  # pylint: disable=no-member
         return self._data.items()
 
     def iterkeys(self):

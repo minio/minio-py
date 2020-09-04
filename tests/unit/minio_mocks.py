@@ -14,15 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from http import client as httplib
+
 from nose.tools import eq_
 
-from minio.compat import PYTHON2
 from minio.fold_case_dict import FoldCaseDict
-
-if PYTHON2:
-    import httplib
-else:
-    from http import client as httplib
 
 
 class MockResponse(object):

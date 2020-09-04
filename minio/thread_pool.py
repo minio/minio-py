@@ -26,14 +26,8 @@ in parallel. Tasks results can also be retrieved.
 
 """
 
+from queue import Queue
 from threading import BoundedSemaphore, Thread
-
-from .compat import PYTHON2
-
-if PYTHON2:
-    from Queue import Queue  # pylint: disable=import-error
-else:
-    from queue import Queue
 
 
 class Worker(Thread):

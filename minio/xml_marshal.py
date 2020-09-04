@@ -31,8 +31,6 @@ import io
 from collections import defaultdict
 from xml.etree import ElementTree as ET
 
-from .compat import basestring
-
 _S3_NAMESPACE = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
 
@@ -401,7 +399,7 @@ def xml_marshal_delete_objects(keys):
     # add each object to the request.
     for key in keys:
         version_id = None
-        if not isinstance(key, basestring):
+        if not isinstance(key, (str, bytes)):
             version_id = key[1]
             key = key[0]
 
