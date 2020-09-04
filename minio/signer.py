@@ -30,11 +30,11 @@ import collections
 import hashlib
 import hmac
 from datetime import datetime
+from urllib.parse import parse_qs, urlencode, urlsplit
 
-from .compat import parse_qs, queryencode, urlencode, urlsplit
 from .error import InvalidArgumentError
 from .fold_case_dict import FoldCaseDict
-from .helpers import get_sha256_hexdigest
+from .helpers import get_sha256_hexdigest, queryencode
 
 # Signature version '4' algorithm.
 _SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'

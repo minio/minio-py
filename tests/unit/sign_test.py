@@ -13,19 +13,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import hashlib
 import hmac
 from datetime import datetime
 from unittest import TestCase
+from urllib.parse import urlsplit
 
 import pytz as pytz
 from nose.tools import eq_, raises
 
-from minio.compat import queryencode, quote, urlsplit
 from minio.credentials import Credentials
 from minio.error import InvalidArgumentError
 from minio.fold_case_dict import FoldCaseDict
-from minio.helpers import get_target_url
+from minio.helpers import get_target_url, queryencode, quote
 from minio.signer import (generate_authorization_header,
                           generate_canonical_request, generate_signing_key,
                           generate_string_to_sign, presign_v4, sign_v4)

@@ -25,10 +25,10 @@ This module contains core API parsers.
 
 """
 
+from urllib.parse import unquote
 from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
 
-from .compat import unquote
 from .definitions import (Bucket, CopyObjectResult, ListMultipartUploadsResult,
                           ListPartsResult, MultipartUploadResult, Object)
 # minio specific.
