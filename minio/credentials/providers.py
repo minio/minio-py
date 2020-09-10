@@ -463,7 +463,7 @@ class LdapIdentityProvider(Provider):
                 status_forcelist=[500, 502, 503, 504],
             ),
         )
-        self._body = urlencode(
+        self._url = urlencode(
             {
                 "Action": "AssumeRoleWithLDAPIdentity",
                 "Version": "2011-06-15",
@@ -482,9 +482,8 @@ class LdapIdentityProvider(Provider):
         res = _urlopen(
             self._http_client,
             "POST",
-            self._sts_endpoint,
-            body=self._body,
-            headers={"Content-Type", "application/x-www-form-urlencoded"},
+            self._sts_endpoint + "?" + self._url, # looks like encoded url should be used to form full url, instead of passed as a body ...
+            headers={"Content-Type": "application/x-www-form-urlencoded"}, # here should be dict instead of set
         )
 
         self._credentials = _parse_credentials(
