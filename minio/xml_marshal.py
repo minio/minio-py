@@ -409,3 +409,14 @@ def xml_marshal_delete_objects(keys):
             SubElement(element, "VersionId", version_id)
 
     return _get_xml_data(root)
+
+
+def marshal_versioning_config(config):
+    """Encode versioning configuration to XML bytes."""
+    root = Element("VersioningConfiguration", with_namespace=True)
+    SubElement(root, "Status", config.status)
+    if config.mfa_delete is not None:
+        SubElement(
+            root, "MFADelete", "Enabled" if config.mfa_delete else "Disabled",
+        )
+    return _get_xml_data(root)

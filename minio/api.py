@@ -58,7 +58,7 @@ from .parsers import (parse_copy_object, parse_error_response,
                       parse_list_parts, parse_location_constraint,
                       parse_multi_delete_response,
                       parse_multipart_upload_result,
-                      parse_new_multipart_upload)
+                      parse_new_multipart_upload, parse_versioning_config)
 from .select import SelectObjectReader
 from .signer import (AMZ_DATE_FORMAT, SIGN_V4_ALGORITHM, get_credential_string,
                      post_presign_v4, presign_v4, sign_v4_s3)
@@ -66,6 +66,7 @@ from .sse import SseCustomerKey
 from .thread_pool import ThreadPool
 from .xml_marshal import (marshal_bucket_notifications,
                           marshal_complete_multipart,
+                          marshal_versioning_config,
                           xml_marshal_bucket_constraint,
                           xml_marshal_bucket_encryption,
                           xml_marshal_delete_objects, xml_marshal_select,
@@ -864,14 +865,20 @@ class Minio:  # pylint: disable=too-many-public-methods
                 response.close()
                 response.release_conn()
 
-    def _do_bucket_versioning(self, bucket_name, status):
-        """Do versioning support in a bucket."""
+    def set_bucket_versioning(self, bucket_name, config):
+        """
+        Set versioning configuration to a bucket.
+
+        :param bucket_name: Name of the bucket.
+        :param config: :class:`VersioningConfig <VersioningConfig>`.
+
+        Example::
+            minio.set_bucket_versioning(
+                "my-bucketname", VersioningConfig("Enabled"),
+            )
+        """
         check_bucket_name(bucket_name)
-        body = (
-            '<VersioningConfiguration '
-            'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
-            '<Status>{0}</Status></VersioningConfiguration>'
-        ).format(status).encode()
+        body = marshal_versioning_config(config)
         self._execute(
             "PUT",
             bucket_name,
@@ -880,27 +887,25 @@ class Minio:  # pylint: disable=too-many-public-methods
             query_params={"versioning": ""},
         )
 
-    def enable_bucket_versioning(self, bucket_name):
+    def get_bucket_versioning(self, bucket_name):
         """
-        Enable object versioning feature in a bucket.
+        Get versioning configuration of a bucket.
 
         :param bucket_name: Name of the bucket.
+        :return: :class:`VersioningConfig <VersioningConfig>`.
 
         Example::
-            minio.enable_bucket_versioning("my-bucketname")
+            config minio.get_bucket_versioning("my-bucketname")
+            print(config.status)
         """
-        self._do_bucket_versioning(bucket_name, "Enabled")
+        check_bucket_name(bucket_name)
+        response = self._execute(
+            "GET",
+            bucket_name,
+            query_params={"versioning": ""},
+        )
 
-    def disable_bucket_versioning(self, bucket_name):
-        """
-        Disable object versioning feature in a bucket.
-
-        :param bucket_name: Name of the bucket.
-
-        Example::
-            minio.disable_bucket_versioning("my-bucketname")
-        """
-        self._do_bucket_versioning(bucket_name, "Suspended")
+        return parse_versioning_config(response.data)
 
     def fput_object(self, bucket_name, object_name, file_path,
                     content_type='application/octet-stream',

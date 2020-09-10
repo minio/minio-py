@@ -37,8 +37,8 @@ s3Client = Minio(
 | [`bucket_exists`](#bucket_exists)                         | [`copy_object`](#copy_object)                     | [`presigned_post_policy`](#presigned_post_policy) | [`delete_bucket_policy`](#delete_bucket_policy)                     |
 | [`remove_bucket`](#remove_bucket)                         | [`stat_object`](#stat_object)                     |                                                   | [`get_bucket_notification`](#get_bucket_notification)               |
 | [`list_objects`](#list_objects)                           | [`remove_object`](#remove_object)                 |                                                   | [`set_bucket_notification`](#set_bucket_notification)               |
-| [`enable_bucket_versioning`](#enable_bucket_versioning)   | [`remove_objects`](#remove_objects)               |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
-| [`disable_bucket_versioning`](#disable_bucket_versioning) | [`fput_object`](#fput_object)                     |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
+| [`get_bucket_versioning`](#get_bucket_versioning)   | [`remove_objects`](#remove_objects)               |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
+| [`set_bucket_versioning`](#set_bucket_versioning) | [`fput_object`](#fput_object)                     |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
 |                                                           | [`fget_object`](#fget_object)                     |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
 |                                                           | [`select_object_content`](#select_object_content) |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
 |                                                           |                                                   |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
@@ -570,11 +570,11 @@ __Example__
 minio.delete_bucket_encryption("my-bucketname")
 ```
 
-<a name="enable_bucket_versioning"></a>
+<a name="get_bucket_versioning"></a>
 
-### enable_bucket_versioning(bucket_name)
+### get_bucket_versioning(bucket_name)
 
-Enable object versioning feature in a bucket.
+Get versioning configuration of a bucket.
 
 __Parameters__
 
@@ -585,25 +585,27 @@ __Parameters__
 __Example__
 
 ```py
-minio.enable_bucket_versioning("my-bucketname")
+config = minio.get_bucket_versioning("my-bucketname")
+print(config.status)
 ```
 
-<a name="enable_bucket_versioning"></a>
+<a name="set_bucket_versioning"></a>
 
-### disable_bucket_versioning(bucket_name)
+### set_bucket_versioning(bucket_name, config)
 
-Disable object versioning feature in a bucket.
+Set versioning configuration to a bucket.
 
 __Parameters__
 
-| Param           | Type  | Description         |
-|:----------------|:------|:--------------------|
-| ``bucket_name`` | _str_ | Name of the bucket. |
+| Param           | Type               | Description               |
+|:----------------|:-------------------|:--------------------------|
+| ``bucket_name`` | _str_              | Name of the bucket.       |
+| ``config``      | _VersioningConfig_ | Versioning configuration. |
 
 __Example__
 
 ```py
-minio.disable_bucket_versioning("my-bucketname")
+minio.set_bucket_versioning("my-bucketname", VersioningConfig("Enabled"))
 ```
 
 ## 3. Object operations
