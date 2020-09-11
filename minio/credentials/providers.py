@@ -455,21 +455,20 @@ class LdapIdentityProvider(Provider):
     def __init__(
             self, sts_endpoint, ldap_username, ldap_password, http_client=None,
     ):
-        self._sts_endpoint = sts_endpoint
-        self._http_client = http_client or urllib3.PoolManager(
-            retries=urllib3.Retry(
-                total=5,
-                backoff_factor=0.2,
-                status_forcelist=[500, 502, 503, 504],
-            ),
-        )
-        self._url = urlencode(
+        self._sts_endpoint = sts_endpoint + "?" + urlencode(
             {
                 "Action": "AssumeRoleWithLDAPIdentity",
                 "Version": "2011-06-15",
                 "LDAPUsername": ldap_username,
                 "LDAPPassword": ldap_password,
             },
+        )
+        self._http_client = http_client or urllib3.PoolManager(
+            retries=urllib3.Retry(
+                total=5,
+                backoff_factor=0.2,
+                status_forcelist=[500, 502, 503, 504],
+            ),
         )
         self._credentials = None
 
@@ -482,8 +481,8 @@ class LdapIdentityProvider(Provider):
         res = _urlopen(
             self._http_client,
             "POST",
-            self._sts_endpoint + "?" + self._url, # looks like encoded url should be used to form full url, instead of passed as a body ...
-            headers={"Content-Type": "application/x-www-form-urlencoded"}, # here should be dict instead of set
+            self._sts_endpoint, 
+            headers={"Content-Type": "application/x-www-form-urlencoded"}, 
         )
 
         self._credentials = _parse_credentials(
