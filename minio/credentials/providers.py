@@ -482,7 +482,6 @@ class LdapIdentityProvider(Provider):
             self._http_client,
             "POST",
             self._sts_endpoint, 
-            headers={"Content-Type": "application/x-www-form-urlencoded"}, 
         )
 
         self._credentials = _parse_credentials(
