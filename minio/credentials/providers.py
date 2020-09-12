@@ -481,7 +481,7 @@ class LdapIdentityProvider(Provider):
         res = _urlopen(
             self._http_client,
             "POST",
-            self._sts_endpoint, 
+            self._sts_endpoint,
         )
 
         self._credentials = _parse_credentials(
