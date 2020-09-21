@@ -25,6 +25,237 @@ This module contains the primary objects that power MinIO.
 
 """
 
+from urllib.parse import urlsplit
+
+from .helpers import queryencode, quote, url_replace
+
+
+def _extract_region(host):
+    """Extract region from Amazon S3 host."""
+
+    tokens = host.split(".")
+    token = tokens[1]
+
+    # If token is "dualstack", then region might be in next token.
+    if token == "dualstack":
+        token = tokens[2]
+
+    # If token is equal to "amazonaws", region is not passed in the host.
+    if token == "amazonaws":
+        return None
+
+    # Return token as region.
+    return token
+
+
+class BaseURL:
+    """Base URL of S3 endpoint."""
+
+    def __init__(self, endpoint, region):
+        url = urlsplit(endpoint)
+        host = url.hostname
+
+        if url.scheme.lower() not in ["http", "https"]:
+            raise ValueError("scheme in endpoint must be http or https")
+
+        url = url_replace(url, scheme=url.scheme.lower())
+
+        if url.path and url.path != "/":
+            raise ValueError("path in endpoint is not allowed")
+
+        url = url_replace(url, path="")
+
+        if url.query:
+            raise ValueError("query in endpoint is not allowed")
+
+        if url.fragment:
+            raise ValueError("fragment in endpoint is not allowed")
+
+        try:
+            url.port
+        except ValueError as exc:
+            raise ValueError("invalid port") from exc
+
+        if url.username:
+            raise ValueError("username in endpoint is not allowed")
+
+        if url.password:
+            raise ValueError("password in endpoint is not allowed")
+
+        if (
+                (url.scheme == "http" and url.port == 80) or
+                (url.scheme == "https" and url.port == 443)
+        ):
+            url = url_replace(url, netloc=host)
+
+        self._accelerate_host_flag = host.startswith("s3-accelerate.")
+        self._is_aws_host = (
+            (
+                host.startswith("s3.") or self._accelerate_host_flag
+            ) and
+            (
+                host.endswith(".amazonaws.com") or
+                host.endswith(".amazonaws.com.cn")
+            )
+        )
+        self._virtual_style_flag = (
+            self._is_aws_host or host.endswith("aliyuncs.com")
+        )
+
+        region_in_host = None
+        if self._is_aws_host:
+            is_aws_china_host = host.endswith(".cn")
+            url = url_replace(
+                url,
+                netloc=(
+                    "amazonaws.com.cn"
+                    if is_aws_china_host else "amazonaws.com"
+                ),
+            )
+            region_in_host = _extract_region(host)
+
+            if is_aws_china_host and not region_in_host and not region:
+                raise ValueError(
+                    "region missing in Amazon S3 China endpoint {0}".format(
+                        endpoint,
+                    ),
+                )
+            self._dualstack_host_flag = ".dualstack." in host
+        else:
+            self._accelerate_host_flag = False
+
+        self._url = url
+        self._region = region or region_in_host
+
+    @property
+    def region(self):
+        """Get region."""
+        return self._region
+
+    @property
+    def is_https(self):
+        """Check if scheme is HTTPS."""
+        return self._url.scheme == "https"
+
+    @property
+    def host(self):
+        """Get hostname."""
+        return self._url.netloc
+
+    @property
+    def is_aws_host(self):
+        """Check if URL points to AWS host."""
+        return self._is_aws_host
+
+    @property
+    def accelerate_host_flag(self):
+        """Check if URL points to AWS accelerate host."""
+        return self._accelerate_host_flag
+
+    @accelerate_host_flag.setter
+    def accelerate_host_flag(self, flag):
+        """Check if URL points to AWS accelerate host."""
+        if self._is_aws_host:
+            self._accelerate_host_flag = flag
+
+    @property
+    def dualstack_host_flag(self):
+        """Check if URL points to AWS dualstack host."""
+        return self._dualstack_host_flag
+
+    @dualstack_host_flag.setter
+    def dualstack_host_flag(self, flag):
+        """Check to use virtual style or not."""
+        if self._is_aws_host:
+            self._dualstack_host_flag = flag
+
+    @property
+    def virtual_style_flag(self):
+        """Check to use virtual style or not."""
+        return self._virtual_style_flag
+
+    @virtual_style_flag.setter
+    def virtual_style_flag(self, flag):
+        """Check to use virtual style or not."""
+        self._virtual_style_flag = flag
+
+    def build(
+            self, method, region,
+            bucket_name=None, object_name=None, query_params=None,
+    ):
+        """Build URL for given information."""
+
+        if not bucket_name and object_name:
+            raise ValueError(
+                "empty bucket name for object name {0}".format(object_name),
+            )
+
+        query = []
+        for key, values in sorted((query_params or {}).items()):
+            values = values if isinstance(values, (list, tuple)) else [values]
+            query += [
+                "{0}={1}".format(queryencode(key), queryencode(value))
+                for value in sorted(values)
+            ]
+        url = url_replace(self._url, query="&".join(query))
+        host = self._url.netloc
+
+        if not bucket_name:
+            url = url_replace(url, path="/")
+            return (
+                url_replace(url, netloc="s3." + region + "." + host)
+                if self._is_aws_host else url
+            )
+
+        enforce_path_style = (
+            # CreateBucket API requires path style in Amazon AWS S3.
+            (method == "PUT" and not object_name and not query_params) or
+
+            # GetBucketLocation API requires path style in Amazon AWS S3.
+            (query_params and query_params.get("location")) or
+
+            # Use path style for bucket name containing '.' which causes
+            # SSL certificate validation error.
+            ("." in bucket_name and self._url.scheme == "https")
+        )
+
+        if self._is_aws_host:
+            s3_domain = "s3."
+            if self._accelerate_host_flag:
+                if "." in bucket_name:
+                    raise ValueError(
+                        (
+                            "bucket name '{0}' with '.' is not allowed "
+                            "for accelerated endpoint"
+                        ).format(bucket_name),
+                    )
+
+                if not enforce_path_style:
+                    s3_domain = "s3-accelerate."
+
+            dual_stack = "dualstack." if self._dualstack_host_flag else ""
+            endpoint = s3_domain + dual_stack
+            if enforce_path_style or not self._accelerate_host_flag:
+                endpoint += region + "."
+            host = endpoint + host
+
+        if enforce_path_style or not self._virtual_style_flag:
+            url = url_replace(url, netloc=host)
+            url = url_replace(url, path="/" + bucket_name)
+        else:
+            url = url_replace(
+                url,
+                netloc=bucket_name + "." + host,
+                path="/",
+            )
+
+        if object_name:
+            path = url.path
+            path += ("" if path.endswith("/") else "/") + quote(object_name)
+            url = url_replace(url, path=path)
+
+        return url
+
 
 class Bucket:
     """
@@ -149,42 +380,6 @@ class CopyObjectResult:
                          " object_name: {1} etag: {2} last_modified: {3}>")
         return string_format.format(self.bucket_name, self.object_name,
                                     self.etag, self.last_modified)
-
-
-class UploadPart:
-    """
-    A multipart upload part metadata :class:`UploadPart <UploadPart>`
-
-    :param bucket_name: Bucket name.
-    :param object_name: Object name.
-    :param upload_id: Partially uploaded object's upload id.
-    :param part_number: Part number of the part.
-    :param etag: ETag of the part.
-    :last_modified: Last modified time of the part.
-    :size: Size of the part.
-    """
-
-    def __init__(self, bucket_name, object_name, upload_id, part_number, etag,
-                 last_modified, size):
-        self.bucket_name = bucket_name
-        self.object_name = object_name
-        self.upload_id = upload_id
-        self.part_number = part_number
-        self.etag = etag
-        self.last_modified = last_modified
-        self.size = size
-
-    def __str__(self):
-        string_format = ("<UploadPart: bucket_name: {0} object_name: {1}"
-                         " upload_id: {2} part_number: {3} etag: {4}"
-                         " last_modified: {5} size: {6}>")
-        return string_format.format(self.bucket_name,
-                                    self.object_name,
-                                    self.upload_id,
-                                    self.part_number,
-                                    self.etag,
-                                    self.last_modified,
-                                    self.size)
 
 
 class Upload:

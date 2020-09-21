@@ -20,7 +20,6 @@ from nose.tools import raises
 
 from minio import Minio
 from minio.copy_conditions import CopyConditions
-from minio.error import InvalidBucketError
 
 
 class CopyObjectTest(TestCase):
@@ -34,7 +33,7 @@ class CopyObjectTest(TestCase):
         client = Minio('localhost:9000')
         client.copy_object('hello', ' \t \n ', '')
 
-    @raises(InvalidBucketError)
+    @raises(ValueError)
     def test_length_is_string(self):
         client = Minio('localhost:9000')
         client.copy_object('..hello', '1', '/testbucket/object')

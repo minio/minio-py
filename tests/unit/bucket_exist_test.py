@@ -21,7 +21,7 @@ from nose.tools import eq_, raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
-from minio.error import InvalidBucketError, ResponseError
+from minio.error import S3Error
 
 from .minio_mocks import MockConnection, MockResponse
 
@@ -32,24 +32,24 @@ class BucketExists(TestCase):
         client = Minio('localhost:9000')
         client.bucket_exists(1234)
 
-    @raises(InvalidBucketError)
+    @raises(ValueError)
     def test_bucket_is_not_empty_string(self):
         client = Minio('localhost:9000')
         client.bucket_exists('  \t \n  ')
 
-    @raises(InvalidBucketError)
+    @raises(ValueError)
     def test_bucket_exists_invalid_name(self):
         client = Minio('localhost:9000')
         client.bucket_exists('AB*CD')
 
     @mock.patch('urllib3.PoolManager')
-    @raises(ResponseError)
+    @raises(S3Error)
     def test_bucket_exists_bad_request(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('HEAD',
-                         'https://localhost:9000/hello/',
+                         'https://localhost:9000/hello',
                          {'User-Agent': _DEFAULT_USER_AGENT},
                          400)
         )
@@ -62,7 +62,7 @@ class BucketExists(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('HEAD',
-                         'https://localhost:9000/hello/',
+                         'https://localhost:9000/hello',
                          {'User-Agent': _DEFAULT_USER_AGENT},
                          200)
         )
@@ -71,7 +71,7 @@ class BucketExists(TestCase):
         eq_(True, result)
         mock_server.mock_add_request(
             MockResponse('HEAD',
-                         'https://localhost:9000/goodbye/',
+                         'https://localhost:9000/goodbye',
                          {'User-Agent': _DEFAULT_USER_AGENT},
                          404)
         )

@@ -21,7 +21,6 @@ import mock
 from nose.tools import raises
 
 from minio import Minio
-from minio.error import InvalidArgumentError
 
 
 class PresignedGetObjectTest(TestCase):
@@ -35,7 +34,7 @@ class PresignedGetObjectTest(TestCase):
         client = Minio('localhost:9000')
         client.presigned_get_object('hello', ' \t \n ')
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_expiry_limit(self):
         client = Minio('localhost:9000')
         client.presigned_get_object('hello', 'key', expires=timedelta(days=8))
@@ -43,7 +42,7 @@ class PresignedGetObjectTest(TestCase):
     def test_can_include_response_headers(self):
         client = Minio('localhost:9000', 'my_access_key', 'my_secret_key',
                        secure=True)
-        client._get_bucket_region = mock.Mock(return_value='us-east-1')
+        client._get_region = mock.Mock(return_value='us-east-1')
         r = client.presigned_get_object(
             'mybucket', 'myfile.pdf',
             response_headers={

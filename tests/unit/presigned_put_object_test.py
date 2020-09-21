@@ -20,7 +20,6 @@ from unittest import TestCase
 from nose.tools import raises
 
 from minio import Minio
-from minio.error import InvalidArgumentError
 
 
 class PresignedPutObjectTest(TestCase):
@@ -34,7 +33,7 @@ class PresignedPutObjectTest(TestCase):
         client = Minio('localhost:9000')
         client.presigned_put_object('hello', ' \t \n ')
 
-    @raises(InvalidArgumentError)
+    @raises(ValueError)
     def test_expiry_limit(self):
         client = Minio('localhost:9000')
         client.presigned_put_object('hello', 'key', expires=timedelta(days=8))

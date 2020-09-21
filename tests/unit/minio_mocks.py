@@ -18,33 +18,36 @@ from http import client as httplib
 
 from nose.tools import eq_
 
-from minio.fold_case_dict import FoldCaseDict
-
 
 class MockResponse(object):
     def __init__(self, method, url, headers, status_code,
                  response_headers=None, content=None):
         self.method = method
         self.url = url
-        self.request_headers = FoldCaseDict()
-        for header in headers:
-            self.request_headers[header] = headers[header]
+        self.request_headers = {
+            key.lower(): value for key, value in headers.items()
+        }
         self.status = status_code
-        self.headers = response_headers
+        self.headers = {
+            key.lower(): value for key, value in (
+                response_headers or {}).items()
+        }
         self.data = content
         if content is None:
             self.reason = httplib.responses[status_code]
 
     # noinspection PyUnusedLocal
-    def read(self, amt=1024):
+    def read(self, *args, **kwargs):
         return self.data
 
     def mock_verify(self, method, url, headers):
         eq_(self.method, method)
         eq_(self.url, url)
-        if headers:
-            for header in headers:
-                eq_(self.request_headers[header], headers[header])
+        headers = {
+            key.lower(): value for key, value in headers.items()
+        }
+        for header in self.request_headers:
+            eq_(self.request_headers[header], headers[header])
 
     # noinspection PyUnusedLocal
     def stream(self, chunk_size=1, decode_unicode=False):
@@ -55,6 +58,9 @@ class MockResponse(object):
     # dummy release connection call.
     def release_conn(self):
         return
+
+    def getheader(self, key, value=None):
+        return self.headers.get(key, value) if self.headers else value
 
     def __getitem__(self, key):
         if key == "status":

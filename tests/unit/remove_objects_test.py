@@ -22,7 +22,6 @@ from nose.tools import raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
-from minio.error import InvalidBucketError
 
 from .minio_mocks import MockConnection, MockResponse
 
@@ -46,7 +45,7 @@ class RemoveObjectsTest(TestCase):
         for err in client.remove_objects('hello', b'abc'):
             print(err)
 
-    @raises(InvalidBucketError)
+    @raises(ValueError)
     def test_bucket_invalid_name(self):
         client = Minio('localhost:9000')
         for err in client.remove_objects('AB&CD', 'world'):
@@ -58,9 +57,8 @@ class RemoveObjectsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('POST',
-                         'https://localhost:9000/hello/?delete=',
-                         {'Content-Length': 95,
-                          'User-Agent': _DEFAULT_USER_AGENT,
+                         'https://localhost:9000/hello?delete=',
+                         {'User-Agent': _DEFAULT_USER_AGENT,
                           'Content-Md5': u'5Tg5SmU9Or43L4+iIyfPrQ=='}, 200,
                          content='<Delete/>')
         )
@@ -74,9 +72,8 @@ class RemoveObjectsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('POST',
-                         'https://localhost:9000/hello/?delete=',
-                         {'Content-Length': 95,
-                          'User-Agent': _DEFAULT_USER_AGENT,
+                         'https://localhost:9000/hello?delete=',
+                         {'User-Agent': _DEFAULT_USER_AGENT,
                           'Content-Md5': u'5Tg5SmU9Or43L4+iIyfPrQ=='}, 200,
                          content='<Delete/>')
         )
@@ -90,9 +87,8 @@ class RemoveObjectsTest(TestCase):
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
             MockResponse('POST',
-                         'https://localhost:9000/hello/?delete=',
-                         {'Content-Length': 95,
-                          'User-Agent': _DEFAULT_USER_AGENT,
+                         'https://localhost:9000/hello?delete=',
+                         {'User-Agent': _DEFAULT_USER_AGENT,
                           'Content-Md5': u'5Tg5SmU9Or43L4+iIyfPrQ=='}, 200,
                          content='<Delete/>')
         )

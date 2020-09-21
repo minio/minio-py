@@ -29,7 +29,6 @@ import base64
 import datetime
 import json
 
-from .error import InvalidArgumentError
 from .helpers import check_bucket_name, check_non_empty_string
 
 
@@ -158,11 +157,10 @@ class PostPolicy:
         Validate for required parameters.
         """
         if not isinstance(self._expiration, datetime.datetime):
-            raise InvalidArgumentError(
-                'Expiration datetime must be specified.')
+            raise ValueError("Expiration datetime must be specified.")
 
         if 'key' not in self.form_data:
-            raise InvalidArgumentError('object key must be specified.')
+            raise ValueError("object key must be specified.")
 
         if 'bucket' not in self.form_data:
-            raise InvalidArgumentError('bucket name must be specified.')
+            raise ValueError("bucket name must be specified.")

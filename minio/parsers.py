@@ -25,6 +25,7 @@ This module contains core API parsers.
 
 """
 
+from datetime import datetime, timezone
 from urllib.parse import unquote
 from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
@@ -32,8 +33,8 @@ from xml.etree.ElementTree import ParseError
 from .definitions import (Bucket, CopyObjectResult, ListMultipartUploadsResult,
                           ListPartsResult, MultipartUploadResult, Object)
 # minio specific.
-from .error import InvalidXMLError, MultiDeleteError
-from .helpers import _iso8601_to_utc_datetime
+from .error import MultiDeleteError, S3Error
+from .helpers import RFC3339, RFC3339NANO
 from .xml_marshal import NOTIFICATIONS_ARN_FIELDNAME_MAP
 
 # dependencies.
@@ -41,7 +42,6 @@ from .xml_marshal import NOTIFICATIONS_ARN_FIELDNAME_MAP
 
 _XML_NS = {
     's3': 'http://s3.amazonaws.com/doc/2006-03-01/',
-    'sts': 'https://sts.amazonaws.com/doc/2011-06-15/'
 }
 
 
@@ -67,7 +67,7 @@ class S3Element:
         try:
             return cls(root_name, ElementTree.fromstring(data.strip()))
         except (ParseError, AttributeError, ValueError, TypeError) as exc:
-            raise InvalidXMLError(
+            raise ValueError(
                 '"{}" XML is not parsable.'.format(root_name),
             ) from exc
 
@@ -89,7 +89,7 @@ class S3Element:
 
     def get_child_text(self, name, strict=True):
         """Extract text of a child element. If strict, and child element is
-        not present, raises InvalidXMLError and otherwise returns
+        not present, raises ValueError and otherwise returns
         None.
 
         """
@@ -97,7 +97,7 @@ class S3Element:
             try:
                 return self.element.find('s3:{}'.format(name), _XML_NS).text
             except (ParseError, AttributeError, ValueError, TypeError) as exc:
-                raise InvalidXMLError(
+                raise ValueError(
                     (
                         'Invalid XML provided for "{}" - erroring tag <{}>'
                     ).format(self.root_name, name),
@@ -126,11 +126,19 @@ class S3Element:
         """
         return int(self.get_child_text(name))
 
-    def get_localized_time_elem(self, name):
+    def get_time_elem(self, name):
         """Parse a time XML child element.
 
         """
-        return _iso8601_to_utc_datetime(self.get_child_text(name))
+        text = self.get_child_text(name)
+        try:
+            return datetime.strptime(
+                text, RFC3339NANO,
+            ).replace(tzinfo=timezone.utc)
+        except ValueError:
+            return datetime.strptime(
+                text, RFC3339,
+            ).replace(tzinfo=timezone.utc)
 
     def text(self):
         """Fetch the current node's text
@@ -145,6 +153,27 @@ class S3Element:
         """
         text = self.get_child_text('Key')
         return text.endswith("/")
+
+
+def parse_error_response(response):
+    """Parser for S3 error response."""
+    element = ElementTree.fromstring(response.data.decode())
+
+    def _get_text(name):
+        return (
+            element.find(name).text if element.find(name) is not None else None
+        )
+
+    return S3Error(
+        _get_text("Code"),
+        _get_text("Message"),
+        _get_text("Resource"),
+        _get_text("RequestId"),
+        _get_text("HostId"),
+        bucket_name=_get_text("BucketName"),
+        object_name=_get_text("Key"),
+        response=response,
+    )
 
 
 def parse_multipart_upload_result(data):
@@ -176,7 +205,7 @@ def parse_copy_object(bucket_name, object_name, data):
     return CopyObjectResult(
         bucket_name, object_name,
         root.get_etag_elem(),
-        root.get_localized_time_elem('LastModified')
+        root.get_time_elem('LastModified')
     )
 
 
@@ -191,7 +220,7 @@ def parse_list_buckets(data):
 
     return [
         Bucket(bucket.get_child_text('Name'),
-               bucket.get_localized_time_elem('CreationDate'))
+               bucket.get_time_elem('CreationDate'))
         for buckets in root.findall('Buckets')
         for bucket in buckets.findall('Bucket')
     ]
@@ -206,7 +235,7 @@ def _parse_objects_from_xml_elts(bucket_name, contents, common_prefixes,
         Object(
             bucket_name,
             content.get_child_text("Key"),
-            last_modified=content.get_localized_time_elem("LastModified"),
+            last_modified=content.get_time_elem("LastModified"),
             etag=content.get_etag_elem(strict=False),
             size=content.get_int_elem("Size"),
             is_dir=content.is_dir(),
@@ -235,7 +264,7 @@ def _parse_objects_from_xml_elts(bucket_name, contents, common_prefixes,
         Object(
             bucket_name,
             content.get_child_text("Key"),
-            last_modified=content.get_localized_time_elem("LastModified"),
+            last_modified=content.get_time_elem("LastModified"),
             is_dir=content.is_dir(),
             version_id=content.get_child_text("VersionId", strict=False),
             is_latest=content.get_child_text("IsLatest", strict=False),

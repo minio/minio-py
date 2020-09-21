@@ -25,18 +25,16 @@ import sys
 import time
 from abc import ABCMeta, abstractmethod
 from datetime import datetime, timedelta
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 from xml.etree import ElementTree
 
 import urllib3
 
-from minio.helpers import get_sha256_hexdigest
-from minio.signer import sign_v4
+from minio.helpers import RFC3339, RFC3339NANO, sha256_hash
+from minio.signer import AMZ_DATE_FORMAT, sign_v4_sts
 
 from .credentials import Credentials
 
-RFC3339NANO = "%Y-%m-%dT%H:%M:%S.%fZ"
-RFC3339 = "%Y-%m-%dT%H:%M:%SZ"
 _MIN_DURATION_SECONDS = timedelta(minutes=15).total_seconds()
 _MAX_DURATION_SECONDS = timedelta(days=7).total_seconds()
 _DEFAULT_DURATION_SECONDS = timedelta(hours=1).total_seconds()
@@ -124,7 +122,14 @@ class AssumeRoleProvider(Provider):
             query_params["ExternalId"] = external_id
 
         self._body = urlencode(query_params)
-        self._content_sha256 = get_sha256_hexdigest(self._body)
+        self._content_sha256 = sha256_hash(self._body)
+        url = urlsplit(sts_endpoint)
+        self._host = url.netloc
+        if (
+                (url.scheme == "http" and url.port == 80) or
+                (url.scheme == "https" and url.port == 443)
+        ):
+            self._host = url.hostname
         self._credentials = None
 
     def retrieve(self):
@@ -132,15 +137,19 @@ class AssumeRoleProvider(Provider):
         if self._credentials and not self._credentials.is_expired():
             return self._credentials
 
-        headers = sign_v4(
+        utcnow = datetime.utcnow()
+        headers = sign_v4_sts(
             "POST",
-            self._sts_endpoint,
+            urlsplit(self._sts_endpoint),
             self._region,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            credentials=Credentials(self._access_key, self._secret_key),
-            content_sha256=self._content_sha256,
-            request_datetime=datetime.utcnow(),
-            sts=True,
+            {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Host": self._host,
+                "X-Amz-Date": utcnow.strftime(AMZ_DATE_FORMAT),
+            },
+            Credentials(self._access_key, self._secret_key),
+            self._content_sha256,
+            utcnow,
         )
 
         res = _urlopen(

@@ -14,11 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest import TestCase
 
 import mock
-import pytz
 from nose.tools import eq_
 
 from minio import Minio
@@ -76,7 +75,7 @@ class ListBucketsTest(TestCase):
         eq_(2, count)
         eq_('hello', buckets_list[0].name)
         eq_(datetime(2015, 6, 22, 23, 7, 43, 240000,
-                     pytz.utc), buckets_list[0].creation_date)
+                     timezone.utc), buckets_list[0].creation_date)
         eq_('world', buckets_list[1].name)
         eq_(datetime(2015, 6, 22, 23, 7, 56, 766000,
-                     pytz.utc), buckets_list[1].creation_date)
+                     timezone.utc), buckets_list[1].creation_date)
