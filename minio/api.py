@@ -1086,12 +1086,12 @@ class Minio:  # pylint: disable=too-many-public-methods
             minio.copy_object(
                 "my-bucketname",
                 "my-objectname",
-                "my-source-bucketname/my-source-bucketname",
+                "my-source-bucketname/my-source-objectname",
             )
             minio.copy_object(
                 "my-bucketname",
                 "my-objectname",
-                "my-source-bucketname/my-source-bucketname"
+                "my-source-bucketname/my-source-objectname"
                 "?versionId=b6602757-7c9c-449b-937f-fed504d04c94",
             )
         """
