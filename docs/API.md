@@ -37,10 +37,11 @@ s3Client = Minio(
 | [`bucket_exists`](#bucket_exists)                         | [`copy_object`](#copy_object)                     | [`presigned_post_policy`](#presigned_post_policy) | [`delete_bucket_policy`](#delete_bucket_policy)                     |
 | [`remove_bucket`](#remove_bucket)                         | [`stat_object`](#stat_object)                     |                                                   | [`get_bucket_notification`](#get_bucket_notification)               |
 | [`list_objects`](#list_objects)                           | [`remove_object`](#remove_object)                 |                                                   | [`set_bucket_notification`](#set_bucket_notification)               |
-| [`get_bucket_versioning`](#get_bucket_versioning)   | [`remove_objects`](#remove_objects)               |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
-| [`set_bucket_versioning`](#set_bucket_versioning) | [`fput_object`](#fput_object)                     |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
-|                                                           | [`fget_object`](#fget_object)                     |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
-|                                                           | [`select_object_content`](#select_object_content) |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
+| [`get_bucket_versioning`](#get_bucket_versioning)         | [`remove_objects`](#remove_objects)               |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
+| [`set_bucket_versioning`](#set_bucket_versioning)         | [`fput_object`](#fput_object)                     |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
+| [`delete_bucket_replication`](#delete_bucket_replication) | [`fget_object`](#fget_object)                     |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
+| [`get_bucket_replication`](#get_bucket_replication)       | [`remove_objects`](#remove_objects)               |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
+| [`set_bucket_replication`](#set_bucket_replication)       | [`select_object_content`](#select_object_content) |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
 |                                                           |                                                   |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
 
 ## 1. Constructor
@@ -606,6 +607,87 @@ __Example__
 
 ```py
 minio.set_bucket_versioning("my-bucketname", VersioningConfig("Enabled"))
+```
+
+<a name="delete_bucket_replication"></a>
+
+### delete_bucket_replication(bucket_name)
+
+Delete replication configuration of a bucket.
+
+__Parameters__
+
+| Param           | Type  | Description         |
+|:----------------|:------|:--------------------|
+| ``bucket_name`` | _str_ | Name of the bucket. |
+
+__Example__
+
+```py
+minio.delete_bucket_replication("my-bucketname")
+```
+
+<a name="get_bucket_replication"></a>
+
+### get_bucket_replication(bucket_name)
+
+Get replication configuration of a bucket.
+
+__Parameters__
+
+| Param           | Type  | Description         |
+|:----------------|:------|:--------------------|
+| ``bucket_name`` | _str_ | Name of the bucket. |
+
+| Return                                  |
+|:----------------------------------------|
+| _ReplicationConfig_ object. |
+
+__Example__
+
+```py
+config = minio.get_bucket_replication("my-bucketname")
+```
+
+<a name="set_bucket_replication"></a>
+
+### set_bucket_replication(bucket_name, config)
+
+Set replication configuration to a bucket.
+
+__Parameters__
+
+| Param           | Type                | Description                |
+|:----------------|:--------------------|:---------------------------|
+| ``bucket_name`` | _str_               | Name of the bucket.        |
+| ``config``      | _ReplicationConfig_ | Replication configuration. |
+
+__Example__
+
+```py
+config = ReplicationConfig(
+    "REPLACE-WITH-ACTUAL-ROLE",
+    [
+        Rule(
+            Destination(
+                "REPLACE-WITH-ACTUAL-DESTINATION-BUCKET-ARN",
+            ),
+            ENABLED,
+            delete_marker_replication=DeleteMarkerReplication(
+                DISABLED,
+            ),
+            rule_filter=Filter(
+                AndOperator(
+                    "TaxDocs",
+                    {"key1": "value1", "key2": "value2"},
+                ),
+            ),
+            rule_id="rule1",
+            priority=1,
+        ),
+    ],
+)
+minio.set_bucket_replication("my-bucketname", config)
 ```
 
 ## 3. Object operations
