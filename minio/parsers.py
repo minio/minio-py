@@ -31,7 +31,8 @@ from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
 
 from .definitions import (Bucket, CopyObjectResult, ListMultipartUploadsResult,
-                          ListPartsResult, MultipartUploadResult, Object)
+                          ListPartsResult, MultipartUploadResult, Object,
+                          VersioningConfig)
 # minio specific.
 from .error import MultiDeleteError, S3Error
 from .helpers import RFC3339, RFC3339NANO
@@ -487,3 +488,12 @@ def parse_list_multipart_uploads(data):
 def parse_list_parts(data):
     """Parse ListParts API resppnse XML."""
     return ListPartsResult(S3Element.fromstring("ListPartsResult", data))
+
+
+def parse_versioning_config(data):
+    """Decode XML data into :class:`VersioningConfig <VersioningConfig>`"""
+    root = S3Element.fromstring("VersioningConfiguration", data)
+    return VersioningConfig(
+        root.get_child_text("Status"),
+        root.get_child_text("MFADelete"),
+    )

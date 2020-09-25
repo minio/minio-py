@@ -472,3 +472,25 @@ class ListPartsResult:
         self.parts = [
             Part(part_element) for part_element in root.findall("Part")
         ]
+
+
+class VersioningConfig:
+    """Bucket versioning configuration."""
+
+    def __init__(self, status, mfa_delete=None):
+        if status:
+            status = status.title()
+        if status not in ["", "Enabled", "Suspended"]:
+            raise ValueError("status must be empty, Enabled or Suspended.")
+        self._status = status
+        self._mfa_delete = mfa_delete
+
+    @property
+    def status(self):
+        """Get status."""
+        return self._status or "Off"
+
+    @property
+    def mfa_delete(self):
+        """Get MFA delete."""
+        return self._mfa_delete
