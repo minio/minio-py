@@ -30,7 +30,7 @@ from xml.etree import ElementTree
 
 import urllib3
 
-from minio.helpers import RFC3339, RFC3339NANO, sha256_hash
+from minio.helpers import sha256_hash, strptime_rfc3339
 from minio.signer import AMZ_DATE_FORMAT, sign_v4_sts
 
 from .credentials import Credentials
@@ -54,11 +54,9 @@ def _parse_credentials(data, result_path):
     access_key = credentials.find("sts:AccessKeyId", _XML_NS).text
     secret_key = credentials.find("sts:SecretAccessKey", _XML_NS).text
     session_token = credentials.find("sts:SessionToken", _XML_NS).text
-    text = credentials.find("sts:Expiration", _XML_NS).text
-    try:
-        expiration = datetime.strptime(text, RFC3339NANO)
-    except ValueError:
-        expiration = datetime.strptime(text, RFC3339)
+    expiration = strptime_rfc3339(
+        credentials.find("sts:Expiration", _XML_NS).text,
+    )
 
     return Credentials(access_key, secret_key, session_token, expiration)
 
@@ -395,12 +393,7 @@ class IamAwsProvider(Provider):
                     url, data["Code"], data["Message"],
                 ),
             )
-        try:
-            data["Expiration"] = datetime.strptime(
-                data["Expiration"], RFC3339NANO,
-            )
-        except ValueError:
-            data["Expiration"] = datetime.strptime(data["Expiration"], RFC3339)
+        data["Expiration"] = strptime_rfc3339(data["Expiration"])
 
         return Credentials(
             data["AccessKeyId"],

@@ -51,6 +51,7 @@ from .helpers import (amzprefix_user_metadata, check_bucket_name,
                       is_supported_header, is_valid_notification_config,
                       is_valid_policy_type, makedirs, md5sum_hash, quote,
                       read_part_data, sha256_hash)
+from .lifecycleconfig import LifecycleConfig
 from .parsers import (parse_copy_object, parse_error_response,
                       parse_get_bucket_notification, parse_list_buckets,
                       parse_list_multipart_uploads, parse_list_object_versions,
@@ -1830,6 +1831,71 @@ class Minio:  # pylint: disable=too-many-public-methods
             body=body,
             headers={"Content-MD5": md5sum_hash(body)},
             query_params={"replication": ""},
+        )
+
+    def delete_bucket_lifecycle(self, bucket_name):
+        """
+        Delete notification configuration of a bucket.
+
+        :param bucket_name: Name of the bucket.
+
+        Example::
+            minio.delete_bucket_lifecycle("my-bucketname")
+        """
+        check_bucket_name(bucket_name)
+        self._execute("DELETE", bucket_name, query_params={"lifecycle": ""})
+
+    def get_bucket_lifecycle(self, bucket_name):
+        """
+        Get bucket lifecycle configuration of a bucket.
+
+        :param bucket_name: Name of the bucket.
+        :return: :class:`LifecycleConfig <LifecycleConfig>` object.
+
+        Example::
+            config = minio.get_bucket_lifecycle("my-bucketname")
+        """
+        check_bucket_name(bucket_name)
+        try:
+            response = self._execute(
+                "GET", bucket_name, query_params={"lifecycle": ""},
+            )
+            return unmarshal(LifecycleConfig, response.data.decode())
+        except S3Error as exc:
+            if exc.code != "NoSuchLifecycleConfiguration":
+                raise
+        return None
+
+    def set_bucket_lifecycle(self, bucket_name, config):
+        """
+        Set bucket lifecycle configuration to a bucket.
+
+        :param bucket_name: Name of the bucket.
+        :param config: :class:`LifecycleConfig <LifecycleConfig>` object.
+
+        Example::
+            config = LifecycleConfig(
+                [
+                    Rule(
+                        ENABLED,
+                        rule_filter=Filter(prefix="logs/"),
+                        rule_id="rule2",
+                        expiration=Expiration(days=365),
+                    ),
+                ],
+            )
+            minio.set_bucket_lifecycle("my-bucketname", config)
+        """
+        check_bucket_name(bucket_name)
+        if not isinstance(config, LifecycleConfig):
+            raise ValueError("config must be LifecycleConfig type")
+        body = marshal(config)
+        self._execute(
+            "PUT",
+            bucket_name,
+            body=body,
+            headers={"Content-MD5": md5sum_hash(body)},
+            query_params={"lifecycle": ""},
         )
 
     def _list_objects(  # pylint: disable=too-many-arguments,too-many-branches

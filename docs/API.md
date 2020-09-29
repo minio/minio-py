@@ -42,7 +42,9 @@ s3Client = Minio(
 | [`delete_bucket_replication`](#delete_bucket_replication) | [`fget_object`](#fget_object)                     |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
 | [`get_bucket_replication`](#get_bucket_replication)       | [`remove_objects`](#remove_objects)               |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
 | [`set_bucket_replication`](#set_bucket_replication)       | [`select_object_content`](#select_object_content) |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
-|                                                           |                                                   |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
+| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)     |                                                   |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
+| [`get_bucket_lifecycle`](#get_bucket_lifecycle)           |                                                   |                                                   |                                                                     |
+| [`set_bucket_lifecycle`](#set_bucket_lifecycle)           |                                                   |                                                   |                                                                     |
 
 ## 1. Constructor
 
@@ -696,6 +698,82 @@ config = ReplicationConfig(
     ],
 )
 minio.set_bucket_replication("my-bucketname", config)
+```
+
+<a name="delete_bucket_lifecycle"></a>
+
+### delete_bucket_lifecycle(bucket_name)
+
+Delete lifecycle configuration of a bucket.
+
+__Parameters__
+
+| Param           | Type  | Description         |
+|:----------------|:------|:--------------------|
+| ``bucket_name`` | _str_ | Name of the bucket. |
+
+__Example__
+
+```py
+minio.delete_bucket_lifecycle("my-bucketname")
+```
+
+<a name="get_bucket_lifecycle"></a>
+
+### get_bucket_lifecycle(bucket_name)
+
+Get lifecycle configuration of a bucket.
+
+__Parameters__
+
+| Param           | Type  | Description         |
+|:----------------|:------|:--------------------|
+| ``bucket_name`` | _str_ | Name of the bucket. |
+
+| Return                    |
+|:--------------------------|
+| _LifecycleConfig_ object. |
+
+
+__Example__
+
+```py
+config = minio.get_bucket_lifecycle("my-bucketname")
+```
+
+<a name="set_bucket_lifecycle"></a>
+
+### set_bucket_lifecycle(bucket_name, config)
+
+Set lifecycle configuration to a bucket.
+
+__Parameters__
+
+| Param           | Type              | Description              |
+|:----------------|:------------------|:-------------------------|
+| ``bucket_name`` | _str_             | Name of the bucket.      |
+| ``config``      | _LifecycleConfig_ | Lifecycle configuration. |
+
+__Example__
+
+```py
+config = LifecycleConfig(
+    [
+        Rule(
+            ENABLED,
+            rule_filter=Filter(prefix="documents/"),
+            rule_id="rule1",
+            transition=Transition(days=30, storage_class="GLACIER"),
+        ),
+        Rule(
+            ENABLED,
+            rule_filter=Filter(prefix="logs/"),
+            rule_id="rule2",
+            expiration=Expiration(days=365),
+        ),
+    ],
+)
+minio.set_bucket_lifecycle("my-bucketname", config)
 ```
 
 ## 3. Object operations
