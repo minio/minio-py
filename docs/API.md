@@ -237,7 +237,7 @@ objects = minio.list_objects('foo')
 for object in objects:
     print(object)
 
-# List objects information those names starts with 'hello/'.
+# List objects information whose names starts with 'hello/'.
 objects = minio.list_objects('foo', prefix='hello/')
 for object in objects:
     print(object)
@@ -247,7 +247,7 @@ objects = minio.list_objects('foo', recursive=True)
 for object in objects:
     print(object)
 
-# List objects information recursively those names starts with
+# List objects information recursively whose names starts with
 # 'hello/'.
 objects = minio.list_objects(
     'foo', prefix='hello/', recursive=True,
@@ -296,7 +296,7 @@ __Parameters__
 __Example__
 
 ```py
-minio.get_bucket_policy("my-bucketname", config)
+minio.set_bucket_policy("my-bucketname", config)
 ```
 
 <a name="delete_bucket_policy"></a>
@@ -614,7 +614,7 @@ minio.set_bucket_versioning("my-bucketname", VersioningConfig("Enabled"))
 
 ### get_object(bucket_name, object_name, offset=0, length=0, request_headers=None, sse=None, version_id=None, extra_query_params=None)
 
-Gets data from offset to length of an object. Returned response should be closed after use to release network resources. To reuse the connection, its required to call `response.release_conn()` explicitly.
+Gets data from offset to length of an object. Returned response should be closed after use to release network resources. To reuse the connection, it's required to call `response.release_conn()` explicitly.
 
 __Parameters__
 
@@ -726,7 +726,7 @@ __Parameters__
 |:---------------------|:-----------------|:-----------------------------------------------------|
 | `bucket_name`        | _str_            | Name of the bucket.                                  |
 | `object_name`        | _str_            | Object name in the bucket.                           |
-| `file_path`          | _str_            | Name of file to upload.                              |
+| `file_path`          | _str_            | Name of file to download.                              |
 | `request_headers`    | _dict_           | Any additional headers to be added with GET request. |
 | `sse`                | _SseCustomerKey_ | Server-side encryption customer key.                 |
 | `version_id`         | _str_            | Version-ID of the object.                            |
@@ -781,13 +781,13 @@ from minio import CopyConditions
 minio.copy_object(
     "my-bucketname",
     "my-objectname",
-    "my-source-bucketname/my-source-bucketname",
+    "my-source-bucketname/my-source-objectname",
 )
 
 minio.copy_object(
     "my-bucketname",
     "my-objectname",
-    "my-source-bucketname/my-source-bucketname"
+    "my-source-bucketname/my-source-objectname"
     "?versionId=b6602757-7c9c-449b-937f-fed504d04c94",
 )
 
@@ -810,9 +810,9 @@ copy_conditions.set_match_etag_except("31624deb84149d2f8ef9c385918b653a")
 metadata = {"test-key": "test-data"}
 
 result = minioClient.copy_object(
-	"mybucket",
-	"myobject",
-	"/my-sourcebucketname/my-sourceobjectname",
+	"my-bucketname",
+	"my-objectname",
+	"my-source-bucketname/my-source-objectname",
 	copy_conditions,metadata=metadata,
 )
 print(result)
