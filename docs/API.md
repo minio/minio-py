@@ -254,6 +254,14 @@ objects = minio.list_objects(
 )
 for object in objects:
     print(object)
+
+# List objects information recursively after object name
+# 'hello/world/1'.
+objects = minio.list_objects(
+    'foo', recursive=True, start_after='hello/world/1',
+)
+for object in objects:
+    print(object)
 ```
 
 <a name="get_bucket_policy"></a>
