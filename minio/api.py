@@ -685,7 +685,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param policy: Bucket policy configuration as JSON string.
 
         Example::
-            minio.get_bucket_policy("my-bucketname", config)
+            minio.set_bucket_policy("my-bucketname", config)
         """
         check_bucket_name(bucket_name)
         is_valid_policy_type(policy)
@@ -944,7 +944,7 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         :param bucket_name: Name of the bucket.
         :param object_name: Object name in the bucket.
-        :param file_path: Name of file to upload.
+        :param file_path: Name of file to download.
         :param request_headers: Any additional headers to be added with GET
                                 request.
         :param sse: Server-side encryption customer key.
@@ -1014,7 +1014,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                    extra_query_params=None):
         """
         Get data of an object. Returned response should be closed after use to
-        release network resources. To reuse the connection, its required to
+        release network resources. To reuse the connection, it's required to
         call `response.release_conn()` explicitly.
 
         :param bucket_name: Name of the bucket.
@@ -1351,7 +1351,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             for object in objects:
                 print(object)
 
-            # List objects information those names starts with 'hello/'.
+            # List objects information whose names starts with 'hello/'.
             objects = minio.list_objects('foo', prefix='hello/')
             for object in objects:
                 print(object)
@@ -1361,7 +1361,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             for object in objects:
                 print(object)
 
-            # List objects information recursively those names starts with
+            # List objects information recursively whose names starts with
             # 'hello/'.
             objects = minio.list_objects(
                 'foo', prefix='hello/', recursive=True,
