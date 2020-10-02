@@ -65,6 +65,7 @@ from .parsers import (parse_error_response,
                       parse_multipart_upload_result,
                       parse_new_multipart_upload)
 from .replicationconfig import ReplicationConfig
+from .retention import Retention
 from .select import SelectObjectReader
 from .selectrequest import SelectRequest
 from .signer import (AMZ_DATE_FORMAT, SIGN_V4_ALGORITHM, get_credential_string,
@@ -2242,6 +2243,74 @@ class Minio:  # pylint: disable=too-many-public-methods
             body=body,
             headers={"Content-MD5": md5sum_hash(body)},
             query_params={"object-lock": ""},
+        )
+
+    def get_object_retention(
+            self, bucket_name, object_name, version_id=None,
+    ):
+        """
+        Get retention configuration of an object.
+
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param version_id: Version ID of the object.
+        :return: :class:`Retention <Retention>` object.
+
+        Example::
+            config = minio.get_object_retention(
+                "my-bucketname", "my-objectname",
+            )
+        """
+        check_bucket_name(bucket_name)
+        check_non_empty_string(object_name)
+        query_params = {"versionId", version_id} if version_id else {}
+        query_params["retention"] = ""
+        try:
+            response = self._execute(
+                "GET",
+                bucket_name,
+                object_name=object_name,
+                query_params=query_params,
+            )
+            return unmarshal(Retention, response.data.decode())
+        except S3Error as exc:
+            if exc.code != "NoSuchObjectLockConfiguration":
+                raise
+        return None
+
+    def set_object_retention(
+            self, bucket_name, object_name, config, version_id=None,
+    ):
+        """
+        Set retention configuration on an object.
+
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param version_id: Version ID of the object.
+        :param config: :class:`Retention <Retention>` object.
+
+        Example::
+            config = Retention(
+                GOVERNANCE, datetime.utcnow() + timedelta(days=10),
+            )
+            minio.set_object_retention(
+                "my-bucketname", "my-objectname", config,
+            )
+        """
+        check_bucket_name(bucket_name)
+        check_non_empty_string(object_name)
+        if not isinstance(config, Retention):
+            raise ValueError("config must be Retention type")
+        body = marshal(config)
+        query_params = {"versionId", version_id} if version_id else {}
+        query_params["retention"] = ""
+        self._execute(
+            "PUT",
+            bucket_name,
+            object_name=object_name,
+            body=body,
+            headers={"Content-MD5": md5sum_hash(body)},
+            query_params=query_params,
         )
 
     def _list_objects(  # pylint: disable=too-many-arguments,too-many-branches
