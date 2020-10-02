@@ -53,6 +53,7 @@ from .helpers import (amzprefix_user_metadata, check_bucket_name,
                       is_supported_header, is_valid_notification_config,
                       is_valid_policy_type, makedirs, md5sum_hash, quote,
                       read_part_data, sha256_hash, strptime_rfc3339)
+from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .parsers import (parse_error_response, parse_get_bucket_notification,
                       parse_list_buckets, parse_list_multipart_uploads,
@@ -2071,6 +2072,93 @@ class Minio:  # pylint: disable=too-many-public-methods
             headers={"Content-MD5": md5sum_hash(body)},
             query_params=query_params,
         )
+
+    def enable_object_legal_hold(
+            self, bucket_name, object_name, version_id=None,
+    ):
+        """
+        Enable legal hold on an object.
+
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param version_id: Version ID of the object.
+
+        Example::
+            minio.enable_object_legal_hold("my-bucketname", "my-objectname")
+        """
+        check_bucket_name(bucket_name)
+        check_non_empty_string(object_name)
+        body = marshal(LegalHold(True))
+        query_params = {"versionId", version_id} if version_id else {}
+        query_params["legal-hold"] = ""
+        self._execute(
+            "PUT",
+            bucket_name,
+            object_name=object_name,
+            body=body,
+            headers={"Content-MD5": md5sum_hash(body)},
+            query_params=query_params,
+        )
+
+    def disable_object_legal_hold(
+            self, bucket_name, object_name, version_id=None,
+    ):
+        """
+        Disable legal hold on an object.
+
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param version_id: Version ID of the object.
+
+        Example::
+            minio.disable_object_legal_hold("my-bucketname", "my-objectname")
+        """
+        check_bucket_name(bucket_name)
+        check_non_empty_string(object_name)
+        body = marshal(LegalHold(False))
+        query_params = {"versionId", version_id} if version_id else {}
+        query_params["legal-hold"] = ""
+        self._execute(
+            "PUT",
+            bucket_name,
+            object_name=object_name,
+            body=body,
+            headers={"Content-MD5": md5sum_hash(body)},
+            query_params=query_params,
+        )
+
+    def is_object_legal_hold_enabled(
+            self, bucket_name, object_name, version_id=None,
+    ):
+        """
+        Returns true if legal hold is enabled on an object.
+
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param version_id: Version ID of the object.
+
+        Example::
+            status = minio.is_object_legal_hold_enabled(
+                "my-bucketname", "my-objectname",
+            )
+        """
+        check_bucket_name(bucket_name)
+        check_non_empty_string(object_name)
+        query_params = {"versionId", version_id} if version_id else {}
+        query_params["legal-hold"] = ""
+        try:
+            response = self._execute(
+                "GET",
+                bucket_name,
+                object_name=object_name,
+                query_params=query_params,
+            )
+            legal_hold = unmarshal(LegalHold, response.data.decode())
+            return legal_hold.status
+        except S3Error as exc:
+            if exc.code != "NoSuchObjectLockConfiguration":
+                raise
+        return False
 
     def _list_objects(  # pylint: disable=too-many-arguments,too-many-branches
             self,
