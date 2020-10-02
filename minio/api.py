@@ -58,6 +58,7 @@ from .helpers import (amzprefix_user_metadata, check_bucket_name,
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
+from .objectlockconfig import ObjectLockConfig
 from .parsers import (parse_error_response,
                       parse_list_multipart_uploads,
                       parse_list_parts,
@@ -2181,6 +2182,58 @@ class Minio:  # pylint: disable=too-many-public-methods
             if exc.code != "NoSuchObjectLockConfiguration":
                 raise
         return False
+
+    def delete_object_lock_config(self, bucket_name):
+        """
+        Delete object-lock configuration of a bucket.
+
+        :param bucket_name: Name of the bucket.
+
+        Example::
+            minio.delete_object_lock_config("my-bucketname")
+        """
+        self.set_object_lock_config(
+            self, bucket_name, ObjectLockConfig(None, None, None),
+        )
+
+    def get_object_lock_config(self, bucket_name):
+        """
+        Get object-lock configuration of a bucket.
+
+        :param bucket_name: Name of the bucket.
+        :return: :class:`ObjectLockConfig <ObjectLockConfig>` object.
+
+        Example::
+            config = minio.get_object_lock_config("my-bucketname")
+        """
+        check_bucket_name(bucket_name)
+        response = self._execute(
+            "GET", bucket_name, query_params={"object-lock": ""},
+        )
+        return unmarshal(ObjectLockConfig, response.data.decode())
+
+    def set_object_lock_config(self, bucket_name, config):
+        """
+        Set object-lock configuration to a bucket.
+
+        :param bucket_name: Name of the bucket.
+        :param config: :class:`ObjectLockConfig <ObjectLockConfig>` object.
+
+        Example::
+            config = ObjectLockConfig(GOVERNANCE, 15, DAYS)
+            minio.set_object_lock_config("my-bucketname", config)
+        """
+        check_bucket_name(bucket_name)
+        if not isinstance(config, ObjectLockConfig):
+            raise ValueError("config must be ObjectLockConfig type")
+        body = marshal(config)
+        self._execute(
+            "PUT",
+            bucket_name,
+            body=body,
+            headers={"Content-MD5": md5sum_hash(body)},
+            query_params={"object-lock": ""},
+        )
 
     def _list_objects(  # pylint: disable=too-many-arguments,too-many-branches
             self,

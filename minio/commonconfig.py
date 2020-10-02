@@ -25,6 +25,8 @@ from .xml import SubElement, find, findall, findtext
 
 DISABLED = "Disabled"
 ENABLED = "Enabled"
+GOVERNANCE = "GOVERNANCE"
+COMPLIANCE = "COMPLIANCE"
 _MAX_KEY_LENGTH = 128
 _MAX_VALUE_LENGTH = 256
 _MAX_OBJECT_TAG_COUNT = 10
