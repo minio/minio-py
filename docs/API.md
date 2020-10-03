@@ -614,7 +614,7 @@ __Parameters__
 __Example__
 
 ```py
-minio.set_bucket_versioning("my-bucketname", VersioningConfig("Enabled"))
+minio.set_bucket_versioning("my-bucketname", VersioningConfig(ENABLED))
 ```
 
 <a name="delete_bucket_replication"></a>

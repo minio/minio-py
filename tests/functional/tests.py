@@ -38,13 +38,15 @@ from uuid import uuid4
 import certifi
 import urllib3
 
-from minio import CopyConditions, Minio, PostPolicy, VersioningConfig
+from minio import CopyConditions, Minio, PostPolicy
+from minio.commonconfig import ENABLED
 from minio.error import S3Error
 from minio.select.helpers import calculate_crc
 from minio.select.options import (CSVInput, CSVOutput, InputSerialization,
                                   OutputSerialization, RequestProgress,
                                   SelectObjectOptions)
 from minio.sse import SseCustomerKey
+from minio.versioningconfig import VersioningConfig
 
 if sys.version_info[0] == 2:
     from datetime import tzinfo  # pylint: disable=ungrouped-imports
@@ -808,7 +810,7 @@ def _test_stat_object(log_entry, sse=None, version_check=False):
     try:
         if version_check:
             _CLIENT.set_bucket_versioning(
-                bucket_name, VersioningConfig("Enabled"),
+                bucket_name, VersioningConfig(ENABLED),
             )
         # Put/Upload a streaming object of 1 MiB
         reader = LimitedRandomReader(length)
@@ -878,7 +880,7 @@ def _test_remove_object(log_entry, version_check=False):
     try:
         if version_check:
             _CLIENT.set_bucket_versioning(
-                bucket_name, VersioningConfig("Enabled"),
+                bucket_name, VersioningConfig(ENABLED),
             )
         _, version_id = _CLIENT.put_object(
             bucket_name, object_name, LimitedRandomReader(length), length,
@@ -919,7 +921,7 @@ def _test_get_object(log_entry, sse=None, version_check=False):
     try:
         if version_check:
             _CLIENT.set_bucket_versioning(
-                bucket_name, VersioningConfig("Enabled"),
+                bucket_name, VersioningConfig(ENABLED),
             )
         _, version_id = _CLIENT.put_object(
             bucket_name, object_name, LimitedRandomReader(length),
@@ -972,7 +974,7 @@ def _test_fget_object(log_entry, sse=None, version_check=False):
     try:
         if version_check:
             _CLIENT.set_bucket_versioning(
-                bucket_name, VersioningConfig("Enabled"),
+                bucket_name, VersioningConfig(ENABLED),
             )
         _, version_id = _CLIENT.put_object(
             bucket_name, object_name, LimitedRandomReader(length),
@@ -1099,7 +1101,7 @@ def _test_list_objects(log_entry, use_api_v1=False, version_check=False):
     try:
         if version_check:
             _CLIENT.set_bucket_versioning(
-                bucket_name, VersioningConfig("Enabled"),
+                bucket_name, VersioningConfig(ENABLED),
             )
         size = 1 * KB
         _, version_id1 = _CLIENT.put_object(
@@ -1479,7 +1481,7 @@ def test_presigned_get_object_version(  # pylint: disable=invalid-name
     _CLIENT.make_bucket(bucket_name)
     version_id = None
     try:
-        _CLIENT.set_bucket_versioning(bucket_name, VersioningConfig("Enabled"))
+        _CLIENT.set_bucket_versioning(bucket_name, VersioningConfig(ENABLED))
         size = 1 * KB
         _, version_id = _CLIENT.put_object(
             bucket_name, object_name, LimitedRandomReader(size), size,
@@ -1846,7 +1848,7 @@ def _test_remove_objects(log_entry, version_check=False):
     try:
         if version_check:
             _CLIENT.set_bucket_versioning(
-                bucket_name, VersioningConfig("Enabled"),
+                bucket_name, VersioningConfig(ENABLED),
             )
         size = 1 * KB
         # Upload some new objects to prepare for multi-object delete test.
