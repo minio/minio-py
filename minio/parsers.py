@@ -30,7 +30,7 @@ from urllib.parse import unquote
 from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
 
-from .definitions import (Bucket, ListMultipartUploadsResult, ListPartsResult,
+from .definitions import (ListMultipartUploadsResult, ListPartsResult,
                           MultipartUploadResult, Object)
 # minio specific.
 from .error import MultiDeleteError, S3Error
@@ -185,23 +185,6 @@ def parse_multipart_upload_result(data):
         root.get_child_text('Location'),
         root.get_etag_elem()
     )
-
-
-def parse_list_buckets(data):
-    """
-    Parser for list buckets response.
-
-    :param data: Response data for list buckets.
-    :return: List of :class:`Bucket <Bucket>`.
-    """
-    root = S3Element.fromstring('ListBucketsResult', data)
-
-    return [
-        Bucket(bucket.get_child_text('Name'),
-               bucket.get_time_elem('CreationDate'))
-        for buckets in root.findall('Buckets')
-        for bucket in buckets.findall('Bucket')
-    ]
 
 
 def _parse_objects_from_xml_elts(bucket_name, contents, common_prefixes,

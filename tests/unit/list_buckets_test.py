@@ -38,7 +38,7 @@ class ListBucketsTest(TestCase):
         mock_server.mock_add_request(
             MockResponse('GET', 'https://localhost:9000/',
                          {'User-Agent': _DEFAULT_USER_AGENT},
-                         200, content=mock_data)
+                         200, content=mock_data.encode())
         )
         client = Minio('localhost:9000')
         buckets = client.list_buckets()
@@ -63,7 +63,7 @@ class ListBucketsTest(TestCase):
         mock_server.mock_add_request(
             MockResponse('GET', 'https://localhost:9000/',
                          {'User-Agent': _DEFAULT_USER_AGENT},
-                         200, content=mock_data)
+                         200, content=mock_data.encode())
         )
         client = Minio('localhost:9000')
         buckets = client.list_buckets()
@@ -74,8 +74,12 @@ class ListBucketsTest(TestCase):
             buckets_list.append(bucket)
         eq_(2, count)
         eq_('hello', buckets_list[0].name)
-        eq_(datetime(2015, 6, 22, 23, 7, 43, 240000,
-                     timezone.utc), buckets_list[0].creation_date)
+        eq_(
+            datetime(2015, 6, 22, 23, 7, 43, 240000),
+            buckets_list[0].creation_date,
+        )
         eq_('world', buckets_list[1].name)
-        eq_(datetime(2015, 6, 22, 23, 7, 56, 766000,
-                     timezone.utc), buckets_list[1].creation_date)
+        eq_(
+            datetime(2015, 6, 22, 23, 7, 56, 766000),
+            buckets_list[1].creation_date,
+        )

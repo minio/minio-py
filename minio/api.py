@@ -44,6 +44,7 @@ import urllib3
 
 from . import __title__, __version__
 from .credentials import StaticProvider
+from .datatypes import ListAllMyBucketsResult
 from .definitions import BaseURL, Object, ObjectWriteResult, Part
 from .error import InvalidResponseError, S3Error, ServerError
 from .helpers import (amzprefix_user_metadata, check_bucket_name,
@@ -54,10 +55,9 @@ from .helpers import (amzprefix_user_metadata, check_bucket_name,
                       read_part_data, sha256_hash, strptime_rfc3339)
 from .lifecycleconfig import LifecycleConfig
 from .parsers import (parse_error_response, parse_get_bucket_notification,
-                      parse_list_buckets, parse_list_multipart_uploads,
-                      parse_list_object_versions, parse_list_objects,
-                      parse_list_objects_v2, parse_list_parts,
-                      parse_multi_delete_response,
+                      parse_list_multipart_uploads, parse_list_object_versions,
+                      parse_list_objects, parse_list_objects_v2,
+                      parse_list_parts, parse_multi_delete_response,
                       parse_multipart_upload_result,
                       parse_new_multipart_upload)
 from .replicationconfig import ReplicationConfig
@@ -614,16 +614,17 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         List information of all accessible buckets.
 
-        :return: An iterator contains bucket information.
+        :return: List of :class:`Bucket <Bucket>` object.
 
         Example::
             bucket_list = minio.list_buckets()
             for bucket in bucket_list:
-                print(bucket.name, bucket.created_date)
+                print(bucket.name, bucket.creation_date)
         """
 
         response = self._execute("GET")
-        return parse_list_buckets(response.data)
+        result = unmarshal(ListAllMyBucketsResult, response.data.decode())
+        return result.buckets
 
     def bucket_exists(self, bucket_name):
         """
