@@ -29,8 +29,4 @@ __copyright__ = 'Copyright 2019 MinIO, Inc.'
 from .errors import SelectCRCValidationError, SelectMessageError
 from .helpers import (byte_int, calculate_crc,  # pylint: disable=unused-import
                       validate_crc)
-from .options import (CSVInput, CSVOutput,  # pylint: disable=unused-import
-                      InputSerialization, JSONInput, JSONOutput,
-                      OutputSerialization, ParquetInput, RequestProgress,
-                      SelectObjectOptions)
 from .reader import SelectObjectReader  # pylint: disable=unused-import

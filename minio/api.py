@@ -62,6 +62,7 @@ from .parsers import (parse_copy_object, parse_error_response,
                       parse_new_multipart_upload)
 from .replicationconfig import ReplicationConfig
 from .select import SelectObjectReader
+from .selectrequest import SelectRequest
 from .signer import (AMZ_DATE_FORMAT, SIGN_V4_ALGORITHM, get_credential_string,
                      post_presign_v4, presign_v4, sign_v4_s3)
 from .sse import SseCustomerKey
@@ -71,8 +72,7 @@ from .xml import Element, SubElement, marshal, unmarshal
 from .xml_marshal import (marshal_bucket_notifications,
                           marshal_complete_multipart,
                           xml_marshal_bucket_encryption,
-                          xml_marshal_delete_objects, xml_marshal_select,
-                          xml_to_dict)
+                          xml_marshal_delete_objects, xml_to_dict)
 
 try:
     from json.decoder import JSONDecodeError
@@ -533,21 +533,29 @@ class Minio:  # pylint: disable=too-many-public-methods
         """Disables virtual style endpoint."""
         self._base_url.virtual_style_flag = False
 
-    def select_object_content(self, bucket_name, object_name, opts):
+    def select_object_content(self, bucket_name, object_name, request):
         """
         Select content of an object by SQL expression.
 
         :param bucket_name: Name of the bucket.
         :param object_name: Object name in the bucket.
-        :param opts: Options for select object.
+        :param request: :class:`SelectRequest <SelectRequest>` object.
         :return: A reader contains requested records and progress information.
 
         Example::
-            data = client.select_object_content('foo', 'test.csv', options)
+            request = SelectRequest(
+                "select * from s3object",
+                CSVInputSerialization(),
+                CSVOutputSerialization(),
+                request_progress=True,
+            )
+            data = client.select_object_content('foo', 'test.csv', request)
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
-        body = xml_marshal_select(opts)
+        if not isinstance(request, SelectRequest):
+            raise ValueError("request must be SelectRequest type")
+        body = marshal(request)
         response = self._execute(
             "POST",
             bucket_name=bucket_name,

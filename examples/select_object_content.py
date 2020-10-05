@@ -16,69 +16,22 @@
 
 
 from minio import Minio
-from minio.error import ResponseError
-from minio.select.errors import SelectCRCValidationError, SelectMessageError
-from minio.select.options import (CSVInput, CSVOutput, InputSerialization,
-                                  OutputSerialization, RequestProgress,
-                                  SelectObjectOptions)
-
-# from minio.select.options import JSONOutput
-# from minio.select.options import JsonInput
-# from minio.select.options import ParquetInput
+from minio.selectrequest import (CSVInputSerialization, CSVOutputSerialization,
+                                 SelectRequest)
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEY',
                secret_key='YOUR-SECRETKEY')
 
-options = SelectObjectOptions(
-    expression="select * from s3object",
-    input_serialization=InputSerialization(
-        compression_type="NONE",
-        csv=CSVInput(
-            file_header_info="USE",
-            record_delimiter="\n",
-            field_delimiter=",",
-            quote_character='"',
-            quote_escape_character='"',
-            comments="#",
-            allow_quoted_record_delimiter="FALSE",
-        ),
-        # If input is JSON
-        # json=JSONInput(json_type="DOCUMENT")
-    ),
-
-    output_serialization=OutputSerialization(
-        csv=CSVOutput(
-            quote_fields="ASNEEDED",
-            record_delimiter="\n",
-            field_delimiter=",",
-            quote_character='"',
-            quote_escape_character='"',
-        ),
-
-        # json = JSONOutput(record_delimiter="\n")
-    ),
-    request_progress=RequestProgress(
-        enabled="False"
-    )
+request = SelectRequest(
+    "select * from s3object",
+    CSVInputSerialization(),
+    CSVOutputSerialization(),
+    request_progress=True,
 )
-
-try:
-    data = client.select_object_content('your-bucket', 'your-object', options)
-
-    # Get the records
-    with open('my-record-file', 'w') as record_data:
-        for d in data.stream(10*1024):
-            record_data.write(d)
-
+data = client.select_object_content('my-bucket', 'my-object', request)
+with open('my-record-file', 'w') as record_data:
+    for d in data.stream(10*1024):
+        record_data.write(d)
     # Get the stats
     print(data.stats())
-
-except SelectMessageError as err:
-    print(err)
-
-except SelectCRCValidationError as err:
-    print(err)
-
-except ResponseError as err:
-    print(err)
