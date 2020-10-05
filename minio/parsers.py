@@ -386,17 +386,6 @@ def parse_new_multipart_upload(data):
     return root.get_child_text('UploadId')
 
 
-def parse_location_constraint(data):
-    """
-    Parser for location constraint response.
-
-    :param data: Response data for get bucket location.
-    :return: Returns location of your bucket.
-    """
-    root = S3Element.fromstring('BucketLocationConstraintResult', data)
-    return root.text()
-
-
 def parse_get_bucket_notification(data):
     """
     Parser for a get_bucket_notification response from S3.
