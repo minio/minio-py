@@ -111,22 +111,6 @@ def xml_marshal_bucket_encryption(rules):
     return _get_xml_data(root)
 
 
-def marshal_complete_multipart(uploaded_parts):
-    """
-    Marshal's complete multipart upload request based on *uploaded_parts*.
-
-    :param uploaded_parts: List of all uploaded parts, ordered by part number.
-    :return: Marshalled XML data.
-    """
-    root = Element('CompleteMultipartUpload', with_namespace=True)
-    for uploaded_part in uploaded_parts:
-        part = SubElement(root, 'Part')
-        SubElement(part, 'PartNumber', str(uploaded_part.part_number))
-        SubElement(part, 'ETag', '"' + uploaded_part.etag + '"')
-
-    return _get_xml_data(root)
-
-
 def marshal_bucket_notifications(notifications):
     """
     Marshals the notifications structure for sending to S3 compatible storage
