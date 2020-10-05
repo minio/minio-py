@@ -30,24 +30,34 @@ s3Client = Minio(
 )
 ```
 
-| Bucket operations                                         | Object operations                                               | Presigned operations                              | Bucket policy/notification/encryption operations                    |
-|:----------------------------------------------------------|:----------------------------------------------------------------|:--------------------------------------------------|:--------------------------------------------------------------------|
-| [`make_bucket`](#make_bucket)                             | [`get_object`](#get_object)                                     | [`presigned_get_object`](#presigned_get_object)   | [`get_bucket_policy`](#get_bucket_policy)                           |
-| [`list_buckets`](#list_buckets)                           | [`put_object`](#put_object)                                     | [`presigned_put_object`](#presigned_put_object)   | [`set_bucket_policy`](#set_bucket_policy)                           |
-| [`bucket_exists`](#bucket_exists)                         | [`copy_object`](#copy_object)                                   | [`presigned_post_policy`](#presigned_post_policy) | [`delete_bucket_policy`](#delete_bucket_policy)                     |
-| [`remove_bucket`](#remove_bucket)                         | [`stat_object`](#stat_object)                                   |                                                   | [`get_bucket_notification`](#get_bucket_notification)               |
-| [`list_objects`](#list_objects)                           | [`remove_object`](#remove_object)                               |                                                   | [`set_bucket_notification`](#set_bucket_notification)               |
-| [`get_bucket_versioning`](#get_bucket_versioning)         | [`remove_objects`](#remove_objects)                             |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
-| [`set_bucket_versioning`](#set_bucket_versioning)         | [`fput_object`](#fput_object)                                   |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
-| [`delete_bucket_replication`](#delete_bucket_replication) | [`fget_object`](#fget_object)                                   |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
-| [`get_bucket_replication`](#get_bucket_replication)       | [`select_object_content`](#select_object_content)               |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
-| [`set_bucket_replication`](#set_bucket_replication)       | [`delete_object_tags`](#delete_object_tags)                     |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
-| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)     | [`get_object_tags`](#get_object_tags)                           |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
-| [`get_bucket_lifecycle`](#get_bucket_lifecycle)           | [`set_object_tags`](#set_object_tags)                           |                                                   |                                                                     |
-| [`set_bucket_lifecycle`](#set_bucket_lifecycle)           | [`enable_object_legal_hold`](#enable_object_legal_hold)         |                                                   |                                                                     |
-| [`delete_bucket_tags`](#delete_bucket_tags)               | [`disable_object_legal_hold`](#disable_object_legal_hold)       |                                                   |                                                                     |
-| [`get_bucket_tags`](#get_bucket_tags)                     | [`is_object_legal_hold_enabled`](#is_object_legal_hold_enabled) |                                                   |                                                                     |
-| [`set_bucket_tags`](#set_bucket_tags)                     |                                                                 |                                                   |                                                                     |
+| Bucket operations                                           | Object operations                                               | Presigned operations                              |
+|:------------------------------------------------------------|:----------------------------------------------------------------|:--------------------------------------------------|
+| [`make_bucket`](#make_bucket)                               | [`get_object`](#get_object)                                     | [`presigned_get_object`](#presigned_get_object)   |
+| [`list_buckets`](#list_buckets)                             | [`put_object`](#put_object)                                     | [`presigned_put_object`](#presigned_put_object)   |
+| [`bucket_exists`](#bucket_exists)                           | [`copy_object`](#copy_object)                                   | [`presigned_post_policy`](#presigned_post_policy) |
+| [`remove_bucket`](#remove_bucket)                           | [`stat_object`](#stat_object)                                   |                                                   |
+| [`list_objects`](#list_objects)                             | [`remove_object`](#remove_object)                               |                                                   |
+| [`get_bucket_versioning`](#get_bucket_versioning)           | [`remove_objects`](#remove_objects)                             |                                                   |
+| [`set_bucket_versioning`](#set_bucket_versioning)           | [`fput_object`](#fput_object)                                   |                                                   |
+| [`delete_bucket_replication`](#delete_bucket_replication)   | [`fget_object`](#fget_object)                                   |                                                   |
+| [`get_bucket_replication`](#get_bucket_replication)         | [`select_object_content`](#select_object_content)               |                                                   |
+| [`set_bucket_replication`](#set_bucket_replication)         | [`delete_object_tags`](#delete_object_tags)                     |                                                   |
+| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)       | [`get_object_tags`](#get_object_tags)                           |                                                   |
+| [`get_bucket_lifecycle`](#get_bucket_lifecycle)             | [`set_object_tags`](#set_object_tags)                           |                                                   |
+| [`set_bucket_lifecycle`](#set_bucket_lifecycle)             | [`enable_object_legal_hold`](#enable_object_legal_hold)         |                                                   |
+| [`delete_bucket_tags`](#delete_bucket_tags)                 | [`disable_object_legal_hold`](#disable_object_legal_hold)       |                                                   |
+| [`get_bucket_tags`](#get_bucket_tags)                       | [`is_object_legal_hold_enabled`](#is_object_legal_hold_enabled) |                                                   |
+| [`set_bucket_tags`](#set_bucket_tags)                       |                                                                 |                                                   |
+| [`delete_bucket_policy`](#delete_bucket_policy)             |                                                                 |                                                   |
+| [`get_bucket_policy`](#get_bucket_policy)                   |                                                                 |                                                   |
+| [`set_bucket_policy`](#set_bucket_policy)                   |                                                                 |                                                   |
+| [`delete_bucket_notification`](#delete_bucket_notification) |                                                                 |                                                   |
+| [`get_bucket_notification`](#get_bucket_notification)       |                                                                 |                                                   |
+| [`set_bucket_notification`](#set_bucket_notification)       |                                                                 |                                                   |
+| [`listen_bucket_notification`](#listen_bucket_notification) |                                                                 |                                                   |
+| [`delete_bucket_encryption`](#delete_bucket_encryption)     |                                                                 |                                                   |
+| [`get_bucket_encryption`](#get_bucket_encryption)           |                                                                 |                                                   |
+| [`put_bucket_encryption`](#put_bucket_encryption)           |                                                                 |                                                   |
 
 ## 1. Constructor
 
@@ -345,9 +355,9 @@ __Parameters__
 
 __Return Value__
 
-| Param                                 |
-|:--------------------------------------|
-| Notification configuration as _dict_. |
+| Param                        |
+|:-----------------------------|
+| _NotificationConfig_ object. |
 
 __Example__
 
@@ -357,126 +367,38 @@ config = minio.get_bucket_notification("my-bucketname")
 
 <a name="set_bucket_notification"></a>
 
-### set_bucket_notification(bucket_name, notification)
+### set_bucket_notification(bucket_name, config)
 
 Set notification configuration of a bucket.
 
 __Parameters__
 
-| Param            | Type   | Description                                              |
-|:-----------------|:-------|:---------------------------------------------------------|
-| ``bucket_name``  | _str_  | Name of the bucket.                                      |
-| ``notification`` | _dict_ | Non-empty dictionary with the structure specified below. |
-
-The `notification` argument has the following structure:
-
-* (dict) --
-  * __TopicConfigurations__ (list) -- Optional list of service
-    configuration items specifying AWS SNS Topics as the target of the
-    notification.
-  * __QueueConfigurations__ (list) -- Optional list of service
-    configuration items specifying AWS SQS Queues as the target of the
-    notification.
-  * __CloudFunctionconfigurations__ (list) -- Optional list of service
-    configuration items specifying AWS Lambda Cloud functions as the
-    target of the notification.
-
-At least one of the above items needs to be specified in the
-`notification` argument.
-
-The "service configuration item" alluded to above has the following structure:
-
-* (dict) --
-  * __Id__ (string) -- Optional Id for the configuration item. If not
-    specified, it is auto-generated by the server.
-  * __Arn__ (string) -- Specifies the particular Topic/Queue/Cloud
-    Function identifier.
-  * __Events__ (list) -- A non-empty list of event-type strings from:
-      _'s3:ReducedRedundancyLostObject'_,
-      _'s3:ObjectCreated:*'_,
-      _'s3:ObjectCreated:Put'_,
-      _'s3:ObjectCreated:Post'_,
-      _'s3:ObjectCreated:Copy'_,
-      _'s3:ObjectCreated:CompleteMultipartUpload'_,
-      _'s3:ObjectRemoved:*'_,
-      _'s3:ObjectRemoved:Delete'_,
-      _'s3:ObjectRemoved:DeleteMarkerCreated'_
-  * __Filter__ (dict) -- An optional dictionary container of object
-    key name based filter rules.
-    * __Key__ (dict) -- Dictionary container of object key name prefix
-      and suffix filtering rules.
-      * __FilterRules__ (list) -- A list of containers that specify
-        the criteria for the filter rule.
-        * (dict) -- A dictionary container of key value pairs that
-          specify a single filter rule.
-          * __Name__ (string) -- Object key name with value 'prefix'
-            or 'suffix'.
-          * __Value__ (string) -- Specify the value of the
-            prefix/suffix to which the rule applies.
+| Param           | Type                 | Description                 |
+|:----------------|:---------------------|:----------------------------|
+| ``bucket_name`` | _str_                | Name of the bucket.         |
+| ``config``      | _NotificationConfig_ | Notification configuration. |
 
 __Example__
 
 ```py
-config = {
-    'QueueConfigurations': [
-        {
-            'Id': '1',
-            'Arn': 'arn1',
-            'Events': ['s3:ObjectCreated:*'],
-            'Filter': {
-                'Key': {
-                    'FilterRules': [
-                        {
-                            'Name': 'prefix',
-                            'Value': 'abc'
-                        }
-                    ]
-                }
-            }
-        }
+config = NotificationConfig(
+    queue_config_list=[
+        QueueConfig(
+            "QUEUE-ARN-OF-THIS-BUCKET",
+            ['s3:ObjectCreated:*'],
+            config_id="1",
+            prefix_filter_rule=PrefixFilterRule("abc"),
+        ),
     ],
-    'TopicConfigurations': [
-        {
-            'Arn': 'arn2',
-            'Events': ['s3:ObjectCreated:*'],
-            'Filter': {
-                'Key': {
-                    'FilterRules': [
-                        {
-                            'Name': 'suffix',
-                            'Value': '.jpg'
-                        }
-                    ]
-                }
-            }
-        }
-    ],
-    'CloudFunctionConfigurations': [
-        {
-            'Arn': 'arn3',
-            'Events': ['s3:ObjectRemoved:*'],
-            'Filter': {
-                'Key': {
-                    'FilterRules': [
-                        {
-                            'Name': 'suffix',
-                            'Value': '.jpg'
-                        }
-                    ]
-                }
-            }
-        }
-    ]
-}
-
+)
 minio.set_bucket_notification("my-bucketname", config)
 ```
 
-<a name="remove_all_bucket_notification"></a>
+<a name="delete_bucket_notification"></a>
 
-### remove_all_bucket_notification(bucket_name)
+### delete_bucket_notification(bucket_name)
 
-Remove notification configuration of a bucket. On success, S3 service stops notification of events previously set of the bucket.
+Delete notification configuration of a bucket. On success, S3 service stops notification of events previously set of the bucket.
 
 __Parameters__
 
@@ -487,7 +409,7 @@ __Parameters__
 __Example__
 
 ```py
-minio.remove_all_bucket_notification("my-bucketname")
+minio.delete_bucket_notification("my-bucketname")
 ```
 
 <a name="listen_bucket_notification"></a>

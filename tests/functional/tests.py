@@ -1705,8 +1705,11 @@ def test_get_bucket_notification(log_entry):
 
     _CLIENT.make_bucket(bucket_name)
     try:
-        notification = _CLIENT.get_bucket_notification(bucket_name)
-        if notification:
+        config = _CLIENT.get_bucket_notification(bucket_name)
+        if (
+                config.cloud_func_config_list or config.queue_config_list or
+                config.topic_config_list
+        ):
             raise ValueError("Failed to receive an empty bucket notification")
     finally:
         _CLIENT.remove_bucket(bucket_name)

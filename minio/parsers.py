@@ -34,7 +34,6 @@ from .definitions import (ListMultipartUploadsResult, ListPartsResult,
                           MultipartUploadResult)
 from .error import S3Error
 from .helpers import strptime_rfc3339
-from .xml_marshal import NOTIFICATIONS_ARN_FIELDNAME_MAP
 
 # dependencies.
 
@@ -195,69 +194,6 @@ def parse_new_multipart_upload(data):
     """
     root = S3Element.fromstring('InitiateMultipartUploadResult', data)
     return root.get_child_text('UploadId')
-
-
-def parse_get_bucket_notification(data):
-    """
-    Parser for a get_bucket_notification response from S3.
-
-    :param data: Body of response from get_bucket_notification.
-    :return: Returns bucket notification configuration
-    """
-    root = S3Element.fromstring('GetBucketNotificationResult', data)
-
-    notifications = _add_notifying_service_config(
-        root, {},
-        'TopicConfigurations', 'TopicConfiguration'
-    )
-    notifications = _add_notifying_service_config(
-        root, notifications,
-        'QueueConfigurations', 'QueueConfiguration'
-    )
-    notifications = _add_notifying_service_config(
-        root, notifications,
-        'CloudFunctionConfigurations', 'CloudFunctionConfiguration'
-    )
-
-    return notifications
-
-
-def _add_notifying_service_config(data, notifications, service_key,
-                                  service_xml_tag):
-    """Add service configuration in notification."""
-
-    arn_elt_name = NOTIFICATIONS_ARN_FIELDNAME_MAP[service_xml_tag]
-    config = []
-    for service in data.findall(service_xml_tag):
-        config_item = {}
-        config_item['Id'] = service.get_child_text('Id')
-        config_item['Arn'] = service.get_child_text(arn_elt_name)
-        config_item['Events'] = [
-            event.text() for event in service.findall('Event')
-        ]
-        filter_terms = [
-            {
-                'Key': {
-                    'FilterRules': [
-                        {
-                            'Name': xml_filter_rule.get_child_text('Name'),
-                            'Value': xml_filter_rule.get_child_text('Value'),
-                        }
-                        for xml_filter_rule in xml_filter_rules.findall(
-                            './S3Key/FilterRule')
-                    ]
-                }
-            }
-            for xml_filter_rules in service.findall('Filter')
-        ]
-        if len(filter_terms) > 0:
-            config_item['Filter'] = filter_terms
-        config.append(config_item)
-
-    if len(config) > 0:
-        notifications[service_key] = config
-
-    return notifications
 
 
 def parse_list_multipart_uploads(data):
