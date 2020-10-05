@@ -18,15 +18,11 @@
 # dummy values, please replace them with original values.
 
 from minio import Minio
-from minio.error import ResponseError
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY',
-               secure=True)
+client = Minio(
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+)
 
-try:
-    # Get current policy of bucket 'my-bucketname'.
-    print(client.get_bucket_encryption('my-bucketname'))
-except ResponseError as err:
-    print(err)
+config = client.get_bucket_encryption("my-bucketname")

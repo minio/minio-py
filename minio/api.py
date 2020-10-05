@@ -70,11 +70,11 @@ from .selectrequest import SelectRequest
 from .signer import (AMZ_DATE_FORMAT, SIGN_V4_ALGORITHM, get_credential_string,
                      post_presign_v4, presign_v4, sign_v4_s3)
 from .sse import SseCustomerKey
+from .sseconfig import SSEConfig
 from .tagging import Tagging
 from .thread_pool import ThreadPool
 from .versioningconfig import VersioningConfig
 from .xml import Element, SubElement, findtext, getbytes, marshal, unmarshal
-from .xml_marshal import xml_marshal_bucket_encryption, xml_to_dict
 
 try:
     from json.decoder import JSONDecodeError
@@ -772,22 +772,22 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         self.set_bucket_notification(bucket_name, NotificationConfig())
 
-    def put_bucket_encryption(self, bucket_name, enc_config):
+    def set_bucket_encryption(self, bucket_name, config):
         """
         Set encryption configuration of a bucket.
 
         :param bucket_name: Name of the bucket.
-        :param enc_config: Encryption configuration as dictionary to be set.
+        :param config: :class:`SSEConfig <SSEConfig>` object.
 
         Example::
-            minio.put_bucket_encryption("my-bucketname", config)
+            minio.set_bucket_encryption(
+                "my-bucketname", SSEConfig(Rule.new_sse_s3_rule()),
+            )
         """
         check_bucket_name(bucket_name)
-
-        # 'Rule' is a list, so we need to go through each one of
-        # its key/value pair and collect the encryption values.
-        rules = enc_config['ServerSideEncryptionConfiguration']['Rule']
-        body = xml_marshal_bucket_encryption(rules)
+        if not isinstance(config, SSEConfig):
+            raise ValueError("config must be SSEConfig type")
+        body = marshal(config)
         self._execute(
             "PUT",
             bucket_name,
@@ -801,18 +801,23 @@ class Minio:  # pylint: disable=too-many-public-methods
         Get encryption configuration of a bucket.
 
         :param bucket_name: Name of the bucket.
-        :return: Encryption configuration.
+        :return: :class:`SSEConfig <SSEConfig>` object.
 
         Example::
             config = minio.get_bucket_encryption("my-bucketname")
         """
         check_bucket_name(bucket_name)
-        response = self._execute(
-            "GET",
-            bucket_name,
-            query_params={"encryption": ""},
-        )
-        return xml_to_dict(response.data.decode())
+        try:
+            response = self._execute(
+                "GET",
+                bucket_name,
+                query_params={"encryption": ""},
+            )
+            return unmarshal(SSEConfig, response.data.decode())
+        except S3Error as exc:
+            if exc.code != "ServerSideEncryptionConfigurationNotFoundError":
+                raise
+        return None
 
     def delete_bucket_encryption(self, bucket_name):
         """
@@ -824,11 +829,15 @@ class Minio:  # pylint: disable=too-many-public-methods
             minio.delete_bucket_encryption("my-bucketname")
         """
         check_bucket_name(bucket_name)
-        self._execute(
-            "DELETE",
-            bucket_name,
-            query_params={"encryption": ""},
-        )
+        try:
+            self._execute(
+                "DELETE",
+                bucket_name,
+                query_params={"encryption": ""},
+            )
+        except S3Error as exc:
+            if exc.code != "ServerSideEncryptionConfigurationNotFoundError":
+                raise
 
     def listen_bucket_notification(self, bucket_name, prefix='', suffix='',
                                    events=('s3:ObjectCreated:*',
