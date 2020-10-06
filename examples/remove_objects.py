@@ -18,19 +18,17 @@
 # are dummy values, please replace them with original values.
 
 from minio import Minio
-from minio.error import ResponseError
+from minio.deleteobjects import DeleteObject
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
                secret_key='YOUR-SECRETACCESSKEY')
 
 # Remove a prefix recursively.
-try:
-    names = map(
-        lambda x: x.object_name,
-        client.list_objects('my-bucketname', 'my-prefix', recursive=True)
-    )
-    for err in client.remove_objects('my-bucketname', names):
-        print("Deletion Error: {}".format(err))
-except ResponseError as err:
-    print(err)
+delete_object_list = map(
+    lambda x: DeleteObject(x.object_name),
+    client.list_objects("my-bucketname", "my-prefix", recursive=True),
+)
+errors = client.remove_objects("my-bucketname", delete_object_list)
+for error in errors:
+    print("error occured when deleting object", error)

@@ -32,8 +32,7 @@ from xml.etree.ElementTree import ParseError
 
 from .definitions import (ListMultipartUploadsResult, ListPartsResult,
                           MultipartUploadResult)
-# minio specific.
-from .error import MultiDeleteError, S3Error
+from .error import S3Error
 from .helpers import strptime_rfc3339
 from .xml_marshal import NOTIFICATIONS_ARN_FIELDNAME_MAP
 
@@ -259,24 +258,6 @@ def _add_notifying_service_config(data, notifications, service_key,
         notifications[service_key] = config
 
     return notifications
-
-
-def parse_multi_delete_response(data):
-    """Parser for Multi-Object Delete API response.
-
-    :param data: XML response body content from service.
-
-    :return: Returns list of error objects for each delete object that
-    had an error.
-
-    """
-    root = S3Element.fromstring('MultiObjectDeleteResult', data)
-    return [
-        MultiDeleteError(errtag.get_child_text('Key'),
-                         errtag.get_child_text('Code'),
-                         errtag.get_child_text('Message'))
-        for errtag in root.findall('Error')
-    ]
 
 
 def parse_list_multipart_uploads(data):

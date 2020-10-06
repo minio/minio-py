@@ -40,6 +40,7 @@ import urllib3
 
 from minio import CopyConditions, Minio, PostPolicy
 from minio.commonconfig import ENABLED
+from minio.deleteobjects import DeleteObject
 from minio.error import S3Error
 from minio.select.helpers import calculate_crc
 from minio.selectrequest import (CSVInputSerialization, CSVOutputSerialization,
@@ -1843,14 +1844,20 @@ def _test_remove_objects(log_entry, version_check=False):
             object_names.append(
                 (object_name, version_id) if version_check else object_name,
             )
-        log_entry["args"]["objects_iter"] = object_names
+        log_entry["args"]["delete_object_list"] = object_names
 
         # delete the objects in a single library call.
-        for err in _CLIENT.remove_objects(bucket_name, object_names):
+        errs = _CLIENT.remove_objects(
+            bucket_name, map(DeleteObject, object_names),
+        )
+        for err in errs:
             raise ValueError("Remove objects err: {}".format(err))
     finally:
         # Try to clean everything to keep our server intact
-        for err in _CLIENT.remove_objects(bucket_name, object_names):
+        errs = _CLIENT.remove_objects(
+            bucket_name, map(DeleteObject, object_names),
+        )
+        for err in errs:
             raise ValueError("Remove objects err: {}".format(err))
         _CLIENT.remove_bucket(bucket_name)
 

@@ -18,39 +18,15 @@ import itertools
 from unittest import TestCase
 
 import mock
-from nose.tools import raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
+from minio.deleteobjects import DeleteObject
 
 from .minio_mocks import MockConnection, MockResponse
 
 
 class RemoveObjectsTest(TestCase):
-    @raises(TypeError)
-    def test_object_is_non_string_iterable_1(self):
-        client = Minio('localhost:9000')
-        for err in client.remove_objects('hello', 1234):
-            print(err)
-
-    @raises(TypeError)
-    def test_object_is_non_string_iterable_2(self):
-        client = Minio('localhost:9000')
-        for err in client.remove_objects('hello', u'abc'):
-            print(err)
-
-    @raises(TypeError)
-    def test_object_is_non_string_iterable_3(self):
-        client = Minio('localhost:9000')
-        for err in client.remove_objects('hello', b'abc'):
-            print(err)
-
-    @raises(ValueError)
-    def test_bucket_invalid_name(self):
-        client = Minio('localhost:9000')
-        for err in client.remove_objects('AB&CD', 'world'):
-            print(err)
-
     @mock.patch('urllib3.PoolManager')
     def test_object_is_list(self, mock_connection):
         mock_server = MockConnection()
@@ -63,7 +39,10 @@ class RemoveObjectsTest(TestCase):
                          content='<Delete/>')
         )
         client = Minio('localhost:9000')
-        for err in client.remove_objects('hello', ["Ab", "c"]):
+        for err in client.remove_objects(
+                "hello",
+                [DeleteObject("Ab"), DeleteObject("c")],
+        ):
             print(err)
 
     @mock.patch('urllib3.PoolManager')
@@ -78,7 +57,10 @@ class RemoveObjectsTest(TestCase):
                          content='<Delete/>')
         )
         client = Minio('localhost:9000')
-        for err in client.remove_objects('hello', ('Ab', 'c')):
+        for err in client.remove_objects(
+                "hello",
+                (DeleteObject("Ab"), DeleteObject("c")),
+        ):
             print(err)
 
     @mock.patch('urllib3.PoolManager')
@@ -93,6 +75,6 @@ class RemoveObjectsTest(TestCase):
                          content='<Delete/>')
         )
         client = Minio('localhost:9000')
-        it = itertools.chain(('Ab', 'c'))
+        it = itertools.chain((DeleteObject("Ab"), DeleteObject("c")))
         for err in client.remove_objects('hello', it):
             print(err)
