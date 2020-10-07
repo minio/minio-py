@@ -44,20 +44,20 @@ import urllib3
 
 from . import __title__, __version__
 from .credentials import StaticProvider
-from .definitions import BaseURL, Object, Part
+from .definitions import BaseURL, Object, ObjectWriteResult, Part
 from .error import InvalidResponseError, S3Error, ServerError
 from .helpers import (amzprefix_user_metadata, check_bucket_name,
                       check_non_empty_string, check_sse, check_ssec,
                       get_part_info, headers_to_strings, is_amz_header,
                       is_supported_header, is_valid_notification_config,
                       is_valid_policy_type, makedirs, md5sum_hash, quote,
-                      read_part_data, sha256_hash)
+                      read_part_data, sha256_hash, strptime_rfc3339)
 from .lifecycleconfig import LifecycleConfig
-from .parsers import (parse_copy_object, parse_error_response,
-                      parse_get_bucket_notification, parse_list_buckets,
-                      parse_list_multipart_uploads, parse_list_object_versions,
-                      parse_list_objects, parse_list_objects_v2,
-                      parse_list_parts, parse_multi_delete_response,
+from .parsers import (parse_error_response, parse_get_bucket_notification,
+                      parse_list_buckets, parse_list_multipart_uploads,
+                      parse_list_object_versions, parse_list_objects,
+                      parse_list_objects_v2, parse_list_parts,
+                      parse_multi_delete_response,
                       parse_multipart_upload_result,
                       parse_new_multipart_upload)
 from .replicationconfig import ReplicationConfig
@@ -67,7 +67,7 @@ from .signer import (AMZ_DATE_FORMAT, SIGN_V4_ALGORITHM, get_credential_string,
 from .sse import SseCustomerKey
 from .thread_pool import ThreadPool
 from .versioningconfig import VersioningConfig
-from .xml import Element, SubElement, marshal, unmarshal
+from .xml import Element, SubElement, findtext, marshal, unmarshal
 from .xml_marshal import (marshal_bucket_notifications,
                           marshal_complete_multipart,
                           xml_marshal_bucket_encryption,
@@ -1090,7 +1090,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param sse: Server-side encryption of destination object.
         :param metadata: Any user-defined metadata to be copied along with
                          destination object.
-        :return: :class:`CopyObjectResult`
+        :return: :class:`ObjectWriteResult <ObjectWriteResult>` object.
 
         Example::
             minio.copy_object(
@@ -1128,7 +1128,20 @@ class Minio:  # pylint: disable=too-many-public-methods
             object_name=object_name,
             headers=headers,
         )
-        return parse_copy_object(bucket_name, object_name, response.data)
+        element = ET.fromstring(response.data.decode())
+        etag = findtext(element, "ETag")
+        if etag:
+            etag = etag.replace('"', "")
+        last_modified = findtext(element, "LastModified")
+        if last_modified:
+            last_modified = strptime_rfc3339(last_modified)
+        return ObjectWriteResult(
+            bucket_name,
+            object_name,
+            response.getheader("x-amz-version-id"),
+            etag,
+            last_modified,
+        )
 
     def _abort_multipart_upload(self, bucket_name, object_name, upload_id):
         """Execute AbortMultipartUpload S3 API."""

@@ -30,8 +30,8 @@ from urllib.parse import unquote
 from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
 
-from .definitions import (Bucket, CopyObjectResult, ListMultipartUploadsResult,
-                          ListPartsResult, MultipartUploadResult, Object)
+from .definitions import (Bucket, ListMultipartUploadsResult, ListPartsResult,
+                          MultipartUploadResult, Object)
 # minio specific.
 from .error import MultiDeleteError, S3Error
 from .helpers import strptime_rfc3339
@@ -184,22 +184,6 @@ def parse_multipart_upload_result(data):
         root.get_child_text('Key'),
         root.get_child_text('Location'),
         root.get_etag_elem()
-    )
-
-
-def parse_copy_object(bucket_name, object_name, data):
-    """
-    Parser for copy object response.
-
-    :param data: Response data for copy object.
-    :return: :class:`CopyObjectResult <CopyObjectResult>`
-    """
-    root = S3Element.fromstring('CopyObjectResult', data)
-
-    return CopyObjectResult(
-        bucket_name, object_name,
-        root.get_etag_elem(),
-        root.get_time_elem('LastModified')
     )
 
 
