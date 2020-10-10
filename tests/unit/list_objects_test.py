@@ -46,7 +46,7 @@ class ListObjectsTest(TestCase):
                 "&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
-                content=mock_data,
+                content=mock_data.encode(),
             ),
         )
         client = Minio('localhost:9000')
@@ -90,7 +90,7 @@ class ListObjectsTest(TestCase):
                 "&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
-                content=mock_data,
+                content=mock_data.encode(),
             ),
         )
         client = Minio('localhost:9000')

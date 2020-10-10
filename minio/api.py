@@ -45,8 +45,8 @@ import urllib3
 from . import __title__, __version__
 from .commonconfig import Tags
 from .credentials import StaticProvider
-from .datatypes import ListAllMyBucketsResult
-from .definitions import BaseURL, Object, ObjectWriteResult, Part
+from .datatypes import ListAllMyBucketsResult, Object, parse_list_objects
+from .definitions import BaseURL, ObjectWriteResult, Part
 from .error import InvalidResponseError, S3Error, ServerError
 from .helpers import (amzprefix_user_metadata, check_bucket_name,
                       check_non_empty_string, check_sse, check_ssec,
@@ -56,8 +56,7 @@ from .helpers import (amzprefix_user_metadata, check_bucket_name,
                       read_part_data, sha256_hash, strptime_rfc3339)
 from .lifecycleconfig import LifecycleConfig
 from .parsers import (parse_error_response, parse_get_bucket_notification,
-                      parse_list_multipart_uploads, parse_list_object_versions,
-                      parse_list_objects, parse_list_objects_v2,
+                      parse_list_multipart_uploads,
                       parse_list_parts, parse_multi_delete_response,
                       parse_multipart_upload_result,
                       parse_new_multipart_upload)
@@ -2133,19 +2132,14 @@ class Minio:  # pylint: disable=too-many-public-methods
 
             response = self._execute("GET", bucket_name, query_params=query)
 
-            if include_version:
-                objects, is_truncated, start_after, version_id_marker = (
-                    parse_list_object_versions(response.data, bucket_name)
-                )
-            elif use_api_v1:
-                objects, is_truncated, start_after = parse_list_objects(
-                    response.data,
-                    bucket_name,
-                )
-            else:
-                objects, is_truncated, continuation_token = (
-                    parse_list_objects_v2(response.data, bucket_name)
-                )
+            objects, is_truncated, start_after, version_id_marker = (
+                parse_list_objects(response, bucket_name)
+            )
+
+            if not include_version:
+                version_id_marker = None
+                if not use_api_v1:
+                    continuation_token = start_after
 
             for obj in objects:
                 yield obj

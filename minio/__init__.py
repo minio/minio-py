@@ -36,6 +36,5 @@ __copyright__ = 'Copyright 2015, 2016, 2017, 2018, 2019, 2020 MinIO, Inc.'
 # pylint: disable=unused-import
 from .api import Minio
 from .copy_conditions import CopyConditions
-from .definitions import Object
 from .error import InvalidResponseError, S3Error, ServerError
 from .post_policy import PostPolicy
