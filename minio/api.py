@@ -59,11 +59,13 @@ from .parsers import (parse_copy_object, parse_error_response,
                       parse_multi_delete_response,
                       parse_multipart_upload_result,
                       parse_new_multipart_upload, parse_versioning_config)
+from .replicationconfig import ReplicationConfig
 from .select import SelectObjectReader
 from .signer import (AMZ_DATE_FORMAT, SIGN_V4_ALGORITHM, get_credential_string,
                      post_presign_v4, presign_v4, sign_v4_s3)
 from .sse import SseCustomerKey
 from .thread_pool import ThreadPool
+from .xml import marshal, unmarshal
 from .xml_marshal import (marshal_bucket_notifications,
                           marshal_complete_multipart,
                           marshal_versioning_config,
@@ -1751,6 +1753,83 @@ class Minio:  # pylint: disable=too-many-public-methods
         return (
             self._base_url.build("POST", region, bucket_name),
             post_policy.form_data,
+        )
+
+    def delete_bucket_replication(self, bucket_name):
+        """
+        Delete replication configuration of a bucket.
+
+        :param bucket_name: Name of the bucket.
+
+        Example::
+            minio.delete_bucket_replication("my-bucketname")
+        """
+        check_bucket_name(bucket_name)
+        self._execute("DELETE", bucket_name, query_params={"replication": ""})
+
+    def get_bucket_replication(self, bucket_name):
+        """
+        Get bucket replication configuration of a bucket.
+
+        :param bucket_name: Name of the bucket.
+        :return: :class:`ReplicationConfig <ReplicationConfig>` object.
+
+        Example::
+            config = minio.get_bucket_replication("my-bucketname")
+        """
+        check_bucket_name(bucket_name)
+        try:
+            response = self._execute(
+                "GET", bucket_name, query_params={"replication": ""},
+            )
+            return unmarshal(ReplicationConfig, response.data.decode())
+        except S3Error as exc:
+            if exc.code != "ReplicationConfigurationNotFoundError":
+                raise
+        return None
+
+    def set_bucket_replication(self, bucket_name, config):
+        """
+        Set bucket replication configuration to a bucket.
+
+        :param bucket_name: Name of the bucket.
+        :param config: :class:`ReplicationConfig <ReplicationConfig>` object.
+
+        Example::
+            config = ReplicationConfig(
+                "REPLACE-WITH-ACTUAL-ROLE",
+                [
+                    Rule(
+                        Destination(
+                            "REPLACE-WITH-ACTUAL-DESTINATION-BUCKET-ARN",
+                        ),
+                        ENABLED,
+                        delete_marker_replication=DeleteMarkerReplication(
+                            DISABLED,
+                        ),
+                        rule_filter=Filter(
+                            AndOperator(
+                                "TaxDocs",
+                                {"key1": "value1", "key2": "value2"},
+                            ),
+                        ),
+                        rule_id="rule1",
+                        priority=1,
+                    ),
+                ],
+            )
+            minio.set_bucket_replication("my-bucketname", config)
+        """
+        check_bucket_name(bucket_name)
+        if not isinstance(config, ReplicationConfig):
+            raise ValueError("config must be ReplicationConfig type")
+        body = marshal(config)
+        self._execute(
+            "PUT",
+            bucket_name,
+            body=body,
+            headers={"Content-MD5": md5sum_hash(body)},
+            query_params={"replication": ""},
         )
 
     def _list_objects(  # pylint: disable=too-many-arguments,too-many-branches
