@@ -30,7 +30,7 @@ import hashlib
 import hmac
 import re
 from collections import OrderedDict
-from urllib.parse import SplitResult
+from urllib.parse import SplitResult, quote
 
 from .helpers import queryencode, sha256_hash
 
@@ -264,7 +264,7 @@ def _get_presign_canonical_request_hash(  # pylint: disable=invalid-name
         signed_headers,
     )
     if token is not None:
-        query += "&X-Amz-Security-Token={0}".format(token)
+        query += "&X-Amz-Security-Token={0}".format(quote(token, safe=''))
     parts = list(url)
     parts[3] = query
     url = SplitResult(*parts)
