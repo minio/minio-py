@@ -23,19 +23,10 @@ from minio.select.options import (CSVInput, CSVOutput, InputSerialization,
                                   OutputSerialization, RequestProgress,
                                   SelectObjectOptions)
 from minio.xml_marshal import (marshal_complete_multipart,
-                               xml_marshal_bucket_constraint,
                                xml_marshal_select)
 
 
 class GenerateRequestTest(TestCase):
-    def test_generate_bucket_constraint(self):
-        expected_string = (b'<CreateBucketConfiguration '
-                           b'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
-                           b'<LocationConstraint>region</LocationConstraint>'
-                           b'</CreateBucketConfiguration>')
-        actual_string = xml_marshal_bucket_constraint('region')
-        eq_(expected_string, actual_string)
-
     def test_generate_complete_multipart_upload(self):
         expected_string = (b'<CompleteMultipartUpload '
                            b'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'

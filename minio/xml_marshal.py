@@ -111,18 +111,6 @@ def xml_marshal_bucket_encryption(rules):
     return _get_xml_data(root)
 
 
-def xml_marshal_bucket_constraint(region):
-    """
-    Marshal's bucket constraint based on *region*.
-
-    :param region: Region name of a given bucket.
-    :return: Marshalled XML data.
-    """
-    root = Element('CreateBucketConfiguration', with_namespace=True)
-    SubElement(root, 'LocationConstraint', region)
-    return _get_xml_data(root)
-
-
 def xml_marshal_select(req):
     """Encode select request to XML."""
 
