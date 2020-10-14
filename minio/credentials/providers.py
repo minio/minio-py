@@ -363,7 +363,7 @@ def _get_jwt_token(token_file):
 class IamAwsProvider(Provider):
     """Credential provider using IAM roles for Amazon EC2/ECS."""
 
-    def __init__(self, custom_endpoint=None, http_client=None):
+    def __init__(self, custom_endpoint=None, http_client=None, region=None):
         self._custom_endpoint = custom_endpoint
         self._http_client = http_client or urllib3.PoolManager(
             retries=urllib3.Retry(
@@ -373,7 +373,7 @@ class IamAwsProvider(Provider):
             ),
         )
         self._token_file = os.environ.get("AWS_WEB_IDENTITY_TOKEN_FILE")
-        self._aws_region = os.environ.get("AWS_REGION")
+        self._aws_region = region or os.environ.get("AWS_REGION")
         self._role_arn = os.environ.get("AWS_ROLE_ARN")
         self._role_session_name = os.environ.get("AWS_ROLE_SESSION_NAME")
         self._relative_uri = os.environ.get(
