@@ -312,7 +312,8 @@ def presign_v4(
 
     scope = _get_scope(date, region, "s3")
     canonical_request_hash, url = _get_presign_canonical_request_hash(
-        method, url, credentials.access_key, scope, date, expires, session_token,
+        method, url, credentials.access_key,
+        scope, date, expires, session_token,
     )
     string_to_sign = _get_string_to_sign(date, scope, canonical_request_hash)
     signing_key = _get_signing_key(credentials.secret_key, date, region, "s3")
