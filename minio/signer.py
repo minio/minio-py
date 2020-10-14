@@ -30,7 +30,7 @@ import hashlib
 import hmac
 import re
 from collections import OrderedDict
-from urllib.parse import SplitResult, quote
+from urllib.parse import SplitResult
 
 from .helpers import queryencode, sha256_hash
 
@@ -244,7 +244,7 @@ def sign_v4_sts(
 
 
 def _get_presign_canonical_request_hash(  # pylint: disable=invalid-name
-        method, url, access_key, scope, date, expires, token
+        method, url, access_key, scope, date, expires,
 ):
     """Get canonical request hash for presign request."""
 
@@ -263,8 +263,6 @@ def _get_presign_canonical_request_hash(  # pylint: disable=invalid-name
         expires,
         signed_headers,
     )
-    if token is not None:
-        query += "&X-Amz-Security-Token={0}".format(quote(token, safe=''))
     parts = list(url)
     parts[3] = query
     url = SplitResult(*parts)
@@ -306,14 +304,9 @@ def presign_v4(
 ):
     """Do signature V4 of given presign request."""
 
-    session_token = None
-    if hasattr(credentials, "session_token"):
-        session_token = credentials.session_token
-
     scope = _get_scope(date, region, "s3")
     canonical_request_hash, url = _get_presign_canonical_request_hash(
-        method, url, credentials.access_key,
-        scope, date, expires, session_token,
+        method, url, credentials.access_key, scope, date, expires,
     )
     string_to_sign = _get_string_to_sign(date, scope, canonical_request_hash)
     signing_key = _get_signing_key(credentials.secret_key, date, region, "s3")

@@ -1601,6 +1601,9 @@ class Minio:  # pylint: disable=too-many-public-methods
         query_params = extra_query_params or {}
         query_params.update({"versionId": version_id} if version_id else {})
         query_params.update(response_headers or {})
+        creds = self._provider.retrieve() if self._provider else None
+        if creds and creds.session_token:
+            query_params["X-Amz-Security-Token"] = creds.session_token
         url = self._base_url.build(
             method,
             region,
@@ -1609,12 +1612,12 @@ class Minio:  # pylint: disable=too-many-public-methods
             query_params=query_params,
         )
 
-        if self._provider:
+        if creds:
             url = presign_v4(
                 method,
                 url,
                 region,
-                self._provider.retrieve(),
+                creds,
                 request_date or datetime.utcnow(),
                 int(expires.total_seconds()),
             )
