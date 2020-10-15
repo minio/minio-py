@@ -25,7 +25,7 @@ This module contains core API parsers.
 
 """
 
-from datetime import datetime, timezone
+from datetime import timezone
 from urllib.parse import unquote
 from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
@@ -35,7 +35,7 @@ from .definitions import (Bucket, CopyObjectResult, ListMultipartUploadsResult,
                           VersioningConfig)
 # minio specific.
 from .error import MultiDeleteError, S3Error
-from .helpers import RFC3339, RFC3339NANO
+from .helpers import strptime_rfc3339
 from .xml_marshal import NOTIFICATIONS_ARN_FIELDNAME_MAP
 
 # dependencies.
@@ -131,15 +131,9 @@ class S3Element:
         """Parse a time XML child element.
 
         """
-        text = self.get_child_text(name)
-        try:
-            return datetime.strptime(
-                text, RFC3339NANO,
-            ).replace(tzinfo=timezone.utc)
-        except ValueError:
-            return datetime.strptime(
-                text, RFC3339,
-            ).replace(tzinfo=timezone.utc)
+        return strptime_rfc3339(
+            self.get_child_text(name),
+        ).replace(tzinfo=timezone.utc)
 
     def text(self):
         """Fetch the current node's text
