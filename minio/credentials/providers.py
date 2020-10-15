@@ -418,9 +418,12 @@ class IamAwsProvider(Provider):
         url = self._custom_endpoint
         if self._token_file:
             if not url:
-                url = "https://sts.{0}{1}amazonaws.com".format(
-                    self._aws_region, "." if self._aws_region else "",
-                )
+                if self._aws_region:
+                    url = "https://sts.{0}.amazonaws.com".format(
+                        self._aws_region
+                    )
+                else:
+                    url = "https://sts.amazonaws.com"
 
             provider = WebIdentityProvider(
                 lambda: _get_jwt_token(self._token_file),
