@@ -7,7 +7,6 @@ on:
   push:
     branches:
     - master
-    - test-python-3.9
 
 jobs:
   build:
