@@ -59,17 +59,17 @@ from .parsers import (parse_copy_object, parse_error_response,
                       parse_list_objects, parse_list_objects_v2,
                       parse_list_parts, parse_multi_delete_response,
                       parse_multipart_upload_result,
-                      parse_new_multipart_upload, parse_versioning_config)
+                      parse_new_multipart_upload)
 from .replicationconfig import ReplicationConfig
 from .select import SelectObjectReader
 from .signer import (AMZ_DATE_FORMAT, SIGN_V4_ALGORITHM, get_credential_string,
                      post_presign_v4, presign_v4, sign_v4_s3)
 from .sse import SseCustomerKey
 from .thread_pool import ThreadPool
+from .versioningconfig import VersioningConfig
 from .xml import Element, SubElement, marshal, unmarshal
 from .xml_marshal import (marshal_bucket_notifications,
                           marshal_complete_multipart,
-                          marshal_versioning_config,
                           xml_marshal_bucket_encryption,
                           xml_marshal_delete_objects, xml_marshal_select,
                           xml_to_dict)
@@ -878,11 +878,13 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         Example::
             minio.set_bucket_versioning(
-                "my-bucketname", VersioningConfig("Enabled"),
+                "my-bucketname", VersioningConfig(ENABLED),
             )
         """
         check_bucket_name(bucket_name)
-        body = marshal_versioning_config(config)
+        if not isinstance(config, VersioningConfig):
+            raise ValueError("config must be VersioningConfig type")
+        body = marshal(config)
         self._execute(
             "PUT",
             bucket_name,
@@ -908,8 +910,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             bucket_name,
             query_params={"versioning": ""},
         )
-
-        return parse_versioning_config(response.data)
+        return unmarshal(VersioningConfig, response.data.decode())
 
     def fput_object(self, bucket_name, object_name, file_path,
                     content_type='application/octet-stream',
