@@ -556,7 +556,7 @@ class WebIdentityClientGrantsProvider(Provider):
 
         jwt = self._jwt_provider_func()
 
-        query_params = {"Version", "2011-06-15"}
+        query_params = {"Version": "2011-06-15"}
         duration_seconds = self._get_duration_seconds(
             int(jwt.get("expires_in", "0")),
         )

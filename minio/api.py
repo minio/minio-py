@@ -36,6 +36,7 @@ import platform
 from datetime import datetime, timedelta
 from threading import Thread
 from urllib.parse import urlunsplit
+from xml.etree import ElementTree as ET
 
 import certifi
 import dateutil.parser
@@ -56,8 +57,7 @@ from .parsers import (parse_copy_object, parse_error_response,
                       parse_get_bucket_notification, parse_list_buckets,
                       parse_list_multipart_uploads, parse_list_object_versions,
                       parse_list_objects, parse_list_objects_v2,
-                      parse_list_parts, parse_location_constraint,
-                      parse_multi_delete_response,
+                      parse_list_parts, parse_multi_delete_response,
                       parse_multipart_upload_result,
                       parse_new_multipart_upload, parse_versioning_config)
 from .replicationconfig import ReplicationConfig
@@ -66,11 +66,10 @@ from .signer import (AMZ_DATE_FORMAT, SIGN_V4_ALGORITHM, get_credential_string,
                      post_presign_v4, presign_v4, sign_v4_s3)
 from .sse import SseCustomerKey
 from .thread_pool import ThreadPool
-from .xml import marshal, unmarshal
+from .xml import Element, SubElement, marshal, unmarshal
 from .xml_marshal import (marshal_bucket_notifications,
                           marshal_complete_multipart,
                           marshal_versioning_config,
-                          xml_marshal_bucket_constraint,
                           xml_marshal_bucket_encryption,
                           xml_marshal_delete_objects, xml_marshal_select,
                           xml_to_dict)
@@ -465,13 +464,13 @@ class Minio:  # pylint: disable=too-many-public-methods
             query_params={"location": ""},
         )
 
-        location = parse_location_constraint(response.data.decode())
-        if not location:
+        element = ET.fromstring(response.data.decode())
+        if not element.text:
             region = "us-east-1"
-        elif location == "EU":
+        elif element.text == "EU":
             region = "eu-west-1"
         else:
-            region = location
+            region = element.text
 
         self._region_map[bucket_name] = region
         return region
@@ -588,10 +587,12 @@ class Minio:  # pylint: disable=too-many-public-methods
             {"x-amz-bucket-object-lock-enabled": "true"}
             if object_lock else None
         )
-        body = (
-            None if location == "us-east-1"
-            else xml_marshal_bucket_constraint(location)
-        )
+
+        body = None
+        if location != "us-east-1":
+            element = Element("CreateBucketConfiguration")
+            SubElement(element, "LocationConstraint", location)
+            body = marshal(element)
         self._url_open(
             "PUT",
             location,
@@ -1602,6 +1603,9 @@ class Minio:  # pylint: disable=too-many-public-methods
         query_params = extra_query_params or {}
         query_params.update({"versionId": version_id} if version_id else {})
         query_params.update(response_headers or {})
+        creds = self._provider.retrieve() if self._provider else None
+        if creds and creds.session_token:
+            query_params["X-Amz-Security-Token"] = creds.session_token
         url = self._base_url.build(
             method,
             region,
@@ -1610,12 +1614,12 @@ class Minio:  # pylint: disable=too-many-public-methods
             query_params=query_params,
         )
 
-        if self._provider:
+        if creds:
             url = presign_v4(
                 method,
                 url,
                 region,
-                self._provider.retrieve(),
+                creds,
                 request_date or datetime.utcnow(),
                 int(expires.total_seconds()),
             )
