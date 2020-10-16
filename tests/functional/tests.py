@@ -1846,17 +1846,19 @@ def _test_remove_objects(log_entry, version_check=False):
             )
         log_entry["args"]["delete_object_list"] = object_names
 
+        delete_object_list = []
+        for args in object_names:
+            delete_object_list.append(
+                DeleteObject(args) if isinstance(args, str)
+                else DeleteObject(args[0], args[1])
+            )
         # delete the objects in a single library call.
-        errs = _CLIENT.remove_objects(
-            bucket_name, map(DeleteObject, object_names),
-        )
+        errs = _CLIENT.remove_objects(bucket_name, delete_object_list)
         for err in errs:
             raise ValueError("Remove objects err: {}".format(err))
     finally:
         # Try to clean everything to keep our server intact
-        errs = _CLIENT.remove_objects(
-            bucket_name, map(DeleteObject, object_names),
-        )
+        errs = _CLIENT.remove_objects(bucket_name, delete_object_list)
         for err in errs:
             raise ValueError("Remove objects err: {}".format(err))
         _CLIENT.remove_bucket(bucket_name)

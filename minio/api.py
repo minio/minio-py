@@ -1572,6 +1572,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             result = self._delete_objects(
                 bucket_name,
                 objects,
+                quiet=True,
                 bypass_governance_mode=bypass_governance_mode,
             )
 

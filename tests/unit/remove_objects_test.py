@@ -35,8 +35,8 @@ class RemoveObjectsTest(TestCase):
             MockResponse('POST',
                          'https://localhost:9000/hello?delete=',
                          {'User-Agent': _DEFAULT_USER_AGENT,
-                          'Content-Md5': u'5Tg5SmU9Or43L4+iIyfPrQ=='}, 200,
-                         content='<Delete/>')
+                          'Content-Md5': u'YcTFWle4oiLJ6sT95FwpdA=='}, 200,
+                         content=b'<Delete/>')
         )
         client = Minio('localhost:9000')
         for err in client.remove_objects(
@@ -53,8 +53,8 @@ class RemoveObjectsTest(TestCase):
             MockResponse('POST',
                          'https://localhost:9000/hello?delete=',
                          {'User-Agent': _DEFAULT_USER_AGENT,
-                          'Content-Md5': u'5Tg5SmU9Or43L4+iIyfPrQ=='}, 200,
-                         content='<Delete/>')
+                          'Content-Md5': u'YcTFWle4oiLJ6sT95FwpdA=='}, 200,
+                         content=b'<Delete/>')
         )
         client = Minio('localhost:9000')
         for err in client.remove_objects(
@@ -71,8 +71,8 @@ class RemoveObjectsTest(TestCase):
             MockResponse('POST',
                          'https://localhost:9000/hello?delete=',
                          {'User-Agent': _DEFAULT_USER_AGENT,
-                          'Content-Md5': u'5Tg5SmU9Or43L4+iIyfPrQ=='}, 200,
-                         content='<Delete/>')
+                          'Content-Md5': u'YcTFWle4oiLJ6sT95FwpdA=='}, 200,
+                         content=b'<Delete/>')
         )
         client = Minio('localhost:9000')
         it = itertools.chain((DeleteObject("Ab"), DeleteObject("c")))

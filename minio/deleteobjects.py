@@ -47,7 +47,8 @@ class DeleteRequest:
     def toxml(self, element):
         """Convert to XML."""
         element = Element("Delete")
-        SubElement(element, "Quiet", str(self._quiet))
+        if self._quiet:
+            SubElement(element, "Quiet", str(self._quiet))
         for obj in self._object_list:
             obj.toxml(element)
         return element
