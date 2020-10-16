@@ -52,23 +52,24 @@ from .helpers import (amzprefix_user_metadata, check_bucket_name,
                       is_supported_header, is_valid_notification_config,
                       is_valid_policy_type, makedirs, md5sum_hash, quote,
                       read_part_data, sha256_hash)
+from .lifecycleconfig import LifecycleConfig
 from .parsers import (parse_copy_object, parse_error_response,
                       parse_get_bucket_notification, parse_list_buckets,
                       parse_list_multipart_uploads, parse_list_object_versions,
                       parse_list_objects, parse_list_objects_v2,
                       parse_list_parts, parse_multi_delete_response,
                       parse_multipart_upload_result,
-                      parse_new_multipart_upload, parse_versioning_config)
+                      parse_new_multipart_upload)
 from .replicationconfig import ReplicationConfig
 from .select import SelectObjectReader
 from .signer import (AMZ_DATE_FORMAT, SIGN_V4_ALGORITHM, get_credential_string,
                      post_presign_v4, presign_v4, sign_v4_s3)
 from .sse import SseCustomerKey
 from .thread_pool import ThreadPool
+from .versioningconfig import VersioningConfig
 from .xml import Element, SubElement, marshal, unmarshal
 from .xml_marshal import (marshal_bucket_notifications,
                           marshal_complete_multipart,
-                          marshal_versioning_config,
                           xml_marshal_bucket_encryption,
                           xml_marshal_delete_objects, xml_marshal_select,
                           xml_to_dict)
@@ -877,11 +878,13 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         Example::
             minio.set_bucket_versioning(
-                "my-bucketname", VersioningConfig("Enabled"),
+                "my-bucketname", VersioningConfig(ENABLED),
             )
         """
         check_bucket_name(bucket_name)
-        body = marshal_versioning_config(config)
+        if not isinstance(config, VersioningConfig):
+            raise ValueError("config must be VersioningConfig type")
+        body = marshal(config)
         self._execute(
             "PUT",
             bucket_name,
@@ -907,8 +910,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             bucket_name,
             query_params={"versioning": ""},
         )
-
-        return parse_versioning_config(response.data)
+        return unmarshal(VersioningConfig, response.data.decode())
 
     def fput_object(self, bucket_name, object_name, file_path,
                     content_type='application/octet-stream',
@@ -1834,6 +1836,71 @@ class Minio:  # pylint: disable=too-many-public-methods
             body=body,
             headers={"Content-MD5": md5sum_hash(body)},
             query_params={"replication": ""},
+        )
+
+    def delete_bucket_lifecycle(self, bucket_name):
+        """
+        Delete notification configuration of a bucket.
+
+        :param bucket_name: Name of the bucket.
+
+        Example::
+            minio.delete_bucket_lifecycle("my-bucketname")
+        """
+        check_bucket_name(bucket_name)
+        self._execute("DELETE", bucket_name, query_params={"lifecycle": ""})
+
+    def get_bucket_lifecycle(self, bucket_name):
+        """
+        Get bucket lifecycle configuration of a bucket.
+
+        :param bucket_name: Name of the bucket.
+        :return: :class:`LifecycleConfig <LifecycleConfig>` object.
+
+        Example::
+            config = minio.get_bucket_lifecycle("my-bucketname")
+        """
+        check_bucket_name(bucket_name)
+        try:
+            response = self._execute(
+                "GET", bucket_name, query_params={"lifecycle": ""},
+            )
+            return unmarshal(LifecycleConfig, response.data.decode())
+        except S3Error as exc:
+            if exc.code != "NoSuchLifecycleConfiguration":
+                raise
+        return None
+
+    def set_bucket_lifecycle(self, bucket_name, config):
+        """
+        Set bucket lifecycle configuration to a bucket.
+
+        :param bucket_name: Name of the bucket.
+        :param config: :class:`LifecycleConfig <LifecycleConfig>` object.
+
+        Example::
+            config = LifecycleConfig(
+                [
+                    Rule(
+                        ENABLED,
+                        rule_filter=Filter(prefix="logs/"),
+                        rule_id="rule2",
+                        expiration=Expiration(days=365),
+                    ),
+                ],
+            )
+            minio.set_bucket_lifecycle("my-bucketname", config)
+        """
+        check_bucket_name(bucket_name)
+        if not isinstance(config, LifecycleConfig):
+            raise ValueError("config must be LifecycleConfig type")
+        body = marshal(config)
+        self._execute(
+            "PUT",
+            bucket_name,
+            body=body,
+            headers={"Content-MD5": md5sum_hash(body)},
+            query_params={"lifecycle": ""},
         )
 
     def _list_objects(  # pylint: disable=too-many-arguments,too-many-branches

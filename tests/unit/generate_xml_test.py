@@ -22,8 +22,7 @@ from minio.definitions import Part
 from minio.select.options import (CSVInput, CSVOutput, InputSerialization,
                                   OutputSerialization, RequestProgress,
                                   SelectObjectOptions)
-from minio.xml_marshal import (marshal_complete_multipart,
-                               xml_marshal_select)
+from minio.xml_marshal import marshal_complete_multipart, xml_marshal_select
 
 
 class GenerateRequestTest(TestCase):
