@@ -257,67 +257,6 @@ class BaseURL:
         return url
 
 
-class Object:
-    """
-    A object metadata :class:`Object <Object>`.
-
-    :param bucket_name: Bucket name.
-    :param object_name: Object name.
-    :param last_modified: Object when it was last modified on server.
-    :param etag: ETag saved on server for the object_name.
-    :param size: Size of the object on server.
-    :param content_type: Optional parameter indicating content type.
-    :param is_dir: Optional parameter differentiating object prefixes.
-    :param metadata: Optional parameter contains all the custom metadata.
-    """
-
-    def __init__(self, bucket_name,  # pylint: disable=too-many-arguments
-                 object_name,
-                 last_modified=None, etag='',
-                 size=0, content_type=None, is_dir=False, metadata=None,
-                 version_id=None, is_latest=None, storage_class=None,
-                 owner_id=None, owner_name=None, delete_marker=False):
-        self.bucket_name = bucket_name
-        self.object_name = object_name
-        self.last_modified = last_modified
-        self.etag = etag
-        self.size = size
-        self.content_type = content_type
-        self.is_dir = is_dir
-        self.metadata = metadata
-        self.version_id = version_id
-        self.is_latest = is_latest
-        self.storage_class = storage_class
-        self.owner_id = owner_id
-        self.owner_name = owner_name
-        self.delete_marker = delete_marker
-
-    def __str__(self):
-        return (
-            "<Object: "
-            "bucket_name: {bucket_name} "
-            "object_name: {object_name} "
-            "version_id: {version_id} "
-            "last_modified: {last_modified} "
-            "etag: {etag} "
-            "size: {size} "
-            "content_type: {content_type} "
-            "is_dir: {is_dir} "
-            "metadata: {metadata} "
-            ">"
-        ).format(
-            bucket_name=self.bucket_name,
-            object_name=self.object_name.encode("utf-8"),
-            version_id=self.version_id,
-            last_modified=self.last_modified,
-            etag=self.etag,
-            size=self.size,
-            content_type=self.content_type,
-            is_dir=self.is_dir,
-            metadata=self.metadata,
-        )
-
-
 class MultipartUploadResult:
     """
     A completed multipart upload metadata

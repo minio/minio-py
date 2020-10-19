@@ -46,7 +46,7 @@ class ListObjectsV1Test(TestCase):
                 "?delimiter=&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
-                content=mock_data,
+                content=mock_data.encode(),
             ),
         )
         client = Minio('localhost:9000')
@@ -101,7 +101,7 @@ class ListObjectsV1Test(TestCase):
                 "?delimiter=%2F&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
-                content=mock_data,
+                content=mock_data.encode(),
             ),
         )
         client = Minio('localhost:9000')
@@ -116,7 +116,7 @@ class ListObjectsV1Test(TestCase):
                     "?delimiter=%2F&max-keys=1000&prefix=",
                     {"User-Agent": _DEFAULT_USER_AGENT},
                     200,
-                    content="",
+                    content=b"",
                 ),
             )
             buckets.append(bucket)
@@ -198,7 +198,7 @@ class ListObjectsV1Test(TestCase):
                 "?delimiter=&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
-                content=mock_data1,
+                content=mock_data1.encode(),
             ),
         )
         client = Minio('localhost:9000')
@@ -214,7 +214,7 @@ class ListObjectsV1Test(TestCase):
                     "?delimiter=&marker=marker&max-keys=1000&prefix=",
                     {"User-Agent": _DEFAULT_USER_AGENT},
                     200,
-                    content=mock_data2,
+                    content=mock_data2.encode(),
                 ),
             )
             buckets.append(bucket)
