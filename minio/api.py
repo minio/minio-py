@@ -70,9 +70,8 @@ from .sse import SseCustomerKey
 from .tagging import Tagging
 from .thread_pool import ThreadPool
 from .versioningconfig import VersioningConfig
-from .xml import Element, SubElement, findtext, marshal, unmarshal
+from .xml import Element, SubElement, findtext, getbytes, marshal, unmarshal
 from .xml_marshal import (marshal_bucket_notifications,
-                          marshal_complete_multipart,
                           xml_marshal_bucket_encryption,
                           xml_marshal_delete_objects, xml_to_dict)
 
@@ -1166,7 +1165,12 @@ class Minio:  # pylint: disable=too-many-public-methods
             self, bucket_name, object_name, upload_id, parts,
     ):
         """Execute CompleteMultipartUpload S3 API."""
-        body = marshal_complete_multipart(parts)
+        element = Element("CompleteMultipartUpload")
+        for part in parts:
+            tag = SubElement(element, "Part")
+            SubElement(tag, "PartNumber", str(part.part_number))
+            SubElement(tag, "ETag", '"' + part.etag + '"')
+        body = getbytes(element)
         response = self._execute(
             "POST",
             bucket_name,

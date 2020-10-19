@@ -85,10 +85,15 @@ def unmarshal(cls, xmlstring):
     return cls.fromxml(ET.fromstring(xmlstring))
 
 
-def marshal(obj):
-    """Get XML data as bytes of ElementTree.Element."""
+def getbytes(element):
+    """Convert ElementTree.Element to bytes."""
     data = io.BytesIO()
-    ET.ElementTree(obj.toxml(None)).write(
+    ET.ElementTree(element).write(
         data, encoding=None, xml_declaration=False,
     )
     return data.getvalue()
+
+
+def marshal(obj):
+    """Get XML data as bytes of ElementTree.Element."""
+    return getbytes(obj.toxml(None))
