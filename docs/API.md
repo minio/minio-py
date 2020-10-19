@@ -168,7 +168,7 @@ __Example__
 ```py
 bucket_list = minio.list_buckets()
 for bucket in bucket_list:
-    print(bucket.name, bucket.created_date)
+    print(bucket.name, bucket.creation_date)
 ```
 
 <a name="bucket_exists"></a>
