@@ -42,9 +42,8 @@ from minio import CopyConditions, Minio, PostPolicy
 from minio.commonconfig import ENABLED
 from minio.error import S3Error
 from minio.select.helpers import calculate_crc
-from minio.select.options import (CSVInput, CSVOutput, InputSerialization,
-                                  OutputSerialization, RequestProgress,
-                                  SelectObjectOptions)
+from minio.selectrequest import (CSVInputSerialization, CSVOutputSerialization,
+                                 SelectRequest)
 from minio.sse import SseCustomerKey
 from minio.versioningconfig import VersioningConfig
 
@@ -294,29 +293,13 @@ def test_select_object_content(log_entry):
         _CLIENT.put_object(bucket_name, csvfile, content,
                            len(content.getvalue()))
 
-        options = SelectObjectOptions(
-            expression="select * from s3object",
-            input_serialization=InputSerialization(
-                compression_type="NONE",
-                csv=CSVInput(file_header_info="NONE",
-                             record_delimiter="\n",
-                             field_delimiter=",",
-                             quote_character='"',
-                             quote_escape_character='"',
-                             comments="#",
-                             allow_quoted_record_delimiter=False),
-            ),
-            output_serialization=OutputSerialization(
-                csv=CSVOutput(quote_fields="ASNEEDED",
-                              record_delimiter="\n",
-                              field_delimiter=",",
-                              quote_character='"',
-                              quote_escape_character='"')
-            ),
-            request_progress=RequestProgress(enabled=False)
+        request = SelectRequest(
+            "select * from s3object",
+            CSVInputSerialization(),
+            CSVOutputSerialization(),
+            request_progress=True,
         )
-
-        data = _CLIENT.select_object_content(bucket_name, csvfile, options)
+        data = _CLIENT.select_object_content(bucket_name, csvfile, request)
         # Get the records
         records = io.BytesIO()
         for data_bytes in data.stream(10*KB):

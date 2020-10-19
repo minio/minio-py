@@ -40,8 +40,8 @@ s3Client = Minio(
 | [`get_bucket_versioning`](#get_bucket_versioning)         | [`remove_objects`](#remove_objects)               |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
 | [`set_bucket_versioning`](#set_bucket_versioning)         | [`fput_object`](#fput_object)                     |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
 | [`delete_bucket_replication`](#delete_bucket_replication) | [`fget_object`](#fget_object)                     |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
-| [`get_bucket_replication`](#get_bucket_replication)       | [`remove_objects`](#remove_objects)               |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
-| [`set_bucket_replication`](#set_bucket_replication)       | [`select_object_content`](#select_object_content) |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
+| [`get_bucket_replication`](#get_bucket_replication)       | [`select_object_content`](#select_object_content) |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
+| [`set_bucket_replication`](#set_bucket_replication)       |                                                   |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
 | [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)     |                                                   |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
 | [`get_bucket_lifecycle`](#get_bucket_lifecycle)           |                                                   |                                                   |                                                                     |
 | [`set_bucket_lifecycle`](#set_bucket_lifecycle)           |                                                   |                                                   |                                                                     |
@@ -831,11 +831,11 @@ Select content of an object by SQL expression.
 
 __Parameters__
 
-| Param         | Type                  | Description                |
-|:--------------|:----------------------|:---------------------------|
-| `bucket_name` | _str_                 | Name of the bucket.        |
-| `object_name` | _str_                 | Object name in the bucket. |
-| `opts`        | _SelectObjectOptions_ | Options for select object. |
+| Param         | Type            | Description                |
+|:--------------|:----------------|:---------------------------|
+| `bucket_name` | _str_           | Name of the bucket.        |
+| `object_name` | _str_           | Object name in the bucket. |
+| `request`     | _SelectRequest_ | Select request.            |
 
 __Return Value__
 
@@ -846,40 +846,18 @@ __Return Value__
 __Example__
 
 ```py
-options = SelectObjectOptions(
-    expression=" select * from s3object",
-    input_serialization=InputSerialization(
-        compression_type="NONE",
-        csv=CSVInput(file_header_info="USE",
-                     record_delimiter="\n",
-                     field_delimiter=",",
-                     quote_character='"',
-                     quote_escape_character='"',
-                     comments="#",
-                     allow_quoted_record_delimiter="FALSE",
-                     ),
-        ),
-
-    output_serialization=OutputSerialization(
-        csv=CSVOutput(quote_fields="ASNEEDED",
-                      record_delimiter="\n",
-                      field_delimiter=",",
-                      quote_character='"',
-                      quote_escape_character='"',)
-                      ),
-    request_progress=RequestProgress(
-        enabled="FALSE"
-        )
-    )
-
-data = client.select_object_content('my-bucket', 'my-object', options)
-# Get the records
+request = SelectRequest(
+    "select * from s3object",
+    CSVInputSerialization(),
+    CSVOutputSerialization(),
+    request_progress=True,
+)
+data = client.select_object_content('my-bucket', 'my-object', request)
 with open('my-record-file', 'w') as record_data:
-	for d in data.stream(10*1024):
-		record_data.write(d)
-
-	# Get the stats
-	print(data.stats())
+    for d in data.stream(10*1024):
+        record_data.write(d)
+    # Get the stats
+    print(data.stats())
 ```
 
 <a name="fget_object"></a>
