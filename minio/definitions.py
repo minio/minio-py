@@ -358,30 +358,6 @@ class MultipartUploadResult:
                                     self.location, self.etag)
 
 
-class CopyObjectResult:
-    """
-    A complete copy object operation metadata.
-         :class:`CopyObjectResult <CopyObjectResult>`.
-
-    :param bucket_name: Bucket name.
-    :param object_name: Object name.
-    :param etag: ETag saved on the server computed for object_name.
-    :param last_modified: Object when it was last modified on server.
-    """
-
-    def __init__(self, bucket_name, object_name, etag, last_modified):
-        self.bucket_name = bucket_name
-        self.object_name = object_name
-        self.etag = etag
-        self.last_modified = last_modified
-
-    def __str__(self):
-        string_format = ("<CopyObjectResult: bucket_name: {0}"
-                         " object_name: {1} etag: {2} last_modified: {3}>")
-        return string_format.format(self.bucket_name, self.object_name,
-                                    self.etag, self.last_modified)
-
-
 class Upload:
     """ Upload information of a multipart upload."""
 
@@ -472,3 +448,41 @@ class ListPartsResult:
         self.parts = [
             Part(part_element) for part_element in root.findall("Part")
         ]
+
+
+class ObjectWriteResult:
+    """Result class of any APIs doing object creation."""
+
+    def __init__(
+            self, bucket_name, object_name, version_id, etag, last_modified,
+    ):
+        self._bucket_name = bucket_name
+        self._object_name = object_name
+        self._version_id = version_id
+        self._etag = etag
+        self._last_modified = last_modified
+
+    @property
+    def bucket_name(self):
+        """Get bucket name."""
+        return self._bucket_name
+
+    @property
+    def object_name(self):
+        """Get object name."""
+        return self._object_name
+
+    @property
+    def version_id(self):
+        """Get version ID."""
+        return self._version_id
+
+    @property
+    def etag(self):
+        """Get etag."""
+        return self._etag
+
+    @property
+    def last_modified(self):
+        """Get last-modified time."""
+        return self._last_modified
