@@ -182,11 +182,11 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         return code, message
 
-    def _build_headers(self, headers, body, creds):
+    def _build_headers(self, host, headers, body, creds):
         """Build headers with given parameters."""
         headers = headers or {}
         md5sum_added = headers.get("Content-MD5")
-        headers["Host"] = self._base_url.host
+        headers["Host"] = host
         headers["User-Agent"] = self._user_agent
         sha256 = None
         md5sum = None
@@ -226,7 +226,6 @@ class Minio:  # pylint: disable=too-many-public-methods
         creds = self._provider.retrieve() if self._provider else None
         trace_body = isinstance(body, str)
         body = body.encode() if trace_body else body
-        headers, date = self._build_headers(headers, body, creds)
         url = self._base_url.build(
             method,
             region,
@@ -234,6 +233,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             object_name=object_name,
             query_params=query_params,
         )
+        headers, date = self._build_headers(url.netloc, headers, body, creds)
         if creds:
             headers = sign_v4_s3(
                 method,
