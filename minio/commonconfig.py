@@ -53,6 +53,16 @@ class Tags(dict):
         super().__setitem__(key, value)
 
     @classmethod
+    def new_bucket_tags(cls):
+        """Create new bucket tags."""
+        return cls()
+
+    @classmethod
+    def new_object_tags(cls):
+        """Create new object tags."""
+        return cls(True)
+
+    @classmethod
     def fromxml(cls, element):
         """Create new object with values from XML element."""
         elements = findall(element, "Tag")

@@ -41,10 +41,13 @@ s3Client = Minio(
 | [`set_bucket_versioning`](#set_bucket_versioning)         | [`fput_object`](#fput_object)                     |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
 | [`delete_bucket_replication`](#delete_bucket_replication) | [`fget_object`](#fget_object)                     |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
 | [`get_bucket_replication`](#get_bucket_replication)       | [`select_object_content`](#select_object_content) |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
-| [`set_bucket_replication`](#set_bucket_replication)       |                                                   |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
-| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)     |                                                   |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
-| [`get_bucket_lifecycle`](#get_bucket_lifecycle)           |                                                   |                                                   |                                                                     |
+| [`set_bucket_replication`](#set_bucket_replication)       | [`delete_object_tags`](#delete_object_tags)       |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
+| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)     | [`get_object_tags`](#get_object_tags)             |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
+| [`get_bucket_lifecycle`](#get_bucket_lifecycle)           | [`set_object_tags`](#set_object_tags)             |                                                   |                                                                     |
 | [`set_bucket_lifecycle`](#set_bucket_lifecycle)           |                                                   |                                                   |                                                                     |
+| [`delete_bucket_tags`](#delete_bucket_tags)               |                                                   |                                                   |                                                                     |
+| [`get_bucket_tags`](#get_bucket_tags)                     |                                                   |                                                   |                                                                     |
+| [`set_bucket_tags`](#set_bucket_tags)                     |                                                   |                                                   |                                                                     |
 
 ## 1. Constructor
 
@@ -776,6 +779,68 @@ config = LifecycleConfig(
 minio.set_bucket_lifecycle("my-bucketname", config)
 ```
 
+<a name="delete_bucket_tags"></a>
+
+### delete_bucket_tags(bucket_name)
+
+Delete tags configuration of a bucket.
+
+__Parameters__
+
+| Param           | Type  | Description         |
+|:----------------|:------|:--------------------|
+| ``bucket_name`` | _str_ | Name of the bucket. |
+
+__Example__
+
+```py
+minio.delete_bucket_tags("my-bucketname")
+```
+
+<a name="get_bucket_tags"></a>
+
+### get_bucket_tags(bucket_name)
+
+Get tags configuration of a bucket.
+
+__Parameters__
+
+| Param           | Type  | Description         |
+|:----------------|:------|:--------------------|
+| ``bucket_name`` | _str_ | Name of the bucket. |
+
+| Return         |
+|:---------------|
+| _Tags_ object. |
+
+__Example__
+
+```py
+tags = minio.get_bucket_tags("my-bucketname")
+```
+
+<a name="set_bucket_tags"></a>
+
+### set_bucket_tags(bucket_name, tags)
+
+Set tags configuration to a bucket.
+
+__Parameters__
+
+| Param           | Type   | Description         |
+|:----------------|:-------|:--------------------|
+| ``bucket_name`` | _str_  | Name of the bucket. |
+| ``tags``        | _Tags_ | Tags configuration. |
+
+__Example__
+
+```py
+tags = Tags.new_bucket_tags()
+tags["Project"] = "Project One"
+tags["User"] = "jsmith"
+client.set_bucket_tags("my-bucketname", tags)
+```
+
 ## 3. Object operations
 
 <a name="get_object"></a>
@@ -1110,6 +1175,74 @@ minio.remove_objects(
         ("my-objectname3", "13f88b18-8dcd-4c83-88f2-8631fdb6250c"),
     ],
 )
+```
+
+<a name="delete_object_tags"></a>
+
+### delete_object_tags(bucket_name, object_name, version_id=None)
+
+Delete tags configuration of an object.
+
+__Parameters__
+
+| Param           | Type  | Description                |
+|:----------------|:------|:---------------------------|
+| ``bucket_name`` | _str_ | Name of the bucket.        |
+| ``object_name`` | _str_ | Object name in the bucket. |
+| ``version_id``  | _str_ | Version ID of the object.  |
+
+__Example__
+
+```py
+minio.delete_object_tags("my-bucketname", "my-objectname")
+```
+
+<a name="get_object_tags"></a>
+
+### get_object_tags(bucket_name, object_name, version_id=None)
+
+Get tags configuration of an object.
+
+__Parameters__
+
+| Param           | Type  | Description                |
+|:----------------|:------|:---------------------------|
+| ``bucket_name`` | _str_ | Name of the bucket.        |
+| ``object_name`` | _str_ | Object name in the bucket. |
+| ``version_id``  | _str_ | Version ID of the object.  |
+
+| Return         |
+|:---------------|
+| _Tags_ object. |
+
+__Example__
+
+```py
+tags = minio.get_object_tags("my-bucketname", "my-objectname")
+```
+
+<a name="set_object_tags"></a>
+
+### set_object_tags(bucket_name, object_name, tags, version_id=None)
+
+Set tags configuration to an object.
+
+__Parameters__
+
+| Param           | Type   | Description                |
+|:----------------|:-------|:---------------------------|
+| ``bucket_name`` | _str_  | Name of the bucket.        |
+| ``object_name`` | _str_  | Object name in the bucket. |
+| ``tags``        | _Tags_ | Tags configuration.        |
+| ``version_id``  | _str_  | Version ID of the object.  |
+
+__Example__
+
+```py
+tags = Tags.new_object_tags()
+tags["Project"] = "Project One"
+tags["User"] = "jsmith"
+client.set_object_tags("my-bucketname", "my-objectname", tags)
 ```
 
 ## 4. Presigned operations

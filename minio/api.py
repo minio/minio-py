@@ -43,6 +43,7 @@ import dateutil.parser
 import urllib3
 
 from . import __title__, __version__
+from .commonconfig import Tags
 from .credentials import StaticProvider
 from .definitions import BaseURL, Object, ObjectWriteResult, Part
 from .error import InvalidResponseError, S3Error, ServerError
@@ -66,6 +67,7 @@ from .selectrequest import SelectRequest
 from .signer import (AMZ_DATE_FORMAT, SIGN_V4_ALGORITHM, get_credential_string,
                      post_presign_v4, presign_v4, sign_v4_s3)
 from .sse import SseCustomerKey
+from .tagging import Tagging
 from .thread_pool import ThreadPool
 from .versioningconfig import VersioningConfig
 from .xml import Element, SubElement, findtext, marshal, unmarshal
@@ -1922,6 +1924,148 @@ class Minio:  # pylint: disable=too-many-public-methods
             body=body,
             headers={"Content-MD5": md5sum_hash(body)},
             query_params={"lifecycle": ""},
+        )
+
+    def delete_bucket_tags(self, bucket_name):
+        """
+        Delete tags configuration of a bucket.
+
+        :param bucket_name: Name of the bucket.
+
+        Example::
+            minio.delete_bucket_tags("my-bucketname")
+        """
+        check_bucket_name(bucket_name)
+        self._execute("DELETE", bucket_name, query_params={"tagging": ""})
+
+    def get_bucket_tags(self, bucket_name):
+        """
+        Get tags configuration of a bucket.
+
+        :param bucket_name: Name of the bucket.
+        :return: :class:`Tags <Tags>` object.
+
+        Example::
+            tags = minio.get_bucket_tags("my-bucketname")
+        """
+        check_bucket_name(bucket_name)
+        try:
+            response = self._execute(
+                "GET", bucket_name, query_params={"tagging": ""},
+            )
+            tagging = unmarshal(Tagging, response.data.decode())
+            return tagging.tags()
+        except S3Error as exc:
+            if exc.code != "NoSuchTagSet":
+                raise
+        return None
+
+    def set_bucket_tags(self, bucket_name, tags):
+        """
+        Set tags configuration to a bucket.
+
+        :param bucket_name: Name of the bucket.
+        :param tags: :class:`Tags <Tags>` object.
+
+        Example::
+            tags = Tags.new_bucket_tags()
+            tags["Project"] = "Project One"
+            tags["User"] = "jsmith"
+            minio.set_bucket_tags("my-bucketname", tags)
+        """
+        check_bucket_name(bucket_name)
+        if not isinstance(tags, Tags):
+            raise ValueError("tags must be Tags type")
+        body = marshal(Tagging(tags))
+        self._execute(
+            "PUT",
+            bucket_name,
+            body=body,
+            headers={"Content-MD5": md5sum_hash(body)},
+            query_params={"tagging": ""},
+        )
+
+    def delete_object_tags(self, bucket_name, object_name, version_id=None):
+        """
+        Delete tags configuration of an object.
+
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param version_id: Version ID of the Object.
+
+        Example::
+            minio.delete_object_tags("my-bucketname", "my-objectname")
+        """
+        check_bucket_name(bucket_name)
+        check_non_empty_string(object_name)
+        query_params = {"versionId": version_id} if version_id else {}
+        query_params["tagging"] = ""
+        self._execute(
+            "DELETE",
+            bucket_name,
+            object_name=object_name,
+            query_params=query_params,
+        )
+
+    def get_object_tags(self, bucket_name, object_name, version_id=None):
+        """
+        Get tags configuration of a object.
+
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param version_id: Version ID of the Object.
+        :return: :class:`Tags <Tags>` object.
+
+        Example::
+            tags = minio.get_object_tags("my-bucketname", "my-objectname")
+        """
+        check_bucket_name(bucket_name)
+        check_non_empty_string(object_name)
+        query_params = {"versionId": version_id} if version_id else {}
+        query_params["tagging"] = ""
+        try:
+            response = self._execute(
+                "GET",
+                bucket_name,
+                object_name=object_name,
+                query_params=query_params,
+            )
+            tagging = unmarshal(Tagging, response.data.decode())
+            return tagging.tags()
+        except S3Error as exc:
+            if exc.code != "NoSuchTagSet":
+                raise
+        return None
+
+    def set_object_tags(self, bucket_name, object_name, tags, version_id=None):
+        """
+        Set tags configuration to an object.
+
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param version_id: Version ID of the Object.
+        :param tags: :class:`Tags <Tags>` object.
+
+        Example::
+            tags = Tags.new_object_tags()
+            tags["Project"] = "Project One"
+            tags["User"] = "jsmith"
+            minio.set_object_tags("my-bucketname", "my-objectname", tags)
+        """
+        check_bucket_name(bucket_name)
+        check_non_empty_string(object_name)
+        if not isinstance(tags, Tags):
+            raise ValueError("tags must be Tags type")
+        body = marshal(Tagging(tags))
+        query_params = {"versionId": version_id} if version_id else {}
+        query_params["tagging"] = ""
+        self._execute(
+            "PUT",
+            bucket_name,
+            object_name=object_name,
+            body=body,
+            headers={"Content-MD5": md5sum_hash(body)},
+            query_params=query_params,
         )
 
     def _list_objects(  # pylint: disable=too-many-arguments,too-many-branches
