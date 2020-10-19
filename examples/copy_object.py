@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2016 MinIO, Inc.
+# (C) 2016-2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,13 +20,20 @@
 from datetime import datetime, timezone
 
 from minio import CopyConditions, Minio
-from minio.error import ResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEY',
                secret_key='YOUR-SECRETKEY')
 
-# client.trace_on(sys.stderr)
+# copy an object from a bucket to another.
+result = client.copy_object(
+    "my-bucket",
+    "my-object",
+    "/my-sourcebucket/my-sourceobject",
+)
+print(result.object_name, result.version_id)
+
+# copy an object with condition.
 copy_conditions = CopyConditions()
 # Set modified condition, copy object modified since 1st April 2014.
 mod_since = datetime(2014, 4, 1, tzinfo=timezone.utc)
@@ -41,11 +48,20 @@ copy_conditions.set_modified_since(mod_since)
 # Set matching ETag except condition, copy object which does not match the
 # following ETag.
 # copy_conditions.set_match_etag_except("31624deb84149d2f8ef9c385918b653a")
+result = client.copy_object(
+    "my-bucket",
+    "my-object",
+    "/my-sourcebucket/my-sourceobject",
+    copy_conditions,
+)
+print(result.object_name, result.version_id)
 
-try:
-    copy_result = client.copy_object("my-bucket", "my-object",
-                                     "/my-sourcebucket/my-sourceobject",
-                                     copy_conditions)
-    print(copy_result)
-except ResponseError as err:
-    print(err)
+# copy an object from a bucket with replacing metadata.
+metadata = {"test_meta_key": "test_meta_value"}
+result = client.copy_object(
+    "my-bucket",
+    "my-object",
+    "/my-sourcebucket/my-sourceobject",
+    metadata=metadata,
+)
+print(result.object_name, result.version_id)

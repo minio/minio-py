@@ -935,9 +935,9 @@ __Parameters__
 
 __Return Value__
 
-| Return             |
-|:-------------------|
-| _CopyObjectResult_ |
+| Return                      |
+|:----------------------------|
+| _ObjectWriteResult_ object. |
 
 __Example__
 
@@ -983,7 +983,7 @@ result = minioClient.copy_object(
 	"my-source-bucketname/my-source-objectname",
 	copy_conditions,metadata=metadata,
 )
-print(result)
+print(result.object_name, result.version_id)
 ```
 
 <a name="put_object"></a>
