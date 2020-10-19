@@ -257,22 +257,6 @@ class BaseURL:
         return url
 
 
-class Bucket:
-    """
-    A bucket metadata :class:`Bucket <Bucket>`.
-
-    :param name: Bucket name.
-    :param created: Bucket creation date.
-    """
-
-    def __init__(self, name, created):
-        self.name = name
-        self.creation_date = created
-
-    def __str__(self):
-        return "<Bucket: {0} {1}>".format(self.name, self.creation_date)
-
-
 class Object:
     """
     A object metadata :class:`Object <Object>`.
