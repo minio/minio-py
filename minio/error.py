@@ -116,17 +116,3 @@ class S3Error(MinioException):
             self._bucket_name,
             self._object_name,
         )
-
-
-class MultiDeleteError(MinioException):
-    """Represents an error message in RemoveObjects S3 API."""
-
-    def __init__(self, object_name, code, message):
-        self._object_name = object_name
-        self._code = code
-        self._message = message
-        super().__init__(
-            "unable to remove object {0}; code: {1}, message: {2}".format(
-                object_name, code, message,
-            ),
-        )

@@ -47,6 +47,7 @@ from .commonconfig import Tags
 from .credentials import StaticProvider
 from .datatypes import ListAllMyBucketsResult, Object, parse_list_objects
 from .definitions import BaseURL, ObjectWriteResult, Part
+from .deleteobjects import DeleteError, DeleteRequest, DeleteResult
 from .error import InvalidResponseError, S3Error, ServerError
 from .helpers import (amzprefix_user_metadata, check_bucket_name,
                       check_non_empty_string, check_sse, check_ssec,
@@ -57,7 +58,7 @@ from .helpers import (amzprefix_user_metadata, check_bucket_name,
 from .lifecycleconfig import LifecycleConfig
 from .parsers import (parse_error_response, parse_get_bucket_notification,
                       parse_list_multipart_uploads,
-                      parse_list_parts, parse_multi_delete_response,
+                      parse_list_parts,
                       parse_multipart_upload_result,
                       parse_new_multipart_upload)
 from .replicationconfig import ReplicationConfig
@@ -71,8 +72,7 @@ from .thread_pool import ThreadPool
 from .versioningconfig import VersioningConfig
 from .xml import Element, SubElement, findtext, getbytes, marshal, unmarshal
 from .xml_marshal import (marshal_bucket_notifications,
-                          xml_marshal_bucket_encryption,
-                          xml_marshal_delete_objects, xml_to_dict)
+                          xml_marshal_bucket_encryption, xml_to_dict)
 
 try:
     from json.decoder import JSONDecodeError
@@ -1495,73 +1495,89 @@ class Minio:  # pylint: disable=too-many-public-methods
             query_params={"versionId": version_id} if version_id else None,
         )
 
-    def _process_remove_objects_batch(self, bucket_name, objects_batch):
+    def _delete_objects(self, bucket_name, delete_object_list,
+                        quiet=False, bypass_governance_mode=False):
         """
-        Requester and response parser for remove_objects
+        Delete multiple objects.
+
+        :param bucket_name: Name of the bucket.
+        :param delete_object_list: List of maximum 1000
+            :class:`DeleteObject <DeleteObject>` object.
+        :param quiet: quiet flag.
+        :param bypass_governance_mode: Bypass Governance retention mode.
+        :return: :class:`DeleteResult <DeleteResult>` object.
         """
-        body = xml_marshal_delete_objects(objects_batch)
+        body = marshal(DeleteRequest(delete_object_list, quiet=quiet))
+        headers = {"Content-MD5": md5sum_hash(body)}
+        if bypass_governance_mode:
+            headers["x-amz-bypass-governance-retention"] = "true"
         response = self._execute(
             "POST",
             bucket_name,
             body=body,
-            headers={"Content-MD5": md5sum_hash(body)},
-            query_params={'delete': ''},
+            headers=headers,
+            query_params={"delete": ""},
         )
-        return parse_multi_delete_response(response.data)
 
-    def remove_objects(self, bucket_name, objects_iter):
+        element = ET.fromstring(response.data.decode())
+        return (
+            DeleteResult([], [DeleteError.fromxml(element)])
+            if element.tag.endswith("Error")
+            else unmarshal(DeleteResult, response.data.decode())
+        )
+
+    def remove_objects(self, bucket_name, delete_object_list,
+                       bypass_governance_mode=False):
         """
         Remove multiple objects.
 
         :param bucket_name: Name of the bucket.
-        :param objects_iter: An iterable type python object providing object
-                             names for deletion.
-        :return: An iterator contains
-                 :class:`MultiDeleteError <MultiDeleteError>`.
+        :param delete_object_list: An iterable containing
+            :class:`DeleteObject <DeleteObject>` object.
+        :param bypass_governance_mode: Bypass Governance retention mode.
+        :return: An iterator containing :class:`DeleteError <DeleteError>`
+            object.
 
         Example::
-            minio.remove_objects(
+            errors = minio.remove_objects(
                 "my-bucketname",
                 [
-                    "my-objectname1",
-                    "my-objectname2",
-                    ("my-objectname3", "13f88b18-8dcd-4c83-88f2-8631fdb6250c"),
+                    DeleteObject("my-objectname1"),
+                    DeleteObject("my-objectname2"),
+                    DeleteObject(
+                        "my-objectname3",
+                        "13f88b18-8dcd-4c83-88f2-8631fdb6250c",
+                    ),
                 ],
             )
+            for error in errors:
+                print("error occured when deleting object", error)
         """
         check_bucket_name(bucket_name)
-        if isinstance(objects_iter, (str, bytes)):
-            raise TypeError(
-                'objects_iter cannot be `str` or `bytes` instance. It must be '
-                'a list, tuple or iterator of object names'
-            )
 
         # turn list like objects into an iterator.
-        objects_iter = itertools.chain(objects_iter)
-
-        def check_name(name):
-            if not isinstance(name, (str, bytes)):
-                name = name[0]
-            check_non_empty_string(name)
-            return True
+        delete_object_list = itertools.chain(delete_object_list)
 
         while True:
             # get 1000 entries or whatever available.
-            obj_batch = [
-                name for _, name in zip(range(1000), objects_iter)
-                if check_name(name)
+            objects = [
+                delete_object for _, delete_object in zip(
+                    range(1000), delete_object_list,
+                )
             ]
 
-            if not obj_batch:
+            if not objects:
                 break
 
-            errs_result = self._process_remove_objects_batch(
-                bucket_name, obj_batch,
+            result = self._delete_objects(
+                bucket_name,
+                objects,
+                quiet=True,
+                bypass_governance_mode=bypass_governance_mode,
             )
 
-            # return the delete errors.
-            for err_result in errs_result:
-                yield err_result
+            for error in result.error_list:
+                yield error
 
     def presigned_url(self, method,
                       bucket_name,

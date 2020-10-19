@@ -1147,34 +1147,40 @@ minio.remove_object(
 
 <a name="remove_objects"></a>
 
-### remove_objects(bucket_name, objects_iter)
+### remove_objects(bucket_name, delete_object_list, bypass_governance_mode=False)
 
 Remove multiple objects.
 
 __Parameters__
 
-| Param          | Type   | Description                                                         |
-|:---------------|:-------|:--------------------------------------------------------------------|
-| `bucket_name`  | _str_  | Name of the bucket.                                                 |
-| `objects_iter` | _list_ | An iterable type python object providing object names for deletion. |
+| Param                    | Type       | Description                                                         |
+|:-------------------------|:-----------|:--------------------------------------------------------------------|
+| `bucket_name`            | _str_      | Name of the bucket.                                                 |
+| `delete_object_list`     | _iterable_ | An iterable containing :class:`DeleteObject <DeleteObject>` object. |
+| `bypass_governance_mode` | _bool_     | Bypass Governance retention mode.                                   |
 
 __Return Value__
 
-| Return                                  |
-|:----------------------------------------|
-| An iterator contains _MultiDeleteError_ |
+| Return                                                           |
+|:-----------------------------------------------------------------|
+| An iterator containing :class:`DeleteError <DeleteError>` object |
 
 __Example__
 
 ```py
-minio.remove_objects(
+errors = minio.remove_objects(
     "my-bucketname",
     [
-        "my-objectname1",
-        "my-objectname2",
-        ("my-objectname3", "13f88b18-8dcd-4c83-88f2-8631fdb6250c"),
+        DeleteObject("my-objectname1"),
+        DeleteObject("my-objectname2"),
+        DeleteObject(
+            "my-objectname3",
+            "13f88b18-8dcd-4c83-88f2-8631fdb6250c",
+        ),
     ],
 )
+for error in errors:
+    print("error occured when deleting object", error)
 ```
 
 <a name="delete_object_tags"></a>
