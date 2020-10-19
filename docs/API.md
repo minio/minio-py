@@ -30,24 +30,24 @@ s3Client = Minio(
 )
 ```
 
-| Bucket operations                                         | Object operations                                 | Presigned operations                              | Bucket policy/notification/encryption operations                    |
-|:----------------------------------------------------------|:--------------------------------------------------|:--------------------------------------------------|:--------------------------------------------------------------------|
-| [`make_bucket`](#make_bucket)                             | [`get_object`](#get_object)                       | [`presigned_get_object`](#presigned_get_object)   | [`get_bucket_policy`](#get_bucket_policy)                           |
-| [`list_buckets`](#list_buckets)                           | [`put_object`](#put_object)                       | [`presigned_put_object`](#presigned_put_object)   | [`set_bucket_policy`](#set_bucket_policy)                           |
-| [`bucket_exists`](#bucket_exists)                         | [`copy_object`](#copy_object)                     | [`presigned_post_policy`](#presigned_post_policy) | [`delete_bucket_policy`](#delete_bucket_policy)                     |
-| [`remove_bucket`](#remove_bucket)                         | [`stat_object`](#stat_object)                     |                                                   | [`get_bucket_notification`](#get_bucket_notification)               |
-| [`list_objects`](#list_objects)                           | [`remove_object`](#remove_object)                 |                                                   | [`set_bucket_notification`](#set_bucket_notification)               |
-| [`get_bucket_versioning`](#get_bucket_versioning)         | [`remove_objects`](#remove_objects)               |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
-| [`set_bucket_versioning`](#set_bucket_versioning)         | [`fput_object`](#fput_object)                     |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
-| [`delete_bucket_replication`](#delete_bucket_replication) | [`fget_object`](#fget_object)                     |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
-| [`get_bucket_replication`](#get_bucket_replication)       | [`select_object_content`](#select_object_content) |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
-| [`set_bucket_replication`](#set_bucket_replication)       | [`delete_object_tags`](#delete_object_tags)       |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
-| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)     | [`get_object_tags`](#get_object_tags)             |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
-| [`get_bucket_lifecycle`](#get_bucket_lifecycle)           | [`set_object_tags`](#set_object_tags)             |                                                   |                                                                     |
-| [`set_bucket_lifecycle`](#set_bucket_lifecycle)           |                                                   |                                                   |                                                                     |
-| [`delete_bucket_tags`](#delete_bucket_tags)               |                                                   |                                                   |                                                                     |
-| [`get_bucket_tags`](#get_bucket_tags)                     |                                                   |                                                   |                                                                     |
-| [`set_bucket_tags`](#set_bucket_tags)                     |                                                   |                                                   |                                                                     |
+| Bucket operations                                         | Object operations                                               | Presigned operations                              | Bucket policy/notification/encryption operations                    |
+|:----------------------------------------------------------|:----------------------------------------------------------------|:--------------------------------------------------|:--------------------------------------------------------------------|
+| [`make_bucket`](#make_bucket)                             | [`get_object`](#get_object)                                     | [`presigned_get_object`](#presigned_get_object)   | [`get_bucket_policy`](#get_bucket_policy)                           |
+| [`list_buckets`](#list_buckets)                           | [`put_object`](#put_object)                                     | [`presigned_put_object`](#presigned_put_object)   | [`set_bucket_policy`](#set_bucket_policy)                           |
+| [`bucket_exists`](#bucket_exists)                         | [`copy_object`](#copy_object)                                   | [`presigned_post_policy`](#presigned_post_policy) | [`delete_bucket_policy`](#delete_bucket_policy)                     |
+| [`remove_bucket`](#remove_bucket)                         | [`stat_object`](#stat_object)                                   |                                                   | [`get_bucket_notification`](#get_bucket_notification)               |
+| [`list_objects`](#list_objects)                           | [`remove_object`](#remove_object)                               |                                                   | [`set_bucket_notification`](#set_bucket_notification)               |
+| [`get_bucket_versioning`](#get_bucket_versioning)         | [`remove_objects`](#remove_objects)                             |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
+| [`set_bucket_versioning`](#set_bucket_versioning)         | [`fput_object`](#fput_object)                                   |                                                   | [`listen_bucket_notification`](#listen_bucket_notification)         |
+| [`delete_bucket_replication`](#delete_bucket_replication) | [`fget_object`](#fget_object)                                   |                                                   | [`get_bucket_encryption`](#get_bucket_encryption)                   |
+| [`get_bucket_replication`](#get_bucket_replication)       | [`select_object_content`](#select_object_content)               |                                                   | [`remove_all_bucket_notification`](#remove_all_bucket_notification) |
+| [`set_bucket_replication`](#set_bucket_replication)       | [`delete_object_tags`](#delete_object_tags)                     |                                                   | [`put_bucket_encryption`](#put_bucket_encryption)                   |
+| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)     | [`get_object_tags`](#get_object_tags)                           |                                                   | [`delete_bucket_encryption`](#delete_bucket_encryption)             |
+| [`get_bucket_lifecycle`](#get_bucket_lifecycle)           | [`set_object_tags`](#set_object_tags)                           |                                                   |                                                                     |
+| [`set_bucket_lifecycle`](#set_bucket_lifecycle)           | [`enable_object_legal_hold`](#enable_object_legal_hold)         |                                                   |                                                                     |
+| [`delete_bucket_tags`](#delete_bucket_tags)               | [`disable_object_legal_hold`](#disable_object_legal_hold)       |                                                   |                                                                     |
+| [`get_bucket_tags`](#get_bucket_tags)                     | [`is_object_legal_hold_enabled`](#is_object_legal_hold_enabled) |                                                   |                                                                     |
+| [`set_bucket_tags`](#set_bucket_tags)                     |                                                                 |                                                   |                                                                     |
 
 ## 1. Constructor
 
@@ -1249,6 +1249,66 @@ tags = Tags.new_object_tags()
 tags["Project"] = "Project One"
 tags["User"] = "jsmith"
 client.set_object_tags("my-bucketname", "my-objectname", tags)
+```
+
+<a name="enable_object_legal_hold"></a>
+
+### enable_object_legal_hold(bucket_name, object_name, version_id=None)
+
+Enable legal hold on an object.
+
+__Parameters__
+
+| Param         | Type  | Description                |
+|:--------------|:------|:---------------------------|
+| `bucket_name` | _str_ | Name of the bucket.        |
+| `object_name` | _str_ | Object name in the bucket. |
+| `version_id`  | _str_ | Version ID of the object.  |
+
+__Example__
+
+```py
+minio.enable_object_legal_hold("my-bucketname", "my-objectname")
+```
+
+<a name="disable_object_legal_hold"></a>
+
+### disable_object_legal_hold(bucket_name, object_name, version_id=None)
+
+Disable legal hold on an object.
+
+__Parameters__
+
+| Param         | Type  | Description                |
+|:--------------|:------|:---------------------------|
+| `bucket_name` | _str_ | Name of the bucket.        |
+| `object_name` | _str_ | Object name in the bucket. |
+| `version_id`  | _str_ | Version ID of the object.  |
+
+__Example__
+
+```py
+minio.disable_object_legal_hold("my-bucketname", "my-objectname")
+```
+
+<a name="is_object_legal_hold_enabled"></a>
+
+### is_object_legal_hold_enabled(bucket_name, object_name, version_id=None)
+
+Returns true if legal hold is enabled on an object.
+
+__Parameters__
+
+| Param         | Type  | Description                |
+|:--------------|:------|:---------------------------|
+| `bucket_name` | _str_ | Name of the bucket.        |
+| `object_name` | _str_ | Object name in the bucket. |
+| `version_id`  | _str_ | Version ID of the object.  |
+
+__Example__
+
+```py
+minio.is_object_legal_hold_enabled("my-bucketname", "my-objectname")
 ```
 
 ## 4. Presigned operations
