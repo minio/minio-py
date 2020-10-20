@@ -339,7 +339,7 @@ class Rule(BaseRule):
         if self._noncurrent_version_expiration:
             self._noncurrent_version_expiration.toxml(element)
         if self._noncurrent_version_transition:
-            self._noncurrent_version_expiration.toxml(element)
+            self._noncurrent_version_transition.toxml(element)
         if self._transition:
             self._transition.toxml(element)
         return element
