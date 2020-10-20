@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage.
-# Copyright (C) 2016 MinIO, Inc.
+# Copyright (C) 2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,14 +18,11 @@
 # dummy values, please replace them with original values.
 
 from minio import Minio
-from minio.error import ResponseError
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+client = Minio(
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+)
 
-try:
-    # Remove all notification config for a bucket.
-    client.remove_all_bucket_notification('my-bucketname')
-except ResponseError as err:
-    print(err)
+client.delete_bucket_notification("my-bucketname")

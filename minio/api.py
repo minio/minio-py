@@ -52,12 +52,13 @@ from .error import InvalidResponseError, S3Error, ServerError
 from .helpers import (amzprefix_user_metadata, check_bucket_name,
                       check_non_empty_string, check_sse, check_ssec,
                       get_part_info, headers_to_strings, is_amz_header,
-                      is_supported_header, is_valid_notification_config,
+                      is_supported_header,
                       is_valid_policy_type, makedirs, md5sum_hash, quote,
                       read_part_data, sha256_hash, strptime_rfc3339)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
-from .parsers import (parse_error_response, parse_get_bucket_notification,
+from .notificationconfig import NotificationConfig
+from .parsers import (parse_error_response,
                       parse_list_multipart_uploads,
                       parse_list_parts,
                       parse_multipart_upload_result,
@@ -72,8 +73,7 @@ from .tagging import Tagging
 from .thread_pool import ThreadPool
 from .versioningconfig import VersioningConfig
 from .xml import Element, SubElement, findtext, getbytes, marshal, unmarshal
-from .xml_marshal import (marshal_bucket_notifications,
-                          xml_marshal_bucket_encryption, xml_to_dict)
+from .xml_marshal import xml_marshal_bucket_encryption, xml_to_dict
 
 try:
     from json.decoder import JSONDecodeError
@@ -716,7 +716,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         Get notification configuration of a bucket.
 
         :param bucket_name: Name of the bucket.
-        :return: Notification configuration.
+        :return: :class:`NotificationConfig <NotificationConfig>` object.
 
         Example::
             config = minio.get_bucket_notification("my-bucketname")
@@ -725,11 +725,32 @@ class Minio:  # pylint: disable=too-many-public-methods
         response = self._execute(
             "GET", bucket_name, query_params={"notification": ""},
         )
-        return parse_get_bucket_notification(response.data.decode())
+        return unmarshal(NotificationConfig, response.data.decode())
 
-    def _set_bucket_notification(self, bucket_name, notifications):
-        """Execute SetBucketNotification API."""
-        body = marshal_bucket_notifications(notifications)
+    def set_bucket_notification(self, bucket_name, config):
+        """
+        Set notification configuration of a bucket.
+
+        :param bucket_name: Name of the bucket.
+        :param :class:`NotificationConfig <NotificationConfig>` object.
+
+        Example::
+            config = NotificationConfig(
+                queue_config_list=[
+                    QueueConfig(
+                        "QUEUE-ARN-OF-THIS-BUCKET",
+                        ['s3:ObjectCreated:*'],
+                        config_id="1",
+                        prefix_filter_rule=PrefixFilterRule("abc"),
+                    ),
+                ],
+            )
+            minio.set_bucket_notification("my-bucketname", config)
+        """
+        check_bucket_name(bucket_name)
+        if not isinstance(config, NotificationConfig):
+            raise ValueError("config must be NotificationConfig type")
+        body = marshal(config)
         self._execute(
             "PUT",
             bucket_name,
@@ -738,32 +759,17 @@ class Minio:  # pylint: disable=too-many-public-methods
             query_params={"notification": ""},
         )
 
-    def set_bucket_notification(self, bucket_name, notifications):
+    def delete_bucket_notification(self, bucket_name):
         """
-        Set notification configuration of a bucket.
-
-        :param bucket_name: Name of the bucket.
-        :param notifications: Notification configuration to be set.
-
-        Example::
-            minio.set_bucket_notification("my-bucketname", config)
-        """
-        check_bucket_name(bucket_name)
-        is_valid_notification_config(notifications)
-        return self._set_bucket_notification(bucket_name, notifications)
-
-    def remove_all_bucket_notification(self, bucket_name):
-        """
-        Remove notification configuration of a bucket. On success, S3 service
+        Delete notification configuration of a bucket. On success, S3 service
         stops notification of events previously set of the bucket.
 
         :param bucket_name: Name of the bucket.
 
         Example::
-            minio.remove_all_bucket_notification("my-bucketname")
+            minio.delete_bucket_notification("my-bucketname")
         """
-        check_bucket_name(bucket_name)
-        return self._set_bucket_notification(bucket_name, {})
+        self.set_bucket_notification(bucket_name, NotificationConfig())
 
     def put_bucket_encryption(self, bucket_name, enc_config):
         """

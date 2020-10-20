@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage.
-# Copyright (C) 2016 MinIO, Inc.
+# Copyright (C) 2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,69 +18,23 @@
 # dummy values, please replace them with original values.
 
 from minio import Minio
-from minio.error import ArgumentError, ResponseError
+from minio.notificationconfig import (NotificationConfig, PrefixFilterRule,
+                                      QueueConfig)
 
-client = Minio('s3.amazonaws.com', secure=True,
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+client = Minio(
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+)
 
-notification = {
-    'QueueConfigurations': [
-        {
-            'Id': '1',
-            'Arn': 'arn1',
-            'Events': ['s3:ObjectCreated:*'],
-            'Filter': {
-                'Key': {
-                    'FilterRules': [
-                        {
-                            'Name': 'prefix',
-                            'Value': 'abc'
-                        }
-                    ]
-                }
-            }
-        }
+config = NotificationConfig(
+    queue_config_list=[
+        QueueConfig(
+            "QUEUE-ARN-OF-THIS-BUCKET",
+            ['s3:ObjectCreated:*'],
+            config_id="1",
+            prefix_filter_rule=PrefixFilterRule("abc"),
+        ),
     ],
-    'TopicConfigurations': [
-        {
-            'Arn': 'arn2',
-            'Events': ['s3:ObjectCreated:*'],
-            'Filter': {
-                'Key': {
-                    'FilterRules': [
-                        {
-                            'Name': 'suffix',
-                            'Value': '.jpg'
-                        }
-                    ]
-                }
-            }
-        }
-    ],
-    'CloudFunctionConfigurations': [
-        {
-            'Arn': 'arn3',
-            'Events': ['s3:ObjectRemoved:*'],
-            'Filter': {
-                'Key': {
-                    'FilterRules': [
-                        {
-                            'Name': 'suffix',
-                            'Value': '.jpg'
-                        }
-                    ]
-                }
-            }
-        }
-    ]
-}
-
-try:
-    client.set_bucket_notification('my-bucketname', notification)
-except ResponseError as err:
-    # handle error response from service.
-    print(err)
-except (ArgumentError, TypeError) as err:
-    # should happen only during development. Fix the notification argument
-    print(err)
+)
+client.set_bucket_notification("my-bucketname", config)
