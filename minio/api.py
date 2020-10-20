@@ -46,8 +46,8 @@ from . import __title__, __version__
 from .commonconfig import Tags
 from .credentials import StaticProvider
 from .datatypes import (CompleteMultipartUploadResult, ListAllMyBucketsResult,
-                        Object, parse_list_objects)
-from .definitions import BaseURL, ObjectWriteResult, Part
+                        ListPartsResult, Object, Part, parse_list_objects)
+from .definitions import BaseURL, ObjectWriteResult
 from .deleteobjects import DeleteError, DeleteRequest, DeleteResult
 from .error import InvalidResponseError, S3Error, ServerError
 from .helpers import (amzprefix_user_metadata, check_bucket_name,
@@ -62,7 +62,6 @@ from .notificationconfig import NotificationConfig
 from .objectlockconfig import ObjectLockConfig
 from .parsers import (parse_error_response,
                       parse_list_multipart_uploads,
-                      parse_list_parts,
                       parse_new_multipart_upload)
 from .replicationconfig import ReplicationConfig
 from .retention import Retention
@@ -2466,4 +2465,4 @@ class Minio:  # pylint: disable=too-many-public-methods
             query_params=query_params,
             headers=extra_headers,
         )
-        return parse_list_parts(response.data)
+        return ListPartsResult(response)
