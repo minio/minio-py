@@ -58,6 +58,9 @@ s3Client = Minio(
 | [`delete_bucket_encryption`](#delete_bucket_encryption)     |                                                                 |                                                   |
 | [`get_bucket_encryption`](#get_bucket_encryption)           |                                                                 |                                                   |
 | [`put_bucket_encryption`](#put_bucket_encryption)           |                                                                 |                                                   |
+| [`delete_object_lock_config`](#delete_object_lock_config)   |                                                                 |                                                   |
+| [`get_object_lock_config`](#get_object_lock_config)         |                                                                 |                                                   |
+| [`set_object_lock_config`](#set_object_lock_config)         |                                                                 |                                                   |
 
 ## 1. Constructor
 
@@ -761,6 +764,66 @@ tags = Tags.new_bucket_tags()
 tags["Project"] = "Project One"
 tags["User"] = "jsmith"
 client.set_bucket_tags("my-bucketname", tags)
+```
+
+<a name="delete_object_lock_config"></a>
+
+### delete_object_lock_config(bucket_name)
+
+Delete object-lock configuration of a bucket.
+
+__Parameters__
+
+| Param           | Type  | Description         |
+|:----------------|:------|:--------------------|
+| ``bucket_name`` | _str_ | Name of the bucket. |
+
+__Example__
+
+```py
+minio.delete_object_lock_config("my-bucketname")
+```
+
+<a name="get_object_lock_config"></a>
+
+### get_object_lock_config(bucket_name)
+
+Get object-lock configuration of a bucket.
+
+__Parameters__
+
+| Param           | Type  | Description         |
+|:----------------|:------|:--------------------|
+| ``bucket_name`` | _str_ | Name of the bucket. |
+
+| Return                     |
+|:---------------------------|
+| _ObjectLockConfig_ object. |
+
+__Example__
+
+```py
+config = minio.get_object_lock_config("my-bucketname")
+```
+
+<a name="set_object_lock_config"></a>
+
+### set_object_lock_config(bucket_name, config)
+
+Set object-lock configuration to a bucket.
+
+__Parameters__
+
+| Param           | Type               | Description                |
+|:----------------|:-------------------|:---------------------------|
+| ``bucket_name`` | _str_              | Name of the bucket.        |
+| ``config``      | _ObjectLockConfig_ | Object-Lock configuration. |
+
+__Example__
+
+```py
+config = ObjectLockConfig(GOVERNANCE, 15, DAYS)
+minio.set_object_lock_config("my-bucketname", config)
 ```
 
 ## 3. Object operations
