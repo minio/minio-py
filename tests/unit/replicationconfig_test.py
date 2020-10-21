@@ -17,13 +17,15 @@
 from unittest import TestCase
 
 from minio import xml
-from minio.commonconfig import DISABLED, ENABLED, AndOperator, Filter
+from minio.commonconfig import DISABLED, ENABLED, AndOperator, Filter, Tags
 from minio.replicationconfig import (DeleteMarkerReplication, Destination,
                                      ReplicationConfig, Rule)
 
 
 class ReplicationConfigTest(TestCase):
     def test_config(self):
+        tags = Tags()
+        tags.update({"key1": "value1", "key2": "value2"})
         config = ReplicationConfig(
             "REPLACE-WITH-ACTUAL-ROLE",
             [
@@ -35,12 +37,7 @@ class ReplicationConfigTest(TestCase):
                     delete_marker_replication=DeleteMarkerReplication(
                         DISABLED,
                     ),
-                    rule_filter=Filter(
-                        AndOperator(
-                            "TaxDocs",
-                            {"key1": "value1", "key2": "value2"},
-                        ),
-                    ),
+                    rule_filter=Filter(AndOperator("TaxDocs", tags)),
                     rule_id="rule1",
                     priority=1,
                 ),
