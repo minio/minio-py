@@ -45,7 +45,8 @@ import urllib3
 from . import __title__, __version__
 from .commonconfig import Tags
 from .credentials import StaticProvider
-from .datatypes import ListAllMyBucketsResult, Object, parse_list_objects
+from .datatypes import (CompleteMultipartUploadResult, ListAllMyBucketsResult,
+                        Object, parse_list_objects)
 from .definitions import BaseURL, ObjectWriteResult, Part
 from .deleteobjects import DeleteError, DeleteRequest, DeleteResult
 from .error import InvalidResponseError, S3Error, ServerError
@@ -61,7 +62,6 @@ from .notificationconfig import NotificationConfig
 from .parsers import (parse_error_response,
                       parse_list_multipart_uploads,
                       parse_list_parts,
-                      parse_multipart_upload_result,
                       parse_new_multipart_upload)
 from .replicationconfig import ReplicationConfig
 from .select import SelectObjectReader
@@ -1189,10 +1189,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             },
             query_params={'uploadId': upload_id},
         )
-        return (
-            parse_multipart_upload_result(response.data),
-            response.getheader("x-amz-version-id"),
-        )
+        return CompleteMultipartUploadResult(response)
 
     def _create_multipart_upload(self, bucket_name, object_name, headers):
         """Execute CreateMultipartUpload S3 API."""
@@ -1358,7 +1355,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             result = self._complete_multipart_upload(
                 bucket_name, object_name, upload_id, parts,
             )
-            return result[0].etag, result[1]
+            return result.etag, result.version_id
         except Exception as exc:
             if upload_id:
                 self._abort_multipart_upload(
