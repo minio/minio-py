@@ -30,7 +30,6 @@ from urllib.parse import unquote
 from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
 
-from .definitions import ListMultipartUploadsResult
 from .error import S3Error
 from .helpers import strptime_rfc3339
 
@@ -176,10 +175,3 @@ def parse_new_multipart_upload(data):
     """
     root = S3Element.fromstring('InitiateMultipartUploadResult', data)
     return root.get_child_text('UploadId')
-
-
-def parse_list_multipart_uploads(data):
-    """Parse ListMultipartUploads API resppnse XML."""
-    return ListMultipartUploadsResult(
-        S3Element.fromstring("ListMultipartUploadsResult", data),
-    )

@@ -46,7 +46,8 @@ from . import __title__, __version__
 from .commonconfig import Tags
 from .credentials import StaticProvider
 from .datatypes import (CompleteMultipartUploadResult, ListAllMyBucketsResult,
-                        ListPartsResult, Object, Part, parse_list_objects)
+                        ListMultipartUploadsResult, ListPartsResult, Object,
+                        Part, parse_list_objects)
 from .definitions import BaseURL, ObjectWriteResult
 from .deleteobjects import DeleteError, DeleteRequest, DeleteResult
 from .error import InvalidResponseError, S3Error, ServerError
@@ -61,7 +62,6 @@ from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
 from .objectlockconfig import ObjectLockConfig
 from .parsers import (parse_error_response,
-                      parse_list_multipart_uploads,
                       parse_new_multipart_upload)
 from .replicationconfig import ReplicationConfig
 from .retention import Retention
@@ -2428,7 +2428,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             query_params=query_params,
             headers=extra_headers,
         )
-        return parse_list_multipart_uploads(response.data)
+        return ListMultipartUploadsResult(response)
 
     def _list_parts(self, bucket_name, object_name, upload_id,
                     max_parts=None, part_number_marker=None,
