@@ -47,8 +47,8 @@ s3Client = Minio(
 | [`set_bucket_lifecycle`](#set_bucket_lifecycle)             | [`enable_object_legal_hold`](#enable_object_legal_hold)         |                                                   |
 | [`delete_bucket_tags`](#delete_bucket_tags)                 | [`disable_object_legal_hold`](#disable_object_legal_hold)       |                                                   |
 | [`get_bucket_tags`](#get_bucket_tags)                       | [`is_object_legal_hold_enabled`](#is_object_legal_hold_enabled) |                                                   |
-| [`set_bucket_tags`](#set_bucket_tags)                       |                                                                 |                                                   |
-| [`delete_bucket_policy`](#delete_bucket_policy)             |                                                                 |                                                   |
+| [`set_bucket_tags`](#set_bucket_tags)                       | [`get_object_retention`](#get_object_retention)                 |                                                   |
+| [`delete_bucket_policy`](#delete_bucket_policy)             | [`set_object_retention`](#set_object_retention)                 |                                                   |
 | [`get_bucket_policy`](#get_bucket_policy)                   |                                                                 |                                                   |
 | [`set_bucket_policy`](#set_bucket_policy)                   |                                                                 |                                                   |
 | [`delete_bucket_notification`](#delete_bucket_notification) |                                                                 |                                                   |
@@ -1287,6 +1287,55 @@ __Example__
 
 ```py
 minio.is_object_legal_hold_enabled("my-bucketname", "my-objectname")
+```
+
+<a name="get_object_retention"></a>
+
+### get_object_retention(bucket_name, object_name, version_id=None)
+
+Get retention information of an object.
+
+__Parameters__
+
+| Param                | Type             | Description                                |
+|:---------------------|:-----------------|:-------------------------------------------|
+| `bucket_name`        | _str_            | Name of the bucket.                        |
+| `object_name`        | _str_            | Object name in the bucket.                 |
+| `version_id`         | _str_            | Version ID of the object.                  |
+
+__Return Value__
+
+| Return             |
+|:-------------------|
+| _Retention_ object |
+
+
+__Example__
+
+```py
+config = minio.get_object_retention("my-bucketname", "my-objectname")
+```
+
+<a name="set_object_retention"></a>
+
+### set_object_retention(bucket_name, object_name, config, version_id=None)
+
+Set retention information to an object.
+
+__Parameters__
+
+| Param         | Type        | Description                |
+|:--------------|:------------|:---------------------------|
+| `bucket_name` | _str_       | Name of the bucket.        |
+| `object_name` | _str_       | Object name in the bucket. |
+| `config`      | _Retention_ | Retention configuration.   |
+| `version_id`  | _str_       | Version ID of the object.  |
+
+__Example__
+
+```py
+config = Retention(GOVERNANCE, datetime.utcnow() + timedelta(days=10))
+minio.set_object_retention("my-bucketname", "my-objectname", config)
 ```
 
 ## 4. Presigned operations
