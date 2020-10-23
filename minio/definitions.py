@@ -353,13 +353,16 @@ class ObjectWriteResult:
     """Result class of any APIs doing object creation."""
 
     def __init__(
-            self, bucket_name, object_name, version_id, etag, last_modified,
+            self, bucket_name, object_name, version_id, etag, http_headers,
+            last_modified=None, location=None,
     ):
         self._bucket_name = bucket_name
         self._object_name = object_name
         self._version_id = version_id
         self._etag = etag
+        self._http_headers = http_headers
         self._last_modified = last_modified
+        self._location = location
 
     @property
     def bucket_name(self):
@@ -382,6 +385,16 @@ class ObjectWriteResult:
         return self._etag
 
     @property
+    def http_headers(self):
+        """Get HTTP headers."""
+        return self._http_headers
+
+    @property
     def last_modified(self):
         """Get last-modified time."""
         return self._last_modified
+
+    @property
+    def location(self):
+        """Get location."""
+        return self._location

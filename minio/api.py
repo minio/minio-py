@@ -1167,7 +1167,8 @@ class Minio:  # pylint: disable=too-many-public-methods
             object_name,
             response.getheader("x-amz-version-id"),
             etag,
-            last_modified,
+            response.getheaders(),
+            last_modified=last_modified,
         )
 
     def _abort_multipart_upload(self, bucket_name, object_name, upload_id):
@@ -1226,9 +1227,12 @@ class Minio:  # pylint: disable=too-many-public-methods
             headers=headers,
             query_params=query_params,
         )
-        return (
-            response.getheader("etag").replace('"', ""),
+        return ObjectWriteResult(
+            bucket_name,
+            object_name,
             response.getheader("x-amz-version-id"),
+            response.getheader("etag").replace('"', ""),
+            response.getheaders(),
         )
 
     def _upload_part(self, bucket_name, object_name, data, headers,
@@ -1238,10 +1242,10 @@ class Minio:  # pylint: disable=too-many-public-methods
             "partNumber": str(part_number),
             "uploadId": upload_id,
         }
-        etag, _ = self._put_object(
+        result = self._put_object(
             bucket_name, object_name, data, headers, query_params=query_params,
         )
-        return etag
+        return result.etag
 
     def _upload_part_task(self, args):
         """Upload_part task for ThreadPool."""
@@ -1366,7 +1370,14 @@ class Minio:  # pylint: disable=too-many-public-methods
             result = self._complete_multipart_upload(
                 bucket_name, object_name, upload_id, parts,
             )
-            return result.etag, result.version_id
+            return ObjectWriteResult(
+                result.bucket_name,
+                result.object_name,
+                result.version_id,
+                result.etag,
+                result.http_headers,
+                location=result.location,
+            )
         except Exception as exc:
             if upload_id:
                 self._abort_multipart_upload(
