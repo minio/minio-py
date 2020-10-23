@@ -18,27 +18,14 @@
 # dummy values, please replace them with original values.
 
 from minio import Minio
-from minio.error import ResponseError
+from minio.sseconfig import Rule, SSEConfig
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY',
-               secure=True)
+client = Minio(
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+)
 
-try:
-    # Set default encryption configuration for bucket 'my-bucketname'
-    ENC_CONFIG = {
-        'ServerSideEncryptionConfiguration': {
-            'Rule': [
-                {
-                    'ApplyServerSideEncryptionByDefault': {
-                        'SSEAlgorithm': 'AES256'
-                    }
-                }
-            ]
-        }
-    }
-
-    client.put_bucket_encryption('my-bucketname', ENC_CONFIG)
-except ResponseError as err:
-    print(err)
+client.set_bucket_encryption(
+    "my-bucketname", SSEConfig(Rule.new_sse_s3_rule()),
+)

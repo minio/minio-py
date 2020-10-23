@@ -57,7 +57,7 @@ s3Client = Minio(
 | [`listen_bucket_notification`](#listen_bucket_notification) |                                                                 |                                                   |
 | [`delete_bucket_encryption`](#delete_bucket_encryption)     |                                                                 |                                                   |
 | [`get_bucket_encryption`](#get_bucket_encryption)           |                                                                 |                                                   |
-| [`put_bucket_encryption`](#put_bucket_encryption)           |                                                                 |                                                   |
+| [`set_bucket_encryption`](#set_bucket_encryption)           |                                                                 |                                                   |
 | [`delete_object_lock_config`](#delete_object_lock_config)   |                                                                 |                                                   |
 | [`get_object_lock_config`](#get_object_lock_config)         |                                                                 |                                                   |
 | [`set_object_lock_config`](#set_object_lock_config)         |                                                                 |                                                   |
@@ -453,9 +453,9 @@ __Parameters__
 
 __Return Value__
 
-| Param                               |
-|:------------------------------------|
-| Encryption configuration as _dict_. |
+| Param               |
+|:--------------------|
+| _SSEConfig_ object. |
 
 __Example__
 
@@ -463,32 +463,25 @@ __Example__
 config = minio.get_bucket_encryption("my-bucketname")
 ```
 
-<a name="put_bucket_encryption"></a>
+<a name="set_bucket_encryption"></a>
 
-### put_bucket_encryption(bucket_name, encryption_configuration)
+### set_bucket_encryption(bucket_name, config)
 
 Set encryption configuration of a bucket.
 
 __Parameters__
 
-| Param           | Type   | Description                                       |
-|:----------------|:-------|:--------------------------------------------------|
-| ``bucket_name`` | _str_  | Name of the bucket.                               |
-| ``enc_config``  | _dict_ | Encryption configuration as dictionary to be set. |
+| Param           | Type        | Description                           |
+|:----------------|:------------|:--------------------------------------|
+| ``bucket_name`` | _str_       | Name of the bucket.                   |
+| ``config``      | _SSEConfig_ | Server-side encryption configuration. |
 
 __Example__
 
 ```py
-# Sample default encryption configuration
-config = {
-    'ServerSideEncryptionConfiguration':{
-        'Rule': [
-            {'ApplyServerSideEncryptionByDefault': {'SSEAlgorithm': 'AES256'}}
-        ]
-    }
-}
-
-minio.put_bucket_encryption("my-bucketname", config)
+minio.set_bucket_encryption(
+    "my-bucketname", SSEConfig(Rule.new_sse_s3_rule()),
+)
 ```
 
 <a name="delete_bucket_encryption"></a>
