@@ -30,8 +30,7 @@ from urllib.parse import unquote
 from xml.etree import ElementTree
 from xml.etree.ElementTree import ParseError
 
-from .definitions import (ListMultipartUploadsResult, ListPartsResult,
-                          MultipartUploadResult)
+from .definitions import ListMultipartUploadsResult, ListPartsResult
 from .error import S3Error
 from .helpers import strptime_rfc3339
 
@@ -165,23 +164,6 @@ def parse_error_response(response):
         bucket_name=_get_text("BucketName"),
         object_name=_get_text("Key"),
         response=response,
-    )
-
-
-def parse_multipart_upload_result(data):
-    """
-    Parser for complete multipart upload response.
-
-    :param data: Response data for complete multipart upload.
-    :return: :class:`MultipartUploadResult <MultipartUploadResult>`.
-    """
-    root = S3Element.fromstring('CompleteMultipartUploadResult', data)
-
-    return MultipartUploadResult(
-        root.get_child_text('Bucket'),
-        root.get_child_text('Key'),
-        root.get_child_text('Location'),
-        root.get_etag_elem()
     )
 
 

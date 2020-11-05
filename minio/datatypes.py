@@ -233,3 +233,48 @@ def parse_list_objects(response, bucket_name):
     if continuation_token is None and is_truncated:
         continuation_token = marker
     return objects, is_truncated, continuation_token, version_id_marker
+
+
+class CompleteMultipartUploadResult:
+    """CompleteMultipartUpload API result."""
+
+    def __init__(self, response):
+        element = ET.fromstring(response.data.decode())
+        self._bucket_name = findtext(element, "Bucket")
+        self._object_name = findtext(element, "Key")
+        self._location = findtext(element, "Location")
+        self._etag = findtext(element, "ETag")
+        if self._etag:
+            self._etag = self._etag.replace('"', "")
+        self._version_id = response.getheader("x-amz-version-id")
+        self._http_headers = response.getheaders()
+
+    @property
+    def bucket_name(self):
+        """Get bucket name."""
+        return self._bucket_name
+
+    @property
+    def object_name(self):
+        """Get object name."""
+        return self._object_name
+
+    @property
+    def location(self):
+        """Get location."""
+        return self._location
+
+    @property
+    def etag(self):
+        """Get etag."""
+        return self._etag
+
+    @property
+    def version_id(self):
+        """Get version ID."""
+        return self._version_id
+
+    @property
+    def http_headers(self):
+        """Get HTTP headers."""
+        return self._http_headers
