@@ -278,3 +278,145 @@ class CompleteMultipartUploadResult:
     def http_headers(self):
         """Get HTTP headers."""
         return self._http_headers
+
+
+class Part:
+    """Part information of a multipart upload."""
+
+    def __init__(self, part_number, etag, last_modified=None, size=None):
+        self._part_number = part_number
+        self._etag = etag
+        self._last_modified = last_modified
+        self._size = size
+
+    @property
+    def part_number(self):
+        """Get part number. """
+        return self._part_number
+
+    @property
+    def etag(self):
+        """Get etag."""
+        return self._etag
+
+    @property
+    def last_modified(self):
+        """Get last-modified."""
+        return self._last_modified
+
+    @property
+    def size(self):
+        """Get size."""
+        return self._size
+
+    @classmethod
+    def fromxml(cls, element):
+        """Create new object with values from XML element."""
+        part_number = findtext(element, "PartNumber", True)
+        etag = findtext(element, "ETag", True)
+        etag = etag.replace('"', "")
+        tag = findtext(element, "LastModified")
+        last_modified = None if tag is None else strptime_rfc3339(tag)
+        size = findtext(element, "Size")
+        if size:
+            size = int(size)
+        return cls(part_number, etag, last_modified, size)
+
+
+class ListPartsResult:
+    """ListParts API result."""
+
+    def __init__(self, response):
+        element = ET.fromstring(response.data.decode())
+        self._bucket_name = findtext(element, "Bucket")
+        self._object_name = findtext(element, "Key")
+        tag = find(element, "Initiator")
+        self._initiator_id = (
+            None if tag is None else findtext(tag, "ID")
+        )
+        self._initiator_name = (
+            None if tag is None else findtext(tag, "DisplayName")
+        )
+        tag = find(element, "Owner")
+        self._owner_id = (
+            None if tag is None else findtext(tag, "ID")
+        )
+        self._owner_name = (
+            None if tag is None else findtext(tag, "DisplayName")
+        )
+        self._storage_class = findtext(element, "StorageClass")
+        self._part_number_marker = findtext(element, "PartNumberMarker")
+        self._next_part_number_marker = findtext(
+            element, "NextPartNumberMarker",
+        )
+        if self._next_part_number_marker:
+            self._next_part_number_marker = int(self._next_part_number_marker)
+        self._max_parts = findtext(element, "MaxParts")
+        if self._max_parts:
+            self._max_parts = int(self._max_parts)
+        self._is_truncated = findtext(element, "IsTruncated")
+        self._is_truncated = (
+            self._is_truncated is not None and
+            self._is_truncated.lower() == "true"
+        )
+        self._parts = [Part.fromxml(tag) for tag in findall(element, "Part")]
+
+    @property
+    def bucket_name(self):
+        """Get bucket name."""
+        return self._bucket_name
+
+    @property
+    def object_name(self):
+        """Get object name."""
+        return self._object_name
+
+    @property
+    def initiator_id(self):
+        """Get initiator ID."""
+        return self._initiator_id
+
+    @property
+    def initator_name(self):
+        """Get initiator name."""
+        return self._initiator_name
+
+    @property
+    def owner_id(self):
+        """Get owner ID."""
+        return self._owner_id
+
+    @property
+    def owner_name(self):
+        """Get owner name."""
+        return self._owner_name
+
+    @property
+    def storage_class(self):
+        """Get storage class."""
+        return self._storage_class
+
+    @property
+    def part_number_marker(self):
+        """Get part number marker."""
+        return self._part_number_marker
+
+    @property
+    def next_part_number_marker(self):
+        """Get next part number marker."""
+        return self._next_part_number_marker
+
+    @property
+    def max_parts(self):
+        """Get max parts."""
+        return self._max_parts
+
+    @property
+    def is_truncated(self):
+        """Get is-truncated flag."""
+        return self._is_truncated
+
+    @property
+    def parts(self):
+        """Get parts."""
+        return self._parts
