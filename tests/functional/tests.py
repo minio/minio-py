@@ -798,9 +798,10 @@ def _test_stat_object(log_entry, sse=None, version_check=False):
             )
         # Put/Upload a streaming object of 1 MiB
         reader = LimitedRandomReader(length)
-        _, version_id1 = _CLIENT.put_object(
+        result = _CLIENT.put_object(
             bucket_name, object_name, reader, length, sse=sse,
         )
+        version_id1 = result.version_id
         _CLIENT.stat_object(
             bucket_name, object_name, sse=sse, version_id=version_id1,
         )
@@ -814,10 +815,11 @@ def _test_stat_object(log_entry, sse=None, version_check=False):
         log_entry["args"]["content_type"] = content_type = (
             "application/octet-stream")
         log_entry["args"]["object_name"] = object_name + "-metadata"
-        _, version_id2 = _CLIENT.put_object(
+        result = _CLIENT.put_object(
             bucket_name, object_name + "-metadata", reader,
             length, content_type, metadata, sse=sse,
         )
+        version_id2 = result.version_id
         # Stat on the uploaded object to check if it exists
         # Fetch saved stat metadata on a previously uploaded object with
         # metadata.
@@ -866,10 +868,12 @@ def _test_remove_object(log_entry, version_check=False):
             _CLIENT.set_bucket_versioning(
                 bucket_name, VersioningConfig(ENABLED),
             )
-        _, version_id = _CLIENT.put_object(
+        result = _CLIENT.put_object(
             bucket_name, object_name, LimitedRandomReader(length), length,
         )
-        _CLIENT.remove_object(bucket_name, object_name, version_id=version_id)
+        _CLIENT.remove_object(
+            bucket_name, object_name, version_id=result.version_id,
+        )
     finally:
         _CLIENT.remove_bucket(bucket_name)
 
@@ -907,10 +911,11 @@ def _test_get_object(log_entry, sse=None, version_check=False):
             _CLIENT.set_bucket_versioning(
                 bucket_name, VersioningConfig(ENABLED),
             )
-        _, version_id = _CLIENT.put_object(
+        result = _CLIENT.put_object(
             bucket_name, object_name, LimitedRandomReader(length),
             length, sse=sse,
         )
+        version_id = result.version_id
         # Get/Download a full object, iterate on response to save to disk
         object_data = _CLIENT.get_object(
             bucket_name, object_name, sse=sse, version_id=version_id,
@@ -960,10 +965,11 @@ def _test_fget_object(log_entry, sse=None, version_check=False):
             _CLIENT.set_bucket_versioning(
                 bucket_name, VersioningConfig(ENABLED),
             )
-        _, version_id = _CLIENT.put_object(
+        result = _CLIENT.put_object(
             bucket_name, object_name, LimitedRandomReader(length),
             length, sse=sse,
         )
+        version_id = result.version_id
         # Get/Download a full object and save locally at path
         _CLIENT.fget_object(
             bucket_name, object_name, tmpfile, sse=sse, version_id=version_id,
@@ -1088,12 +1094,14 @@ def _test_list_objects(log_entry, use_api_v1=False, version_check=False):
                 bucket_name, VersioningConfig(ENABLED),
             )
         size = 1 * KB
-        _, version_id1 = _CLIENT.put_object(
+        result = _CLIENT.put_object(
             bucket_name, object_name + "-1", LimitedRandomReader(size), size,
         )
-        _, version_id2 = _CLIENT.put_object(
+        version_id1 = result.version_id
+        result = _CLIENT.put_object(
             bucket_name, object_name + "-2", LimitedRandomReader(size), size,
         )
+        version_id2 = result.version_id
         # List all object paths in bucket.
         objects = _CLIENT.list_objects(
             bucket_name, '', is_recursive, include_version=version_check,
@@ -1467,9 +1475,10 @@ def test_presigned_get_object_version(  # pylint: disable=invalid-name
     try:
         _CLIENT.set_bucket_versioning(bucket_name, VersioningConfig(ENABLED))
         size = 1 * KB
-        _, version_id = _CLIENT.put_object(
+        result = _CLIENT.put_object(
             bucket_name, object_name, LimitedRandomReader(size), size,
         )
+        version_id = result.version_id
         presigned_get_object_url = _CLIENT.presigned_get_object(
             bucket_name, object_name, version_id=version_id,
         )
@@ -1841,11 +1850,12 @@ def _test_remove_objects(log_entry, version_check=False):
         # Upload some new objects to prepare for multi-object delete test.
         for i in range(10):
             object_name = "prefix-{0}".format(i)
-            _, version_id = _CLIENT.put_object(
+            result = _CLIENT.put_object(
                 bucket_name, object_name, LimitedRandomReader(size), size,
             )
             object_names.append(
-                (object_name, version_id) if version_check else object_name,
+                (object_name, result.version_id) if version_check
+                else object_name,
             )
         log_entry["args"]["delete_object_list"] = object_names
 
