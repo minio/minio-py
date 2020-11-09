@@ -303,52 +303,6 @@ class ListMultipartUploadsResult:
         ]
 
 
-class Part:
-    """Part information of a multipart upload."""
-
-    def __init__(self, part_number=None, etag=None, root=None):
-        if not root and not part_number and not etag:
-            raise ValueError("part_number/etag or root element must be passed")
-
-        if root:
-            part_number = root.get_child_text("PartNumber")
-            etag = root.get_child_text("ETag")
-            self.last_modified = root.get_localized_time_elem("LastModified")
-            self.size = root.get_int_elem("Size")
-        self.part_number = part_number
-        self.etag = etag
-
-
-class ListPartsResult:
-    """ListParts API result."""
-
-    def __init__(self, root):
-        self.bucket_name = root.get_child_text("Bucket")
-        self.object_name = root.get_child_text("Key")
-        self.initiator_id, self.initator_name = (
-            root.find("Initiator").get_child_text("ID", strict=False),
-            root.find("Initiator").get_child_text(
-                "DisplayName", strict=False,
-            ),
-        ) if root.find("Initiator") else (None, None)
-        self.owner_id, self.owner_name = (
-            root.find("Owner").get_child_text("ID", strict=False),
-            root.find("Owner").get_child_text("DisplayName", strict=False),
-        ) if root.find("Owner") else (None, None)
-        self.storage_class = root.get_child_text("StorageClass")
-        self.part_number_marker = root.get_int_elem("PartNumberMarker")
-        self.next_part_number_marker = root.get_int_elem(
-            "NextPartNumberMarker",
-        )
-        self.max_parts = root.get_int_elem("MaxParts")
-        self._is_truncated = (
-            root.get_child_text("IsTruncated", strict=False).lower() == "true"
-        )
-        self.parts = [
-            Part(part_element) for part_element in root.findall("Part")
-        ]
-
-
 class ObjectWriteResult:
     """Result class of any APIs doing object creation."""
 
