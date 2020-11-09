@@ -20,6 +20,7 @@ Response of ListBuckets, ListObjects, ListObjectsV2 and ListObjectVersions API.
 
 from __future__ import absolute_import
 
+from urllib.parse import unquote
 from xml.etree import ElementTree as ET
 
 from .helpers import strptime_rfc3339
@@ -420,3 +421,134 @@ class ListPartsResult:
     def parts(self):
         """Get parts."""
         return self._parts
+
+
+class Upload:
+    """ Upload information of a multipart upload."""
+
+    def __init__(self, element):
+        self._object_name = unquote(findtext(element, "Key", True))
+        self._upload_id = findtext(element, "UploadId")
+        tag = find(element, "Initiator")
+        self._initiator_id = (
+            None if tag is None else findtext(tag, "ID")
+        )
+        self._initiator_name = (
+            None if tag is None else findtext(tag, "DisplayName")
+        )
+        tag = find(element, "Owner")
+        self._owner_id = (
+            None if tag is None else findtext(tag, "ID")
+        )
+        self._owner_name = (
+            None if tag is None else findtext(tag, "DisplayName")
+        )
+        self._storage_class = findtext(element, "StorageClass")
+        self._initiated_time = findtext(element, "Initiated")
+        if self._initiated_time:
+            self._initiated_time = strptime_rfc3339(self._initiated_time)
+
+    @property
+    def object_name(self):
+        """Get object name."""
+        return self._object_name
+
+    @property
+    def initiator_id(self):
+        """Get initiator ID."""
+        return self._initiator_id
+
+    @property
+    def initator_name(self):
+        """Get initiator name."""
+        return self._initiator_name
+
+    @property
+    def owner_id(self):
+        """Get owner ID."""
+        return self._owner_id
+
+    @property
+    def owner_name(self):
+        """Get owner name."""
+        return self._owner_name
+
+    @property
+    def storage_class(self):
+        """Get storage class."""
+        return self._storage_class
+
+    @property
+    def upload_id(self):
+        """Get upload ID."""
+        return self._upload_id
+
+    @property
+    def initiated_time(self):
+        """Get initiated time."""
+        return self._initiated_time
+
+
+class ListMultipartUploadsResult:
+    """ListMultipartUploads API result."""
+
+    def __init__(self, response):
+        element = ET.fromstring(response.data.decode())
+        self._bucket_name = findtext(element, "Bucket")
+        self._key_marker = findtext(element, "KeyMarker")
+        if self._key_marker:
+            self._key_marker = unquote(self._key_marker)
+        self._upload_id_marker = findtext(element, "UploadIdMarker")
+        self._next_key_marker = findtext(element, "NextKeyMarker")
+        if self._next_key_marker:
+            self._next_key_marker = unquote(self._next_key_marker)
+        self._next_upload_id_marker = findtext(element, "NextUploadIdMarker")
+        self._max_uploads = findtext(element, "MaxUploads")
+        if self._max_uploads:
+            self._max_uploads = int(self._max_uploads)
+        self._is_truncated = findtext(element, "IsTruncated")
+        self._is_truncated = (
+            self._is_truncated is not None and
+            self._is_truncated.lower() == "true"
+        )
+        self._uploads = [Upload(tag) for tag in findall(element, "Upload")]
+
+    @property
+    def bucket_name(self):
+        """Get bucket name."""
+        return self._bucket_name
+
+    @property
+    def key_marker(self):
+        """Get key marker."""
+        return self._key_marker
+
+    @property
+    def upload_id_marker(self):
+        """Get upload ID marker."""
+        return self._upload_id_marker
+
+    @property
+    def next_key_marker(self):
+        """Get next key marker."""
+        return self._next_key_marker
+
+    @property
+    def next_upload_id_marker(self):
+        """Get next upload ID marker."""
+        return self._next_upload_id_marker
+
+    @property
+    def max_uploads(self):
+        """Get max uploads."""
+        return self._max_uploads
+
+    @property
+    def is_truncated(self):
+        """Get is-truncated flag."""
+        return self._is_truncated
+
+    @property
+    def uploads(self):
+        """Get uploads."""
+        return self._uploads

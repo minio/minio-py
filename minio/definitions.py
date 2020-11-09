@@ -257,52 +257,6 @@ class BaseURL:
         return url
 
 
-class Upload:
-    """ Upload information of a multipart upload."""
-
-    def __init__(self, root):
-        self.object_name = root.get_urldecoded_elem_text("Key")
-        self.upload_id = root.get_child_text("UploadId")
-        self.initiator_id, self.initator_name = (
-            root.find("Initiator").get_child_text("ID", strict=False),
-            root.find("Initiator").get_child_text(
-                "DisplayName", strict=False,
-            ),
-        ) if root.find("Initiator") else (None, None)
-        self.owner_id, self.owner_name = (
-            root.find("Owner").get_child_text("ID", strict=False),
-            root.find("Owner").get_child_text("DisplayName", strict=False),
-        ) if root.find("Owner") else (None, None)
-        self.storage_class = root.get_child_text("StorageClass")
-        self.initiated_time = root.get_localized_time_elem("Initiated")
-
-
-class ListMultipartUploadsResult:
-    """ListMultipartUploads API result."""
-
-    def __init__(self, root):
-        self.bucket_name = root.get_child_text("Bucket")
-        self.key_marker = root.get_urldecoded_elem_text(
-            "KeyMarker", strict=False,
-        )
-        self.upload_id_marker = root.get_child_text(
-            "UploadIdMarker", strict=False,
-        )
-        self.next_key_marker = root.get_urldecoded_elem_text(
-            "NextKeyMarker", strict=False,
-        )
-        self.next_upload_id_marker = root.get_child_text(
-            "NextUploadIdMarker", strict=False,
-        )
-        self.max_uploads = root.get_int_elem("MaxUploads")
-        self._is_truncated = (
-            root.get_child_text("IsTruncated", strict=False).lower() == "true"
-        )
-        self.uploads = [
-            Upload(upload_element) for upload_element in root.findall("Upload")
-        ]
-
-
 class ObjectWriteResult:
     """Result class of any APIs doing object creation."""
 
