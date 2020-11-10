@@ -303,65 +303,6 @@ def sha256_hash(data):
     return sha256sum.decode() if isinstance(sha256sum, bytes) else sha256sum
 
 
-def amzprefix_user_metadata(metadata):
-    """
-    Return a new metadata dictionary where user defined metadata keys
-    are prefixed by "x-amz-meta-".
-    """
-    meta = dict()
-    for key, value in metadata.items():
-        # Check if metadata value has US-ASCII encoding since it is
-        # the only one supported by HTTP headers. This will show a better
-        # exception message when users pass unsupported characters
-        # in metadata values.
-        try:
-            if isinstance(value, str):
-                value.encode('us-ascii')
-            value = (
-                [str(val) for val in value]
-                if isinstance(value, (list, tuple)) else str(value)
-            )
-        except UnicodeEncodeError as exc:
-            raise ValueError(
-                'Metadata supports only US-ASCII characters.',
-            ) from exc
-
-        if (is_amz_header(key) or is_supported_header(key) or
-                is_storageclass_header(key)):
-            meta[key] = value
-        else:
-            meta["X-Amz-Meta-" + key] = value
-    return meta
-
-
-def is_amz_header(key):
-    """Returns true if amz s3 system defined metadata."""
-    key = key.lower()
-    return (key.startswith("x-amz-meta") or key == "x-amz-acl" or
-            key.startswith("x-amz-server-side-encryption"))
-
-
-def is_supported_header(key):
-    """Returns true if a standard supported header."""
-
-    # Supported headers for object.
-    supported_headers = [
-        "cache-control",
-        "content-encoding",
-        "content-type",
-        "content-disposition",
-        "content-language",
-        "x-amz-website-redirect-location",
-        # Add more supported headers here.
-    ]
-    return key.lower() in supported_headers
-
-
-def is_storageclass_header(key):
-    """Returns true if header is a storage class header."""
-    return key.lower() == "x-amz-storage-class"
-
-
 def url_replace(
         url, scheme=None, netloc=None, path=None, query=None, fragment=None
 ):
@@ -373,3 +314,63 @@ def url_replace(
         query if query is not None else url.query,
         fragment if fragment is not None else url.fragment,
     )
+
+
+def _metadata_to_headers(metadata):
+    """Convert user metadata to headers."""
+    def normalize_key(key):
+        if not key.lower().startswith("x-amz-meta-"):
+            key = "X-Amz-Meta-" + key
+        return key
+
+    def to_string(value):
+        value = str(value)
+        try:
+            value.encode("us-ascii")
+        except UnicodeEncodeError as exc:
+            raise ValueError(
+                (
+                    "unsupported metadata value {0}; "
+                    "only US-ASCII encoded characters are supported"
+                ).format(value)
+            ) from exc
+        return value
+
+    def normalize_value(values):
+        if not isinstance(values, (list, tuple)):
+            values = [values]
+        return [to_string(value) for value in values]
+
+    return {
+        normalize_key(key): normalize_value(value)
+        for key, value in (metadata or {}).items()
+    }
+
+
+def normalize_headers(headers):
+    """Normalize headers by prefixing 'X-Amz-Meta-' for user metadata."""
+    headers = headers.copy() if headers else {}
+
+    def guess_user_metadata(key):
+        key = key.lower()
+        return not (
+            key.startswith("x-amz-") or
+            key in [
+                "cache-control",
+                "content-encoding",
+                "content-type",
+                "content-disposition",
+                "content-language",
+            ]
+        )
+
+    user_metadata = {
+        key: value for key, value in headers.items()
+        if guess_user_metadata(key)
+    }
+
+    # Remove guessed user metadata.
+    _ = [headers.pop(key) for key in user_metadata]
+
+    headers.update(_metadata_to_headers(user_metadata))
+    return headers

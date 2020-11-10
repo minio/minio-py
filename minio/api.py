@@ -41,6 +41,7 @@ from xml.etree import ElementTree as ET
 import certifi
 import dateutil.parser
 import urllib3
+from urllib3._collections import HTTPHeaderDict
 
 from . import __title__, __version__
 from .commonconfig import Tags
@@ -51,12 +52,11 @@ from .datatypes import (CompleteMultipartUploadResult, ListAllMyBucketsResult,
 from .definitions import BaseURL, ObjectWriteResult
 from .deleteobjects import DeleteError, DeleteRequest, DeleteResult
 from .error import InvalidResponseError, S3Error, ServerError
-from .helpers import (amzprefix_user_metadata, check_bucket_name,
-                      check_non_empty_string, check_sse, check_ssec,
-                      get_part_info, headers_to_strings, is_amz_header,
-                      is_supported_header,
-                      is_valid_policy_type, makedirs, md5sum_hash, quote,
-                      read_part_data, sha256_hash, strptime_rfc3339)
+from .helpers import (check_bucket_name, check_non_empty_string, check_sse,
+                      check_ssec, get_part_info, headers_to_strings,
+                      is_valid_policy_type, makedirs, md5sum_hash,
+                      normalize_headers, quote, read_part_data, sha256_hash,
+                      strptime_rfc3339)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
@@ -264,11 +264,18 @@ class Minio:  # pylint: disable=too-many-public-methods
                 self._trace_stream.write(body.decode())
             self._trace_stream.write("\n")
 
+        http_headers = HTTPHeaderDict()
+        for key, value in (headers or {}).items():
+            if isinstance(value, (list, tuple)):
+                _ = [http_headers.add(key, val) for val in value]
+            else:
+                http_headers.add(key, value)
+
         response = self._http.urlopen(
             method,
             urlunsplit(url),
             body=body,
-            headers=headers,
+            headers=http_headers,
             preload_content=preload_content,
         )
 
@@ -1136,12 +1143,9 @@ class Minio:  # pylint: disable=too-many-public-methods
         check_ssec(source_sse)
         check_sse(sse)
 
-        # Preserving the user-defined metadata in headers
+        headers = normalize_headers(metadata)
         if metadata:
-            headers = amzprefix_user_metadata(metadata)
             headers["x-amz-metadata-directive"] = "REPLACE"
-        else:
-            headers = {}
         if conditions:
             headers.update(conditions)
         headers.update(source_sse.copy_headers() if source_sse else {})
@@ -1290,7 +1294,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             # Set progress bar length and object name before upload
             progress.set_meta(object_name=object_name, total_length=length)
 
-        headers = amzprefix_user_metadata(metadata or {})
+        headers = normalize_headers(metadata)
         headers["Content-Type"] = content_type or "application/octet-stream"
         headers.update(sse.headers() if sse else {})
 
@@ -1475,11 +1479,6 @@ class Minio:  # pylint: disable=too-many-public-methods
             query_params=query_params,
         )
 
-        custom_metadata = {
-            key: value for key, value in response.headers.items()
-            if is_supported_header(key) or is_amz_header(key)
-        }
-
         last_modified = response.getheader("last-modified")
         if last_modified:
             last_modified = dateutil.parser.parse(last_modified).timetuple()
@@ -1491,7 +1490,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             etag=response.getheader("etag", "").replace('"', ""),
             size=int(response.getheader("content-length", "0")),
             content_type=response.getheader("content-type"),
-            metadata=custom_metadata,
+            metadata=response.headers,
             version_id=response.getheader("x-amz-version-id"),
         )
 
