@@ -61,8 +61,7 @@ from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
 from .objectlockconfig import ObjectLockConfig
-from .parsers import (parse_error_response,
-                      parse_new_multipart_upload)
+from .parsers import parse_error_response
 from .replicationconfig import ReplicationConfig
 from .retention import Retention
 from .select import SelectObjectReader
@@ -1213,7 +1212,8 @@ class Minio:  # pylint: disable=too-many-public-methods
             headers=headers,
             query_params={"uploads": ""},
         )
-        return parse_new_multipart_upload(response.data)
+        element = ET.fromstring(response.data.decode())
+        return findtext(element, "UploadId")
 
     def _put_object(self, bucket_name, object_name, data, headers,
                     query_params=None):
