@@ -49,14 +49,13 @@ from .credentials import StaticProvider
 from .datatypes import (CompleteMultipartUploadResult, ListAllMyBucketsResult,
                         ListMultipartUploadsResult, ListPartsResult, Object,
                         Part, parse_list_objects)
-from .definitions import BaseURL, ObjectWriteResult
 from .deleteobjects import DeleteError, DeleteRequest, DeleteResult
 from .error import InvalidResponseError, S3Error, ServerError
-from .helpers import (check_bucket_name, check_non_empty_string, check_sse,
-                      check_ssec, get_part_info, headers_to_strings,
-                      is_valid_policy_type, makedirs, md5sum_hash,
-                      normalize_headers, quote, read_part_data, sha256_hash,
-                      strptime_rfc3339)
+from .helpers import (BaseURL, ObjectWriteResult, check_bucket_name,
+                      check_non_empty_string, check_sse, check_ssec,
+                      get_part_info, headers_to_strings, is_valid_policy_type,
+                      makedirs, md5sum_hash, normalize_headers, quote,
+                      read_part_data, sha256_hash, strptime_rfc3339)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
