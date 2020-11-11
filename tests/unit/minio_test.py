@@ -22,8 +22,7 @@ from nose.tools import eq_, raises
 from minio import Minio
 from minio import __version__ as minio_version
 from minio.api import _DEFAULT_USER_AGENT
-from minio.definitions import BaseURL
-from minio.helpers import check_bucket_name
+from minio.helpers import BaseURL, check_bucket_name
 
 
 class ValidBucketName(TestCase):
