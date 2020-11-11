@@ -28,6 +28,10 @@ and API specific errors.
 
 """
 
+from xml.etree import ElementTree as ET
+
+from .xml import findtext
+
 
 class MinioException(Exception):
     """Base Minio exception."""
@@ -103,6 +107,21 @@ class S3Error(MinioException):
     def response(self):
         """Get HTTP response."""
         return self._response
+
+    @classmethod
+    def fromxml(cls, response):
+        """Create new object with values from XML element."""
+        element = ET.fromstring(response.data.decode())
+        return cls(
+            findtext(element, "Code"),
+            findtext(element, "Message"),
+            findtext(element, "Resource"),
+            findtext(element, "RequestId"),
+            findtext(element, "HostId"),
+            bucket_name=findtext(element, "BucketName"),
+            object_name=findtext(element, "Key"),
+            response=response,
+        )
 
     def copy(self, code, message):
         """Make a copy with replace code and message."""
