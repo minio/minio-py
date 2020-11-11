@@ -889,18 +889,19 @@ __Return Value__
 __Example__
 
 ```py
-request = SelectRequest(
-    "select * from s3object",
-    CSVInputSerialization(),
-    CSVOutputSerialization(),
-    request_progress=True,
-)
-data = client.select_object_content('my-bucket', 'my-object', request)
-with open('my-record-file', 'w') as record_data:
-    for d in data.stream(10*1024):
-        record_data.write(d)
-    # Get the stats
-    print(data.stats())
+with client.select_object_content(
+        "my-bucket",
+        "my-object.csv",
+        SelectRequest(
+            "select * from S3Object",
+            CSVInputSerialization(),
+            CSVOutputSerialization(),
+            request_progress=True,
+        ),
+) as result:
+    for data in result.stream():
+        print(data.decode())
+    print(result.stats())
 ```
 
 <a name="fget_object"></a>

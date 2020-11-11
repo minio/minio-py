@@ -3,7 +3,7 @@
 check:
 	@pip install --user --upgrade pylint
 	@if python --version | grep -qi 'python 3'; then pylint --reports=no --score=no --disable=R0401,R0801 minio/*py; fi
-	@if python --version | grep -qi 'python 3'; then pylint --reports=no --score=no minio/credentials minio/select tests/functional; fi
+	@if python --version | grep -qi 'python 3'; then pylint --reports=no --score=no minio/credentials tests/functional; fi
 
 	@isort --diff --recursive .
 

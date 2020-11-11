@@ -16,22 +16,25 @@
 
 
 from minio import Minio
-from minio.selectrequest import (CSVInputSerialization, CSVOutputSerialization,
-                                 SelectRequest)
+from minio.select import (CSVInputSerialization, CSVOutputSerialization,
+                          SelectRequest)
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEY',
-               secret_key='YOUR-SECRETKEY')
-
-request = SelectRequest(
-    "select * from s3object",
-    CSVInputSerialization(),
-    CSVOutputSerialization(),
-    request_progress=True,
+client = Minio(
+    "s3.amazonaws.com",
+    access_key="YOUR-ACCESSKEY",
+    secret_key="YOUR-SECRETKEY",
 )
-data = client.select_object_content('my-bucket', 'my-object', request)
-with open('my-record-file', 'w') as record_data:
-    for d in data.stream(10*1024):
-        record_data.write(d)
-    # Get the stats
-    print(data.stats())
+
+with client.select_object_content(
+        "my-bucket",
+        "my-object.csv",
+        SelectRequest(
+            "select * from S3Object",
+            CSVInputSerialization(),
+            CSVOutputSerialization(),
+            request_progress=True,
+        ),
+) as result:
+    for data in result.stream():
+        print(data.decode())
+    print(result.stats())
