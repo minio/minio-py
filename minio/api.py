@@ -61,7 +61,6 @@ from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
 from .objectlockconfig import ObjectLockConfig
-from .parsers import parse_error_response
 from .replicationconfig import ReplicationConfig
 from .retention import Retention
 from .select import SelectObjectReader
@@ -322,10 +321,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 None,
             )
 
-        response_error = (
-            parse_error_response(response)
-            if response.data else None
-        )
+        response_error = S3Error.fromxml(response) if response.data else None
 
         if self._trace_stream:
             self._trace_stream.write("----------END-HTTP----------\n")
