@@ -31,7 +31,8 @@ import sys
 import tempfile
 import time
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from inspect import getfullargspec
 from threading import Thread
 from uuid import uuid4
 
@@ -46,31 +47,8 @@ from minio.select.helpers import calculate_crc
 from minio.selectrequest import (CSVInputSerialization, CSVOutputSerialization,
                                  SelectRequest)
 from minio.sse import SseCustomerKey
+from minio.time import to_http_header
 from minio.versioningconfig import VersioningConfig
-
-if sys.version_info[0] == 2:
-    from datetime import tzinfo  # pylint: disable=ungrouped-imports
-
-    class UTC(tzinfo):
-        """UTC"""
-
-        def utcoffset(self, dt):
-            return timedelta(0)
-
-        def tzname(self, dt):
-            return "UTC"
-
-        def dst(self, dt):
-            return timedelta(0)
-
-    UTC = UTC()
-    from inspect import getargspec
-    GETARGSSPEC = getargspec
-else:
-    from datetime import timezone  # pylint: disable=ungrouped-imports
-    UTC = timezone.utc
-    from inspect import getfullargspec  # pylint: disable=ungrouped-imports
-    GETARGSSPEC = getfullargspec
 
 _CLIENT = None  # initialized in main().
 _TEST_FILE = None  # initialized in main().
@@ -162,7 +140,7 @@ def _call_test(func, *args, **kwargs):
         log_entry["function"] = "{0}({1})".format(
             log_entry["method"].__name__,
             # pylint: disable=deprecated-method
-            ', '.join(GETARGSSPEC(log_entry["method"]).args[1:]))
+            ', '.join(getfullargspec(log_entry["method"]).args[1:]))
     log_entry["args"] = {
         k: v for k, v in log_entry.get("args", {}).items() if v
     }
@@ -404,7 +382,6 @@ def _validate_stat(st_obj, expected_size, expected_meta, version_id=None):
     expected_meta = {
         key.lower(): value for key, value in (expected_meta or {}).items()
     }
-    received_modification_time = st_obj.last_modified
     received_etag = st_obj.etag
     received_metadata = {
         key.lower(): value for key, value in (st_obj.metadata or {}).items()
@@ -412,10 +389,6 @@ def _validate_stat(st_obj, expected_size, expected_meta, version_id=None):
     received_content_type = st_obj.content_type
     received_size = st_obj.size
     received_is_dir = st_obj.is_dir
-
-    if not isinstance(received_modification_time, time.struct_time):
-        raise ValueError('Incorrect last_modified time type'
-                         ', received type: ', type(received_modification_time))
 
     if not received_etag:
         raise ValueError('No Etag value is returned.')
@@ -624,10 +597,10 @@ def test_copy_object_modified_since(log_entry):
         _CLIENT.put_object(bucket_name, object_source, reader, size)
         # Set up the 'modified_since' copy condition
         copy_conditions = CopyConditions()
-        mod_since = datetime(2014, 4, 1, tzinfo=UTC)
+        mod_since = datetime(2014, 4, 1, tzinfo=timezone.utc)
         copy_conditions.set_modified_since(mod_since)
         log_entry["args"]["conditions"] = {
-            'set_modified_since': mod_since.strftime('%c')}
+            'set_modified_since': to_http_header(mod_since)}
         # Perform a server side copy of an object
         # and expect the copy to complete successfully
         _CLIENT.copy_object(bucket_name, object_copy,
@@ -663,10 +636,10 @@ def test_copy_object_unmodified_since(  # pylint: disable=invalid-name
         _CLIENT.put_object(bucket_name, object_source, reader, size)
         # Set up the 'unmodified_since' copy condition
         copy_conditions = CopyConditions()
-        unmod_since = datetime(2014, 4, 1, tzinfo=UTC)
+        unmod_since = datetime(2014, 4, 1, tzinfo=timezone.utc)
         copy_conditions.set_unmodified_since(unmod_since)
         log_entry["args"]["conditions"] = {
-            'set_unmodified_since': unmod_since.strftime('%c')}
+            'set_unmodified_since': to_http_header(unmod_since)}
         try:
             # Perform a server side copy of an object and expect
             # the copy to fail since the creation/modification

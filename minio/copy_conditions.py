@@ -28,6 +28,7 @@ This module contains :class:`CopyConditions <CopyConditions>` implementation.
 from collections.abc import MutableMapping
 
 from .helpers import check_non_empty_string
+from .time import to_http_header
 
 # CopyCondition explanation:
 # http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectCOPY.html
@@ -82,10 +83,10 @@ class CopyConditions(MutableMapping):
 
     def set_unmodified_since(self, mod_time):
         """Set unmodified since condition."""
-        time = mod_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
+        time = to_http_header(mod_time)
         self._store["X-Amz-Copy-Source-If-Unmodified-Since"] = time
 
     def set_modified_since(self, mod_time):
         """Set modified since condition."""
-        time = mod_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
+        time = to_http_header(mod_time)
         self._store["X-Amz-Copy-Source-If-Modified-Since"] = time

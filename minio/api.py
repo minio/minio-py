@@ -33,17 +33,17 @@ import itertools
 import json
 import os
 import platform
-from datetime import datetime, timedelta
+from datetime import timedelta
 from threading import Thread
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
 import certifi
-import dateutil.parser
 import urllib3
 from urllib3._collections import HTTPHeaderDict
 
 from . import __title__, __version__
+from . import time
 from .commonconfig import Tags
 from .credentials import StaticProvider
 from .datatypes import (CompleteMultipartUploadResult, ListAllMyBucketsResult,
@@ -55,7 +55,7 @@ from .helpers import (BaseURL, ObjectWriteResult, check_bucket_name,
                       check_non_empty_string, check_sse, check_ssec,
                       get_part_info, headers_to_strings, is_valid_policy_type,
                       makedirs, md5sum_hash, normalize_headers, quote,
-                      read_part_data, sha256_hash, strptime_rfc3339)
+                      read_part_data, sha256_hash)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
@@ -64,7 +64,7 @@ from .replicationconfig import ReplicationConfig
 from .retention import Retention
 from .select import SelectObjectReader
 from .selectrequest import SelectRequest
-from .signer import (AMZ_DATE_FORMAT, SIGN_V4_ALGORITHM, get_credential_string,
+from .signer import (SIGN_V4_ALGORITHM, get_credential_string,
                      post_presign_v4, presign_v4, sign_v4_s3)
 from .sse import SseCustomerKey
 from .sseconfig import SSEConfig
@@ -206,8 +206,8 @@ class Minio:  # pylint: disable=too-many-public-methods
             headers["x-amz-content-sha256"] = sha256
         if creds and creds.session_token:
             headers["X-Amz-Security-Token"] = creds.session_token
-        date = datetime.utcnow()
-        headers["x-amz-date"] = date.strftime(AMZ_DATE_FORMAT)
+        date = time.utcnow()
+        headers["x-amz-date"] = time.to_amz_date(date)
         return headers, date
 
     def _url_open(  # pylint: disable=too-many-branches
@@ -1158,7 +1158,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             etag = etag.replace('"', "")
         last_modified = findtext(element, "LastModified")
         if last_modified:
-            last_modified = strptime_rfc3339(last_modified)
+            last_modified = time.from_iso8601utc(last_modified)
         return ObjectWriteResult(
             bucket_name,
             object_name,
@@ -1476,7 +1476,7 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         last_modified = response.getheader("last-modified")
         if last_modified:
-            last_modified = dateutil.parser.parse(last_modified).timetuple()
+            last_modified = time.from_http_header(last_modified)
 
         return Object(
             bucket_name,
@@ -1683,7 +1683,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 url,
                 region,
                 creds,
-                request_date or datetime.utcnow(),
+                request_date or time.utcnow(),
                 int(expires.total_seconds()),
             )
         return urlunsplit(url)
@@ -1776,7 +1776,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             post_policy = PostPolicy()
             post_policy.set_bucket_name('bucket_name')
             post_policy.set_key_startswith('objectPrefix/')
-            expires_date = datetime.utcnow()+timedelta(days=10)
+            expires_date = datetime.utcnow() + timedelta(days=10)
             post_policy.set_expires(expires_date)
 
             form_data = presigned_post_policy(post_policy)
@@ -1791,12 +1791,12 @@ class Minio:  # pylint: disable=too-many-public-methods
         bucket_name = post_policy.form_data['bucket']
         region = self._get_region(bucket_name, None)
         credentials = self._provider.retrieve()
-        date = datetime.utcnow()
+        date = time.utcnow()
         credential_string = get_credential_string(
             credentials.access_key, date, region,
         )
         policy = [
-            ('eq', '$x-amz-date', date.strftime(AMZ_DATE_FORMAT)),
+            ('eq', '$x-amz-date', time.to_amz_date(date)),
             ('eq', '$x-amz-algorithm', SIGN_V4_ALGORITHM),
             ('eq', '$x-amz-credential', credential_string),
         ]
@@ -1812,7 +1812,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             'policy': post_policy_base64,
             'x-amz-algorithm': SIGN_V4_ALGORITHM,
             'x-amz-credential': credential_string,
-            'x-amz-date': date.strftime(AMZ_DATE_FORMAT),
+            'x-amz-date': time.to_amz_date(date),
             'x-amz-signature': signature,
         }
         if credentials.session_token:

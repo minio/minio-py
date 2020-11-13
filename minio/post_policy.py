@@ -30,6 +30,7 @@ import datetime
 import json
 
 from .helpers import check_bucket_name, check_non_empty_string
+from .time import to_iso8601utc
 
 
 # Policy explanation:
@@ -133,10 +134,7 @@ class PostPolicy:
             policies.append(['content-length-range'] +
                             list(self._content_length_range))
 
-        policy_stmt = {
-            "expiration": self._expiration.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
-        }
-
+        policy_stmt = {"expiration": to_iso8601utc(self._expiration)}
         if policies:
             policy_stmt["conditions"] = policies
 

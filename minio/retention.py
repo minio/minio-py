@@ -21,7 +21,7 @@ from __future__ import absolute_import
 import datetime
 
 from .commonconfig import COMPLIANCE, GOVERNANCE
-from .helpers import strftime_rfc3339, strptime_rfc3339
+from .time import from_iso8601utc, to_iso8601utc
 from .xml import Element, SubElement, findtext
 
 
@@ -54,7 +54,7 @@ class Retention:
     def fromxml(cls, element):
         """Create new object with values from XML element."""
         mode = findtext(element, "Mode", True)
-        retain_until_date = strptime_rfc3339(
+        retain_until_date = from_iso8601utc(
             findtext(element, "RetainUntilDate", True),
         )
         return cls(mode, retain_until_date)
@@ -66,6 +66,6 @@ class Retention:
         SubElement(
             element,
             "RetainUntilDate",
-            strftime_rfc3339(self._retain_until_date),
+            to_iso8601utc(self._retain_until_date),
         )
         return element

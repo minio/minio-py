@@ -25,7 +25,6 @@ import math
 import os
 import re
 import urllib.parse
-from datetime import datetime
 
 from .sse import Sse, SseCustomerKey
 
@@ -48,24 +47,6 @@ _ALLOWED_HOSTNAME_REGEX = re.compile(
     re.IGNORECASE)
 
 _EXTRACT_REGION_REGEX = re.compile('s3[.-]?(.+?).amazonaws.com')
-RFC3339NANO = "%Y-%m-%dT%H:%M:%S.%fZ"
-RFC3339 = "%Y-%m-%dT%H:%M:%SZ"
-
-
-def strptime_rfc3339(value):
-    """Parse RFC3339 formatted string to datetime."""
-    time = None
-    if value is not None:
-        try:
-            time = datetime.strptime(value, RFC3339NANO)
-        except ValueError:
-            time = datetime.strptime(value, RFC3339)
-    return time
-
-
-def strftime_rfc3339(value):
-    """Format datetime into RFC3339 formatted string."""
-    return datetime.strftime(value, RFC3339NANO) if value else None
 
 
 def quote(resource, safe='/', encoding=None, errors=None):

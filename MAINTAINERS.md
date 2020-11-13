@@ -8,7 +8,7 @@ Fork [minio-py upstream](https://github.com/minio/minio-py/fork) source reposito
 ```sh
 $ git clone git@github.com:minio/minio-py
 $ cd minio-py
-$ pip install urllib3 certifi pytz pyflakes faker twine
+$ pip install urllib3 certifi pyflakes faker twine
 ```
 
 ### Modify package version

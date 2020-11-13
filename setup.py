@@ -39,9 +39,7 @@ packages = [
 
 requires = [
     'urllib3',
-    'pytz',
     'certifi',
-    'python-dateutil',
     'configparser',
 ]
 

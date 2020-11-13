@@ -25,7 +25,7 @@ from __future__ import absolute_import
 from abc import ABCMeta
 
 from .commonconfig import BaseRule, check_status
-from .helpers import strftime_rfc3339, strptime_rfc3339
+from .time import from_iso8601utc, to_iso8601utc
 from .xml import Element, SubElement, find, findall, findtext
 
 
@@ -50,7 +50,7 @@ class DateDays:
     @staticmethod
     def parsexml(element):
         """Parse XML to date and days."""
-        date = strptime_rfc3339(findtext(element, "Date"))
+        date = from_iso8601utc(findtext(element, "Date"))
         days = findtext(element, "Days")
         if days is not None:
             days = int(days)
@@ -60,7 +60,7 @@ class DateDays:
         """Convert to XML."""
         if self._date is not None:
             SubElement(
-                element, "Date", strftime_rfc3339(self._date),
+                element, "Date", to_iso8601utc(self._date),
             )
         if self._days:
             SubElement(element, "Days", str(self._days))

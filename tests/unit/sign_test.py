@@ -16,23 +16,21 @@
 
 import hashlib
 import hmac
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest import TestCase
 from urllib.parse import urlsplit, urlunsplit
 
-import mock
-import pytz as pytz
-from nose.tools import eq_, raises
+from nose.tools import eq_
 
 from minio import Minio
 from minio.credentials import Credentials
-from minio.helpers import RFC3339NANO, queryencode, quote, sha256_hash
+from minio.helpers import queryencode, quote, sha256_hash
 from minio.signer import (_get_authorization, _get_canonical_request_hash,
                           _get_scope, _get_signing_key, _get_string_to_sign,
                           presign_v4, sign_v4_s3)
 
 empty_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-dt = datetime(2015, 6, 20, 1, 2, 3, 0, pytz.utc)
+dt = datetime(2015, 6, 20, 1, 2, 3, 0, timezone.utc)
 
 
 class CanonicalRequestTest(TestCase):
