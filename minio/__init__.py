@@ -39,5 +39,4 @@ __LOCALE_LOCK__ = threading.Lock()
 
 # pylint: disable=unused-import
 from .api import Minio
-from .copy_conditions import CopyConditions
 from .error import InvalidResponseError, S3Error, ServerError

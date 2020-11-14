@@ -42,20 +42,22 @@ import certifi
 import urllib3
 from urllib3._collections import HTTPHeaderDict
 
-from . import __title__, __version__
-from . import time
-from .commonconfig import Tags
+from . import __title__, __version__, time
+from .commonconfig import COPY, REPLACE, ComposeSource, CopySource, Tags
 from .credentials import StaticProvider
 from .datatypes import (CompleteMultipartUploadResult, ListAllMyBucketsResult,
                         ListMultipartUploadsResult, ListPartsResult, Object,
-                        Part, PostPolicy, parse_list_objects)
+                        Part, PostPolicy, parse_copy_object,
+                        parse_list_objects)
 from .deleteobjects import DeleteError, DeleteRequest, DeleteResult
 from .error import InvalidResponseError, S3Error, ServerError
-from .helpers import (BaseURL, ObjectWriteResult, ThreadPool,
-                      check_bucket_name, check_non_empty_string, check_sse,
-                      check_ssec, get_part_info, headers_to_strings,
-                      is_valid_policy_type, makedirs, md5sum_hash,
-                      normalize_headers, quote, read_part_data, sha256_hash)
+from .helpers import (MAX_MULTIPART_COUNT, MAX_MULTIPART_OBJECT_SIZE,
+                      MAX_PART_SIZE, MIN_PART_SIZE, BaseURL, ObjectWriteResult,
+                      ThreadPool, check_bucket_name, check_non_empty_string,
+                      check_sse, check_ssec, genheaders, get_part_info,
+                      headers_to_strings, is_valid_policy_type, makedirs,
+                      md5sum_hash, normalize_headers, read_part_data,
+                      sha256_hash)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
@@ -1099,64 +1101,129 @@ class Minio:  # pylint: disable=too-many-public-methods
             preload_content=False,
         )
 
-    def copy_object(self, bucket_name, object_name, object_source,
-                    conditions=None, source_sse=None, sse=None, metadata=None):
+    def copy_object(self, bucket_name, object_name, source,
+                    sse=None, metadata=None, tags=None, retention=None,
+                    legal_hold=False, metadata_directive=None,
+                    tagging_directive=None):
         """
         Create an object by server-side copying data from another object.
         In this API maximum supported source object size is 5GiB.
 
         :param bucket_name: Name of the bucket.
         :param object_name: Object name in the bucket.
-        :param object_source: Source object to be copied.
-        :param conditions: :class:`CopyConditions` object. Collection of
-                           supported CopyObject conditions.
-        :param source_sse: Server-side encryption customer key of source
-                           object.
+        :param source: :class:`CopySource` object.
         :param sse: Server-side encryption of destination object.
         :param metadata: Any user-defined metadata to be copied along with
                          destination object.
+        :param tags: Tags for destination object.
+        :param retention: :class:`Retention` configuration object.
+        :param legal_hold: Flag to set legal hold for destination object.
+        :param metadata_directive: Directive used to handle user metadata for
+                                   destination object.
+        :param tagging_directive: Directive used to handle tags for destination
+                                   object.
         :return: :class:`ObjectWriteResult <ObjectWriteResult>` object.
 
         Example::
-            minio.copy_object(
-                "my-bucketname",
-                "my-objectname",
-                "my-source-bucketname/my-source-objectname",
+            # copy an object from a bucket to another.
+            result = client.copy_object(
+                "my-bucket",
+                "my-object",
+                CopySource("my-sourcebucket", "my-sourceobject"),
             )
-            minio.copy_object(
-                "my-bucketname",
-                "my-objectname",
-                "my-source-bucketname/my-source-objectname"
-                "?versionId=b6602757-7c9c-449b-937f-fed504d04c94",
+            print(result.object_name, result.version_id)
+
+            # copy an object with condition.
+            result = client.copy_object(
+                "my-bucket",
+                "my-object",
+                CopySource(
+                    "my-sourcebucket",
+                    "my-sourceobject",
+                    modified_since=datetime(2014, 4, 1, tzinfo=timezone.utc),
+                ),
             )
+            print(result.object_name, result.version_id)
+
+            # copy an object from a bucket with replacing metadata.
+            metadata = {"test_meta_key": "test_meta_value"}
+            result = client.copy_object(
+                "my-bucket",
+                "my-object",
+                CopySource("my-sourcebucket", "my-sourceobject"),
+                metadata=metadata,
+                metadata_directive=REPLACE,
+            )
+            print(result.object_name, result.version_id)
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
-        check_non_empty_string(object_source)
-        check_ssec(source_sse)
+        if not isinstance(source, CopySource):
+            raise ValueError("source must be CopySource type")
         check_sse(sse)
+        if tags is not None and not isinstance(tags, Tags):
+            raise ValueError("tags must be Tags type")
+        if retention is not None and not isinstance(retention, Retention):
+            raise ValueError("retention must be Retention type")
+        if (
+                metadata_directive is not None and
+                metadata_directive not in [COPY, REPLACE]
+        ):
+            raise ValueError(
+                "metadata directive must be {0} or {1}".format(COPY, REPLACE),
+            )
+        if (
+                tagging_directive is not None and
+                tagging_directive not in [COPY, REPLACE]
+        ):
+            raise ValueError(
+                "tagging directive must be {0} or {1}".format(COPY, REPLACE),
+            )
 
-        headers = normalize_headers(metadata)
-        if metadata:
-            headers["x-amz-metadata-directive"] = "REPLACE"
-        if conditions:
-            headers.update(conditions)
-        headers.update(source_sse.copy_headers() if source_sse else {})
-        headers.update(sse.headers() if sse else {})
-        headers['X-Amz-Copy-Source'] = quote(object_source)
+        size = -1
+        if source.offset is None and source.length is None:
+            stat = self.stat_object(
+                source.bucket_name,
+                source.object_name,
+                version_id=source.version_id,
+                ssec=source.ssec,
+            )
+            size = stat.size
+
+        if (
+                source.offset is not None or
+                source.length is not None or
+                size > MAX_PART_SIZE
+        ):
+            if metadata_directive == COPY:
+                raise ValueError(
+                    "COPY metadata directive is not applicable to source "
+                    "object size greater than 5 GiB",
+                )
+            if tagging_directive == COPY:
+                raise ValueError(
+                    "COPY tagging directive is not applicable to source "
+                    "object size greater than 5 GiB"
+                )
+            return self.compose_object(
+                bucket_name, object_name, ComposeSource.of(source),
+                sse=sse, metadata=metadata, tags=tags, retention=retention,
+                legal_hold=legal_hold,
+            )
+
+        headers = genheaders(metadata, sse, tags, retention, legal_hold)
+        if metadata_directive:
+            headers["x-amz-metadata-directive"] = metadata_directive
+        if tagging_directive:
+            headers["x-amz-tagging-directive"] = tagging_directive
+        headers.update(source.gen_copy_headers())
         response = self._execute(
             "PUT",
             bucket_name,
             object_name=object_name,
             headers=headers,
         )
-        element = ET.fromstring(response.data.decode())
-        etag = findtext(element, "ETag")
-        if etag:
-            etag = etag.replace('"', "")
-        last_modified = findtext(element, "LastModified")
-        if last_modified:
-            last_modified = time.from_iso8601utc(last_modified)
+        etag, last_modified = parse_copy_object(response)
         return ObjectWriteResult(
             bucket_name,
             object_name,
@@ -1165,6 +1232,249 @@ class Minio:  # pylint: disable=too-many-public-methods
             response.getheaders(),
             last_modified=last_modified,
         )
+
+    def _calc_part_count(self, sources):
+        """Calculate part count."""
+        object_size = 0
+        part_count = 0
+        i = 0
+        for src in sources:
+            i += 1
+            stat = self.stat_object(
+                src.bucket_name,
+                src.object_name,
+                version_id=src.version_id,
+                ssec=src.ssec,
+            )
+            src.build_headers(stat.size, stat.etag)
+            size = stat.size
+            if src.length is not None:
+                size = src.length
+            elif src.offset is not None:
+                size -= src.offset
+
+            if (
+                    size < MIN_PART_SIZE and
+                    len(sources) != 1 and
+                    i != len(sources)
+            ):
+                raise ValueError(
+                    "source {0}/{1}: size {2} must be greater than {3}".format(
+                        src.bucket_name, src.objcet_name, size, MIN_PART_SIZE,
+                    ),
+                )
+
+            object_size += size
+            if object_size > MAX_MULTIPART_OBJECT_SIZE:
+                raise ValueError(
+                    "destination object size must be less than {0}".format(
+                        MAX_MULTIPART_OBJECT_SIZE,
+                    ),
+                )
+
+            if size > MAX_PART_SIZE:
+                count = int(size / MAX_PART_SIZE)
+                last_part_size = size - (count * MAX_PART_SIZE)
+                if last_part_size > 0:
+                    count += 1
+                else:
+                    last_part_size = MAX_PART_SIZE
+                if (
+                        last_part_size < MIN_PART_SIZE and
+                        len(sources) != 1 and
+                        i != len(sources)
+                ):
+                    raise ValueError(
+                        (
+                            "source {0}/{1}: for multipart split upload of "
+                            "{2}, last part size is less than {3}"
+                        ).format(
+                            src.bucket_name, src.objcet_name, size,
+                            MIN_PART_SIZE,
+                        ),
+                    )
+                part_count += count
+            else:
+                part_count += 1
+
+        if part_count > MAX_MULTIPART_COUNT:
+            raise ValueError(
+                (
+                    "Compose sources create more than allowed multipart "
+                    "count {0}"
+                ).format(MAX_MULTIPART_COUNT),
+            )
+        return part_count
+
+    def _upload_part_copy(self, bucket_name, object_name, upload_id,
+                          part_number, headers):
+        """Execute UploadPartCopy S3 API."""
+        query_params = {
+            "partNumber": str(part_number),
+            "uploadId": upload_id,
+        }
+        response = self._execute(
+            "PUT",
+            bucket_name,
+            object_name,
+            headers=headers,
+            query_params=query_params,
+        )
+        return parse_copy_object(response)
+
+    def compose_object(  # pylint: disable=too-many-branches
+            self, bucket_name, object_name, sources,
+            sse=None, metadata=None, tags=None, retention=None,
+            legal_hold=False,
+    ):
+        """
+        Create an object by combining data from different source objects using
+        server-side copy.
+
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param sources: List of :class:`ComposeSource` object.
+        :param sse: Server-side encryption of destination object.
+        :param metadata: Any user-defined metadata to be copied along with
+                         destination object.
+        :param tags: Tags for destination object.
+        :param retention: :class:`Retention` configuration object.
+        :param legal_hold: Flag to set legal hold for destination object.
+        :return: :class:`ObjectWriteResult <ObjectWriteResult>` object.
+
+        Example::
+            sources = [
+                ComposeSource("my-job-bucket", "my-object-part-one"),
+                ComposeSource("my-job-bucket", "my-object-part-two"),
+                ComposeSource("my-job-bucket", "my-object-part-three"),
+            ]
+
+            # Create my-bucket/my-object by combining source object
+            # list.
+            result = client.compose_object("my-bucket", "my-object", sources)
+            print(result.object_name, result.version_id)
+
+            # Create my-bucket/my-object with user metadata by combining
+            # source object list.
+            result = client.compose_object(
+                "my-bucket",
+                "my-object",
+                sources,
+                metadata={"test_meta_key": "test_meta_value"},
+            )
+            print(result.object_name, result.version_id)
+
+            # Create my-bucket/my-object with user metadata and
+            # server-side encryption by combining source object list.
+            client.compose_object(
+                "my-bucket", "my-object", sources, sse=SseS3(),
+            )
+            print(result.object_name, result.version_id)
+        """
+        check_bucket_name(bucket_name)
+        check_non_empty_string(object_name)
+        if not isinstance(sources, (list, tuple)) or not sources:
+            raise ValueError("sources must be non-empty list or tuple type")
+        i = 0
+        for src in sources:
+            if not isinstance(src, ComposeSource):
+                raise ValueError(
+                    "sources[{0}] must be ComposeSource type".format(i),
+                )
+            i += 1
+        check_sse(sse)
+        if tags is not None and not isinstance(tags, Tags):
+            raise ValueError("tags must be Tags type")
+        if retention is not None and not isinstance(retention, Retention):
+            raise ValueError("retention must be Retention type")
+
+        part_count = self._calc_part_count(sources)
+        if (
+                part_count == 1 and
+                sources[0].offset is None and
+                sources[0].length is None
+        ):
+            return self.copy_object(
+                bucket_name, object_name, CopySource.of(sources[0]),
+                sse=sse, metadata=metadata, tags=tags, retention=retention,
+                legal_hold=legal_hold,
+                metadata_directive=REPLACE if metadata else None,
+                tagging_directive=REPLACE if tags else None,
+            )
+
+        headers = genheaders(metadata, sse, tags, retention, legal_hold)
+        upload_id = self._create_multipart_upload(
+            bucket_name, object_name, headers,
+        )
+        ssec_headers = sse.headers() if isinstance(sse, SseCustomerKey) else {}
+        try:
+            part_number = 0
+            total_parts = []
+            for src in sources:
+                size = src.object_size
+                if src.length is not None:
+                    size = src.length
+                elif src.offset is not None:
+                    size -= src.offset
+                offset = src.offset or 0
+                headers = src.headers()
+                headers.update(ssec_headers)
+                if size <= MAX_PART_SIZE:
+                    part_number += 1
+                    if src.length is not None:
+                        headers["x-amz-copy-source-range"] = (
+                            "bytes={0}-{1}".format(offset, offset+src.length-1)
+                        )
+                    elif src.offset is not None:
+                        headers["x-amz-copy-source-range"] = (
+                            "bytes={0}-{1}".format(offset, offset+size-1)
+                        )
+                    etag, _ = self._upload_part_copy(
+                        bucket_name,
+                        object_name,
+                        upload_id,
+                        part_number,
+                        headers,
+                    )
+                    total_parts.append(Part(part_number, etag))
+                    continue
+                while size > 0:
+                    part_number += 1
+                    start_bytes = offset
+                    end_bytes = start_bytes + MAX_PART_SIZE
+                    if size < MAX_PART_SIZE:
+                        end_bytes = start_bytes + size
+                    headers_copy = headers.copy()
+                    headers_copy["x-amz-copy-source-range"] = (
+                        "bytes={0}-{1}".format(start_bytes, end_bytes)
+                    )
+                    etag, _ = self._upload_part_copy(
+                        bucket_name,
+                        object_name,
+                        upload_id,
+                        part_number,
+                        headers_copy,
+                    )
+                    total_parts.append(Part(part_number, etag))
+                    offset = start_bytes
+                    size -= end_bytes - start_bytes
+            result = self._complete_multipart_upload(
+                bucket_name, object_name, upload_id, total_parts,
+            )
+            return ObjectWriteResult(
+                result.bucket_name,
+                result.object_name,
+                result.version_id,
+                result.etag,
+                result.http_headers,
+                location=result.location,
+            )
+        except Exception as exc:
+            if upload_id:
+                self._abort_multipart_upload(
+                    bucket_name, object_name, upload_id,
+                )
+            raise exc
 
     def _abort_multipart_upload(self, bucket_name, object_name, upload_id):
         """Execute AbortMultipartUpload S3 API."""
