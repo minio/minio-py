@@ -51,11 +51,11 @@ from .datatypes import (CompleteMultipartUploadResult, ListAllMyBucketsResult,
                         Part, parse_list_objects)
 from .deleteobjects import DeleteError, DeleteRequest, DeleteResult
 from .error import InvalidResponseError, S3Error, ServerError
-from .helpers import (BaseURL, ObjectWriteResult, check_bucket_name,
-                      check_non_empty_string, check_sse, check_ssec,
-                      get_part_info, headers_to_strings, is_valid_policy_type,
-                      makedirs, md5sum_hash, normalize_headers, quote,
-                      read_part_data, sha256_hash)
+from .helpers import (BaseURL, ObjectWriteResult, ThreadPool,
+                      check_bucket_name, check_non_empty_string, check_sse,
+                      check_ssec, get_part_info, headers_to_strings,
+                      is_valid_policy_type, makedirs, md5sum_hash,
+                      normalize_headers, quote, read_part_data, sha256_hash)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
@@ -69,7 +69,6 @@ from .signer import (SIGN_V4_ALGORITHM, get_credential_string,
 from .sse import SseCustomerKey
 from .sseconfig import SSEConfig
 from .tagging import Tagging
-from .thread_pool import ThreadPool
 from .versioningconfig import VersioningConfig
 from .xml import Element, SubElement, findtext, getbytes, marshal, unmarshal
 

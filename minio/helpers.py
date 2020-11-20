@@ -25,6 +25,8 @@ import math
 import os
 import re
 import urllib.parse
+from queue import Queue
+from threading import BoundedSemaphore, Thread
 
 from .sse import Sse, SseCustomerKey
 
@@ -33,7 +35,6 @@ MAX_MULTIPART_COUNT = 10000  # 10000 parts
 MAX_MULTIPART_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
 MAX_PART_SIZE = 5 * 1024 * 1024 * 1024  # 5GiB
 MIN_PART_SIZE = 5 * 1024 * 1024  # 5MiB
-DEFAULT_PART_SIZE = MIN_PART_SIZE  # Currently its 5MiB
 
 _VALID_BUCKETNAME_REGEX = re.compile(
     '^[A-Za-z0-9][A-Za-z0-9\\.\\-\\_\\:]{1,61}[A-Za-z0-9]$')
@@ -622,3 +623,78 @@ class ObjectWriteResult:
     def location(self):
         """Get location."""
         return self._location
+
+
+class Worker(Thread):
+    """ Thread executing tasks from a given tasks queue """
+
+    def __init__(self, tasks_queue, results_queue, exceptions_queue):
+        Thread.__init__(self, daemon=True)
+        self._tasks_queue = tasks_queue
+        self._results_queue = results_queue
+        self._exceptions_queue = exceptions_queue
+        self.start()
+
+    def run(self):
+        """ Continously receive tasks and execute them """
+        while True:
+            task = self._tasks_queue.get()
+            if not task:
+                self._tasks_queue.task_done()
+                break
+            # No exception detected in any thread,
+            # continue the execution.
+            if self._exceptions_queue.empty():
+                # Execute the task
+                func, args, kargs, cleanup_func = task
+                try:
+                    result = func(*args, **kargs)
+                    self._results_queue.put(result)
+                except Exception as ex:  # pylint: disable=broad-except
+                    self._exceptions_queue.put(ex)
+                finally:
+                    cleanup_func()
+            # Mark this task as done, whether an exception happened or not
+            self._tasks_queue.task_done()
+
+
+class ThreadPool:
+    """ Pool of threads consuming tasks from a queue """
+
+    def __init__(self, num_threads):
+        self._results_queue = Queue()
+        self._exceptions_queue = Queue()
+        self._tasks_queue = Queue()
+        self._sem = BoundedSemaphore(num_threads)
+        self._num_threads = num_threads
+
+    def add_task(self, func, *args, **kargs):
+        """
+        Add a task to the queue. Calling this function can block
+        until workers have a room for processing new tasks. Blocking
+        the caller also prevents the latter from allocating a lot of
+        memory while workers are still busy running their assigned tasks.
+        """
+        self._sem.acquire()
+        cleanup_func = self._sem.release
+        self._tasks_queue.put((func, args, kargs, cleanup_func))
+
+    def start_parallel(self):
+        """ Prepare threads to run tasks"""
+        for _ in range(self._num_threads):
+            Worker(
+                self._tasks_queue, self._results_queue, self._exceptions_queue,
+            )
+
+    def result(self):
+        """ Stop threads and return the result of all called tasks """
+        # Send None to all threads to cleanly stop them
+        for _ in range(self._num_threads):
+            self._tasks_queue.put(None)
+        # Wait for completion of all the tasks in the queue
+        self._tasks_queue.join()
+        # Check if one of the thread raised an exception, if yes
+        # raise it here in the function
+        if not self._exceptions_queue.empty():
+            raise self._exceptions_queue.get()
+        return self._results_queue
