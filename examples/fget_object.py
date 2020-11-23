@@ -18,14 +18,25 @@
 # are dummy values, please replace them with original values.
 
 from minio import Minio
-from minio.error import ResponseError
+from minio.sse import SseCustomerKey
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+client = Minio(
+    "s3.amazonaws.com",
+    access_key="YOUR-ACCESSKEYID",
+    secret_key="YOUR-SECRETACCESSKEY",
+)
 
-# Get a full object
-try:
-    client.fget_object('my-bucketname', 'my-objectname', 'filepath')
-except ResponseError as err:
-    print(err)
+# Download data of an object.
+client.fget_object("my-bucketname", "my-objectname", "my-filename")
+
+# Download data of an object of version-ID.
+client.fget_object(
+    "my-bucketname", "my-objectname", "my-filename",
+    version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
+)
+
+# Download data of an SSE-C encrypted object.
+client.fget_object(
+    "my-bucketname", "my-objectname", "my-filename",
+    ssec=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
+)

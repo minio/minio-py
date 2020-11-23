@@ -18,17 +18,50 @@
 # and my-testfile are dummy values, please replace them with original values.
 
 from minio import Minio
-from minio.error import ResponseError
+from minio.sse import SseCustomerKey
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+client = Minio(
+    "s3.amazonaws.com",
+    access_key="YOUR-ACCESSKEYID",
+    secret_key="YOUR-SECRETACCESSKEY",
+)
 
-# Get a full object
+# Get data of an object.
 try:
-    data = client.get_object('my-bucketname', 'my-objectname')
-    with open('my-testfile', 'wb') as file_data:
-        for d in data.stream(32*1024):
-            file_data.write(d)
-except ResponseError as err:
-    print(err)
+    response = client.get_object("my-bucketname", "my-objectname")
+    # Read data from response.
+finally:
+    response.close()
+    response.release_conn()
+
+# Get data of an object of version-ID.
+try:
+    response = client.get_object(
+        "my-bucketname", "my-objectname",
+        version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
+    )
+    # Read data from response.
+finally:
+    response.close()
+    response.release_conn()
+
+# Get data of an object from offset and length.
+try:
+    response = client.get_object(
+        "my-bucketname", "my-objectname", offset=512, length=1024,
+    )
+    # Read data from response.
+finally:
+    response.close()
+    response.release_conn()
+
+# Get data of an SSE-C encrypted object.
+try:
+    response = client.get_object(
+        "my-bucketname", "my-objectname",
+        ssec=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
+    )
+    # Read data from response.
+finally:
+    response.close()
+    response.release_conn()

@@ -328,7 +328,7 @@ def _test_fput_object(bucket_name, object_name, filename, metadata, sse):
         else:
             _CLIENT.fput_object(bucket_name, object_name, filename, sse=sse)
 
-        _CLIENT.stat_object(bucket_name, object_name, sse=sse)
+        _CLIENT.stat_object(bucket_name, object_name, ssec=sse)
     finally:
         _CLIENT.remove_object(bucket_name, object_name)
         _CLIENT.remove_bucket(bucket_name)
@@ -475,7 +475,7 @@ def test_copy_object_no_copy_condition(  # pylint: disable=invalid-name
         _CLIENT.copy_object(bucket_name, object_copy,
                             '/' + bucket_name + '/' + object_source,
                             source_sse=ssec_copy, sse=ssec)
-        st_obj = _CLIENT.stat_object(bucket_name, object_copy, sse=ssec)
+        st_obj = _CLIENT.stat_object(bucket_name, object_copy, ssec=ssec)
         _validate_stat(st_obj, size, {})
     finally:
         _CLIENT.remove_object(bucket_name, object_source)
@@ -706,7 +706,7 @@ def test_put_object(log_entry, sse=None):
         # Put/Upload a streaming object of 1 MiB
         reader = LimitedRandomReader(length)
         _CLIENT.put_object(bucket_name, object_name, reader, length, sse=sse)
-        _CLIENT.stat_object(bucket_name, object_name, sse=sse)
+        _CLIENT.stat_object(bucket_name, object_name, ssec=sse)
 
         # Put/Upload a streaming object of 11 MiB
         log_entry["args"]["length"] = length = 11 * MB
@@ -723,7 +723,7 @@ def test_put_object(log_entry, sse=None):
         # Fetch saved stat metadata on a previously uploaded object with
         # metadata.
         st_obj = _CLIENT.stat_object(bucket_name, object_name + "-metadata",
-                                     sse=sse)
+                                     ssec=sse)
         normalized_meta = {
             key.lower(): value for key, value in (
                 st_obj.metadata or {}).items()
@@ -803,7 +803,7 @@ def _test_stat_object(log_entry, sse=None, version_check=False):
         )
         version_id1 = result.version_id
         _CLIENT.stat_object(
-            bucket_name, object_name, sse=sse, version_id=version_id1,
+            bucket_name, object_name, ssec=sse, version_id=version_id1,
         )
 
         # Put/Upload a streaming object of 11 MiB
@@ -825,7 +825,7 @@ def _test_stat_object(log_entry, sse=None, version_check=False):
         # metadata.
         st_obj = _CLIENT.stat_object(
             bucket_name, object_name + "-metadata",
-            sse=sse, version_id=version_id2,
+            ssec=sse, version_id=version_id2,
         )
         # Verify the collected stat data.
         _validate_stat(
@@ -918,7 +918,7 @@ def _test_get_object(log_entry, sse=None, version_check=False):
         version_id = result.version_id
         # Get/Download a full object, iterate on response to save to disk
         object_data = _CLIENT.get_object(
-            bucket_name, object_name, sse=sse, version_id=version_id,
+            bucket_name, object_name, ssec=sse, version_id=version_id,
         )
         newfile = 'newfile جديد'
         with open(newfile, 'wb') as file_data:
@@ -972,7 +972,7 @@ def _test_fget_object(log_entry, sse=None, version_check=False):
         version_id = result.version_id
         # Get/Download a full object and save locally at path
         _CLIENT.fget_object(
-            bucket_name, object_name, tmpfile, sse=sse, version_id=version_id,
+            bucket_name, object_name, tmpfile, ssec=sse, version_id=version_id,
         )
         os.remove(tmpfile)
     finally:
@@ -1016,7 +1016,7 @@ def test_get_object_with_default_length(  # pylint: disable=invalid-name
                            LimitedRandomReader(size), size, sse=sse)
         # Get half of the object
         object_data = _CLIENT.get_object(bucket_name, object_name,
-                                         offset=offset, sse=sse)
+                                         offset=offset, ssec=sse)
         newfile = 'newfile'
         with open(newfile, 'wb') as file_data:
             for data in object_data:
@@ -1056,7 +1056,7 @@ def test_get_partial_object(log_entry, sse=None):
                            LimitedRandomReader(size), size, sse=sse)
         # Get half of the object
         object_data = _CLIENT.get_object(bucket_name, object_name,
-                                         offset=offset, length=length, sse=sse)
+                                         offset=offset, length=length, ssec=sse)
         newfile = 'newfile'
         with open(newfile, 'wb') as file_data:
             for data in object_data:
