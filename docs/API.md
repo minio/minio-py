@@ -823,7 +823,7 @@ minio.set_object_lock_config("my-bucketname", config)
 
 <a name="get_object"></a>
 
-### get_object(bucket_name, object_name, offset=0, length=0, request_headers=None, sse=None, version_id=None, extra_query_params=None)
+### get_object(bucket_name, object_name, offset=0, length=0, request_headers=None, ssec=None, version_id=None, extra_query_params=None)
 
 Gets data from offset to length of an object. Returned response should be closed after use to release network resources. To reuse the connection, it's required to call `response.release_conn()` explicitly.
 
@@ -836,7 +836,7 @@ __Parameters__
 | `offset`             | _int_            | Start byte position of object data.                  |
 | `length`             | _int_            | Number of bytes of object data from offset.          |
 | `request_headers`    | _dict_           | Any additional headers to be added with GET request. |
-| `sse`                | _SseCustomerKey_ | Server-side encryption customer key.                 |
+| `ssec`               | _SseCustomerKey_ | Server-side encryption customer key.                 |
 | `version_id`         | _str_            | Version-ID of the object.                            |
 | `extra_query_params` | _dict_           | Extra query parameters for advanced usage.           |
 
@@ -905,7 +905,7 @@ with open('my-record-file', 'w') as record_data:
 
 <a name="fget_object"></a>
 
-### fget_object(bucket_name, object_name, file_path, request_headers=None, sse=None, version_id=None, extra_query_params=None)
+### fget_object(bucket_name, object_name, file_path, request_headers=None, ssec=None, version_id=None, extra_query_params=None)
 
 Downloads data of an object to file.
 
@@ -915,9 +915,9 @@ __Parameters__
 |:---------------------|:-----------------|:-----------------------------------------------------|
 | `bucket_name`        | _str_            | Name of the bucket.                                  |
 | `object_name`        | _str_            | Object name in the bucket.                           |
-| `file_path`          | _str_            | Name of file to download.                              |
+| `file_path`          | _str_            | Name of file to download.                            |
 | `request_headers`    | _dict_           | Any additional headers to be added with GET request. |
-| `sse`                | _SseCustomerKey_ | Server-side encryption customer key.                 |
+| `ssec`               | _SseCustomerKey_ | Server-side encryption customer key.                 |
 | `version_id`         | _str_            | Version-ID of the object.                            |
 | `extra_query_params` | _dict_           | Extra query parameters for advanced usage.           |
 
@@ -1072,7 +1072,7 @@ minio.fput_object('foo', 'bar', 'filepath', 'text/plain')
 
 <a name="stat_object"></a>
 
-### stat_object(bucket_name, object_name, sse=None, version_id=None, extra_query_params=None)
+### stat_object(bucket_name, object_name, ssec=None, version_id=None, extra_query_params=None)
 
 Get object information and metadata of an object.
 
@@ -1082,7 +1082,7 @@ __Parameters__
 |:---------------------|:-----------------|:-------------------------------------------|
 | `bucket_name`        | _str_            | Name of the bucket.                        |
 | `object_name`        | _str_            | Object name in the bucket.                 |
-| `sse`                | _SseCustomerKey_ | Server-side encryption customer key.       |
+| `ssec`               | _SseCustomerKey_ | Server-side encryption customer key.       |
 | `version_id`         | _str_            | Version ID of the object.                  |
 | `extra_query_params` | _dict_           | Extra query parameters for advanced usage. |
 

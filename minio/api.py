@@ -969,7 +969,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                                    progress, part_size)
 
     def fget_object(self, bucket_name, object_name, file_path,
-                    request_headers=None, sse=None, version_id=None,
+                    request_headers=None, ssec=None, version_id=None,
                     extra_query_params=None, tmp_file_path=None):
         """
         Downloads data of an object to file.
@@ -979,7 +979,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param file_path: Name of file to download.
         :param request_headers: Any additional headers to be added with GET
                                 request.
-        :param sse: Server-side encryption customer key.
+        :param ssec: Server-side encryption customer key.
         :param version_id: Version-ID of the object.
         :param extra_query_params: Extra query parameters for advanced usage.
         :return: Object information.
@@ -1002,7 +1002,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         stat = self.stat_object(
             bucket_name,
             object_name,
-            sse,
+            ssec,
             version_id=version_id,
         )
 
@@ -1025,7 +1025,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 object_name,
                 offset=offset,
                 request_headers=request_headers,
-                sse=sse,
+                ssec=ssec,
                 version_id=version_id,
                 extra_query_params=extra_query_params,
             )
@@ -1042,7 +1042,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 response.release_conn()
 
     def get_object(self, bucket_name, object_name, offset=0, length=0,
-                   request_headers=None, sse=None, version_id=None,
+                   request_headers=None, ssec=None, version_id=None,
                    extra_query_params=None):
         """
         Get data of an object. Returned response should be closed after use to
@@ -1055,7 +1055,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param length: Number of bytes of object data from offset.
         :param request_headers: Any additional headers to be added with GET
                                 request.
-        :param sse: Server-side encryption customer key.
+        :param ssec: Server-side encryption customer key.
         :param version_id: Version-ID of the object.
         :param extra_query_params: Extra query parameters for advanced usage.
         :return: :class:`urllib3.response.HTTPResponse` object.
@@ -1079,9 +1079,9 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
-        check_ssec(sse)
+        check_ssec(ssec)
 
-        headers = sse.headers() if sse else {}
+        headers = ssec.headers() if ssec else {}
         headers.update(request_headers or {})
 
         if offset or length:
@@ -1443,14 +1443,14 @@ class Minio:  # pylint: disable=too-many-public-methods
             include_version=include_version,
         )
 
-    def stat_object(self, bucket_name, object_name, sse=None, version_id=None,
+    def stat_object(self, bucket_name, object_name, ssec=None, version_id=None,
                     extra_query_params=None):
         """
         Get object information and metadata of an object.
 
         :param bucket_name: Name of the bucket.
         :param object_name: Object name in the bucket.
-        :param sse: Server-side encryption customer key.
+        :param ssec: Server-side encryption customer key.
         :param version_id: Version ID of the object.
         :param extra_query_params: Extra query parameters for advanced usage.
         :return: :class:`Object <Object>`.
@@ -1461,9 +1461,9 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
-        check_ssec(sse)
+        check_ssec(ssec)
 
-        headers = sse.headers() if sse else {}
+        headers = ssec.headers() if ssec else {}
         query_params = extra_query_params or {}
         query_params.update({"versionId": version_id} if version_id else {})
         response = self._execute(

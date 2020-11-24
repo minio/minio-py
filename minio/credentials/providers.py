@@ -32,33 +32,28 @@ import urllib3
 
 from minio.helpers import sha256_hash, strptime_rfc3339
 from minio.signer import AMZ_DATE_FORMAT, sign_v4_sts
+from minio.xml import find, findtext
 
 from .credentials import Credentials
 
 _MIN_DURATION_SECONDS = timedelta(minutes=15).total_seconds()
 _MAX_DURATION_SECONDS = timedelta(days=7).total_seconds()
 _DEFAULT_DURATION_SECONDS = timedelta(hours=1).total_seconds()
-_XML_NS = {
-    "s3": "http://s3.amazonaws.com/doc/2006-03-01/",
-    "sts": "https://sts.amazonaws.com/doc/2011-06-15/",
-}
 
 
-def _parse_credentials(data, result_path):
+def _parse_credentials(data, name):
     """Parse data containing credentials XML."""
-
-    root = ElementTree.fromstring(data)
-    credentials = root.find("sts:" + result_path, _XML_NS).find(
-        "sts:Credentials", _XML_NS)
-
-    access_key = credentials.find("sts:AccessKeyId", _XML_NS).text
-    secret_key = credentials.find("sts:SecretAccessKey", _XML_NS).text
-    session_token = credentials.find("sts:SessionToken", _XML_NS).text
-    expiration = strptime_rfc3339(
-        credentials.find("sts:Expiration", _XML_NS).text,
+    element = ElementTree.fromstring(data)
+    element = find(element, name)
+    element = find(element, "Credentials")
+    expiration = findtext(element, "Expiration", True)
+    expiration = strptime_rfc3339(expiration)
+    return Credentials(
+        findtext(element, "AccessKeyId", True),
+        findtext(element, "SecretAccessKey", True),
+        findtext(element, "SessionToken", True),
+        expiration,
     )
-
-    return Credentials(access_key, secret_key, session_token, expiration)
 
 
 def _urlopen(http_client, method, url, body=None, headers=None):
@@ -387,10 +382,10 @@ class IamAwsProvider(Provider):
 
         res = _urlopen(self._http_client, "GET", url)
         data = json.loads(res.data)
-        if data["Code"] != "Success":
+        if data.get("Code", "Success") != "Success":
             raise ValueError(
                 "{0} failed with code {1} message {2}".format(
-                    url, data["Code"], data["Message"],
+                    url, data["Code"], data.get("Message"),
                 ),
             )
         data["Expiration"] = strptime_rfc3339(data["Expiration"])
