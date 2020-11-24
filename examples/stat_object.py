@@ -18,14 +18,40 @@
 # are dummy values, please replace them with original values.
 
 from minio import Minio
-from minio.error import ResponseError
+from minio.sse import SseCustomerKey
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+client = Minio(
+    "s3.amazonaws.com",
+    access_key="YOUR-ACCESSKEYID",
+    secret_key="YOUR-SECRETACCESSKEY",
+)
 
-# Fetch stats on your object.
-try:
-    print(client.stat_object('my-bucketname', 'my-objectname'))
-except ResponseError as err:
-    print(err)
+# Get object information.
+result = client.stat_object("my-bucketname", "my-objectname")
+print(
+    "last-modified: {0}, size: {1}".format(
+        result.last_modified, result.size,
+    ),
+)
+
+# Get object information of version-ID.
+result = client.stat_object(
+    "my-bucketname", "my-objectname",
+    version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
+)
+print(
+    "last-modified: {0}, size: {1}".format(
+        result.last_modified, result.size,
+    ),
+)
+
+# Get SSE-C encrypted object information.
+result = client.stat_object(
+    "my-bucketname", "my-objectname",
+    ssec=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
+)
+print(
+    "last-modified: {0}, size: {1}".format(
+        result.last_modified, result.size,
+    ),
+)
