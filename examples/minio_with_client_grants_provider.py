@@ -23,15 +23,14 @@ from minio import Minio
 from minio.credentials import ClientGrantsProvider
 
 
-def get_jwt(client_id, client_secret, idp_client_id, idp_endpoint):
+def get_jwt(client_id, client_secret, idp_endpoint):
     res = urllib3.PoolManager().request(
         "POST",
         idp_endpoint,
         fields={
             "username": client_id,
             "password": client_secret,
-            "grant_type": "password",
-            "client_id": idp_client_id,
+            "grant_type": "client_credentials",
         },
     )
 
@@ -50,15 +49,11 @@ client_id = "USER-ID"
 # Client secret to fetch JWT.
 client_secret = "PASSWORD"
 
-# Client-ID of MinIO service on IDP.
-idp_client_id = "MINIO-CLIENT-ID"
-
 # STS endpoint usually point to MinIO server.
 sts_endpoint = "http://STS-HOST:STS-PORT/"
 
 provider = ClientGrantsProvider(
-    lambda: get_jwt(client_id, client_secret, idp_client_id, idp_endpoint),
-    sts_endpoint,
+    lambda: get_jwt(client_id, client_secret, idp_endpoint), sts_endpoint,
 )
 
 client = Minio("MINIO-HOST:MINIO-PORT", credentials=provider)
