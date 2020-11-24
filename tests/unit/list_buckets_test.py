@@ -75,11 +75,11 @@ class ListBucketsTest(TestCase):
         eq_(2, count)
         eq_('hello', buckets_list[0].name)
         eq_(
-            datetime(2015, 6, 22, 23, 7, 43, 240000),
+            datetime(2015, 6, 22, 23, 7, 43, 240000, timezone.utc),
             buckets_list[0].creation_date,
         )
         eq_('world', buckets_list[1].name)
         eq_(
-            datetime(2015, 6, 22, 23, 7, 56, 766000),
+            datetime(2015, 6, 22, 23, 7, 56, 766000, timezone.utc),
             buckets_list[1].creation_date,
         )

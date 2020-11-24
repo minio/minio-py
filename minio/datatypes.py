@@ -23,7 +23,7 @@ from __future__ import absolute_import
 from urllib.parse import unquote
 from xml.etree import ElementTree as ET
 
-from .helpers import strptime_rfc3339
+from .time import from_iso8601utc
 from .xml import find, findall, findtext
 
 
@@ -67,7 +67,7 @@ class ListAllMyBucketsResult:
                 name = findtext(bucket, "Name", True)
                 creation_date = findtext(bucket, "CreationDate")
                 if creation_date:
-                    creation_date = strptime_rfc3339(creation_date)
+                    creation_date = from_iso8601utc(creation_date)
                 buckets.append(Bucket(name, creation_date))
         return cls(buckets)
 
@@ -169,7 +169,7 @@ class Object:
     def fromxml(cls, element, bucket_name):
         """Create new object with values from XML element."""
         tag = findtext(element, "LastModified")
-        last_modified = None if tag is None else strptime_rfc3339(tag)
+        last_modified = None if tag is None else from_iso8601utc(tag)
 
         tag = findtext(element, "ETag")
         etag = None if tag is None else tag.replace('"', "")
@@ -317,7 +317,7 @@ class Part:
         etag = findtext(element, "ETag", True)
         etag = etag.replace('"', "")
         tag = findtext(element, "LastModified")
-        last_modified = None if tag is None else strptime_rfc3339(tag)
+        last_modified = None if tag is None else from_iso8601utc(tag)
         size = findtext(element, "Size")
         if size:
             size = int(size)
@@ -446,7 +446,7 @@ class Upload:
         self._storage_class = findtext(element, "StorageClass")
         self._initiated_time = findtext(element, "Initiated")
         if self._initiated_time:
-            self._initiated_time = strptime_rfc3339(self._initiated_time)
+            self._initiated_time = from_iso8601utc(self._initiated_time)
 
     @property
     def object_name(self):

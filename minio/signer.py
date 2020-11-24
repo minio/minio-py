@@ -32,12 +32,11 @@ import re
 from collections import OrderedDict
 from urllib.parse import SplitResult
 
+from . import time
 from .helpers import queryencode, sha256_hash
 
 SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'
-AMZ_DATE_FORMAT = "%Y%m%dT%H%M%SZ"
 _MULTI_SPACE_REGEX = re.compile(r"( +)")
-_SIGNER_DATE_FORMAT = "%Y%m%d"
 
 
 def _hmac_hash(key, data, hexdigest=False):
@@ -51,7 +50,7 @@ def _get_scope(date, region, service_name):
     """Get scope string."""
 
     return "{0}/{1}/{2}/aws4_request".format(
-        date.strftime(_SIGNER_DATE_FORMAT), region, service_name,
+        time.to_signer_date(date), region, service_name,
     )
 
 
@@ -130,7 +129,7 @@ def _get_string_to_sign(date, scope, canonical_request_hash):
 
     return (
         "AWS4-HMAC-SHA256\n{date}\n{scope}\n{canonical_request_hash}".format(
-            date=date.strftime(AMZ_DATE_FORMAT),
+            date=time.to_amz_date(date),
             scope=scope,
             canonical_request_hash=canonical_request_hash,
         )
@@ -142,7 +141,7 @@ def _get_signing_key(secret_key, date, region, service_name):
 
     date_key = _hmac_hash(
         ("AWS4" + secret_key).encode(),
-        date.strftime(_SIGNER_DATE_FORMAT).encode(),
+        time.to_signer_date(date).encode(),
     )
     date_region_key = _hmac_hash(date_key, region.encode())
     date_region_service_key = _hmac_hash(
@@ -259,7 +258,7 @@ def _get_presign_canonical_request_hash(  # pylint: disable=invalid-name
         "&X-Amz-SignedHeaders={3}"
     ).format(
         queryencode(access_key + "/" + scope),
-        date.strftime(AMZ_DATE_FORMAT),
+        time.to_amz_date(date),
         expires,
         signed_headers,
     )
@@ -323,7 +322,7 @@ def get_credential_string(access_key, date, region):
 
     return "{0}/{1}/{2}/s3/aws4_request".format(
         access_key,
-        date.strftime(_SIGNER_DATE_FORMAT),
+        time.to_signer_date(date),
         region,
     )
 

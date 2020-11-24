@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest import TestCase
 
 from nose.tools import eq_
@@ -26,7 +26,7 @@ from minio.retention import Retention
 
 class RetentionTest(TestCase):
     def test_config(self):
-        config = Retention(GOVERNANCE, datetime.now() + timedelta(days=10))
+        config = Retention(GOVERNANCE, datetime.utcnow() + timedelta(days=10))
         xml.marshal(config)
 
         config = xml.unmarshal(
@@ -38,4 +38,7 @@ class RetentionTest(TestCase):
         )
         xml.marshal(config)
         eq_(config.mode, COMPLIANCE)
-        eq_(config.retain_until_date, datetime(2020, 10, 2, 0, 0, 0))
+        eq_(
+            config.retain_until_date,
+            datetime(2020, 10, 2, 0, 0, 0, 0, timezone.utc),
+        )

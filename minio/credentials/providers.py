@@ -24,14 +24,15 @@ import socket
 import sys
 import time
 from abc import ABCMeta, abstractmethod
-from datetime import datetime, timedelta
+from datetime import timedelta
 from urllib.parse import urlencode, urlsplit
 from xml.etree import ElementTree
 
 import urllib3
 
-from minio.helpers import sha256_hash, strptime_rfc3339
-from minio.signer import AMZ_DATE_FORMAT, sign_v4_sts
+from minio.helpers import sha256_hash
+from minio.signer import sign_v4_sts
+from minio.time import from_iso8601utc, to_amz_date, utcnow
 from minio.xml import find, findtext
 
 from .credentials import Credentials
@@ -46,8 +47,7 @@ def _parse_credentials(data, name):
     element = ElementTree.fromstring(data)
     element = find(element, name)
     element = find(element, "Credentials")
-    expiration = findtext(element, "Expiration", True)
-    expiration = strptime_rfc3339(expiration)
+    expiration = from_iso8601utc(findtext(element, "Expiration", True))
     return Credentials(
         findtext(element, "AccessKeyId", True),
         findtext(element, "SecretAccessKey", True),
@@ -130,7 +130,7 @@ class AssumeRoleProvider(Provider):
         if self._credentials and not self._credentials.is_expired():
             return self._credentials
 
-        utcnow = datetime.utcnow()
+        utctime = utcnow()
         headers = sign_v4_sts(
             "POST",
             urlsplit(self._sts_endpoint),
@@ -138,11 +138,11 @@ class AssumeRoleProvider(Provider):
             {
                 "Content-Type": "application/x-www-form-urlencoded",
                 "Host": self._host,
-                "X-Amz-Date": utcnow.strftime(AMZ_DATE_FORMAT),
+                "X-Amz-Date": to_amz_date(utctime),
             },
             Credentials(self._access_key, self._secret_key),
             self._content_sha256,
-            utcnow,
+            utctime,
         )
 
         res = _urlopen(
@@ -388,7 +388,7 @@ class IamAwsProvider(Provider):
                     url, data["Code"], data.get("Message"),
                 ),
             )
-        data["Expiration"] = strptime_rfc3339(data["Expiration"])
+        data["Expiration"] = from_iso8601utc(data["Expiration"])
 
         return Credentials(
             data["AccessKeyId"],
