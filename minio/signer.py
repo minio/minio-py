@@ -327,8 +327,9 @@ def get_credential_string(access_key, date, region):
     )
 
 
-def post_presign_v4(string_to_sign, credentials, date, region):
+def post_presign_v4(data, secret_key, date, region):
     """Do signature V4 of given presign POST form-data."""
-
-    signing_key = _get_signing_key(credentials.secret_key, date, region, "s3")
-    return _get_signature(signing_key, string_to_sign)
+    return _get_signature(
+        _get_signing_key(secret_key, date, region, "s3"),
+        data,
+    )

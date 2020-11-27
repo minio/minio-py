@@ -20,35 +20,28 @@
 
 from datetime import datetime, timedelta
 
-from minio import Minio, PostPolicy
-from minio.error import ResponseError
+from minio import Minio
+from minio.datatypes import PostPolicy
 
-post_policy = PostPolicy()
-# set bucket name location for uploads.
-post_policy.set_bucket_name('my-bucketname')
-# set key prefix for all incoming uploads.
-post_policy.set_key_startswith('my-objectname')
-# set content length for incoming uploads.
-post_policy.set_content_length_range(10, 1024)
+client = Minio(
+    "s3.amazonaws.com",
+    access_key="YOUR-ACCESSKEYID",
+    secret_key="YOUR-SECRETACCESSKEY",
+)
 
-# set expiry 10 days into future.
-expires_date = datetime.utcnow() + timedelta(days=10)
-post_policy.set_expires(expires_date)
+policy = PostPolicy(
+    "bucket_name", datetime.utcnow() + timedelta(days=10),
+)
+policy.add_starts_with_condition("key", "objectPrefix/")
+policy.add_content_length_range_condition(1*1024*1024, 10*1024*1024)
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+form_data = client.presigned_post_policy(policy)
 
-try:
-    url, signed_form_data = client.presigned_post_policy(post_policy)
-
-    curl_cmd = (
-        ['curl -X POST {0}'.format(url)] +
-        ['-F {0}={1}'.format(k, v) for k, v in signed_form_data.items()] +
-        ['-F file=@<FILE>']
-    )
-
-    # print curl command to upload files.
-    print(' '.join(curl_cmd))
-except ResponseError as err:
-    print(err)
+curl_cmd = (
+    "curl -X POST "
+    "https://s3.amazonaws.com/bucket_name "
+    "{0} -F file=@<FILE>"
+).format(
+    " ".join(["-F {0}={1}".format(k, v) for k, v in form_data.items()]),
+)
+print(curl_cmd)

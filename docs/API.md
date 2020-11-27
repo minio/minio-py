@@ -30,37 +30,37 @@ s3Client = Minio(
 )
 ```
 
-| Bucket operations                                           | Object operations                                               | Presigned operations                              |
-|:------------------------------------------------------------|:----------------------------------------------------------------|:--------------------------------------------------|
-| [`make_bucket`](#make_bucket)                               | [`get_object`](#get_object)                                     | [`presigned_get_object`](#presigned_get_object)   |
-| [`list_buckets`](#list_buckets)                             | [`put_object`](#put_object)                                     | [`presigned_put_object`](#presigned_put_object)   |
-| [`bucket_exists`](#bucket_exists)                           | [`copy_object`](#copy_object)                                   | [`presigned_post_policy`](#presigned_post_policy) |
-| [`remove_bucket`](#remove_bucket)                           | [`stat_object`](#stat_object)                                   |                                                   |
-| [`list_objects`](#list_objects)                             | [`remove_object`](#remove_object)                               |                                                   |
-| [`get_bucket_versioning`](#get_bucket_versioning)           | [`remove_objects`](#remove_objects)                             |                                                   |
-| [`set_bucket_versioning`](#set_bucket_versioning)           | [`fput_object`](#fput_object)                                   |                                                   |
-| [`delete_bucket_replication`](#delete_bucket_replication)   | [`fget_object`](#fget_object)                                   |                                                   |
-| [`get_bucket_replication`](#get_bucket_replication)         | [`select_object_content`](#select_object_content)               |                                                   |
-| [`set_bucket_replication`](#set_bucket_replication)         | [`delete_object_tags`](#delete_object_tags)                     |                                                   |
-| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)       | [`get_object_tags`](#get_object_tags)                           |                                                   |
-| [`get_bucket_lifecycle`](#get_bucket_lifecycle)             | [`set_object_tags`](#set_object_tags)                           |                                                   |
-| [`set_bucket_lifecycle`](#set_bucket_lifecycle)             | [`enable_object_legal_hold`](#enable_object_legal_hold)         |                                                   |
-| [`delete_bucket_tags`](#delete_bucket_tags)                 | [`disable_object_legal_hold`](#disable_object_legal_hold)       |                                                   |
-| [`get_bucket_tags`](#get_bucket_tags)                       | [`is_object_legal_hold_enabled`](#is_object_legal_hold_enabled) |                                                   |
-| [`set_bucket_tags`](#set_bucket_tags)                       | [`get_object_retention`](#get_object_retention)                 |                                                   |
-| [`delete_bucket_policy`](#delete_bucket_policy)             | [`set_object_retention`](#set_object_retention)                 |                                                   |
-| [`get_bucket_policy`](#get_bucket_policy)                   |                                                                 |                                                   |
-| [`set_bucket_policy`](#set_bucket_policy)                   |                                                                 |                                                   |
-| [`delete_bucket_notification`](#delete_bucket_notification) |                                                                 |                                                   |
-| [`get_bucket_notification`](#get_bucket_notification)       |                                                                 |                                                   |
-| [`set_bucket_notification`](#set_bucket_notification)       |                                                                 |                                                   |
-| [`listen_bucket_notification`](#listen_bucket_notification) |                                                                 |                                                   |
-| [`delete_bucket_encryption`](#delete_bucket_encryption)     |                                                                 |                                                   |
-| [`get_bucket_encryption`](#get_bucket_encryption)           |                                                                 |                                                   |
-| [`set_bucket_encryption`](#set_bucket_encryption)           |                                                                 |                                                   |
-| [`delete_object_lock_config`](#delete_object_lock_config)   |                                                                 |                                                   |
-| [`get_object_lock_config`](#get_object_lock_config)         |                                                                 |                                                   |
-| [`set_object_lock_config`](#set_object_lock_config)         |                                                                 |                                                   |
+| Bucket operations                                           | Object operations                                               |
+|:------------------------------------------------------------|:----------------------------------------------------------------|
+| [`make_bucket`](#make_bucket)                               | [`get_object`](#get_object)                                     |
+| [`list_buckets`](#list_buckets)                             | [`put_object`](#put_object)                                     |
+| [`bucket_exists`](#bucket_exists)                           | [`copy_object`](#copy_object)                                   |
+| [`remove_bucket`](#remove_bucket)                           | [`stat_object`](#stat_object)                                   |
+| [`list_objects`](#list_objects)                             | [`remove_object`](#remove_object)                               |
+| [`get_bucket_versioning`](#get_bucket_versioning)           | [`remove_objects`](#remove_objects)                             |
+| [`set_bucket_versioning`](#set_bucket_versioning)           | [`fput_object`](#fput_object)                                   |
+| [`delete_bucket_replication`](#delete_bucket_replication)   | [`fget_object`](#fget_object)                                   |
+| [`get_bucket_replication`](#get_bucket_replication)         | [`select_object_content`](#select_object_content)               |
+| [`set_bucket_replication`](#set_bucket_replication)         | [`delete_object_tags`](#delete_object_tags)                     |
+| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)       | [`get_object_tags`](#get_object_tags)                           |
+| [`get_bucket_lifecycle`](#get_bucket_lifecycle)             | [`set_object_tags`](#set_object_tags)                           |
+| [`set_bucket_lifecycle`](#set_bucket_lifecycle)             | [`enable_object_legal_hold`](#enable_object_legal_hold)         |
+| [`delete_bucket_tags`](#delete_bucket_tags)                 | [`disable_object_legal_hold`](#disable_object_legal_hold)       |
+| [`get_bucket_tags`](#get_bucket_tags)                       | [`is_object_legal_hold_enabled`](#is_object_legal_hold_enabled) |
+| [`set_bucket_tags`](#set_bucket_tags)                       | [`get_object_retention`](#get_object_retention)                 |
+| [`delete_bucket_policy`](#delete_bucket_policy)             | [`set_object_retention`](#set_object_retention)                 |
+| [`get_bucket_policy`](#get_bucket_policy)                   | [`presigned_get_object`](#presigned_get_object)                 |
+| [`set_bucket_policy`](#set_bucket_policy)                   | [`presigned_put_object`](#presigned_put_object)                 |
+| [`delete_bucket_notification`](#delete_bucket_notification) | [`presigned_post_policy`](#presigned_post_policy)               |
+| [`get_bucket_notification`](#get_bucket_notification)       |                                                                 |
+| [`set_bucket_notification`](#set_bucket_notification)       |                                                                 |
+| [`listen_bucket_notification`](#listen_bucket_notification) |                                                                 |
+| [`delete_bucket_encryption`](#delete_bucket_encryption)     |                                                                 |
+| [`get_bucket_encryption`](#get_bucket_encryption)           |                                                                 |
+| [`set_bucket_encryption`](#set_bucket_encryption)           |                                                                 |
+| [`delete_object_lock_config`](#delete_object_lock_config)   |                                                                 |
+| [`get_object_lock_config`](#get_object_lock_config)         |                                                                 |
+| [`set_object_lock_config`](#set_object_lock_config)         |                                                                 |
 
 ## 1. Constructor
 
@@ -1338,8 +1338,6 @@ config = Retention(GOVERNANCE, datetime.utcnow() + timedelta(days=10))
 minio.set_object_retention("my-bucketname", "my-objectname", config)
 ```
 
-## 4. Presigned operations
-
 <a name="presigned_get_object"></a>
 
 ### presigned_get_object(bucket_name, object_name, expires=timedelta(days=7), response_headers=None, request_date=None, version_id=None, extra_query_params=None)
@@ -1418,15 +1416,15 @@ print(url)
 
 <a name="presigned_post_policy"></a>
 
-### presigned_post_policy(post_policy)
+### presigned_post_policy(policy)
 
 Get form-data of PostPolicy of an object to upload its data using POST method.
 
 __Parameters__
 
-| Param         | Type         | Description  |
-|:--------------|:-------------|:-------------|
-| `post_policy` | _PostPolicy_ | Post policy. |
+| Param    | Type         | Description  |
+|:---------|:-------------|:-------------|
+| `policy` | _PostPolicy_ | Post policy. |
 
 __Return Value__
 
@@ -1436,26 +1434,12 @@ __Return Value__
 
 __Example__
 
-Create policy:
-
 ```py
-post_policy = PostPolicy()
-post_policy.set_bucket_name('bucket_name')
-
-# set object prefix for object upload.
-post_policy.set_key_startswith('objectPrefix/')
-
-# set expiry to 10 days.
-expires_date = datetime.utcnow()+timedelta(days=10)
-post_policy.set_expires(expires_date)
-
-# set content length for incoming uploads.
-post_policy.set_content_length_range(10, 1024)
-
-# set content-type to allow only text.
-post_policy.set_content_type('text/plain')
-
-form_data = presigned_post_policy(post_policy)
+policy = PostPolicy(
+    "bucket_name", datetime.utcnow() + timedelta(days=10),
+)
+policy.add_starts_with_condition("key", "objectPrefix/")
+form_data = presigned_post_policy(policy)
 print(form_data)
 ```
 
