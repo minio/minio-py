@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015 MinIO, Inc.
+# (C) 2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,14 +24,34 @@ client = Minio(
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
-# Get presigned URL string to upload data to 'my-object' in
-# 'my-bucket' with default expiry (i.e. 7 days).
-url = client.presigned_put_object("my-bucket", "my-object")
+# Get presigned URL string to delete 'my-object' in
+# 'my-bucket' with one day expiry.
+url = client.get_presigned_url(
+    "DELETE",
+    "my-bucket",
+    "my-object",
+    expires=timedelta(days=1),
+)
 print(url)
 
-# Get presigned URL string to upload data to 'my-object' in
+# Get presigned URL string to upload 'my-object' in
+# 'my-bucket' with response-content-type as application/json
+# and one day expiry.
+url = client.get_presigned_url(
+    "PUT",
+    "my-bucket",
+    "my-object",
+    expires=timedelta(days=1),
+    response_headers={"response-content-type": "application/json"},
+)
+print(url)
+
+# Get presigned URL string to download 'my-object' in
 # 'my-bucket' with two hours expiry.
-url = client.presigned_put_object(
-    "my-bucket", "my-object", expires=timedelta(hours=2),
+url = client.get_presigned_url(
+    "GET",
+    "my-bucket",
+    "my-object",
+    expires=timedelta(hours=2),
 )
 print(url)
