@@ -14,10 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: my-bucketname, my-objectname, YOUR-ACCESSKEYID, and
-# YOUR-SECRETACCESSKEY are dummy values, please replace them with original
-# values.
-
 from datetime import datetime, timedelta
 
 from minio import Minio
@@ -30,16 +26,16 @@ client = Minio(
 )
 
 policy = PostPolicy(
-    "bucket_name", datetime.utcnow() + timedelta(days=10),
+    "my-bucket", datetime.utcnow() + timedelta(days=10),
 )
-policy.add_starts_with_condition("key", "objectPrefix/")
+policy.add_starts_with_condition("key", "my/object/prefix/")
 policy.add_content_length_range_condition(1*1024*1024, 10*1024*1024)
 
 form_data = client.presigned_post_policy(policy)
 
 curl_cmd = (
     "curl -X POST "
-    "https://s3.amazonaws.com/bucket_name "
+    "https://s3.amazonaws.com/my-bucket "
     "{0} -F file=@<FILE>"
 ).format(
     " ".join(["-F {0}={1}".format(k, v) for k, v in form_data.items()]),

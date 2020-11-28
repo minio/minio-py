@@ -1772,11 +1772,13 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         Example::
             policy = PostPolicy(
-                "bucket_name", datetime.utcnow() + timedelta(days=10),
+                "my-bucket", datetime.utcnow() + timedelta(days=10),
             )
-            policy.add_starts_with_condition("key", "objectPrefix/")
-            form_data = presigned_post_policy(policy)
-            print(form_data)
+            policy.add_starts_with_condition("key", "my/object/prefix/")
+            policy.add_content_length_range_condition(
+                1*1024*1024, 10*1024*1024,
+            )
+            form_data = client.presigned_post_policy(policy)
         """
         if not isinstance(policy, PostPolicy):
             raise ValueError("policy must be PostPolicy type")

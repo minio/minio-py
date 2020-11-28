@@ -22,6 +22,7 @@ from __future__ import absolute_import
 
 import base64
 import datetime
+import json
 from collections import OrderedDict
 from urllib.parse import unquote
 from xml.etree import ElementTree as ET
@@ -574,23 +575,8 @@ _ALGORITHM = "AWS4-HMAC-SHA256"
 
 
 def _trim_dollar(value):
-    """Trime dollar character if present."""
+    """Trim dollar character if present."""
     return value[1:] if value.startswith("$") else value
-
-
-def _quote(value):
-    """Quote value."""
-    return '"{0}"'.format(value)
-
-
-def _get_condition(condition, element, value, is_end=False):
-    """Get condition string."""
-    return "    [{0}, {1}, {2}]{3}".format(
-        _quote(condition),
-        _quote("$" + element),
-        _quote(value),
-        "" if is_end else ",",
-    )
 
 
 class PostPolicy:
@@ -698,42 +684,28 @@ class PostPolicy:
         ):
             raise ValueError("key condition must be set")
 
-        data = ["{"]
-        data.append(
-            "  {0}: {1},".format(
-                _quote("expiration"),
-                _quote(to_iso8601utc(self._expiration)),
-            ),
-        )
-        data.append('  "conditions": [')
-        data.append(_get_condition(_EQ, "bucket", self._bucket_name))
+        policy = OrderedDict()
+        policy["expiration"] = to_iso8601utc(self._expiration)
+        policy["conditions"] = [[_EQ, "$bucket", self._bucket_name]]
         for cond_key, conditions in self._conditions.items():
             for key, value in conditions.items():
-                data.append(_get_condition(cond_key, key, value))
+                policy["conditions"].append([cond_key, "$"+key, value])
         if self._lower_limit is not None and self._upper_limit is not None:
-            data.append(
-                '    ["content-length-range", {0}, {1}],'.format(
-                    self._lower_limit, self._upper_limit,
-                ),
+            policy["conditions"].append(
+                ["content-length-range", self._lower_limit, self._upper_limit],
             )
-
         utcnow = datetime.datetime.utcnow()
         credential = get_credential_string(creds.access_key, utcnow, region)
         amz_date = to_amz_date(utcnow)
-
-        data.append(_get_condition("eq", "x-amz-algorithm", _ALGORITHM))
-        data.append(_get_condition("eq", "x-amz-credential", credential))
+        policy["conditions"].append([_EQ, "$x-amz-algorithm", _ALGORITHM])
+        policy["conditions"].append([_EQ, "$x-amz-credential", credential])
         if creds.session_token:
-            data.append(
-                _get_condition(
-                    "eq", "x-amz-security-token", creds.session_token,
-                ),
+            policy["conditions"].append(
+                [_EQ, "$x-amz-security-token", creds.session_token],
             )
-        data.append(_get_condition("eq", "x-amz-date", amz_date, True))
-        data.append("  ]")
-        data.append("}")
+        policy["conditions"].append([_EQ, "$x-amz-date", amz_date])
 
-        policy = base64.b64encode("\n".join(data).encode())
+        policy = base64.b64encode(json.dumps(policy).encode())
         signature = post_presign_v4(
             policy.decode(), creds.secret_key, utcnow, region,
         )
