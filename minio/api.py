@@ -1328,7 +1328,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 # AWS S3 returns "NoSuchVersion" error when
                 # version doesn't exist ignore this error
                 # yield all errors otherwise
-                if err_result.code() != 'NoSuchVersion':
+                if err_result.error_code != 'NoSuchVersion':
                     yield err_result
 
     def list_incomplete_uploads(self, bucket_name, prefix='', recursive=False):
