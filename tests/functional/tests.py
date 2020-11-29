@@ -1814,6 +1814,7 @@ def _test_remove_objects(log_entry, version_check=False):
 
     _CLIENT.make_bucket(bucket_name)
     object_names = []
+    delete_object_list = []
     try:
         if version_check:
             _CLIENT.set_bucket_versioning(
@@ -1832,7 +1833,6 @@ def _test_remove_objects(log_entry, version_check=False):
             )
         log_entry["args"]["delete_object_list"] = object_names
 
-        delete_object_list = []
         for args in object_names:
             delete_object_list.append(
                 DeleteObject(args) if isinstance(args, str)
