@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-# dummy values, please replace them with original values.
-
 from minio import Minio
 
 client = Minio(
@@ -25,4 +22,4 @@ client = Minio(
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
-config = client.get_object_lock_config("my-bucketname")
+config = client.get_object_lock_config("my-bucket")

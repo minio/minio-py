@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-# dummy values, please replace them with original values.
-
 from minio import Minio
 from minio.commonconfig import GOVERNANCE
 from minio.objectlockconfig import DAYS, ObjectLockConfig
@@ -28,4 +25,4 @@ client = Minio(
 )
 
 config = ObjectLockConfig(GOVERNANCE, 15, DAYS)
-client.set_object_lock_condig("my-bucketname", config)
+client.set_object_lock_condig("my-bucket", config)

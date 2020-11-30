@@ -20,9 +20,9 @@ from minio import Minio
 from minio.datatypes import PostPolicy
 
 client = Minio(
-    "s3.amazonaws.com",
-    access_key="YOUR-ACCESSKEYID",
-    secret_key="YOUR-SECRETACCESSKEY",
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
 policy = PostPolicy(
@@ -35,7 +35,7 @@ form_data = client.presigned_post_policy(policy)
 
 curl_cmd = (
     "curl -X POST "
-    "https://s3.amazonaws.com/my-bucket "
+    "https://play.min.io/my-bucket "
     "{0} -F file=@<FILE>"
 ).format(
     " ".join(["-F {0}={1}".format(k, v) for k, v in form_data.items()]),

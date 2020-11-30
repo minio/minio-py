@@ -23,7 +23,7 @@ from minio.credentials import (AWSConfigProvider, ChainedProvider,
                                EnvAWSProvider, IamAwsProvider)
 
 client = Minio(
-    's3.amazonaws.com',
+    "s3.amazonaws.com",
     credentials=ChainedProvider(
         [
             IamAwsProvider(),
@@ -34,5 +34,5 @@ client = Minio(
 )
 
 # Get information of an object.
-stat = client.stat_object("my-bucketname", "my-objectname")
+stat = client.stat_object("my-bucket", "my-object")
 print(stat)

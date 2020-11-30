@@ -14,26 +14,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-prefixname
-# are dummy values, please replace them with original values.
-
 from minio import Minio
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+client = Minio(
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+)
 
-# List all object paths in bucket that begin with my-prefixname.
-objects = client.list_objects('my-bucketname', prefix='my-prefixname',
-                              recursive=True)
+# List objects information.
+objects = client.list_objects("my-bucket")
 for obj in objects:
-    print(obj.bucket_name, obj.object_name.encode('utf-8'), obj.last_modified,
-          obj.etag, obj.size, obj.content_type)
+    print(obj)
 
-# List all object paths in bucket that begin with my-prefixname using
-# API V1 listing API.
-objects = client.list_objects('my-bucketname', prefix='my-prefixname',
-                              recursive=True, use_api_v1=True)
+# List objects information whose names starts with "my/prefix/".
+objects = client.list_objects("my-bucket", prefix="my/prefix/")
 for obj in objects:
-    print(obj.bucket_name, obj.object_name.encode('utf-8'), obj.last_modified,
-          obj.etag, obj.size, obj.content_type)
+    print(obj)
+
+# List objects information recursively.
+objects = client.list_objects("my-bucket", recursive=True)
+for obj in objects:
+    print(obj)
+
+# List objects information recursively whose names starts with
+# "my/prefix/".
+objects = client.list_objects(
+    "my-bucket", prefix="my/prefix/", recursive=True,
+)
+for obj in objects:
+    print(obj)
+
+# List objects information recursively after object name
+# "my/prefix/world/1".
+objects = client.list_objects(
+    "my-bucket", recursive=True, start_after="my/prefix/world/1",
+)
+for obj in objects:
+    print(obj)

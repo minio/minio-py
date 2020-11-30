@@ -14,17 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-# dummy values, please replace them with original values.
-
 from minio import Minio
-from minio.error import ResponseError
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+client = Minio(
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+)
 
-try:
-    print(client.bucket_exists('my-bucketname'))
-except ResponseError as err:
-    print(err)
+if client.bucket_exists("my-bucket"):
+    print("my-bucket exists")
+else:
+    print("my-bucket does not exist")

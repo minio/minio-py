@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-# dummy values, please replace them with original values.
-
 from datetime import datetime, timedelta
 
 from minio import Minio
@@ -30,4 +27,4 @@ client = Minio(
 )
 
 config = Retention(GOVERNANCE, datetime.utcnow() + timedelta(days=10))
-client.set_object_retention("my-bucketname", "my-objectname", config)
+client.set_object_retention("my-bucket", "my-object", config)

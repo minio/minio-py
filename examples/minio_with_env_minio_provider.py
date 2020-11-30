@@ -21,5 +21,5 @@ from minio.credentials import EnvMinioProvider
 client = Minio("MINIO-HOST:MINIO-PORT", credentials=EnvMinioProvider())
 
 # Get information of an object.
-stat = client.stat_object("my-bucketname", "my-objectname")
+stat = client.stat_object("my-bucket", "my-object")
 print(stat)

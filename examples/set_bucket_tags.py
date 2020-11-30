@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-# dummy values, please replace them with original values.
-
 from minio import Minio
 from minio.commonconfig import Tags
 
@@ -29,4 +26,4 @@ client = Minio(
 tags = Tags.new_bucket_tags()
 tags["Project"] = "Project One"
 tags["User"] = "jsmith"
-client.set_bucket_tags("my-bucketname", tags)
+client.set_bucket_tags("my-bucket", tags)

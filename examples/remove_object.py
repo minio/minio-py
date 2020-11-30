@@ -14,18 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-objectname
-# are dummy values, please replace them with original values.
-
 from minio import Minio
-from minio.error import ResponseError
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+client = Minio(
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+)
 
-# Remove an object.
-try:
-    client.remove_object('my-bucketname', 'my-objectname')
-except ResponseError as err:
-    print(err)
+# Remove object.
+client.remove_object("my-bucket", "my-object")
+
+# Remove version of an object.
+client.remove_object(
+    "my-bucket", "my-object",
+    version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
+)

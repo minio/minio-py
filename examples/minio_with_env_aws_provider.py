@@ -18,8 +18,8 @@
 from minio import Minio
 from minio.credentials import EnvAWSProvider
 
-client = Minio('s3.amazonaws.com', credentials=EnvAWSProvider())
+client = Minio("s3.amazonaws.com", credentials=EnvAWSProvider())
 
 # Get information of an object.
-stat = client.stat_object("my-bucketname", "my-objectname")
+stat = client.stat_object("my-bucket", "my-object")
 print(stat)
