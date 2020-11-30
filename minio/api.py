@@ -1260,7 +1260,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             ):
                 raise ValueError(
                     "source {0}/{1}: size {2} must be greater than {3}".format(
-                        src.bucket_name, src.objcet_name, size, MIN_PART_SIZE,
+                        src.bucket_name, src.object_name, size, MIN_PART_SIZE,
                     ),
                 )
 
@@ -1289,7 +1289,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                             "source {0}/{1}: for multipart split upload of "
                             "{2}, last part size is less than {3}"
                         ).format(
-                            src.bucket_name, src.objcet_name, size,
+                            src.bucket_name, src.object_name, size,
                             MIN_PART_SIZE,
                         ),
                     )
@@ -1417,7 +1417,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 elif src.offset is not None:
                     size -= src.offset
                 offset = src.offset or 0
-                headers = src.headers()
+                headers = src.headers
                 headers.update(ssec_headers)
                 if size <= MAX_PART_SIZE:
                     part_number += 1

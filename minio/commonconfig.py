@@ -466,7 +466,7 @@ class ComposeSource(ObjectConditionalReadArgs):
                 "build_headers() must be called prior to "
                 "this method invocation",
             )
-        return self._headers
+        return self._headers.copy()
 
     @classmethod
     def of(cls, src):

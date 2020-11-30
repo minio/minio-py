@@ -20,9 +20,9 @@ from minio import Minio
 from minio.commonconfig import REPLACE, CopySource
 
 client = Minio(
-    "s3.amazonaws.com",
-    access_key="YOUR-ACCESSKEY",
-    secret_key="YOUR-SECRETKEY",
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
 # copy an object from a bucket to another.
