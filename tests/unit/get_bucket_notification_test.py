@@ -27,7 +27,7 @@ from .minio_mocks import MockConnection, MockResponse
 
 class GetBucketNotificationTest(TestCase):
     @mock.patch('urllib3.PoolManager')
-    def test_notification_config_filterspec_is_valid_7(self, mock_connection):
+    def test_get_bucket_notification_parse_response(self, mock_connection):
         mock_data="""<?xml version="1.0"?>
 <NotificationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
     <QueueConfiguration>
