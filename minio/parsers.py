@@ -474,8 +474,8 @@ def _add_notifying_service_config(data, notifications, service_key,
                             'Name': xml_filter_rule.get_child_text('Name'),
                             'Value': xml_filter_rule.get_child_text('Value'),
                         }
-                        for xml_filter_rule in xml_filter_rules.findall(
-                            './S3Key/FilterRule')
+                        for s3_key_rule in xml_filter_rules.findall('S3Key')
+                        for xml_filter_rule in s3_key_rule.findall('FilterRule')
                     ]
                 }
             }
