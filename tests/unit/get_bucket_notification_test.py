@@ -1,4 +1,4 @@
- # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage,
 # (C) 2015 MinIO, Inc.
 #
@@ -15,21 +15,21 @@
 # limitations under the License.
 
 from unittest import TestCase
+import mock
 
 from nose.tools import eq_
 
-import mock
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
-
 from minio.notificationconfig import NotificationConfig
 
 from .minio_mocks import MockConnection, MockResponse
 
+
 class GetBucketNotificationTest(TestCase):
     @mock.patch('urllib3.PoolManager')
     def test_get_bucket_notification_parse_response(self, mock_connection):
-        mock_data="""<?xml version="1.0"?>
+        mock_data = """<?xml version="1.0"?>
 <NotificationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
     <QueueConfiguration>
         <Id></Id>
@@ -62,12 +62,12 @@ class GetBucketNotificationTest(TestCase):
         )
         client = Minio('localhost:9000')
         response = client.get_bucket_notification('my-test-bucket')
-        
-        queue_configs = response.queue_config_list
-        eq_(1,len(queue_configs))
-        queue_config=queue_configs[0]
-        eq_('arn:minio:sqs::6ccc8843-d78d-49e8-84c4-3734a4af9929:webhook',queue_config.queue)
-        eq_(['s3:ObjectCreated:*'],queue_config.events)
-        eq_('img',queue_config.prefix_filter_rule.value)
-        eq_('.jpg',queue_config.suffix_filter_rule.value)
 
+        queue_configs = response.queue_config_list
+        eq_(1, len(queue_configs))
+        queue_config = queue_configs[0]
+        eq_('arn:minio:sqs::6ccc8843-d78d-49e8-84c4-3734a4af9929:webhook',
+            queue_config.queue)
+        eq_(['s3:ObjectCreated:*'], queue_config.events)
+        eq_('img', queue_config.prefix_filter_rule.value)
+        eq_('.jpg', queue_config.suffix_filter_rule.value)
