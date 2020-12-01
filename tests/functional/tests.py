@@ -39,8 +39,9 @@ from uuid import uuid4
 import certifi
 import urllib3
 
-from minio import CopyConditions, Minio, PostPolicy
+from minio import CopyConditions, Minio
 from minio.commonconfig import ENABLED
+from minio.datatypes import PostPolicy
 from minio.deleteobjects import DeleteObject
 from minio.error import S3Error
 from minio.select.helpers import calculate_crc
@@ -1549,17 +1550,18 @@ def test_presigned_post_policy(log_entry):
         no_of_days = 10
         prefix = 'objectPrefix/'
 
-        # Post policy.
-        policy = PostPolicy()
-        policy.set_bucket_name(bucket_name)
-        policy.set_key_startswith(prefix)
-        expires_date = datetime.utcnow() + timedelta(days=no_of_days)
-        policy.set_expires(expires_date)
-        # post_policy arg is a class. To avoid displaying meaningless value
-        # for the class, policy settings are made part of the args for
-        # clarity and debugging purposes.
-        log_entry["args"]["post_policy"] = {'prefix': prefix,
-                                            'expires_in_days': no_of_days}
+        policy = PostPolicy(
+            bucket_name, datetime.utcnow() + timedelta(days=no_of_days),
+        )
+        policy.add_starts_with_condition("key", prefix)
+        policy.add_content_length_range_condition(64*KB, 10*MB)
+        policy.add_starts_with_condition("Content-Type", "image/")
+        log_entry["args"]["post_policy"] = {
+            "prefix": prefix,
+            "expires_in_days": no_of_days,
+            "content_length_range": "64KiB to 10MiB",
+            "Content-Type": "image/",
+        }
         _CLIENT.presigned_post_policy(policy)
     finally:
         _CLIENT.remove_bucket(bucket_name)

@@ -20,10 +20,17 @@ Response of ListBuckets, ListObjects, ListObjectsV2 and ListObjectVersions API.
 
 from __future__ import absolute_import
 
+import base64
+import datetime
+import json
+from collections import OrderedDict
 from urllib.parse import unquote
 from xml.etree import ElementTree as ET
 
-from .time import from_iso8601utc
+from .credentials import Credentials
+from .helpers import check_bucket_name
+from .signer import get_credential_string, post_presign_v4
+from .time import from_iso8601utc, to_amz_date, to_iso8601utc
 from .xml import find, findall, findtext
 
 
@@ -552,3 +559,168 @@ class ListMultipartUploadsResult:
     def uploads(self):
         """Get uploads."""
         return self._uploads
+
+
+_RESERVED_ELEMENTS = (
+    "bucket",
+    "x-amz-algorithm",
+    "x-amz-credential",
+    "x-amz-date",
+    "policy",
+    "x-amz-signature",
+)
+_EQ = "eq"
+_STARTS_WITH = "starts-with"
+_ALGORITHM = "AWS4-HMAC-SHA256"
+
+
+def _trim_dollar(value):
+    """Trim dollar character if present."""
+    return value[1:] if value.startswith("$") else value
+
+
+class PostPolicy:
+    """
+    Post policy information to be used to generate presigned post policy
+    form-data. Condition elements and respective condition for Post policy
+    is available at
+    https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-HTTPPOSTConstructPolicy.html#sigv4-PolicyConditions
+    """
+
+    def __init__(self, bucket_name, expiration):
+        check_bucket_name(bucket_name)
+        if not isinstance(expiration, datetime.datetime):
+            raise ValueError("expiration must be datetime.datetime type")
+        self._bucket_name = bucket_name
+        self._expiration = expiration
+        self._conditions = OrderedDict()
+        self._conditions[_EQ] = OrderedDict()
+        self._conditions[_STARTS_WITH] = OrderedDict()
+        self._lower_limit = None
+        self._upper_limit = None
+
+    def add_equals_condition(self, element, value):
+        """Add equals condition of an element and value."""
+        if not element:
+            raise ValueError("condition element cannot be empty")
+        element = _trim_dollar(element)
+        if (
+                element in [
+                    "success_action_redirect",
+                    "redirect",
+                    "content-length-range",
+                ]
+        ):
+            raise ValueError(element + " is unsupported for equals condition")
+        if element in _RESERVED_ELEMENTS:
+            raise ValueError(element + " cannot be set")
+        self._conditions[_EQ][element] = value
+
+    def remove_equals_condition(self, element):
+        """Remove previously set equals condition of an element."""
+        if not element:
+            raise ValueError("condition element cannot be empty")
+        self._conditions[_EQ].pop(element)
+
+    def add_starts_with_condition(self, element, value):
+        """
+        Add starts-with condition of an element and value. Value set to empty
+        string does matching any content condition.
+        """
+        if not element:
+            raise ValueError("condition element cannot be empty")
+        element = _trim_dollar(element)
+        if (
+                element in ["success_action_status", "content-length-range"] or
+                (
+                    element.startswith("x-amz-") and
+                    not element.startswith("x-amz-meta-")
+                )
+        ):
+            raise ValueError(
+                "{0} is unsupported for starts-with condition".format(element),
+            )
+        if element in _RESERVED_ELEMENTS:
+            raise ValueError(element + " cannot be set")
+        self._conditions[_STARTS_WITH][element] = value
+
+    def remove_starts_with_condition(self, element):
+        """Remove previously set starts-with condition of an element."""
+        if not element:
+            raise ValueError("condition element cannot be empty")
+        self._conditions[_STARTS_WITH].pop(element)
+
+    def add_content_length_range_condition(  # pylint: disable=invalid-name
+            self, lower_limit, upper_limit):
+        """Add content-length-range condition with lower and upper limits."""
+        if lower_limit < 0:
+            raise ValueError("lower limit cannot be negative number")
+        if upper_limit < 0:
+            raise ValueError("upper limit cannot be negative number")
+        if lower_limit > upper_limit:
+            raise ValueError("lower limit cannot be greater than upper limit")
+        self._lower_limit = lower_limit
+        self._upper_limit = upper_limit
+
+    def remove_content_length_range_condition(  # pylint: disable=invalid-name
+            self):
+        """Remove previously set content-length-range condition."""
+        self._lower_limit = None
+        self._upper_limit = None
+
+    def form_data(self, creds, region):
+        """
+        Return form-data of this post policy. The returned dict contains
+        x-amz-algorithm, x-amz-credential, x-amz-security-token, x-amz-date,
+        policy and x-amz-signature.
+        """
+        if not isinstance(creds, Credentials):
+            raise ValueError("credentials must be Credentials type")
+        if not region:
+            raise ValueError("region cannot be empty")
+        if (
+                "key" not in self._conditions[_EQ] and
+                "key" not in self._conditions[_STARTS_WITH]
+        ):
+            raise ValueError("key condition must be set")
+
+        policy = OrderedDict()
+        policy["expiration"] = to_iso8601utc(self._expiration)
+        policy["conditions"] = [[_EQ, "$bucket", self._bucket_name]]
+        for cond_key, conditions in self._conditions.items():
+            for key, value in conditions.items():
+                policy["conditions"].append([cond_key, "$"+key, value])
+        if self._lower_limit is not None and self._upper_limit is not None:
+            policy["conditions"].append(
+                ["content-length-range", self._lower_limit, self._upper_limit],
+            )
+        utcnow = datetime.datetime.utcnow()
+        credential = get_credential_string(creds.access_key, utcnow, region)
+        amz_date = to_amz_date(utcnow)
+        policy["conditions"].append([_EQ, "$x-amz-algorithm", _ALGORITHM])
+        policy["conditions"].append([_EQ, "$x-amz-credential", credential])
+        if creds.session_token:
+            policy["conditions"].append(
+                [_EQ, "$x-amz-security-token", creds.session_token],
+            )
+        policy["conditions"].append([_EQ, "$x-amz-date", amz_date])
+
+        policy = base64.b64encode(json.dumps(policy).encode())
+        signature = post_presign_v4(
+            policy.decode(), creds.secret_key, utcnow, region,
+        )
+        form_data = {
+            "x-amz-algorithm": _ALGORITHM,
+            "x-amz-credential": credential,
+            "x-amz-date": amz_date,
+            "policy": policy,
+            "x-amz-signature": signature,
+        }
+        if creds.session_token:
+            form_data["x-amz-security-token"] = creds.session_token
+        return form_data
+
+    @property
+    def bucket_name(self):
+        """Get bucket name."""
+        return self._bucket_name

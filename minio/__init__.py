@@ -41,4 +41,3 @@ __LOCALE_LOCK__ = threading.Lock()
 from .api import Minio
 from .copy_conditions import CopyConditions
 from .error import InvalidResponseError, S3Error, ServerError
-from .post_policy import PostPolicy

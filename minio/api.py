@@ -48,7 +48,7 @@ from .commonconfig import Tags
 from .credentials import StaticProvider
 from .datatypes import (CompleteMultipartUploadResult, ListAllMyBucketsResult,
                         ListMultipartUploadsResult, ListPartsResult, Object,
-                        Part, parse_list_objects)
+                        Part, PostPolicy, parse_list_objects)
 from .deleteobjects import DeleteError, DeleteRequest, DeleteResult
 from .error import InvalidResponseError, S3Error, ServerError
 from .helpers import (BaseURL, ObjectWriteResult, ThreadPool,
@@ -64,8 +64,7 @@ from .replicationconfig import ReplicationConfig
 from .retention import Retention
 from .select import SelectObjectReader
 from .selectrequest import SelectRequest
-from .signer import (SIGN_V4_ALGORITHM, get_credential_string,
-                     post_presign_v4, presign_v4, sign_v4_s3)
+from .signer import presign_v4, sign_v4_s3
 from .sse import SseCustomerKey
 from .sseconfig import SSEConfig
 from .tagging import Tagging
@@ -1767,63 +1766,33 @@ class Minio:  # pylint: disable=too-many-public-methods
                                   object_name,
                                   expires)
 
-    def presigned_post_policy(self, post_policy):
+    def presigned_post_policy(self, policy):
         """
         Get form-data of PostPolicy of an object to upload its data using POST
         method.
 
-        :param post_policy: :class:`PostPolicy <PostPolicy>`.
+        :param policy: :class:`PostPolicy <PostPolicy>`.
         :return: :dict: contains form-data.
 
         Example::
-            post_policy = PostPolicy()
-            post_policy.set_bucket_name('bucket_name')
-            post_policy.set_key_startswith('objectPrefix/')
-            expires_date = datetime.utcnow() + timedelta(days=10)
-            post_policy.set_expires(expires_date)
-
-            form_data = presigned_post_policy(post_policy)
-            print(form_data)
+            policy = PostPolicy(
+                "my-bucket", datetime.utcnow() + timedelta(days=10),
+            )
+            policy.add_starts_with_condition("key", "my/object/prefix/")
+            policy.add_content_length_range_condition(
+                1*1024*1024, 10*1024*1024,
+            )
+            form_data = client.presigned_post_policy(policy)
         """
-        post_policy.is_valid()
+        if not isinstance(policy, PostPolicy):
+            raise ValueError("policy must be PostPolicy type")
         if not self._provider:
             raise ValueError(
                 "anonymous access does not require presigned post form-data",
             )
-
-        bucket_name = post_policy.form_data['bucket']
-        region = self._get_region(bucket_name, None)
-        credentials = self._provider.retrieve()
-        date = time.utcnow()
-        credential_string = get_credential_string(
-            credentials.access_key, date, region,
-        )
-        policy = [
-            ('eq', '$x-amz-date', time.to_amz_date(date)),
-            ('eq', '$x-amz-algorithm', SIGN_V4_ALGORITHM),
-            ('eq', '$x-amz-credential', credential_string),
-        ]
-        if credentials.session_token:
-            policy.append(
-                ('eq', '$x-amz-security-token', credentials.session_token),
-            )
-        post_policy_base64 = post_policy.base64(extras=policy)
-        signature = post_presign_v4(
-            post_policy_base64, credentials, date, region,
-        )
-        form_data = {
-            'policy': post_policy_base64,
-            'x-amz-algorithm': SIGN_V4_ALGORITHM,
-            'x-amz-credential': credential_string,
-            'x-amz-date': time.to_amz_date(date),
-            'x-amz-signature': signature,
-        }
-        if credentials.session_token:
-            form_data['x-amz-security-token'] = credentials.session_token
-        post_policy.form_data.update(form_data)
-        return (
-            self._base_url.build("POST", region, bucket_name),
-            post_policy.form_data,
+        return policy.form_data(
+            self._provider.retrieve(),
+            self._get_region(policy.bucket_name, None),
         )
 
     def delete_bucket_replication(self, bucket_name):
