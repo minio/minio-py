@@ -1594,7 +1594,11 @@ class Minio:  # pylint: disable=too-many-public-methods
             )
 
             for error in result.error_list:
-                yield error
+                # AWS S3 returns "NoSuchVersion" error when
+                # version doesn't exist ignore this error
+                # yield all errors otherwise
+                if error.code != "NoSuchVersion":
+                    yield error
 
     def presigned_url(self, method,
                       bucket_name,
