@@ -29,6 +29,7 @@ from queue import Queue
 from threading import BoundedSemaphore, Thread
 
 from .sse import Sse, SseCustomerKey
+from .time import to_iso8601utc
 
 # Constants
 MAX_MULTIPART_COUNT = 10000  # 10000 parts
@@ -344,6 +345,28 @@ def normalize_headers(headers):
     _ = [headers.pop(key) for key in user_metadata]
 
     headers.update(_metadata_to_headers(user_metadata))
+    return headers
+
+
+def genheaders(headers, sse, tags, retention, legal_hold):
+    """Generate headers for given parameters."""
+    headers = normalize_headers(headers)
+    headers.update(sse.headers() if sse else {})
+    tagging = "&".join(
+        [
+            queryencode(key) + "=" + queryencode(value)
+            for key, value in (tags or {}).items()
+        ],
+    )
+    if tagging:
+        headers["x-amz-tagging"] = tagging
+    if retention and retention.mode():
+        headers["x-amz-object-lock-mode"] = retention.mode()
+        headers["x-amz-object-lock-retain-until-date"] = (
+            to_iso8601utc(retention.retain_until_date())
+        )
+    if legal_hold:
+        headers["x-amz-object-lock-legal-hold"] = "ON"
     return headers
 
 

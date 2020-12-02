@@ -19,10 +19,17 @@
 
 from __future__ import absolute_import
 
+import datetime
 from abc import ABCMeta
 
+from .error import MinioException
+from .helpers import quote
+from .sse import SseCustomerKey
+from .time import to_http_header
 from .xml import SubElement, find, findall, findtext
 
+COPY = "COPY"
+REPLACE = "REPLACE"
 DISABLED = "Disabled"
 ENABLED = "Enabled"
 GOVERNANCE = "GOVERNANCE"
@@ -262,3 +269,210 @@ def check_status(status):
     """Validate status."""
     if status not in [ENABLED, DISABLED]:
         raise ValueError("status must be 'Enabled' or 'Disabled'")
+
+
+class ObjectConditionalReadArgs:
+    """Base argument class holds condition properties for reading object."""
+    __metaclass__ = ABCMeta
+
+    def __init__(self, bucket_name, object_name, region=None, version_id=None,
+                 ssec=None, offset=None, length=None, match_etag=None,
+                 not_match_etag=None, modified_since=None,
+                 unmodified_since=None):
+        if ssec is not None and not isinstance(ssec, SseCustomerKey):
+            raise ValueError("ssec must be SseCustomerKey type")
+        if offset is not None and offset < 0:
+            raise ValueError("offset should be zero or greater")
+        if length is not None and length <= 0:
+            raise ValueError("length should be greater than zero")
+        if match_etag is not None and match_etag == "":
+            raise ValueError("match_etag must not be empty")
+        if not_match_etag is not None and not_match_etag == "":
+            raise ValueError("not_match_etag must not be empty")
+        if (
+                modified_since is not None and
+                not isinstance(modified_since, datetime.datetime)
+        ):
+            raise ValueError("modified_since must be datetime.datetime type")
+        if (
+                unmodified_since is not None and
+                not isinstance(unmodified_since, datetime.datetime)
+        ):
+            raise ValueError("unmodified_since must be datetime.datetime type")
+
+        self._bucket_name = bucket_name
+        self._object_name = object_name
+        self._region = region
+        self._version_id = version_id
+        self._ssec = ssec
+        self._offset = offset
+        self._length = length
+        self._match_etag = match_etag
+        self._not_match_etag = not_match_etag
+        self._modified_since = modified_since
+        self._unmodified_since = unmodified_since
+
+    @property
+    def bucket_name(self):
+        """Get bucket name."""
+        return self._bucket_name
+
+    @property
+    def object_name(self):
+        """Get object name."""
+        return self._object_name
+
+    @property
+    def region(self):
+        """Get region."""
+        return self._region
+
+    @property
+    def version_id(self):
+        """Get version ID."""
+        return self._version_id
+
+    @property
+    def ssec(self):
+        """Get SSE-C."""
+        return self._ssec
+
+    @property
+    def offset(self):
+        """Get offset."""
+        return self._offset
+
+    @property
+    def length(self):
+        """Get length."""
+        return self._length
+
+    @property
+    def match_etag(self):
+        """Get match ETag condition."""
+        return self._match_etag
+
+    @property
+    def not_match_etag(self):
+        """Get not-match ETag condition."""
+        return self._not_match_etag
+
+    @property
+    def modified_since(self):
+        """Get modified since condition."""
+        return self._modified_since
+
+    @property
+    def unmodified_since(self):
+        """Get unmodified since condition."""
+        return self._unmodified_since
+
+    def gen_copy_headers(self):
+        """Generate copy source headers."""
+        copy_source = quote("/" + self._bucket_name + "/" + self._object_name)
+        if self._version_id:
+            copy_source += "?versionId=" + quote(self._version_id)
+
+        headers = {"x-amz-copy-source": copy_source}
+        if self._ssec:
+            headers.update(self._ssec.copy_headers())
+        if self._match_etag:
+            headers["x-amz-copy-source-if-match"] = self._match_etag
+        if self._not_match_etag:
+            headers["x-amz-copy-source-if-none-match"] = self._not_match_etag
+        if self._modified_since:
+            headers["x-amz-copy-source-if-modified-since"] = (
+                to_http_header(self._modified_since)
+            )
+        if self._unmodified_since:
+            headers["x-amz-copy-source-if-unmodified-since"] = (
+                to_http_header(self._unmodified_since)
+            )
+        return headers
+
+
+class CopySource(ObjectConditionalReadArgs):
+    """A source object defintion for copy_object method."""
+    @classmethod
+    def of(cls, src):
+        """Create CopySource from another source."""
+        return cls(
+            src.bucket_name, src.object_name, src.region, src.version_id,
+            src.ssec, src.offset, src.length, src.match_etag,
+            src.not_match_etag, src.modified_since, src.unmodified_since,
+        )
+
+
+class ComposeSource(ObjectConditionalReadArgs):
+    """A source object defintion for compose_object method."""
+
+    def __init__(self, bucket_name, object_name, region=None, version_id=None,
+                 ssec=None, offset=None, length=None, match_etag=None,
+                 not_match_etag=None, modified_since=None,
+                 unmodified_since=None):
+        super().__init__(
+            bucket_name, object_name, region, version_id, ssec, offset, length,
+            match_etag, not_match_etag, modified_since, unmodified_since,
+        )
+        self._object_size = None
+        self._headers = None
+
+    def _validate_size(self, object_size):
+        """Validate object size with offset and length."""
+        def _get_error(name, value):
+            ver = ("?versionId="+self._version_id) if self._version_id else ""
+            return (
+                "Source {0}/{1}{2}: {3} {4} is beyond object size {5}".format(
+                    self._bucket_name,
+                    self._object_name,
+                    ver,
+                    name,
+                    value,
+                    object_size,
+                )
+            )
+        if self._offset is not None and self._offset >= object_size:
+            raise ValueError("offset", self._offset)
+        if self._length is not None:
+            if self._length > object_size:
+                raise ValueError("length", self._length)
+            offset = self._offset or 0
+            if offset+self.length > object_size:
+                raise ValueError("compose size", offset+self._length)
+
+    def build_headers(self, object_size, etag):
+        """Build headers."""
+        self._validate_size(object_size)
+        self._object_size = object_size
+        headers = self.gen_copy_headers()
+        headers["x-amz-copy-source-if-match"] = self._match_etag or etag
+        self._headers = headers
+
+    @property
+    def object_size(self):
+        """Get object size."""
+        if self._object_size is None:
+            raise MinioException(
+                "build_headers() must be called prior to "
+                "this method invocation",
+            )
+        return self._object_size
+
+    @property
+    def headers(self):
+        """Get headers."""
+        if self._headers is None:
+            raise MinioException(
+                "build_headers() must be called prior to "
+                "this method invocation",
+            )
+        return self._headers.copy()
+
+    @classmethod
+    def of(cls, src):
+        """Create ComposeSource from another source."""
+        return cls(
+            src.bucket_name, src.object_name, src.region, src.version_id,
+            src.ssec, src.offset, src.length, src.match_etag,
+            src.not_match_etag, src.modified_since, src.unmodified_since,
+        )

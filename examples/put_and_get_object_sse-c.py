@@ -20,6 +20,7 @@
 from io import BytesIO
 
 from minio.api import Minio
+from minio.commonconfig import CopySource
 from minio.sse import SseCustomerKey
 
 AWSAccessKeyId = 'YOUR-ACCESSKEYID'
@@ -45,8 +46,9 @@ def main():
 
     # Copy encrypted object on Server-Side from Source to Destination
     obj = minio.copy_object(STORAGE_BUCKET, 'test_crypt_copy.txt',
-                            STORAGE_BUCKET + '/test_crypt.txt',
-                            source_sse=ssec,
+                            CopySource(
+                                STORAGE_BUCKET, 'test_crypt.txt', ssec=ssec,
+                            ),
                             sse=ssec)
 
     # Get decrypted object with SSE_C object passed in as param

@@ -35,24 +35,24 @@ s3Client = Minio(
 | [`make_bucket`](#make_bucket)                               | [`get_object`](#get_object)                                     |
 | [`list_buckets`](#list_buckets)                             | [`put_object`](#put_object)                                     |
 | [`bucket_exists`](#bucket_exists)                           | [`copy_object`](#copy_object)                                   |
-| [`remove_bucket`](#remove_bucket)                           | [`stat_object`](#stat_object)                                   |
-| [`list_objects`](#list_objects)                             | [`remove_object`](#remove_object)                               |
-| [`get_bucket_versioning`](#get_bucket_versioning)           | [`remove_objects`](#remove_objects)                             |
-| [`set_bucket_versioning`](#set_bucket_versioning)           | [`fput_object`](#fput_object)                                   |
-| [`delete_bucket_replication`](#delete_bucket_replication)   | [`fget_object`](#fget_object)                                   |
-| [`get_bucket_replication`](#get_bucket_replication)         | [`select_object_content`](#select_object_content)               |
-| [`set_bucket_replication`](#set_bucket_replication)         | [`delete_object_tags`](#delete_object_tags)                     |
-| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)       | [`get_object_tags`](#get_object_tags)                           |
-| [`get_bucket_lifecycle`](#get_bucket_lifecycle)             | [`set_object_tags`](#set_object_tags)                           |
-| [`set_bucket_lifecycle`](#set_bucket_lifecycle)             | [`enable_object_legal_hold`](#enable_object_legal_hold)         |
-| [`delete_bucket_tags`](#delete_bucket_tags)                 | [`disable_object_legal_hold`](#disable_object_legal_hold)       |
-| [`get_bucket_tags`](#get_bucket_tags)                       | [`is_object_legal_hold_enabled`](#is_object_legal_hold_enabled) |
-| [`set_bucket_tags`](#set_bucket_tags)                       | [`get_object_retention`](#get_object_retention)                 |
-| [`delete_bucket_policy`](#delete_bucket_policy)             | [`set_object_retention`](#set_object_retention)                 |
-| [`get_bucket_policy`](#get_bucket_policy)                   | [`presigned_get_object`](#presigned_get_object)                 |
-| [`set_bucket_policy`](#set_bucket_policy)                   | [`presigned_put_object`](#presigned_put_object)                 |
-| [`delete_bucket_notification`](#delete_bucket_notification) | [`presigned_post_policy`](#presigned_post_policy)               |
-| [`get_bucket_notification`](#get_bucket_notification)       |                                                                 |
+| [`remove_bucket`](#remove_bucket)                           | [`compose_object`](#compose_object)                             |
+| [`list_objects`](#list_objects)                             | [`stat_object`](#stat_object)                                   |
+| [`get_bucket_versioning`](#get_bucket_versioning)           | [`remove_object`](#remove_object)                               |
+| [`set_bucket_versioning`](#set_bucket_versioning)           | [`remove_objects`](#remove_objects)                             |
+| [`delete_bucket_replication`](#delete_bucket_replication)   | [`fput_object`](#fput_object)                                   |
+| [`get_bucket_replication`](#get_bucket_replication)         | [`fget_object`](#fget_object)                                   |
+| [`set_bucket_replication`](#set_bucket_replication)         | [`select_object_content`](#select_object_content)               |
+| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)       | [`delete_object_tags`](#delete_object_tags)                     |
+| [`get_bucket_lifecycle`](#get_bucket_lifecycle)             | [`get_object_tags`](#get_object_tags)                           |
+| [`set_bucket_lifecycle`](#set_bucket_lifecycle)             | [`set_object_tags`](#set_object_tags)                           |
+| [`delete_bucket_tags`](#delete_bucket_tags)                 | [`enable_object_legal_hold`](#enable_object_legal_hold)         |
+| [`get_bucket_tags`](#get_bucket_tags)                       | [`disable_object_legal_hold`](#disable_object_legal_hold)       |
+| [`set_bucket_tags`](#set_bucket_tags)                       | [`is_object_legal_hold_enabled`](#is_object_legal_hold_enabled) |
+| [`delete_bucket_policy`](#delete_bucket_policy)             | [`get_object_retention`](#get_object_retention)                 |
+| [`get_bucket_policy`](#get_bucket_policy)                   | [`set_object_retention`](#set_object_retention)                 |
+| [`set_bucket_policy`](#set_bucket_policy)                   | [`presigned_get_object`](#presigned_get_object)                 |
+| [`delete_bucket_notification`](#delete_bucket_notification) | [`presigned_put_object`](#presigned_put_object)                 |
+| [`get_bucket_notification`](#get_bucket_notification)       | [`presigned_post_policy`](#presigned_post_policy)               |
 | [`set_bucket_notification`](#set_bucket_notification)       |                                                                 |
 | [`listen_bucket_notification`](#listen_bucket_notification) |                                                                 |
 | [`delete_bucket_encryption`](#delete_bucket_encryption)     |                                                                 |
@@ -147,7 +147,7 @@ s3Client = Minio(
 
 <a name="make_bucket"></a>
 
-### make_bucket(self, bucket_name, location='us-east-1', object_lock=False)
+### make_bucket(bucket_name, location='us-east-1', object_lock=False)
 
 Create a bucket with region and object lock.
 
@@ -938,21 +938,25 @@ minio.fget_object(
 
 <a name="copy_object"></a>
 
-### copy_object(bucket_name, object_name, object_source, conditions=None, source_sse=None, sse=None, metadata=None)
+### copy_object(bucket_name, object_name, source, sse=None, metadata=None, tags=None, retention=None, legal_hold=False, metadata_directive=None, tagging_directive=None)
 
 Create an object by server-side copying data from another object. In this API maximum supported source object size is 5GiB.
 
 __Parameters__
 
-| Param           | Type             | Description                                                           |
-|:----------------|:-----------------|:----------------------------------------------------------------------|
-| `bucket_name`   | _str_            | Name of the bucket.                                                   |
-| `object_name`   | _str_            | Object name in the bucket.                                            |
-| `object_source` | _str_            | Source object to be copied.                                           |
-| `conditions`    | _CopyConditions_ | Collection of supported CopyObject conditions.                        |
-| `source_sse`    | _SseCustomerKey_ | Server-side encryption customer key of source object.                 |
-| `sse`           | _Sse_            | Server-side encryption of destination object.                         |
-| `metadata`      | _dict_           | Any user-defined metadata to be copied along with destination object. |
+| Param                | Type         | Description                                                           |
+|:---------------------|:-------------|:----------------------------------------------------------------------|
+| `bucket_name`        | _str_        | Name of the bucket.                                                   |
+| `object_name`        | _str_        | Object name in the bucket.                                            |
+| `source`             | _CopySource_ | Source object information.                                            |
+| `sse`                | _Sse_        | Server-side encryption of destination object.                         |
+| `metadata`           | _dict_       | Any user-defined metadata to be copied along with destination object. |
+| `tags`               | _Tags_       | Tags for destination object.                                          |
+| `retention`          | _Retention_  | Retention configuration.                                              |
+| `legal_hold`         | _bool_       | Flag to set legal hold for destination object.                        |
+| `metadata_directive` | _str_        | Directive used to handle user metadata for destination object.        |
+| `tagging_directive`  | _str_        | Directive used to handle tags for destination object.                 |
+
 
 __Return Value__
 
@@ -963,47 +967,97 @@ __Return Value__
 __Example__
 
 ```py
-import time
-from datetime import datetime
-from minio import CopyConditions
+from datetime import datetime, timezone
+from minio.commonconfig import REPLACE, CopySource
 
-minio.copy_object(
-    "my-bucketname",
-    "my-objectname",
-    "my-source-bucketname/my-source-objectname",
+# copy an object from a bucket to another.
+result = client.copy_object(
+    "my-bucket",
+    "my-object",
+    CopySource("my-sourcebucket", "my-sourceobject"),
 )
+print(result.object_name, result.version_id)
 
-minio.copy_object(
-    "my-bucketname",
-    "my-objectname",
-    "my-source-bucketname/my-source-objectname"
-    "?versionId=b6602757-7c9c-449b-937f-fed504d04c94",
+# copy an object with condition.
+result = client.copy_object(
+    "my-bucket",
+    "my-object",
+    CopySource(
+        "my-sourcebucket",
+        "my-sourceobject",
+        modified_since=datetime(2014, 4, 1, tzinfo=timezone.utc),
+    ),
 )
+print(result.object_name, result.version_id)
 
-copy_conditions = CopyConditions()
-# Set modified condition, copy object modified since 2014 April.
-t = (2014, 4, 0, 0, 0, 0, 0, 0, 0)
-mod_since = datetime.utcfromtimestamp(time.mktime(t))
-copy_conditions.set_modified_since(mod_since)
-
-# Set unmodified condition, copy object unmodified since 2014 April.
-copy_conditions.set_unmodified_since(mod_since)
-
-# Set matching ETag condition, copy object which matches the following ETag.
-copy_conditions.set_match_etag("31624deb84149d2f8ef9c385918b653a")
-
-# Set matching ETag except condition, copy object which does not match the following ETag.
-copy_conditions.set_match_etag_except("31624deb84149d2f8ef9c385918b653a")
-
-# Set metadata, which will be copied along with the destination object.
-metadata = {"test-key": "test-data"}
-
-result = minioClient.copy_object(
-	"my-bucketname",
-	"my-objectname",
-	"my-source-bucketname/my-source-objectname",
-	copy_conditions,metadata=metadata,
+# copy an object from a bucket with replacing metadata.
+metadata = {"test_meta_key": "test_meta_value"}
+result = client.copy_object(
+    "my-bucket",
+    "my-object",
+    CopySource("my-sourcebucket", "my-sourceobject"),
+    metadata=metadata,
+    metadata_directive=REPLACE,
 )
+print(result.object_name, result.version_id)
+```
+
+<a name="compose_object"></a>
+
+### compose_object(bucket_name, object_name, sources, sse=None, metadata=None, tags=None, retention=None, legal_hold=False)
+
+Create an object by combining data from different source objects using server-side copy.
+
+__Parameters__
+
+| Param         | Type        | Description                                                           |
+|:--------------|:------------|:----------------------------------------------------------------------|
+| `bucket_name` | _str_       | Name of the bucket.                                                   |
+| `object_name` | _str_       | Object name in the bucket.                                            |
+| `sources`     | _list_      | List of _ComposeSource_ object.                                       |
+| `sse`         | _Sse_       | Server-side encryption of destination object.                         |
+| `metadata`    | _dict_      | Any user-defined metadata to be copied along with destination object. |
+| `tags`        | _Tags_      | Tags for destination object.                                          |
+| `retention`   | _Retention_ | Retention configuration.                                              |
+| `legal_hold`  | _bool_      | Flag to set legal hold for destination object.                        |
+
+
+__Return Value__
+
+| Return                      |
+|:----------------------------|
+| _ObjectWriteResult_ object. |
+
+__Example__
+
+```py
+from minio.commonconfig import ComposeSource
+from minio.sse import SseS3
+
+sources = [
+    ComposeSource("my-job-bucket", "my-object-part-one"),
+    ComposeSource("my-job-bucket", "my-object-part-two"),
+    ComposeSource("my-job-bucket", "my-object-part-three"),
+]
+
+# Create my-bucket/my-object by combining source object
+# list.
+result = client.compose_object("my-bucket", "my-object", sources)
+print(result.object_name, result.version_id)
+
+# Create my-bucket/my-object with user metadata by combining
+# source object list.
+result = client.compose_object(
+    "my-bucket",
+    "my-object",
+    sources,
+    metadata={"test_meta_key": "test_meta_value"},
+)
+print(result.object_name, result.version_id)
+
+# Create my-bucket/my-object with user metadata and
+# server-side encryption by combining source object list.
+client.compose_object("my-bucket", "my-object", sources, sse=SseS3())
 print(result.object_name, result.version_id)
 ```
 

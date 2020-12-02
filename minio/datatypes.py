@@ -724,3 +724,15 @@ class PostPolicy:
     def bucket_name(self):
         """Get bucket name."""
         return self._bucket_name
+
+
+def parse_copy_object(response):
+    """Parse CopyObject/UploadPartCopy response."""
+    element = ET.fromstring(response.data.decode())
+    etag = findtext(element, "ETag")
+    if etag:
+        etag = etag.replace('"', "")
+    last_modified = findtext(element, "LastModified")
+    if last_modified:
+        last_modified = from_iso8601utc(last_modified)
+    return etag, last_modified

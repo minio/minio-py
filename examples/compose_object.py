@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2016-2020 MinIO, Inc.
+# (C) 2020 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timezone
-
 from minio import Minio
-from minio.commonconfig import REPLACE, CopySource
+from minio.commonconfig import ComposeSource
+from minio.sse import SseS3
 
 client = Minio(
     "play.min.io",
@@ -25,33 +24,28 @@ client = Minio(
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
-# copy an object from a bucket to another.
-result = client.copy_object(
+sources = [
+    ComposeSource("my-job-bucket", "my-object-part-one"),
+    ComposeSource("my-job-bucket", "my-object-part-two"),
+    ComposeSource("my-job-bucket", "my-object-part-three"),
+]
+
+# Create my-bucket/my-object by combining source object
+# list.
+result = client.compose_object("my-bucket", "my-object", sources)
+print(result.object_name, result.version_id)
+
+# Create my-bucket/my-object with user metadata by combining
+# source object list.
+result = client.compose_object(
     "my-bucket",
     "my-object",
-    CopySource("my-sourcebucket", "my-sourceobject"),
+    sources,
+    metadata={"test_meta_key": "test_meta_value"},
 )
 print(result.object_name, result.version_id)
 
-# copy an object with condition.
-result = client.copy_object(
-    "my-bucket",
-    "my-object",
-    CopySource(
-        "my-sourcebucket",
-        "my-sourceobject",
-        modified_since=datetime(2014, 4, 1, tzinfo=timezone.utc),
-    ),
-)
-print(result.object_name, result.version_id)
-
-# copy an object from a bucket with replacing metadata.
-metadata = {"test_meta_key": "test_meta_value"}
-result = client.copy_object(
-    "my-bucket",
-    "my-object",
-    CopySource("my-sourcebucket", "my-sourceobject"),
-    metadata=metadata,
-    metadata_directive=REPLACE,
-)
+# Create my-bucket/my-object with user metadata and
+# server-side encryption by combining source object list.
+client.compose_object("my-bucket", "my-object", sources, sse=SseS3())
 print(result.object_name, result.version_id)

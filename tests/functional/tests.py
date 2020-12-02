@@ -39,8 +39,8 @@ from uuid import uuid4
 import certifi
 import urllib3
 
-from minio import CopyConditions, Minio
-from minio.commonconfig import ENABLED
+from minio import Minio
+from minio.commonconfig import ENABLED, REPLACE, CopySource
 from minio.datatypes import PostPolicy
 from minio.deleteobjects import DeleteObject
 from minio.error import S3Error
@@ -446,9 +446,10 @@ def test_copy_object_no_copy_condition(  # pylint: disable=invalid-name
         size = 1 * KB
         reader = LimitedRandomReader(size)
         _CLIENT.put_object(bucket_name, object_source, reader, size, sse=ssec)
-        _CLIENT.copy_object(bucket_name, object_copy,
-                            '/' + bucket_name + '/' + object_source,
-                            source_sse=ssec_copy, sse=ssec)
+        _CLIENT.copy_object(
+            bucket_name, object_copy, sse=ssec,
+            source=CopySource(bucket_name, object_source, ssec=ssec_copy),
+        )
         st_obj = _CLIENT.stat_object(bucket_name, object_copy, ssec=ssec)
         _validate_stat(st_obj, size, {})
     finally:
@@ -482,9 +483,10 @@ def test_copy_object_with_metadata(log_entry):
         reader = LimitedRandomReader(size)
         _CLIENT.put_object(bucket_name, object_source, reader, size)
         # Perform a server side copy of an object
-        _CLIENT.copy_object(bucket_name, object_copy,
-                            '/' + bucket_name + '/' + object_source,
-                            metadata=metadata)
+        _CLIENT.copy_object(
+            bucket_name, object_copy, CopySource(bucket_name, object_source),
+            metadata=metadata, metadata_directive=REPLACE,
+        )
         # Verification
         st_obj = _CLIENT.stat_object(bucket_name, object_copy)
         expected_metadata = {'x-amz-meta-testing-int': '1',
@@ -518,16 +520,16 @@ def test_copy_object_etag_match(log_entry):
         reader = LimitedRandomReader(size)
         _CLIENT.put_object(bucket_name, object_source, reader, size)
         # Perform a server side copy of an object
-        _CLIENT.copy_object(bucket_name, object_copy,
-                            '/' + bucket_name + '/' + object_source)
+        _CLIENT.copy_object(
+            bucket_name, object_copy, CopySource(bucket_name, object_source),
+        )
         # Verification
         source_etag = _CLIENT.stat_object(bucket_name, object_source).etag
-        copy_conditions = CopyConditions()
-        copy_conditions.set_match_etag(source_etag)
         log_entry["args"]["conditions"] = {'set_match_etag': source_etag}
-        _CLIENT.copy_object(bucket_name, object_copy,
-                            '/' + bucket_name + '/' + object_source,
-                            copy_conditions)
+        _CLIENT.copy_object(
+            bucket_name, object_copy,
+            CopySource(bucket_name, object_source, match_etag=source_etag),
+        )
     finally:
         _CLIENT.remove_object(bucket_name, object_source)
         _CLIENT.remove_object(bucket_name, object_copy)
@@ -560,12 +562,11 @@ def test_copy_object_negative_etag_match(  # pylint: disable=invalid-name
             # Perform a server side copy of an object
             # with incorrect pre-conditions and fail
             etag = 'test-etag'
-            copy_conditions = CopyConditions()
-            copy_conditions.set_match_etag(etag)
             log_entry["args"]["conditions"] = {'set_match_etag': etag}
-            _CLIENT.copy_object(bucket_name, object_copy,
-                                '/' + bucket_name + '/' + object_source,
-                                copy_conditions)
+            _CLIENT.copy_object(
+                bucket_name, object_copy,
+                CopySource(bucket_name, object_source, match_etag=etag),
+            )
         except S3Error as exc:
             if exc.code != "PreconditionFailed":
                 raise
@@ -597,16 +598,15 @@ def test_copy_object_modified_since(log_entry):
         reader = LimitedRandomReader(size)
         _CLIENT.put_object(bucket_name, object_source, reader, size)
         # Set up the 'modified_since' copy condition
-        copy_conditions = CopyConditions()
         mod_since = datetime(2014, 4, 1, tzinfo=timezone.utc)
-        copy_conditions.set_modified_since(mod_since)
         log_entry["args"]["conditions"] = {
             'set_modified_since': to_http_header(mod_since)}
         # Perform a server side copy of an object
         # and expect the copy to complete successfully
-        _CLIENT.copy_object(bucket_name, object_copy,
-                            '/' + bucket_name + '/' + object_source,
-                            copy_conditions)
+        _CLIENT.copy_object(
+            bucket_name, object_copy,
+            CopySource(bucket_name, object_source, modified_since=mod_since),
+        )
     finally:
         _CLIENT.remove_object(bucket_name, object_source)
         _CLIENT.remove_object(bucket_name, object_copy)
@@ -636,18 +636,19 @@ def test_copy_object_unmodified_since(  # pylint: disable=invalid-name
         reader = LimitedRandomReader(size)
         _CLIENT.put_object(bucket_name, object_source, reader, size)
         # Set up the 'unmodified_since' copy condition
-        copy_conditions = CopyConditions()
         unmod_since = datetime(2014, 4, 1, tzinfo=timezone.utc)
-        copy_conditions.set_unmodified_since(unmod_since)
         log_entry["args"]["conditions"] = {
             'set_unmodified_since': to_http_header(unmod_since)}
         try:
             # Perform a server side copy of an object and expect
             # the copy to fail since the creation/modification
             # time is now, way later than unmodification time, April 1st, 2014
-            _CLIENT.copy_object(bucket_name, object_copy,
-                                '/' + bucket_name + '/' + object_source,
-                                copy_conditions)
+            _CLIENT.copy_object(
+                bucket_name, object_copy,
+                CopySource(
+                    bucket_name, object_source, unmodified_since=unmod_since,
+                ),
+            )
         except S3Error as exc:
             if exc.code != "PreconditionFailed":
                 raise
