@@ -14,13 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Request/response of PutBucketReplication and GetBucketReplication APIs."""
+"""Request/response of SelectObjectContent API."""
 
 from __future__ import absolute_import
 
 from abc import ABCMeta
+from binascii import crc32
+from io import BytesIO
+from xml.etree import ElementTree as ET
 
-from .xml import Element, SubElement
+from .error import MinioException
+from .xml import Element, SubElement, findtext
 
 COMPRESSION_TYPE_NONE = "NONE"
 COMPRESSION_TYPE_GZIP = "GZIP"
@@ -154,8 +158,8 @@ class JSONInputSerialization(InputSerialization):
 class ParquetInputSerialization(InputSerialization):
     """Parquet input serialization."""
 
-    def __init__(self, compression_type=None):
-        super().__init__(compression_type)
+    def __init__(self):
+        super().__init__(None)
 
     def toxml(self, element):
         """Convert to XML."""
@@ -273,3 +277,169 @@ class SelectRequest:
             if self._scan_end_range:
                 SubElement(tag, "End", self._scan_end_range)
         return element
+
+
+def _read(reader, size):
+    """Wrapper to RawIOBase.read() to error out on short reads."""
+    data = reader.read(size)
+    if len(data) != size:
+        raise IOError("insufficient data")
+    return data
+
+
+def _int(data):
+    """Convert byte data to big-endian int."""
+    return int.from_bytes(data, byteorder="big")
+
+
+def _crc32(data):
+    """Wrapper to binascii.crc32()."""
+    return crc32(data) & 0xffffffff
+
+
+def _decode_header(data):
+    """Decode header data."""
+    reader = BytesIO(data)
+    headers = {}
+    while True:
+        length = reader.read(1)
+        if not length:
+            break
+        name = _read(reader, _int(length))
+        if _int(_read(reader, 1)) != 7:
+            raise IOError("header value type is not 7")
+        value = _read(reader, _int(_read(reader, 2)))
+        headers[name.decode()] = value.decode()
+    return headers
+
+
+class Stats:
+    """Progress/Stats information."""
+
+    def __init__(self, data):
+        element = ET.fromstring(data.decode())
+        self._bytes_scanned = findtext(element, "BytesScanned")
+        self._bytes_processed = findtext(element, "BytesProcessed")
+        self._bytes_returned = findtext(element, "BytesReturned")
+
+    @property
+    def bytes_scanned(self):
+        """Get bytes scanned."""
+        return self._bytes_scanned
+
+    @property
+    def bytes_processed(self):
+        """Get bytes processed."""
+        return self._bytes_processed
+
+    @property
+    def bytes_returned(self):
+        """Get bytes returned."""
+        return self._bytes_returned
+
+
+class SelectObjectReader:
+    """
+    BufferedIOBase compatible reader represents response data of
+    Minio.select_object_content() API.
+    """
+
+    def __init__(self, response):
+        self._response = response
+        self._stats = None
+        self._payload = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        return self.close()
+
+    def readable(self):  # pylint: disable=no-self-use
+        """Return this is readable."""
+        return True
+
+    def writeable(self):  # pylint: disable=no-self-use
+        """Return this is not writeable."""
+        return False
+
+    def close(self):
+        """Close response and release network resources."""
+        self._response.close()
+        self._response.release_conn()
+
+    def stats(self):
+        """Get stats information."""
+        return self._stats
+
+    def _read(self):
+        """Read and decode response."""
+        if self._response.isclosed():
+            return 0
+
+        prelude = _read(self._response, 8)
+        prelude_crc = _read(self._response, 4)
+        if _crc32(prelude) != _int(prelude_crc):
+            raise IOError(
+                "prelude CRC mismatch; expected: {0}, got: {1}".format(
+                    _crc32(prelude), _int(prelude_crc),
+                ),
+            )
+
+        total_length = _int(prelude[:4])
+        data = _read(self._response, total_length - 8 - 4 - 4)
+        message_crc = _int(_read(self._response, 4))
+        if _crc32(prelude + prelude_crc + data) != message_crc:
+            raise IOError(
+                "message CRC mismatch; expected: {0}, got: {1}".format(
+                    _crc32(prelude + prelude_crc + data),
+                    message_crc,
+                ),
+            )
+
+        header_length = _int(prelude[4:])
+        headers = _decode_header(data[:header_length])
+
+        if headers.get(":message-type") == "error":
+            raise MinioException(
+                "{0}: {1}".format(
+                    headers.get(":error-code"), headers.get(":error-message"),
+                ),
+            )
+
+        if headers.get(":event-type") == "End":
+            return 0
+
+        payload_length = total_length - header_length - 16
+        if headers.get(":event-type") == "Cont" or payload_length < 1:
+            return self._read()
+
+        payload = data[header_length:header_length+payload_length]
+
+        if headers.get(":event-type") in ["Progress", "Stats"]:
+            self._stats = Stats(payload)
+            return self._read()
+
+        if headers.get(":event-type") == "Records":
+            self._payload = payload
+            return len(payload)
+
+        raise MinioException(
+            "unknown event-type {0}".format(headers.get(":event-type")),
+        )
+
+    def stream(self, num_bytes=32*1024):
+        """
+        Stream extracted payload from response data. Upon completion, caller
+        should call self.close() to release network resources.
+        """
+        while True:
+            if self._payload:
+                result = self._payload
+                if num_bytes < len(self._payload):
+                    result = self._payload[:num_bytes]
+                self._payload = self._payload[len(result):]
+                yield result
+
+            if self._read() <= 0:
+                break

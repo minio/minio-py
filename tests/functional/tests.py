@@ -31,6 +31,7 @@ import sys
 import tempfile
 import time
 import traceback
+from binascii import crc32
 from datetime import datetime, timedelta, timezone
 from inspect import getfullargspec
 from threading import Thread
@@ -44,9 +45,8 @@ from minio.commonconfig import ENABLED, REPLACE, CopySource
 from minio.datatypes import PostPolicy
 from minio.deleteobjects import DeleteObject
 from minio.error import S3Error
-from minio.select.helpers import calculate_crc
-from minio.selectrequest import (CSVInputSerialization, CSVOutputSerialization,
-                                 SelectRequest)
+from minio.select import (CSVInputSerialization, CSVOutputSerialization,
+                          SelectRequest)
 from minio.sse import SseCustomerKey
 from minio.time import to_http_header
 from minio.versioningconfig import VersioningConfig
@@ -283,15 +283,15 @@ def test_select_object_content(log_entry):
         # Get the records
         records = io.BytesIO()
         for data_bytes in data.stream(10*KB):
-            records.write(data_bytes.encode('utf-8'))
+            records.write(data_bytes)
 
-        expected_crc = calculate_crc(content.getvalue())
-        generated_crc = calculate_crc(records.getvalue())
+        expected_crc = crc32(content.getvalue()) & 0xffffffff
+        generated_crc = crc32(records.getvalue()) & 0xffffffff
         if expected_crc != generated_crc:
             raise ValueError(
                 'Data mismatch Expected : '
                 '"col1,col2,col3\none,two,three\nX,Y,Z\n"',
-                'Received {}', records)
+                'Received {0}'.format(records.getvalue().decode()))
     finally:
         _CLIENT.remove_object(bucket_name, csvfile)
         _CLIENT.remove_bucket(bucket_name)

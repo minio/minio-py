@@ -64,8 +64,7 @@ from .notificationconfig import NotificationConfig
 from .objectlockconfig import ObjectLockConfig
 from .replicationconfig import ReplicationConfig
 from .retention import Retention
-from .select import SelectObjectReader
-from .selectrequest import SelectRequest
+from .select import SelectObjectReader, SelectRequest
 from .signer import presign_v4, sign_v4_s3
 from .sse import SseCustomerKey
 from .sseconfig import SSEConfig
@@ -546,13 +545,19 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: A reader contains requested records and progress information.
 
         Example::
-            request = SelectRequest(
-                "select * from s3object",
-                CSVInputSerialization(),
-                CSVOutputSerialization(),
-                request_progress=True,
-            )
-            data = client.select_object_content('foo', 'test.csv', request)
+            with client.select_object_content(
+                    "my-bucket",
+                    "my-object.csv",
+                    SelectRequest(
+                        "select * from S3Object",
+                        CSVInputSerialization(),
+                        CSVOutputSerialization(),
+                        request_progress=True,
+                    ),
+            ) as result:
+                for data in result.stream():
+                    print(data.decode())
+                print(result.stats())
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
