@@ -1095,7 +1095,7 @@ __Example__
 ```py
 # Upload data.
 result = client.put_object(
-    "my-bucket", "my-object", io.StringIO("hello"), 5,
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
 )
 print(
     "created {0} object; etag: {1}, version-id: {2}".format(
@@ -1104,8 +1104,11 @@ print(
 )
 
 # Upload unknown sized data.
+data = urlopen(
+    "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.4.81.tar.xz",
+)
 result = client.put_object(
-    "my-bucket", "my-object", data, size=-1, part_size=10*1024*1024,
+    "my-bucket", "my-object", data, length=-1, part_size=10*1024*1024,
 )
 print(
     "created {0} object; etag: {1}, version-id: {2}".format(
@@ -1115,7 +1118,7 @@ print(
 
 # Upload data with content-type.
 result = client.put_object(
-    "my-bucket", "my-object", io.StringIO("hello"), 5,
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
     content_type="application/csv",
 )
 print(
@@ -1126,7 +1129,7 @@ print(
 
 # Upload data with metadata.
 result = client.put_object(
-    "my-bucket", "my-object", io.StringIO("hello"), 5,
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
     metadata={"My-Project": "one"},
 )
 print(
@@ -1137,7 +1140,7 @@ print(
 
 # Upload data with customer key type of server-side encryption.
 result = client.put_object(
-    "my-bucket", "my-object", io.StringIO("hello"), 5,
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
     sse=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
 )
 print(
@@ -1148,7 +1151,7 @@ print(
 
 # Upload data with KMS type of server-side encryption.
 result = client.put_object(
-    "my-bucket", "my-object", io.StringIO("hello"), 5,
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
     sse=SseKMS("KMS-KEY-ID", {"Key1": "Value1", "Key2": "Value2"}),
 )
 print(
@@ -1159,7 +1162,7 @@ print(
 
 # Upload data with S3 type of server-side encryption.
 result = client.put_object(
-    "my-bucket", "my-object", io.StringIO("hello"), 5,
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
     sse=SseS3(),
 )
 print(
@@ -1175,7 +1178,7 @@ date = datetime.utcnow().replace(
 tags = Tags(for_object=True)
 tags["User"] = "jsmith"
 result = client.put_object(
-    "my-bucket", "my-object", io.StringIO("hello"), 5,
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
     tags=tags,
     retention=Retention(GOVERNANCE, date),
     legal_hold=True,
@@ -1188,7 +1191,7 @@ print(
 
 # Upload data with progress bar.
 result = client.put_object(
-    "my-bucket", "my-object", io.StringIO("hello"), 5,
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
     progress=Progress(),
 )
 print(

@@ -23,9 +23,9 @@ from minio.retention import Retention
 from minio.sse import SseCustomerKey, SseKMS, SseS3
 
 client = Minio(
-    "s3.amazonaws.com",
-    access_key="YOUR-ACCESSKEYID",
-    secret_key="YOUR-SECRETACCESSKEY",
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
 # Upload data.
