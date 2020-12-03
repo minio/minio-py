@@ -14,20 +14,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-objectname
-# are dummy values, please replace them with original values.
+from datetime import timedelta
 
 from minio import Minio
-from minio.error import ResponseError
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+client = Minio(
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+)
 
-# presigned get object URL for object name, expires in 7 days.
-try:
-    print(client.presigned_get_object('my-bucketname', 'my-objectname'))
-# Response error is still possible since internally presigned does get
-# bucket location.
-except ResponseError as err:
-    print(err)
+# Get presigned URL string to download 'my-object' in
+# 'my-bucket' with default expiry (i.e. 7 days).
+url = client.presigned_get_object("my-bucket", "my-object")
+print(url)
+
+# Get presigned URL string to download 'my-object' in
+# 'my-bucket' with two hours expiry.
+url = client.presigned_get_object(
+    "my-bucket", "my-object", expires=timedelta(hours=2),
+)
+print(url)

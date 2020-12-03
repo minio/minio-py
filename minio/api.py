@@ -1915,14 +1915,10 @@ class Minio:  # pylint: disable=too-many-public-methods
                 if error.code != "NoSuchVersion":
                     yield error
 
-    def presigned_url(self, method,
-                      bucket_name,
-                      object_name,
-                      expires=timedelta(days=7),
-                      response_headers=None,
-                      request_date=None,
-                      version_id=None,
-                      extra_query_params=None):
+    def get_presigned_url(self, method, bucket_name, object_name,
+                          expires=timedelta(days=7), response_headers=None,
+                          request_date=None, version_id=None,
+                          extra_query_params=None):
         """
         Get presigned URL of an object for HTTP method, expiry time and custom
         request parameters.
@@ -1942,35 +1938,13 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: URL string.
 
         Example::
-            # Get presigned URL string to delete 'my-objectname' in
-            # 'my-bucketname' with one day expiry.
-            url = minio.presigned_url(
+            # Get presigned URL string to delete 'my-object' in
+            # 'my-bucket' with one day expiry.
+            url = client.get_presigned_url(
                 "DELETE",
-                "my-bucketname",
-                "my-objectname",
+                "my-bucket",
+                "my-object",
                 expires=timedelta(days=1),
-            )
-            print(url)
-
-            # Get presigned URL string to upload 'my-objectname' in
-            # 'my-bucketname' with response-content-type as application/json
-            # and one day expiry.
-            url = minio.presigned_url(
-                "PUT",
-                "my-bucketname",
-                "my-objectname",
-                expires=timedelta(days=1),
-                response_headers={"response-content-type": "application/json"},
-            )
-            print(url)
-
-            # Get presigned URL string to download 'my-objectname' in
-            # 'my-bucketname' with two hours expiry.
-            url = minio.presigned_url(
-                "GET",
-                "my-bucketname",
-                "my-objectname",
-                expires=timedelta(hours=2),
             )
             print(url)
         """
@@ -2029,19 +2003,19 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: URL string.
 
         Example::
-            # Get presigned URL string to download 'my-objectname' in
-            # 'my-bucketname' with default expiry.
-            url = minio.presigned_get_object("my-bucketname", "my-objectname")
+            # Get presigned URL string to download 'my-object' in
+            # 'my-bucket' with default expiry (i.e. 7 days).
+            url = client.presigned_get_object("my-bucket", "my-object")
             print(url)
 
-            # Get presigned URL string to download 'my-objectname' in
-            # 'my-bucketname' with two hours expiry.
-            url = minio.presigned_get_object(
-                "my-bucketname", "my-objectname", expires=timedelta(hours=2),
+            # Get presigned URL string to download 'my-object' in
+            # 'my-bucket' with two hours expiry.
+            url = client.presigned_get_object(
+                "my-bucket", "my-object", expires=timedelta(hours=2),
             )
             print(url)
         """
-        return self.presigned_url(
+        return self.get_presigned_url(
             "GET",
             bucket_name,
             object_name,
@@ -2064,22 +2038,21 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: URL string.
 
         Example::
-            # Get presigned URL string to upload data to 'my-objectname' in
-            # 'my-bucketname' with default expiry.
-            url = minio.presigned_put_object("my-bucketname", "my-objectname")
+            # Get presigned URL string to upload data to 'my-object' in
+            # 'my-bucket' with default expiry (i.e. 7 days).
+            url = client.presigned_put_object("my-bucket", "my-object")
             print(url)
 
-            # Get presigned URL string to upload data to 'my-objectname' in
-            # 'my-bucketname' with two hours expiry.
-            url = minio.presigned_put_object(
-                "my-bucketname", "my-objectname", expires=timedelta(hours=2),
+            # Get presigned URL string to upload data to 'my-object' in
+            # 'my-bucket' with two hours expiry.
+            url = client.presigned_put_object(
+                "my-bucket", "my-object", expires=timedelta(hours=2),
             )
             print(url)
         """
-        return self.presigned_url('PUT',
-                                  bucket_name,
-                                  object_name,
-                                  expires)
+        return self.get_presigned_url(
+            "PUT", bucket_name, object_name, expires,
+        )
 
     def presigned_post_policy(self, policy):
         """

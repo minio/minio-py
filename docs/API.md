@@ -53,7 +53,7 @@ s3Client = Minio(
 | [`set_bucket_policy`](#set_bucket_policy)                   | [`presigned_get_object`](#presigned_get_object)                 |
 | [`delete_bucket_notification`](#delete_bucket_notification) | [`presigned_put_object`](#presigned_put_object)                 |
 | [`get_bucket_notification`](#get_bucket_notification)       | [`presigned_post_policy`](#presigned_post_policy)               |
-| [`set_bucket_notification`](#set_bucket_notification)       |                                                                 |
+| [`set_bucket_notification`](#set_bucket_notification)       | [`get_presigned_url`](#get_presigned_url)                       |
 | [`listen_bucket_notification`](#listen_bucket_notification) |                                                                 |
 | [`delete_bucket_encryption`](#delete_bucket_encryption)     |                                                                 |
 | [`get_bucket_encryption`](#get_bucket_encryption)           |                                                                 |
@@ -1420,15 +1420,15 @@ __Return Value__
 __Example__
 
 ```py
-# Get presigned URL string to download 'my-objectname' in
-# 'my-bucketname' with default expiry.
-url = minio.presigned_get_object("my-bucketname", "my-objectname")
+# Get presigned URL string to download 'my-object' in
+# 'my-bucket' with default expiry (i.e. 7 days).
+url = client.presigned_get_object("my-bucket", "my-object")
 print(url)
 
-# Get presigned URL string to download 'my-objectname' in
-# 'my-bucketname' with two hours expiry.
-url = minio.presigned_get_object(
-    "my-bucketname", "my-objectname", expires=timedelta(hours=2),
+# Get presigned URL string to download 'my-object' in
+# 'my-bucket' with two hours expiry.
+url = client.presigned_get_object(
+    "my-bucket", "my-object", expires=timedelta(hours=2),
 )
 print(url)
 ```
@@ -1456,15 +1456,15 @@ __Return Value__
 __Example__
 
 ```py
-# Get presigned URL string to upload data to 'my-objectname' in
-# 'my-bucketname' with default expiry.
-url = minio.presigned_put_object("my-bucketname", "my-objectname")
+# Get presigned URL string to upload data to 'my-object' in
+# 'my-bucket' with default expiry (i.e. 7 days).
+url = client.presigned_put_object("my-bucket", "my-object")
 print(url)
 
-# Get presigned URL string to upload data to 'my-objectname' in
-# 'my-bucketname' with two hours expiry.
-url = minio.presigned_put_object(
-    "my-bucketname", "my-objectname", expires=timedelta(hours=2),
+# Get presigned URL string to upload data to 'my-object' in
+# 'my-bucket' with two hours expiry.
+url = client.presigned_put_object(
+    "my-bucket", "my-object", expires=timedelta(hours=2),
 )
 print(url)
 ```
@@ -1498,6 +1498,64 @@ policy.add_content_length_range_condition(
     1*1024*1024, 10*1024*1024,
 )
 form_data = client.presigned_post_policy(policy)
+```
+
+### get_presigned_url(method, bucket_name, object_name, expires=timedelta(days=7), response_headers=None, request_date=None, version_id=None, extra_query_params=None)
+
+Get presigned URL of an object for HTTP method, expiry time and custom request parameters.
+
+__Parameters__
+| Param                | Type                 | Description                                                                                                          |
+|:---------------------|:---------------------|:---------------------------------------------------------------------------------------------------------------------|
+| `method`             | _str_                | HTTP method.                                                                                                         |
+| `bucket_name`        | _str_                | Name of the bucket.                                                                                                  |
+| `object_name`        | _str_                | Object name in the bucket.                                                                                           |
+| `expires`            | _datetime.timedelta_ | Expiry in seconds; defaults to 7 days.                                                                               |
+| `response_headers`   | _dict_               | Optional response_headers argument to specify response fields like date, size, type of file, data about server, etc. |
+| `request_date`       | _datetime.datetime_  | Optional request_date argument to specify a different request date. Default is current date.                         |
+| `version_id`         | _str_                | Version ID of the object.                                                                                            |
+| `extra_query_params` | _dict_               | Extra query parameters for advanced usage.                                                                           |
+
+__Return Value__
+
+| Return     |
+|:-----------|
+| URL string |
+
+__Example__
+
+```py
+# Get presigned URL string to delete 'my-object' in
+# 'my-bucket' with one day expiry.
+url = client.get_presigned_url(
+    "DELETE",
+    "my-bucket",
+    "my-object",
+    expires=timedelta(days=1),
+)
+print(url)
+
+# Get presigned URL string to upload 'my-object' in
+# 'my-bucket' with response-content-type as application/json
+# and one day expiry.
+url = client.get_presigned_url(
+    "PUT",
+    "my-bucket",
+    "my-object",
+    expires=timedelta(days=1),
+    response_headers={"response-content-type": "application/json"},
+)
+print(url)
+
+# Get presigned URL string to download 'my-object' in
+# 'my-bucket' with two hours expiry.
+url = client.get_presigned_url(
+    "GET",
+    "my-bucket",
+    "my-object",
+    expires=timedelta(hours=2),
+)
+print(url)
 ```
 
 ## 5. Explore Further
