@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines
-
+# pylint: disable=too-many-lines,disable=too-many-branches,too-many-statements
+# pylint: disable=too-many-arguments
 """
 minio.api
 ~~~~~~~~~~~~
@@ -56,8 +56,7 @@ from .helpers import (MAX_MULTIPART_COUNT, MAX_MULTIPART_OBJECT_SIZE,
                       ThreadPool, check_bucket_name, check_non_empty_string,
                       check_sse, check_ssec, genheaders, get_part_info,
                       headers_to_strings, is_valid_policy_type, makedirs,
-                      md5sum_hash, normalize_headers, read_part_data,
-                      sha256_hash)
+                      md5sum_hash, read_part_data, sha256_hash)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
@@ -945,9 +944,10 @@ class Minio:  # pylint: disable=too-many-public-methods
         return unmarshal(VersioningConfig, response.data.decode())
 
     def fput_object(self, bucket_name, object_name, file_path,
-                    content_type='application/octet-stream',
+                    content_type="application/octet-stream",
                     metadata=None, sse=None, progress=None,
-                    part_size=0):
+                    part_size=0, num_parallel_uploads=3,
+                    tags=None, retention=None, legal_hold=False):
         """
         Uploads data from a file to an object in a bucket.
 
@@ -960,18 +960,47 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param sse: Server-side encryption.
         :param progress: A progress object
         :param part_size: Multipart part size
-        :return: etag and version ID if available.
+        :param num_parallel_uploads: Number of parallel uploads.
+        :param tags: :class:`Tags` for the object.
+        :param retention: :class:`Retention` configuration object.
+        :param legal_hold: Flag to set legal hold for the object.
+        :return: :class:`ObjectWriteResult` object.
 
         Example::
-            minio.fput_object('foo', 'bar', 'filepath', 'text/plain')
+            # Upload data.
+            result = client.fput_object(
+                "my-bucket", "my-object", "my-filename",
+            )
+
+            # Upload data with metadata.
+            result = client.fput_object(
+                "my-bucket", "my-object", "my-filename",
+                metadata={"My-Project": "one"},
+            )
+
+            # Upload data with tags, retention and legal-hold.
+            date = datetime.utcnow().replace(
+                hour=0, minute=0, second=0, microsecond=0,
+            ) + timedelta(days=30)
+            tags = Tags(for_object=True)
+            tags["User"] = "jsmith"
+            result = client.fput_object(
+                "my-bucket", "my-object", "my-filename",
+                tags=tags,
+                retention=Retention(GOVERNANCE, date),
+                legal_hold=True,
+            )
         """
 
-        # Open file in 'read' mode.
-        with open(file_path, 'rb') as file_data:
-            file_size = os.stat(file_path).st_size
-            return self.put_object(bucket_name, object_name, file_data,
-                                   file_size, content_type, metadata, sse,
-                                   progress, part_size)
+        file_size = os.stat(file_path).st_size
+        with open(file_path, "rb") as file_data:
+            return self.put_object(
+                bucket_name, object_name, file_data, file_size,
+                content_type=content_type,
+                metadata=metadata, sse=sse, progress=progress,
+                part_size=part_size, num_parallel_uploads=num_parallel_uploads,
+                tags=tags, retention=retention, legal_hold=legal_hold,
+            )
 
     def fget_object(self, bucket_name, object_name, file_path,
                     request_headers=None, ssec=None, version_id=None,
@@ -1562,54 +1591,78 @@ class Minio:  # pylint: disable=too-many-public-methods
         """Upload_part task for ThreadPool."""
         return args[5], self._upload_part(*args)
 
-    def put_object(  # pylint: disable=too-many-branches,too-many-statements
-            self, bucket_name, object_name, data, length,
-            content_type='application/octet-stream',
-            metadata=None, sse=None, progress=None,
-            part_size=0, num_parallel_uploads=3,
-    ):
+    def put_object(self, bucket_name, object_name, data, length,
+                   content_type="application/octet-stream",
+                   metadata=None, sse=None, progress=None,
+                   part_size=0, num_parallel_uploads=3,
+                   tags=None, retention=None, legal_hold=False):
         """
         Uploads data from a stream to an object in a bucket.
 
         :param bucket_name: Name of the bucket.
         :param object_name: Object name in the bucket.
         :param data: Contains object data.
+        :param length: Data size; -1 for unknown size and set valid part_size.
         :param content_type: Content type of the object.
         :param metadata: Any additional metadata to be uploaded along
             with your PUT request.
         :param sse: Server-side encryption.
-        :param progress: A progress object
-        :param part_size: Multipart part size
-        :return: etag and version ID if available.
+        :param progress: A progress object;
+        :param part_size: Multipart part size.
+        :param num_parallel_uploads: Number of parallel uploads.
+        :param tags: :class:`Tags` for the object.
+        :param retention: :class:`Retention` configuration object.
+        :param legal_hold: Flag to set legal hold for the object.
+        :return: :class:`ObjectWriteResult` object.
 
         Example::
-            file_stat = os.stat('hello.txt')
-            with open('hello.txt', 'rb') as data:
-                minio.put_object(
-                    'foo', 'bar', data, file_stat.st_size, 'text/plain',
-                )
+            # Upload data.
+            result = client.put_object(
+                "my-bucket", "my-object", io.StringIO("hello"), 5,
+            )
+
+            # Upload data with metadata.
+            result = client.put_object(
+                "my-bucket", "my-object", io.StringIO("hello"), 5,
+                metadata={"My-Project": "one"},
+            )
+
+            # Upload data with tags, retention and legal-hold.
+            date = datetime.utcnow().replace(
+                hour=0, minute=0, second=0, microsecond=0,
+            ) + timedelta(days=30)
+            tags = Tags(for_object=True)
+            tags["User"] = "jsmith"
+            result = client.put_object(
+                "my-bucket", "my-object", io.StringIO("hello"), 5,
+                tags=tags,
+                retention=Retention(GOVERNANCE, date),
+                legal_hold=True,
+            )
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
         check_sse(sse)
+        if tags is not None and not isinstance(tags, Tags):
+            raise ValueError("tags must be Tags type")
+        if retention is not None and not isinstance(retention, Retention):
+            raise ValueError("retention must be Retention type")
         if not callable(getattr(data, "read")):
             raise ValueError("input data must have callable read()")
         part_size, part_count = get_part_info(length, part_size)
-
         if progress:
             if not isinstance(progress, Thread):
                 raise TypeError("progress object must be instance of Thread")
             # Set progress bar length and object name before upload
             progress.set_meta(object_name=object_name, total_length=length)
 
-        headers = normalize_headers(metadata)
+        headers = genheaders(metadata, sse, tags, retention, legal_hold)
         headers["Content-Type"] = content_type or "application/octet-stream"
-        headers.update(sse.headers() if sse else {})
 
         object_size = length
         uploaded_size = 0
         part_number = 0
-        one_byte = b''
+        one_byte = b""
         stop = False
         upload_id = None
         parts = []

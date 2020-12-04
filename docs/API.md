@@ -1064,7 +1064,7 @@ print(result.object_name, result.version_id)
 
 <a name="put_object"></a>
 
-### put_object(bucket_name, object_name, data, length, content_type='application/octet-stream', metadata=None, sse=None, progress=None, part_size=DEFAULT_PART_SIZE)
+### put_object(bucket_name, object_name, data, length, content_type="application/octet-stream", metadata=None, sse=None, progress=None, part_size=0, num_parallel_uploads=3, tags=None, retention=None, legal_hold=False)
 
 Uploads data from a stream to an object in a bucket.
 
@@ -1075,30 +1075,135 @@ __Parameters__
 | `bucket_name`  | _str_          | Name of the bucket.                                                 |
 | `object_name`  | _str_          | Object name in the bucket.                                          |
 | `data`         | _io.RawIOBase_ | Contains object data.                                               |
+| `length`       | _int_          | Data size; -1 for unknown size and set valid part_size.             |
 | `content_type` | _str_          | Content type of the object.                                         |
 | `metadata`     | _dict_         | Any additional metadata to be uploaded along with your PUT request. |
 | `sse`          | _Sse_          | Server-side encryption.                                             |
 | `progress`     | _threading_    | A progress object.                                                  |
 | `part_size`    | _int_          | Multipart part size.                                                |
+| `tags`         | _Tags_         | Tags for the object.                                                |
+| `retention`    | _Retention_    | Retention configuration.                                            |
+| `legal_hold`   | _bool_         | Flag to set legal hold for the object.                              |
 
 __Return Value__
 
-| Return                            |
-|:----------------------------------|
-| etag and version ID if available. |
+| Return                      |
+|:----------------------------|
+| _ObjectWriteResult_ object. |
 
 __Example__
 ```py
-file_stat = os.stat('hello.txt')
-with open('hello.txt', 'rb') as data:
-    minio.put_object(
-        'foo', 'bar', data, file_stat.st_size, 'text/plain',
-    )
+# Upload data.
+result = client.put_object(
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload unknown sized data.
+data = urlopen(
+    "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.4.81.tar.xz",
+)
+result = client.put_object(
+    "my-bucket", "my-object", data, length=-1, part_size=10*1024*1024,
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload data with content-type.
+result = client.put_object(
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
+    content_type="application/csv",
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload data with metadata.
+result = client.put_object(
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
+    metadata={"My-Project": "one"},
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload data with customer key type of server-side encryption.
+result = client.put_object(
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
+    sse=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload data with KMS type of server-side encryption.
+result = client.put_object(
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
+    sse=SseKMS("KMS-KEY-ID", {"Key1": "Value1", "Key2": "Value2"}),
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload data with S3 type of server-side encryption.
+result = client.put_object(
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
+    sse=SseS3(),
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload data with tags, retention and legal-hold.
+date = datetime.utcnow().replace(
+    hour=0, minute=0, second=0, microsecond=0,
+) + timedelta(days=30)
+tags = Tags(for_object=True)
+tags["User"] = "jsmith"
+result = client.put_object(
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
+    tags=tags,
+    retention=Retention(GOVERNANCE, date),
+    legal_hold=True,
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload data with progress bar.
+result = client.put_object(
+    "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
+    progress=Progress(),
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
 ```
 
 <a name="fput_object"></a>
 
-### fput_object(bucket_name, object_name, file_path, content_type='application/octet-stream', metadata=None, sse=None, progress=None, part_size=DEFAULT_PART_SIZE)
+### fput_object(bucket_name, object_name, file_path, content_type="application/octet-stream", metadata=None, sse=None, progress=None, part_size=0, num_parallel_uploads=3, tags=None, retention=None, legal_hold=False)
 
 Uploads data from a file to an object in a bucket.
 
@@ -1112,17 +1217,112 @@ Uploads data from a file to an object in a bucket.
 | `sse`          | _Sse_       | Server-side encryption.                                             |
 | `progress`     | _threading_ | A progress object.                                                  |
 | `part_size`    | _int_       | Multipart part size.                                                |
+| `tags`         | _Tags_      | Tags for the object.                                                |
+| `retention`    | _Retention_ | Retention configuration.                                            |
+| `legal_hold`   | _bool_      | Flag to set legal hold for the object.                              |
 
 __Return Value__
 
-| Return                            |
-|:----------------------------------|
-| etag and version ID if available. |
+| Return                      |
+|:----------------------------|
+| _ObjectWriteResult_ object. |
 
 __Example__
 
 ```py
-minio.fput_object('foo', 'bar', 'filepath', 'text/plain')
+# Upload data.
+result = client.fput_object(
+    "my-bucket", "my-object", "my-filename",
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload data with content-type.
+result = client.fput_object(
+    "my-bucket", "my-object", "my-filename",
+    content_type="application/csv",
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload data with metadata.
+result = client.fput_object(
+    "my-bucket", "my-object", "my-filename",
+    metadata={"My-Project": "one"},
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload data with customer key type of server-side encryption.
+result = client.fput_object(
+    "my-bucket", "my-object", "my-filename",
+    sse=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload data with KMS type of server-side encryption.
+result = client.fput_object(
+    "my-bucket", "my-object", "my-filename",
+    sse=SseKMS("KMS-KEY-ID", {"Key1": "Value1", "Key2": "Value2"}),
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload data with S3 type of server-side encryption.
+result = client.fput_object(
+    "my-bucket", "my-object", "my-filename",
+    sse=SseS3(),
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload data with tags, retention and legal-hold.
+date = datetime.utcnow().replace(
+    hour=0, minute=0, second=0, microsecond=0,
+) + timedelta(days=30)
+tags = Tags(for_object=True)
+tags["User"] = "jsmith"
+result = client.fput_object(
+    "my-bucket", "my-object", "my-filename",
+    tags=tags,
+    retention=Retention(GOVERNANCE, date),
+    legal_hold=True,
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
+
+# Upload data with progress bar.
+result = client.fput_object(
+    "my-bucket", "my-object", "my-filename",
+    progress=Progress(),
+)
+print(
+    "created {0} object; etag: {1}, version-id: {2}".format(
+        result.object_name, result.etag, result.version_id,
+    ),
+)
 ```
 
 <a name="stat_object"></a>

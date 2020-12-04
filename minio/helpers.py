@@ -129,7 +129,7 @@ def _get_part_info(object_size, part_size):
     if part_size > 0:
         if part_size > object_size:
             part_size = object_size
-        return part_size, math.ceil(object_size / part_size)
+        return part_size, math.ceil(object_size / part_size) or 1
 
     part_size = math.ceil(
         math.ceil(object_size / MAX_MULTIPART_COUNT) / MIN_PART_SIZE,
