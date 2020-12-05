@@ -1,27 +1,17 @@
 .PHONY: examples tests publish
 
-check:
-	@pip install --user --upgrade pylint
-	@if python --version | grep -qi 'python 3'; then pylint --reports=no --score=no --disable=R0401,R0801 minio/*py; fi
-	@if python --version | grep -qi 'python 3'; then pylint --reports=no --score=no minio/credentials tests/functional; fi
+getdeps:
+	@pip install --user --upgrade pylint autopep8
 
-	@isort --diff --recursive .
+check: getdeps
+	@pylint --reports=no --score=no --disable=R0401,R0801 minio/*py
+	@pylint --reports=no --score=no minio/credentials tests/functional
+	@isort --diff .
+	@find . -name "*.py" -exec autopep8 --diff --exit-code {} +
 
-	@pip install --user --upgrade autopep8
-	@autopep8 --diff --exit-code *.py
-	@find minio -name "*.py" -exec autopep8 --diff --exit-code {} +
-	@find tests -name "*.py" -exec autopep8 --diff --exit-code {} +
-	@find examples -name "*.py" -exec autopep8 --diff --exit-code {} +
-
-apply:
-	@pip install --user --upgrade pylint
-	@isort --recursive .
-
-	@pip install --user --upgrade autopep8
-	@autopep8 --in-place *.py
-	@find minio -name "*.py" -exec autopep8 --in-place {} +
-	@find tests -name "*.py" -exec autopep8 --in-place {} +
-	@find examples -name "*.py" -exec autopep8 --in-place {} +
+apply: getdeps
+	@isort .
+	@find . -name "*.py" -exec autopep8 --in-place {} +
 
 publish:
 	python setup.py register
