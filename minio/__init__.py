@@ -15,23 +15,27 @@
 # limitations under the License.
 
 """
-minio - MinIO Python Library for Amazon S3 Compatible Cloud Storage
-~~~~~~~~~~~~~~~~~~~~~
+minio - MinIO Python SDK for Amazon S3 Compatible Cloud Storage
 
-   >>> import minio
-   >>> minio = Minio('https://s3.amazonaws.com')
-   >>> for bucket in minio.list_buckets():
-   ...     print(bucket.name)
+    >>> from minio import Minio
+    >>> client = Minio(
+    ...     "play.min.io",
+    ...     access_key="Q3AM3UQ867SPQQA43P2F",
+    ...     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+    ... )
+    >>> buckets = client.list_buckets()
+    >>> for bucket in buckets:
+    ...     print(bucket.name, bucket.creation_date)
 
-:copyright: (c) 2015, 2016, 2017 by MinIO, Inc.
+:copyright: (C) 2015-2020 MinIO, Inc.
 :license: Apache 2.0, see LICENSE for more details.
 """
 
-__title__ = 'minio-py'
-__author__ = 'MinIO, Inc.'
-__version__ = '7.0.0'
-__license__ = 'Apache 2.0'
-__copyright__ = 'Copyright 2015, 2016, 2017, 2018, 2019, 2020 MinIO, Inc.'
+__title__ = "minio-py"
+__author__ = "MinIO, Inc."
+__version__ = "7.0.0"
+__license__ = "Apache 2.0"
+__copyright__ = "Copyright 2015, 2016, 2017, 2018, 2019, 2020 MinIO, Inc."
 
 import threading
 
