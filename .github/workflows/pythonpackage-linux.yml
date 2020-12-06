@@ -13,7 +13,7 @@ jobs:
     name: Test on python ${{ matrix.python-version }} and ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
-      max-parallel: 3
+      max-parallel: 4
       matrix:
         python-version: [3.6, 3.7, 3.8, 3.9]
         os: [ubuntu-latest]
@@ -27,17 +27,16 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools
-        pip install urllib3 certifi pytz pyflakes faker nose
+        pip install certifi configparser urllib3 mock nose
     - name: Run check
       run: |
         export PATH=${HOME}/.local/bin:${PATH}
         make check
-    - name: Test with nosetests
+    - name: Run unit tests
       run: |
-        pyflakes minio/*.py || true
         python setup.py install
         python setup.py nosetests
-    - name: Test with functional tests
+    - name: Run functional tests
       env:
         MINT_MODE: full
         SERVER_ENDPOINT: localhost:9000
@@ -48,9 +47,9 @@ jobs:
         MINIO_SECRET_KEY: minio123
         SSL_CERT_FILE: /tmp/minio-config/certs/public.crt
       run: |
-          wget --quiet -O /tmp/minio https://dl.min.io/server/minio/release/linux-amd64/minio
-          chmod +x /tmp/minio
-          mkdir -p /tmp/minio-config/certs/
-          cp tests/certs/* /tmp/minio-config/certs/
-          /tmp/minio -C /tmp/minio-config server /tmp/fs{1...4} &
-          python tests/functional/tests.py
+        wget --quiet -O /tmp/minio https://dl.min.io/server/minio/release/linux-amd64/minio
+        chmod +x /tmp/minio
+        mkdir -p /tmp/minio-config/certs/
+        cp tests/certs/* /tmp/minio-config/certs/
+        /tmp/minio -C /tmp/minio-config server /tmp/fs{1...4} &
+        python tests/functional/tests.py
