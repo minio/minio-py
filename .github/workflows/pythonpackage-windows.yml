@@ -13,7 +13,7 @@ jobs:
     name: Test on python ${{ matrix.python-version }} and ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
-      max-parallel: 3
+      max-parallel: 4
       matrix:
         python-version: [3.6, 3.7, 3.8, 3.9]
         os: [windows-latest]
@@ -27,14 +27,12 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools
-        pip install urllib3 certifi pytz pyflakes faker nose
-    - name: Test with nosetests
+        pip install certifi configparser urllib3 mock nose
+    - name: Run unit tests
       run: |
-        $ErrorActionPreference = 'continue'
-        pyflakes minio/*.py
         python setup.py install
         python setup.py nosetests
-    - name: Test with functional tests
+    - name: Run functional tests
       env:
         MINT_MODE: full
         SERVER_ENDPOINT: localhost:9000
@@ -44,9 +42,9 @@ jobs:
         MINIO_ACCESS_KEY: minio
         MINIO_SECRET_KEY: minio123
       run: |
-          New-Item -ItemType Directory -Path "$env:temp/minio-config/certs/"
-          Copy-Item -Path tests\certs\* -Destination "$env:temp/minio-config/certs/"
-          Invoke-WebRequest -Uri https://dl.minio.io/server/minio/release/windows-amd64/minio.exe -OutFile $HOME/minio.exe
-          Start-Process -NoNewWindow -FilePath "$HOME/minio.exe" -ArgumentList "-C", "$env:temp/minio-config", "server", "$env:temp/fs{1...4}"
-          $env:SSL_CERT_FILE = "$env:temp/minio-config/certs/public.crt"
-          python tests/functional/tests.py
+        New-Item -ItemType Directory -Path "$env:temp/minio-config/certs/"
+        Copy-Item -Path tests\certs\* -Destination "$env:temp/minio-config/certs/"
+        Invoke-WebRequest -Uri https://dl.minio.io/server/minio/release/windows-amd64/minio.exe -OutFile $HOME/minio.exe
+        Start-Process -NoNewWindow -FilePath "$HOME/minio.exe" -ArgumentList "-C", "$env:temp/minio-config", "server", "$env:temp/fs{1...4}"
+        $env:SSL_CERT_FILE = "$env:temp/minio-config/certs/public.crt"
+        python tests/functional/tests.py
