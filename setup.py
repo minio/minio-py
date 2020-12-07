@@ -14,15 +14,13 @@
 # limitations under the License.
 
 import codecs
-import os
 import re
 import sys
 
 from setuptools import setup
 
 if sys.argv[-1] == "publish":
-    status = os.system("python setup.py sdist upload")
-    sys.exit(status)
+    sys.argv = sys.argv[:-1] + ["sdist", "upload"]
 
 with codecs.open("minio/__init__.py") as file:
     version = re.search(
