@@ -1,20 +1,10 @@
-### Setup your minio-py Github Repository
-Fork [minio-py upstream](https://github.com/minio/minio-py/fork) source repository to your own personal repository.
+# Contributors Guide
+``minio-py`` welcomes your contribution. Below steps can be followed to create a pull request.
 
-```sh
-$ git clone https://github.com/$USER_ID/minio-py
-$ cd minio-py
-$ python setup.py install
-...
-```
-
-###  Developer Guidelines
-
-``minio-py`` welcomes your contribution. To make the process as seamless as possible, we ask for the following:
-
-* Go ahead and fork the project and make your changes. We encourage pull requests to discuss code changes.
-    - Fork it
-    - Create your feature branch (git checkout -b my-new-feature)
-    - Commit your changes (git commit -am 'Add some feature')
-    - Push to the branch (git push origin my-new-feature)
-    - Create new Pull Request
+* Fork this minio-py repository into your account.
+* Create a feature branch in your fork (`$ git checkout -b my-new-feature`).
+* Hack, hack, hack...
+* Run checks. (`$ make check`).
+* Commit your changes (`$ git commit -am 'Add some feature'`).
+* Push the feature branch into your fork (`$ git push origin -u my-new-feature`).
+* Create new pull request to `master` branch.

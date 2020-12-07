@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-# dummy values, please replace them with original values.
-
 from minio import Minio
 from minio.notificationconfig import (NotificationConfig, PrefixFilterRule,
                                       QueueConfig)
@@ -31,10 +28,10 @@ config = NotificationConfig(
     queue_config_list=[
         QueueConfig(
             "QUEUE-ARN-OF-THIS-BUCKET",
-            ['s3:ObjectCreated:*'],
+            ["s3:ObjectCreated:*"],
             config_id="1",
             prefix_filter_rule=PrefixFilterRule("abc"),
         ),
     ],
 )
-client.set_bucket_notification("my-bucketname", config)
+client.set_bucket_notification("my-bucket", config)

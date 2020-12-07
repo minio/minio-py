@@ -14,120 +14,62 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-# dummy values, please replace them with original values.
-
 import json
 
 from minio import Minio
-from minio.error import ResponseError
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+client = Minio(
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+)
 
-# Make a new bucket
-try:
-    # Set bucket policy to read-only for bucket 'my-bucketname'
-    policy_read_only = {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Sid": "",
-                "Effect": "Allow",
-                "Principal": {"AWS": "*"},
-                "Action": "s3:GetBucketLocation",
-                "Resource": "arn:aws:s3:::my-bucketname"
-            },
-            {
-                "Sid": "",
-                "Effect": "Allow",
-                "Principal": {"AWS": "*"},
-                "Action": "s3:ListBucket",
-                "Resource": "arn:aws:s3:::my-bucketname"
-            },
-            {
-                "Sid": "",
-                "Effect": "Allow",
-                "Principal": {"AWS": "*"},
-                "Action": "s3:GetObject",
-                "Resource": "arn:aws:s3:::my-bucketname/*"
-            }
-        ]
-    }
-    client.set_bucket_policy('my-bucketname', json.dumps(policy_read_only))
+# Example anonymous read-only bucket policy.
+policy = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {"AWS": "*"},
+            "Action": ["s3:GetBucketLocation", "s3:ListBucket"],
+            "Resource": "arn:aws:s3:::my-bucket",
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {"AWS": "*"},
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::my-bucket/*",
+        },
+    ],
+}
+client.set_bucket_policy("my-bucket", json.dumps(policy))
 
-    # Set bucket policy to read-write for bucket 'my-bucketname'
-    policy_read_write = {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Action": ["s3:GetBucketLocation"],
-                "Sid": "",
-                "Resource": ["arn:aws:s3:::my-bucketname"],
-                "Effect": "Allow",
-                "Principal": {"AWS": "*"}
-            },
-            {
-                "Action": ["s3:ListBucket"],
-                "Sid": "",
-                "Resource": ["arn:aws:s3:::my-bucketname"],
-                "Effect": "Allow",
-                "Principal": {"AWS": "*"}
-            },
-            {
-                "Action": ["s3:ListBucketMultipartUploads"],
-                "Sid": "",
-                "Resource": ["arn:aws:s3:::my-bucketname"],
-                "Effect": "Allow",
-                "Principal": {"AWS": "*"}
-            },
-            {
-                "Action": ["s3:ListMultipartUploadParts",
-                           "s3:GetObject",
-                           "s3:AbortMultipartUpload",
-                           "s3:DeleteObject",
-                           "s3:PutObject"],
-                "Sid": "",
-                "Resource": ["arn:aws:s3:::my-bucketname/*"],
-                "Effect": "Allow",
-                "Principal": {"AWS": "*"}
-            }
-        ]
-    }
-    client.set_bucket_policy('my-bucketname', json.dumps(policy_read_write))
-
-    # Set bucket policy to write-only for bucket 'my-bucketname'
-    policy_write_only = {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Sid": "",
-                "Effect": "Allow",
-                "Principal": {"AWS": "*"},
-                "Action": "s3:GetBucketLocation",
-                "Resource": "arn:aws:s3:::my-bucketname"
-            },
-            {"Sid": "",
-             "Effect": "Allow",
-             "Principal": {"AWS": "*"},
-             "Action": "s3:ListBucketMultipartUploads",
-             "Resource": "arn:aws:s3:::my-bucketname"
-             },
-            {
-                "Sid": "",
-                "Effect": "Allow",
-                "Principal": {"AWS": "*"},
-                "Action": [
-                    "s3:ListMultipartUploadParts",
-                    "s3:AbortMultipartUpload",
-                    "s3:DeleteObject",
-                    "s3:PutObject"],
-                "Resource":"arn:aws:s3:::my-bucketname/*"
-            }
-        ]
-    }
-    client.set_bucket_policy('my-bucketname', json.dumps(policy_write_only))
-
-except ResponseError as err:
-    print(err)
+# Example anonymous read-write bucket policy.
+policy = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {"AWS": "*"},
+            "Action": [
+                "s3:GetBucketLocation",
+                "s3:ListBucket",
+                "s3:ListBucketMultipartUploads",
+            ],
+            "Resource": "arn:aws:s3:::my-bucket",
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {"AWS": "*"},
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject",
+                "s3:ListMultipartUploadParts",
+                "s3:AbortMultipartUpload",
+            ],
+            "Resource": "arn:aws:s3:::my-bucket/images/*",
+        },
+    ],
+}
+client.set_bucket_policy("my-bucket", json.dumps(policy))

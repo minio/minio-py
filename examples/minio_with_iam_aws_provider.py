@@ -18,8 +18,8 @@
 from minio import Minio
 from minio.credentials import IamAwsProvider
 
-client = Minio('s3.amazonaws.com', credentials=IamAwsProvider())
+client = Minio("s3.amazonaws.com", credentials=IamAwsProvider())
 
 # Get information of an object.
-stat = client.stat_object("my-bucketname", "my-objectname")
+stat = client.stat_object("my-bucket", "my-object")
 print(stat)

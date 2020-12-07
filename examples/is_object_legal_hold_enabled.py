@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-# dummy values, please replace them with original values.
-
 from minio import Minio
 
 client = Minio(
@@ -25,4 +22,7 @@ client = Minio(
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
-status = client.is_object_legal_hold_enabled("my-bucketname", "my-objectname")
+if client.is_object_legal_hold_enabled("my-bucket", "my-object"):
+    print("legal hold is enabled on my-object")
+else:
+    print("legal hold is not enabled on my-object")

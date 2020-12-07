@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-# dummy values, please replace them with original values.
-
 from minio import Minio
 from minio.sseconfig import Rule, SSEConfig
 
@@ -27,5 +24,5 @@ client = Minio(
 )
 
 client.set_bucket_encryption(
-    "my-bucketname", SSEConfig(Rule.new_sse_s3_rule()),
+    "my-bucket", SSEConfig(Rule.new_sse_s3_rule()),
 )

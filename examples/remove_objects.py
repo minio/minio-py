@@ -14,21 +14,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-prefix
-# are dummy values, please replace them with original values.
-
 from minio import Minio
 from minio.deleteobjects import DeleteObject
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+client = Minio(
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+)
+
+# Remove list of objects.
+errors = client.remove_objects(
+    "my-bucket",
+    [
+        DeleteObject("my-object1"),
+        DeleteObject("my-object2"),
+        DeleteObject("my-object3", "13f88b18-8dcd-4c83-88f2-8631fdb6250c"),
+    ],
+)
+for error in errors:
+    print("error occured when deleting object", error)
 
 # Remove a prefix recursively.
 delete_object_list = map(
     lambda x: DeleteObject(x.object_name),
-    client.list_objects("my-bucketname", "my-prefix", recursive=True),
+    client.list_objects("my-bucket", "my/prefix/", recursive=True),
 )
-errors = client.remove_objects("my-bucketname", delete_object_list)
+errors = client.remove_objects("my-bucket", delete_object_list)
 for error in errors:
     print("error occured when deleting object", error)

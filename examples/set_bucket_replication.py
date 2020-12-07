@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-# dummy values, please replace them with original values.
-
 from minio import Minio
 from minio.commonconfig import DISABLED, ENABLED, AndOperator, Filter
 from minio.replicationconfig import (DeleteMarkerReplication, Destination,
@@ -50,4 +47,4 @@ config = ReplicationConfig(
         ),
     ],
 )
-client.set_bucket_replication("my-bucketname", config)
+client.set_bucket_replication("my-bucket", config)

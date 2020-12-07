@@ -22,4 +22,4 @@ client = Minio(
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
-config = client.get_bucket_replication("my-bucket")
+client.delete_bucket_policy("my-bucket")

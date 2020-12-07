@@ -14,12 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-# dummy values, please replace them with original values.
-
 from minio import Minio
 from minio.commonconfig import ENABLED, Filter
-from minio.lifecycleconfig import Expiration, LifecycleConfig, Rule
+from minio.lifecycleconfig import Expiration, LifecycleConfig, Rule, Transition
 
 client = Minio(
     "play.min.io",
@@ -31,10 +28,16 @@ config = LifecycleConfig(
     [
         Rule(
             ENABLED,
+            rule_filter=Filter(prefix="documents/"),
+            rule_id="rule1",
+            transition=Transition(days=30, storage_class="GLACIER"),
+        ),
+        Rule(
+            ENABLED,
             rule_filter=Filter(prefix="logs/"),
             rule_id="rule2",
             expiration=Expiration(days=365),
         ),
     ],
 )
-client.set_bucket_lifecycle("my-bucketname", config)
+client.set_bucket_lifecycle("my-bucket", config)

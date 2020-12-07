@@ -16,15 +16,9 @@
 
 # pylint: disable=too-many-lines,disable=too-many-branches,too-many-statements
 # pylint: disable=too-many-arguments
+
 """
-minio.api
-~~~~~~~~~~~~
-
-This module implements the API.
-
-:copyright: (c) 2015, 2016, 2017 by MinIO, Inc.
-:license: Apache 2.0, see LICENSE for more details.
-
+Simple Storage Service (aka S3) client to perform bucket and object operations.
 """
 
 from __future__ import absolute_import
@@ -100,12 +94,21 @@ class Minio:  # pylint: disable=too-many-public-methods
     :return: :class:`Minio <Minio>` object
 
     Example::
-        client = Minio('play.min.io')
-        client = Minio('s3.amazonaws.com', 'ACCESS_KEY', 'SECRET_KEY')
-        client = Minio('play.min.io', 'ACCESS_KEY', 'SECRET_KEY',
-                       region='us-east-1')
+        # Create client with anonymous access.
+        client = Minio("play.min.io")
 
-    **NOTE on concurrent usage:** The `Minio` object is thread safe when using
+        # Create client with access and secret key.
+        client = Minio("s3.amazonaws.com", "ACCESS-KEY", "SECRET-KEY")
+
+        # Create client with access key and secret key with specific region.
+        client = Minio(
+            "play.minio.io:9000",
+            access_key="Q3AM3UQ867SPQQA43P2F",
+            secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+            region="my-region",
+        )
+
+    **NOTE on concurrent usage:** `Minio` object is thread safe when using
     the Python `threading` library. Specifically, it is **NOT** safe to share
     it between multiple processes, for example when using
     `multiprocessing.Pool`. The solution is simply to create a new `Minio`
@@ -583,9 +586,14 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param object_lock: Flag to set object-lock feature.
 
         Examples::
-            minio.make_bucket('foo')
-            minio.make_bucket('foo', 'us-west-1')
-            minio.make_bucket('foo', 'us-west-1', object_lock=True)
+            # Create bucket.
+            client.make_bucket("my-bucket")
+
+            # Create bucket on specific region.
+            client.make_bucket("my-bucket", "us-west-1")
+
+            # Create bucket with object-lock feature on specific region.
+            client.make_bucket("my-bucket", "eu-west-2", object_lock=True)
         """
         check_bucket_name(bucket_name, True)
         if self._base_url.region:
@@ -624,8 +632,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: List of :class:`Bucket <Bucket>` object.
 
         Example::
-            bucket_list = minio.list_buckets()
-            for bucket in bucket_list:
+            buckets = client.list_buckets()
+            for bucket in buckets:
                 print(bucket.name, bucket.creation_date)
         """
 
@@ -641,11 +649,10 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: True if the bucket exists.
 
         Example::
-            found = minio.bucket_exists("my-bucketname")
-            if found:
-                print("my-bucketname exists")
+            if client.bucket_exists("my-bucket"):
+                print("my-bucket exists")
             else:
-                print("my-bucketname does not exist")
+                print("my-bucket does not exist")
         """
         check_bucket_name(bucket_name)
         try:
@@ -663,7 +670,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param bucket_name: Name of the bucket.
 
         Example::
-            minio.remove_bucket("my-bucketname")
+            client.remove_bucket("my-bucket")
         """
         check_bucket_name(bucket_name)
         self._execute("DELETE", bucket_name)
@@ -677,7 +684,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: Bucket policy configuration as JSON string.
 
         Example::
-            config = minio.get_bucket_policy("my-bucketname")
+            policy = client.get_bucket_policy("my-bucket")
         """
         check_bucket_name(bucket_name)
         response = self._execute(
@@ -692,7 +699,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param bucket_name: Name of the bucket.
 
         Example::
-            minio.delete_bucket_policy("my-bucketname")
+            client.delete_bucket_policy("my-bucket")
         """
         check_bucket_name(bucket_name)
         self._execute("DELETE", bucket_name, query_params={"policy": ""})
@@ -705,7 +712,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param policy: Bucket policy configuration as JSON string.
 
         Example::
-            minio.set_bucket_policy("my-bucketname", config)
+            client.set_bucket_policy("my-bucket", policy)
         """
         check_bucket_name(bucket_name)
         is_valid_policy_type(policy)
@@ -725,7 +732,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: :class:`NotificationConfig <NotificationConfig>` object.
 
         Example::
-            config = minio.get_bucket_notification("my-bucketname")
+            config = client.get_bucket_notification("my-bucket")
         """
         check_bucket_name(bucket_name)
         response = self._execute(
@@ -745,13 +752,13 @@ class Minio:  # pylint: disable=too-many-public-methods
                 queue_config_list=[
                     QueueConfig(
                         "QUEUE-ARN-OF-THIS-BUCKET",
-                        ['s3:ObjectCreated:*'],
+                        ["s3:ObjectCreated:*"],
                         config_id="1",
                         prefix_filter_rule=PrefixFilterRule("abc"),
                     ),
                 ],
             )
-            minio.set_bucket_notification("my-bucketname", config)
+            client.set_bucket_notification("my-bucket", config)
         """
         check_bucket_name(bucket_name)
         if not isinstance(config, NotificationConfig):
@@ -773,7 +780,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param bucket_name: Name of the bucket.
 
         Example::
-            minio.delete_bucket_notification("my-bucketname")
+            client.delete_bucket_notification("my-bucket")
         """
         self.set_bucket_notification(bucket_name, NotificationConfig())
 
@@ -785,8 +792,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param config: :class:`SSEConfig <SSEConfig>` object.
 
         Example::
-            minio.set_bucket_encryption(
-                "my-bucketname", SSEConfig(Rule.new_sse_s3_rule()),
+            client.set_bucket_encryption(
+                "my-bucket", SSEConfig(Rule.new_sse_s3_rule()),
             )
         """
         check_bucket_name(bucket_name)
@@ -809,7 +816,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: :class:`SSEConfig <SSEConfig>` object.
 
         Example::
-            config = minio.get_bucket_encryption("my-bucketname")
+            config = client.get_bucket_encryption("my-bucket")
         """
         check_bucket_name(bucket_name)
         try:
@@ -831,7 +838,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param bucket_name: Name of the bucket.
 
         Example::
-            minio.delete_bucket_encryption("my-bucketname")
+            client.delete_bucket_encryption("my-bucket")
         """
         check_bucket_name(bucket_name)
         try:
@@ -856,15 +863,16 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param prefix: Listen events of object starts with prefix.
         :param suffix: Listen events of object ends with suffix.
         :param events: Events to listen.
-        :return: Iterator contains event records.
+        :return: Iterator of event records as :dict:.
 
         Example::
-            iter = minio.listen_bucket_notification(
-                "my-bucketname",
-                events=('s3:ObjectCreated:*', 's3:ObjectAccessed:*'),
+            events = client.listen_bucket_notification(
+                "my-bucket",
+                prefix="my-prefix/",
+                events=["s3:ObjectCreated:*", "s3:ObjectRemoved:*"],
             )
-            for events in iter:
-                print(events)
+            for event in events:
+                print(event)
         """
         check_bucket_name(bucket_name)
         if self._base_url.is_aws_host:
@@ -908,8 +916,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param config: :class:`VersioningConfig <VersioningConfig>`.
 
         Example::
-            minio.set_bucket_versioning(
-                "my-bucketname", VersioningConfig(ENABLED),
+            client.set_bucket_versioning(
+                "my-bucket", VersioningConfig(ENABLED),
             )
         """
         check_bucket_name(bucket_name)
@@ -932,7 +940,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: :class:`VersioningConfig <VersioningConfig>`.
 
         Example::
-            config minio.get_bucket_versioning("my-bucketname")
+            config = client.get_bucket_versioning("my-bucket")
             print(config.status)
         """
         check_bucket_name(bucket_name)
@@ -1019,9 +1027,19 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: Object information.
 
         Example::
-            minio.fget_object('foo', 'bar', 'localfile')
-            minio.fget_object(
-                'foo', 'bar', 'localfile', version_id='VERSION-ID',
+            # Download data of an object.
+            client.fget_object("my-bucket", "my-object", "my-filename")
+
+            # Download data of an object of version-ID.
+            client.fget_object(
+                "my-bucket", "my-object", "my-filename",
+                version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
+            )
+
+            # Download data of an SSE-C encrypted object.
+            client.fget_object(
+                "my-bucket", "my-object", "my-filename",
+                ssec=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
             )
         """
         check_bucket_name(bucket_name)
@@ -1095,18 +1113,42 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: :class:`urllib3.response.HTTPResponse` object.
 
         Example::
-            // Get entire object data.
+            # Get data of an object.
             try:
-                response = minio.get_object('foo', 'bar')
-                // Read data from response.
+                response = client.get_object("my-bucket", "my-object")
+                # Read data from response.
             finally:
                 response.close()
                 response.release_conn()
 
-            // Get object data for offset/length.
+            # Get data of an object of version-ID.
             try:
-                response = minio.get_object('foo', 'bar', 2, 4)
-                // Read data from response.
+                response = client.get_object(
+                    "my-bucket", "my-object",
+                    version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
+                )
+                # Read data from response.
+            finally:
+                response.close()
+                response.release_conn()
+
+            # Get data of an object from offset and length.
+            try:
+                response = client.get_object(
+                    "my-bucket", "my-object", offset=512, length=1024,
+                )
+                # Read data from response.
+            finally:
+                response.close()
+                response.release_conn()
+
+            # Get data of an SSE-C encrypted object.
+            try:
+                response = client.get_object(
+                    "my-bucket", "my-object",
+                    ssec=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
+                )
+                # Read data from response.
             finally:
                 response.close()
                 response.release_conn()
@@ -1753,8 +1795,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                      start_after=None, include_user_meta=False,
                      include_version=False, use_api_v1=False):
         """
-        Lists object information of a bucket using S3 API version 2, optionally
-        for prefix recursively.
+        Lists object information of a bucket.
 
         :param bucket_name: Name of the bucket.
         :param prefix: Object name starts with prefix.
@@ -1765,39 +1806,39 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param include_version: Flag to control whether include object
                                 versions.
         :param use_api_v1: Flag to control to use ListObjectV1 S3 API or not.
-        :return: An iterator contains object information.
+        :return: Iterator of :class:`Object <Object>`.
 
         Example::
             # List objects information.
-            objects = minio.list_objects('foo')
-            for object in objects:
-                print(object)
+            objects = client.list_objects("my-bucket")
+            for obj in objects:
+                print(obj)
 
-            # List objects information whose names starts with 'hello/'.
-            objects = minio.list_objects('foo', prefix='hello/')
-            for object in objects:
-                print(object)
+            # List objects information whose names starts with "my/prefix/".
+            objects = client.list_objects("my-bucket", prefix="my/prefix/")
+            for obj in objects:
+                print(obj)
 
             # List objects information recursively.
-            objects = minio.list_objects('foo', recursive=True)
-            for object in objects:
-                print(object)
+            objects = client.list_objects("my-bucket", recursive=True)
+            for obj in objects:
+                print(obj)
 
             # List objects information recursively whose names starts with
-            # 'hello/'.
-            objects = minio.list_objects(
-                'foo', prefix='hello/', recursive=True,
+            # "my/prefix/".
+            objects = client.list_objects(
+                "my-bucket", prefix="my/prefix/", recursive=True,
             )
-            for object in objects:
-                print(object)
+            for obj in objects:
+                print(obj)
 
             # List objects information recursively after object name
-            # 'hello/world/1'.
-            objects = minio.list_objects(
-                'foo', recursive=True, start_after='hello/world/1',
+            # "my/prefix/world/1".
+            objects = client.list_objects(
+                "my-bucket", recursive=True, start_after="my/prefix/world/1",
             )
-            for object in objects:
-                print(object)
+            for obj in objects:
+                print(obj)
         """
         return self._list_objects(
             bucket_name,
@@ -1822,7 +1863,20 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: :class:`Object <Object>`.
 
         Example::
-            stat = minio.stat_object("my-bucketname", "my-objectname")
+            # Get object information.
+            result = client.stat_object("my-bucket", "my-object")
+
+            # Get object information of version-ID.
+            result = client.stat_object(
+                "my-bucket", "my-object",
+                version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
+            )
+
+            # Get SSE-C encrypted object information.
+            result = client.stat_object(
+                "my-bucket", "my-object",
+                ssec=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
+            )
         """
 
         check_bucket_name(bucket_name)
@@ -1864,11 +1918,13 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param version_id: Version ID of the object.
 
         Example::
-            minio.remove_object("my-bucketname", "my-objectname")
-            minio.remove_object(
-                "my-bucketname",
-                "my-objectname",
-                version_id="13f88b18-8dcd-4c83-88f2-8631fdb6250c",
+            # Remove object.
+            client.remove_object("my-bucket", "my-object")
+
+            # Remove version of an object.
+            client.remove_object(
+                "my-bucket", "my-object",
+                version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
             )
         """
         check_bucket_name(bucket_name)
@@ -1924,17 +1980,26 @@ class Minio:  # pylint: disable=too-many-public-methods
             object.
 
         Example::
-            errors = minio.remove_objects(
-                "my-bucketname",
+            # Remove list of objects.
+            errors = client.remove_objects(
+                "my-bucket",
                 [
-                    DeleteObject("my-objectname1"),
-                    DeleteObject("my-objectname2"),
+                    DeleteObject("my-object1"),
+                    DeleteObject("my-object2"),
                     DeleteObject(
-                        "my-objectname3",
-                        "13f88b18-8dcd-4c83-88f2-8631fdb6250c",
+                        "my-object3", "13f88b18-8dcd-4c83-88f2-8631fdb6250c",
                     ),
                 ],
             )
+            for error in errors:
+                print("error occured when deleting object", error)
+
+            # Remove a prefix recursively.
+            delete_object_list = map(
+                lambda x: DeleteObject(x.object_name),
+                client.list_objects("my-bucket", "my/prefix/", recursive=True),
+            )
+            errors = client.remove_objects("my-bucket", delete_object_list)
             for error in errors:
                 print("error occured when deleting object", error)
         """
@@ -2143,7 +2208,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param bucket_name: Name of the bucket.
 
         Example::
-            minio.delete_bucket_replication("my-bucketname")
+            client.delete_bucket_replication("my-bucket")
         """
         check_bucket_name(bucket_name)
         self._execute("DELETE", bucket_name, query_params={"replication": ""})
@@ -2156,7 +2221,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: :class:`ReplicationConfig <ReplicationConfig>` object.
 
         Example::
-            config = minio.get_bucket_replication("my-bucketname")
+            config = client.get_bucket_replication("my-bucket")
         """
         check_bucket_name(bucket_name)
         try:
@@ -2199,7 +2264,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                     ),
                 ],
             )
-            minio.set_bucket_replication("my-bucketname", config)
+            client.set_bucket_replication("my-bucket", config)
         """
         check_bucket_name(bucket_name)
         if not isinstance(config, ReplicationConfig):
@@ -2220,7 +2285,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param bucket_name: Name of the bucket.
 
         Example::
-            minio.delete_bucket_lifecycle("my-bucketname")
+            client.delete_bucket_lifecycle("my-bucket")
         """
         check_bucket_name(bucket_name)
         self._execute("DELETE", bucket_name, query_params={"lifecycle": ""})
@@ -2233,7 +2298,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: :class:`LifecycleConfig <LifecycleConfig>` object.
 
         Example::
-            config = minio.get_bucket_lifecycle("my-bucketname")
+            config = client.get_bucket_lifecycle("my-bucket")
         """
         check_bucket_name(bucket_name)
         try:
@@ -2258,13 +2323,21 @@ class Minio:  # pylint: disable=too-many-public-methods
                 [
                     Rule(
                         ENABLED,
+                        rule_filter=Filter(prefix="documents/"),
+                        rule_id="rule1",
+                        transition=Transition(
+                            days=30, storage_class="GLACIER",
+                        ),
+                    ),
+                    Rule(
+                        ENABLED,
                         rule_filter=Filter(prefix="logs/"),
                         rule_id="rule2",
                         expiration=Expiration(days=365),
                     ),
                 ],
             )
-            minio.set_bucket_lifecycle("my-bucketname", config)
+            client.set_bucket_lifecycle("my-bucket", config)
         """
         check_bucket_name(bucket_name)
         if not isinstance(config, LifecycleConfig):
@@ -2285,7 +2358,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param bucket_name: Name of the bucket.
 
         Example::
-            minio.delete_bucket_tags("my-bucketname")
+            client.delete_bucket_tags("my-bucket")
         """
         check_bucket_name(bucket_name)
         self._execute("DELETE", bucket_name, query_params={"tagging": ""})
@@ -2298,7 +2371,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: :class:`Tags <Tags>` object.
 
         Example::
-            tags = minio.get_bucket_tags("my-bucketname")
+            tags = client.get_bucket_tags("my-bucket")
         """
         check_bucket_name(bucket_name)
         try:
@@ -2323,7 +2396,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             tags = Tags.new_bucket_tags()
             tags["Project"] = "Project One"
             tags["User"] = "jsmith"
-            minio.set_bucket_tags("my-bucketname", tags)
+            client.set_bucket_tags("my-bucket", tags)
         """
         check_bucket_name(bucket_name)
         if not isinstance(tags, Tags):
@@ -2346,7 +2419,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param version_id: Version ID of the Object.
 
         Example::
-            minio.delete_object_tags("my-bucketname", "my-objectname")
+            client.delete_object_tags("my-bucket", "my-object")
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
@@ -2369,7 +2442,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: :class:`Tags <Tags>` object.
 
         Example::
-            tags = minio.get_object_tags("my-bucketname", "my-objectname")
+            tags = client.get_object_tags("my-bucket", "my-object")
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
@@ -2402,7 +2475,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             tags = Tags.new_object_tags()
             tags["Project"] = "Project One"
             tags["User"] = "jsmith"
-            minio.set_object_tags("my-bucketname", "my-objectname", tags)
+            client.set_object_tags("my-bucket", "my-object", tags)
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
@@ -2431,7 +2504,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param version_id: Version ID of the object.
 
         Example::
-            minio.enable_object_legal_hold("my-bucketname", "my-objectname")
+            client.enable_object_legal_hold("my-bucket", "my-object")
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
@@ -2458,7 +2531,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param version_id: Version ID of the object.
 
         Example::
-            minio.disable_object_legal_hold("my-bucketname", "my-objectname")
+            client.disable_object_legal_hold("my-bucket", "my-object")
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
@@ -2485,9 +2558,10 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param version_id: Version ID of the object.
 
         Example::
-            status = minio.is_object_legal_hold_enabled(
-                "my-bucketname", "my-objectname",
-            )
+            if client.is_object_legal_hold_enabled("my-bucket", "my-object"):
+                print("legal hold is enabled on my-object")
+            else:
+                print("legal hold is not enabled on my-object")
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
@@ -2514,7 +2588,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param bucket_name: Name of the bucket.
 
         Example::
-            minio.delete_object_lock_config("my-bucketname")
+            client.delete_object_lock_config("my-bucket")
         """
         self.set_object_lock_config(
             self, bucket_name, ObjectLockConfig(None, None, None),
@@ -2528,7 +2602,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: :class:`ObjectLockConfig <ObjectLockConfig>` object.
 
         Example::
-            config = minio.get_object_lock_config("my-bucketname")
+            config = client.get_object_lock_config("my-bucket")
         """
         check_bucket_name(bucket_name)
         response = self._execute(
@@ -2545,7 +2619,7 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         Example::
             config = ObjectLockConfig(GOVERNANCE, 15, DAYS)
-            minio.set_object_lock_config("my-bucketname", config)
+            client.set_object_lock_condig("my-bucket", config)
         """
         check_bucket_name(bucket_name)
         if not isinstance(config, ObjectLockConfig):
@@ -2571,9 +2645,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: :class:`Retention <Retention>` object.
 
         Example::
-            config = minio.get_object_retention(
-                "my-bucketname", "my-objectname",
-            )
+            config = client.get_object_retention("my-bucket", "my-object")
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
@@ -2607,9 +2679,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             config = Retention(
                 GOVERNANCE, datetime.utcnow() + timedelta(days=10),
             )
-            minio.set_object_retention(
-                "my-bucketname", "my-objectname", config,
-            )
+            client.set_object_retention("my-bucket", "my-object", config)
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)

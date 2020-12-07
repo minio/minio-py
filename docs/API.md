@@ -1,32 +1,65 @@
 # Python Client API Reference [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
 
-## Initialize MinIO Client object.
+## 1. Constructor
 
-## MinIO
+### Minio(endpoint, access_key=None, secret_key=None, session_token=None, secure=True, region=None, http_client=None, credentials=None)
+|                                                                                                                                       |
+|---------------------------------------------------------------------------------------------------------------------------------------|
+| `Minio(endpoint, access_key=None, secret_key=None, session_token=None, secure=True, region=None, http_client=None, credentials=None)` |
+| Initializes a new client object.                                                                                                      |
+
+__Parameters__
+
+| Param           | Type                              | Description                                                                      |
+|:----------------|:----------------------------------|:---------------------------------------------------------------------------------|
+| `endpoint`      | _str_                             | Hostname of a S3 service.                                                        |
+| `access_key`    | _str_                             | (Optional) Access key (aka user ID) of your account in S3 service.               |
+| `secret_key`    | _str_                             | (Optional) Secret Key (aka password) of your account in S3 service.              |
+| `session_token` | _str_                             | (Optional) Session token of your account in S3 service.                          |
+| `secure`        | _bool_                            | (Optional) Flag to indicate to use secure (TLS) connection to S3 service or not. |
+| `region`        | _str_                             | (Optional) Region name of buckets in S3 service.                                 |
+| `http_client`   | _urllib3.poolmanager.PoolManager_ | (Optional) Customized HTTP client.                                               |
+| `credentials`   | _minio.credentials.Credentials_   | (Optional) Credentials of your account in S3 service.                            |
+
+
+**NOTE on concurrent usage:** `Minio` object is thread safe when using the Python `threading` library. Specifically, it is **NOT** safe to share it between multiple processes, for example when using `multiprocessing.Pool`. The solution is simply to create a new `Minio` object in each process, and not share it between processes.
+
+__Example__
 
 ```py
 from minio import Minio
-from minio.error import ResponseError
 
-minioClient = Minio(
-	'play.min.io',
-	access_key='Q3AM3UQ867SPQQA43P2F',
-	secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
-	secure=True,
+# Create client with anonymous access.
+client = Minio("play.min.io")
+
+# Create client with access and secret key.
+client = Minio("s3.amazonaws.com", "ACCESS-KEY", "SECRET-KEY")
+
+# Create client with access key and secret key with specific region.
+client = Minio(
+    "play.minio.io:9000",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+    region="my-region",
 )
-```
 
-## AWS S3
-
-```py
-from minio import Minio
-from minio.error import ResponseError
-
-s3Client = Minio(
-	's3.amazonaws.com',
-	access_key='YOUR-ACCESSKEYID',
-	secret_key='YOUR-SECRETACCESSKEY',
-	secure=True,
+# Create client with custom HTTP client using proxy server.
+import urllib3
+client = Minio(
+    "SERVER:PORT",
+    access_key="ACCESS_KEY",
+    secret_key="SECRET_KEY",
+    secure=True,
+    http_client=urllib3.ProxyManager(
+        "https://PROXYSERVER:PROXYPORT/",
+        timeout=urllib3.Timeout.DEFAULT_TIMEOUT,
+        cert_reqs="CERT_REQUIRED",
+        retries=urllib3.Retry(
+            total=5,
+            backoff_factor=0.2,
+            status_forcelist=[500, 502, 503, 504],
+        ),
+    ),
 )
 ```
 
@@ -62,87 +95,6 @@ s3Client = Minio(
 | [`get_object_lock_config`](#get_object_lock_config)         |                                                                 |
 | [`set_object_lock_config`](#set_object_lock_config)         |                                                                 |
 
-## 1. Constructor
-
-<a name="MinIO"></a>
-
-### Minio(endpoint, access_key=None, secret_key=None, session_token=None, secure=True, region=None, http_client=None, credentials=None)
-|                                                                                                                                       |
-|---------------------------------------------------------------------------------------------------------------------------------------|
-| `Minio(endpoint, access_key=None, secret_key=None, session_token=None, secure=True, region=None, http_client=None, credentials=None)` |
-| Initializes a new client object.                                                                                                      |
-
-__Parameters__
-
-| Param           | Type                              | Description                                                                      |
-|:----------------|:----------------------------------|:---------------------------------------------------------------------------------|
-| `endpoint`      | _str_                             | Hostname of a S3 service.                                                        |
-| `access_key`    | _str_                             | (Optional) Access key (aka user ID) of your account in S3 service.               |
-| `secret_key`    | _str_                             | (Optional) Secret Key (aka password) of your account in S3 service.              |
-| `session_token` | _str_                             | (Optional) Session token of your account in S3 service.                          |
-| `secure`        | _bool_                            | (Optional) Flag to indicate to use secure (TLS) connection to S3 service or not. |
-| `region`        | _str_                             | (Optional) Region name of buckets in S3 service.                                 |
-| `http_client`   | _urllib3.poolmanager.PoolManager_ | (Optional) Customized HTTP client.                                               |
-| `credentials`   | _minio.credentials.Credentials_   | (Optional) Credentials of your account in S3 service.                            |
-
-
-**NOTE on concurrent usage:** The `Minio` object is thread safe when using the Python `threading` library. Specifically, it is **NOT** safe to share it between multiple processes, for example when using `multiprocessing.Pool`. The solution is simply to create a new `Minio` object in each process, and not share it between processes.
-
-__Example__
-
-### MinIO
-
-```py
-from minio import Minio
-from minio.error import ResponseError
-
-minioClient = Minio(
-	'play.min.io',
-	access_key='Q3AM3UQ867SPQQA43P2F',
-	secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
-)
-```
-
-> NOTE: If there is a corporate proxy, specify a custom httpClient using *urllib3.ProxyManager* as shown below:
-
-```py
-from minio import Minio
-from minio.error import ResponseError
-import urllib3
-
-httpClient = urllib3.ProxyManager(
-	'https://proxy_host.sampledomain.com:8119/',
-	timeout=urllib3.Timeout.DEFAULT_TIMEOUT,
-	cert_reqs='CERT_REQUIRED',
-	retries=urllib3.Retry(
-		total=5,
-		backoff_factor=0.2,
-		status_forcelist=[500, 502, 503, 504],
-	)
-)
-
-minioClient = Minio(
-	'your_hostname.sampledomain.com:9000',
-	access_key='ACCESS_KEY',
-	secret_key='SECRET_KEY',
-	secure=True,
-	http_client=httpClient,
-)
-```
-
-### AWS S3
-
-```py
-from minio import Minio
-from minio.error import ResponseError
-
-s3Client = Minio(
-	's3.amazonaws.com',
-	access_key='ACCESS_KEY',
-	secret_key='SECRET_KEY',
-)
-```
-
 ## 2. Bucket operations
 
 <a name="make_bucket"></a>
@@ -162,9 +114,14 @@ __Parameters__
 __Example__
 
 ```py
-minio.make_bucket('foo')
-minio.make_bucket('foo', 'us-west-1')
-minio.make_bucket('foo', 'us-west-1', object_lock=True)
+# Create bucket.
+client.make_bucket("my-bucket")
+
+# Create bucket on specific region.
+client.make_bucket("my-bucket", "us-west-1")
+
+# Create bucket with object-lock feature on specific region.
+client.make_bucket("my-bucket", "eu-west-2", object_lock=True)
 ```
 
 <a name="list_buckets"></a>
@@ -175,15 +132,15 @@ List information of all accessible buckets.
 
 __Parameters__
 
-| Return                                   |
-|:-----------------------------------------|
-| An iterator contains bucket information. |
+| Return           |
+|:-----------------|
+| List of _Bucket_ |
 
 __Example__
 
 ```py
-bucket_list = minio.list_buckets()
-for bucket in bucket_list:
+buckets = client.list_buckets()
+for bucket in buckets:
     print(bucket.name, bucket.creation_date)
 ```
 
@@ -202,11 +159,10 @@ __Parameters__
 __Example__
 
 ```py
-found = minio.bucket_exists("my-bucketname")
-if found:
-    print("my-bucketname exists")
+if client.bucket_exists("my-bucket"):
+    print("my-bucket exists")
 else:
-    print("my-bucketname does not exist")
+    print("my-bucket does not exist")
 ```
 
 <a name="remove_bucket"></a>
@@ -224,63 +180,66 @@ __Parameters__
 __Example__
 
 ```py
-minio.remove_bucket("my-bucketname")
+client.remove_bucket("my-bucket")
 ```
 
 <a name="list_objects"></a>
 
-### list_objects(bucket_name, prefix=None, recursive=False, include_version=False)
+### list_objects(bucket_name, prefix=None, recursive=False, start_after=None, include_user_meta=False, include_version=False, use_api_v1=False)
 
-Lists object information of a bucket using S3 API version 1, optionally for prefix recursively.
+Lists object information of a bucket.
 
 __Parameters__
 
-| Param             | Type   | Description                                          |
-|:------------------|:-------|:-----------------------------------------------------|
-| `bucket_name`     | _str_  | Name of the bucket.                                  |
-| `prefix`          | _str_  | Object name starts with prefix.                      |
-| `recursive`       | _bool_ | List recursively than directory structure emulation. |
-| `include_version` | _bool_ | Flag to control whether include object versions.     |
+| Param               | Type   | Description                                              |
+|:--------------------|:-------|:---------------------------------------------------------|
+| `bucket_name`       | _str_  | Name of the bucket.                                      |
+| `prefix`            | _str_  | Object name starts with prefix.                          |
+| `recursive`         | _bool_ | List recursively than directory structure emulation.     |
+| `start_after`       | _str_  | List objects after this key name.                        |
+| `include_user_meta` | _bool_ | MinIO specific flag to control to include user metadata. |
+| `include_version`   | _bool_ | Flag to control whether include object versions.         |
+| `use_api_v1`        | _bool_ | Flag to control to use ListObjectV1 S3 API or not.       |
 
 __Return Value__
 
-| Return                                                    |
-|:----------------------------------------------------------|
-| An iterator contains object information as _minio.Object_ |
+| Return                  |
+|:------------------------|
+| An iterator of _Object_ |
 
 __Example__
 
 ```py
 # List objects information.
-objects = minio.list_objects('foo')
-for object in objects:
-    print(object)
+objects = client.list_objects("my-bucket")
+for obj in objects:
+    print(obj)
 
-# List objects information whose names starts with 'hello/'.
-objects = minio.list_objects('foo', prefix='hello/')
-for object in objects:
-    print(object)
+# List objects information whose names starts with "my/prefix/".
+objects = client.list_objects("my-bucket", prefix="my/prefix/")
+for obj in objects:
+    print(obj)
 
 # List objects information recursively.
-objects = minio.list_objects('foo', recursive=True)
-for object in objects:
-    print(object)
+objects = client.list_objects("my-bucket", recursive=True)
+for obj in objects:
+    print(obj)
 
 # List objects information recursively whose names starts with
-# 'hello/'.
-objects = minio.list_objects(
-    'foo', prefix='hello/', recursive=True,
+# "my/prefix/".
+objects = client.list_objects(
+    "my-bucket", prefix="my/prefix/", recursive=True,
 )
-for object in objects:
-    print(object)
+for obj in objects:
+    print(obj)
 
 # List objects information recursively after object name
-# 'hello/world/1'.
-objects = minio.list_objects(
-    'foo', recursive=True, start_after='hello/world/1',
+# "my/prefix/world/1".
+objects = client.list_objects(
+    "my-bucket", recursive=True, start_after="my/prefix/world/1",
 )
-for object in objects:
-    print(object)
+for obj in objects:
+    print(obj)
 ```
 
 <a name="get_bucket_policy"></a>
@@ -304,7 +263,7 @@ __Return Value__
 __Example__
 
 ```py
-config = minio.get_bucket_policy("my-bucketname")
+policy = client.get_bucket_policy("my-bucket")
 ```
 
 <a name="set_bucket_policy"></a>
@@ -323,7 +282,55 @@ __Parameters__
 __Example__
 
 ```py
-minio.set_bucket_policy("my-bucketname", config)
+# Example anonymous read-only bucket policy.
+policy = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {"AWS": "*"},
+            "Action": ["s3:GetBucketLocation", "s3:ListBucket"],
+            "Resource": "arn:aws:s3:::my-bucket",
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {"AWS": "*"},
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::my-bucket/*",
+        },
+    ],
+}
+client.set_bucket_policy("my-bucket", json.dumps(policy))
+
+# Example anonymous read-write bucket policy.
+policy = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {"AWS": "*"},
+            "Action": [
+                "s3:GetBucketLocation",
+                "s3:ListBucket",
+                "s3:ListBucketMultipartUploads",
+            ],
+            "Resource": "arn:aws:s3:::my-bucket",
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {"AWS": "*"},
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject",
+                "s3:ListMultipartUploadParts",
+                "s3:AbortMultipartUpload",
+            ],
+            "Resource": "arn:aws:s3:::my-bucket/images/*",
+        },
+    ],
+}
+client.set_bucket_policy("my-bucket", json.dumps(policy))
 ```
 
 <a name="delete_bucket_policy"></a>
@@ -341,7 +348,7 @@ __Parameters__
 __Example__
 
 ```py
-minio.delete_bucket_policy("my-bucketname")
+client.delete_bucket_policy("my-bucket")
 ```
 
 <a name="get_bucket_notification"></a>
@@ -365,7 +372,7 @@ __Return Value__
 __Example__
 
 ```py
-config = minio.get_bucket_notification("my-bucketname")
+config = client.get_bucket_notification("my-bucket")
 ```
 
 <a name="set_bucket_notification"></a>
@@ -388,13 +395,13 @@ config = NotificationConfig(
     queue_config_list=[
         QueueConfig(
             "QUEUE-ARN-OF-THIS-BUCKET",
-            ['s3:ObjectCreated:*'],
+            ["s3:ObjectCreated:*"],
             config_id="1",
             prefix_filter_rule=PrefixFilterRule("abc"),
         ),
     ],
 )
-minio.set_bucket_notification("my-bucketname", config)
+client.set_bucket_notification("my-bucket", config)
 ```
 
 <a name="delete_bucket_notification"></a>
@@ -412,12 +419,12 @@ __Parameters__
 __Example__
 
 ```py
-minio.delete_bucket_notification("my-bucketname")
+client.delete_bucket_notification("my-bucket")
 ```
 
 <a name="listen_bucket_notification"></a>
 
-### listen_bucket_notification(bucket_name, prefix='', suffix='', events=('s3:ObjectCreated:*', 's3:ObjectRemoved:*', 's3:ObjectAccessed:*'))
+### listen_bucket_notification(bucket_name, prefix='', suffix='', events=('s3:ObjectCreated:\*', 's3:ObjectRemoved:\*', 's3:ObjectAccessed:\*'))
 
 Listen events of object prefix and suffix of a bucket. Caller should iterate returned iterator to read new events.
 
@@ -430,13 +437,20 @@ __Parameters__
 | `suffix`      | _str_  | Listen events of object ends with suffix.   |
 | `events`      | _list_ | Events to listen.                           |
 
+__Return Value__
+
+| Param                               |
+|:------------------------------------|
+| Iterator of event records as _dict_ |
+
 ```py
-iter = minio.listen_bucket_notification(
-    "my-bucketname",
-    events=('s3:ObjectCreated:*', 's3:ObjectAccessed:*'),
+events = client.listen_bucket_notification(
+    "my-bucket",
+    prefix="my-prefix/",
+    events=["s3:ObjectCreated:*", "s3:ObjectRemoved:*"],
 )
-for events in iter:
-    print(events)
+for event in events:
+    print(event)
 ```
 
 <a name="get_bucket_encryption"></a>
@@ -460,7 +474,7 @@ __Return Value__
 __Example__
 
 ```py
-config = minio.get_bucket_encryption("my-bucketname")
+config = client.get_bucket_encryption("my-bucket")
 ```
 
 <a name="set_bucket_encryption"></a>
@@ -479,8 +493,8 @@ __Parameters__
 __Example__
 
 ```py
-minio.set_bucket_encryption(
-    "my-bucketname", SSEConfig(Rule.new_sse_s3_rule()),
+client.set_bucket_encryption(
+    "my-bucket", SSEConfig(Rule.new_sse_s3_rule()),
 )
 ```
 
@@ -499,7 +513,7 @@ __Parameters__
 __Example__
 
 ```py
-minio.delete_bucket_encryption("my-bucketname")
+client.delete_bucket_encryption("my-bucket")
 ```
 
 <a name="get_bucket_versioning"></a>
@@ -517,7 +531,7 @@ __Parameters__
 __Example__
 
 ```py
-config = minio.get_bucket_versioning("my-bucketname")
+config = client.get_bucket_versioning("my-bucket")
 print(config.status)
 ```
 
@@ -537,7 +551,7 @@ __Parameters__
 __Example__
 
 ```py
-minio.set_bucket_versioning("my-bucketname", VersioningConfig(ENABLED))
+client.set_bucket_versioning("my-bucket", VersioningConfig(ENABLED))
 ```
 
 <a name="delete_bucket_replication"></a>
@@ -555,7 +569,7 @@ __Parameters__
 __Example__
 
 ```py
-minio.delete_bucket_replication("my-bucketname")
+client.delete_bucket_replication("my-bucket")
 ```
 
 <a name="get_bucket_replication"></a>
@@ -577,7 +591,7 @@ __Parameters__
 __Example__
 
 ```py
-config = minio.get_bucket_replication("my-bucketname")
+config = client.get_bucket_replication("my-bucket")
 ```
 
 <a name="set_bucket_replication"></a>
@@ -618,7 +632,7 @@ config = ReplicationConfig(
         ),
     ],
 )
-minio.set_bucket_replication("my-bucketname", config)
+client.set_bucket_replication("my-bucket", config)
 ```
 
 <a name="delete_bucket_lifecycle"></a>
@@ -636,7 +650,7 @@ __Parameters__
 __Example__
 
 ```py
-minio.delete_bucket_lifecycle("my-bucketname")
+client.delete_bucket_lifecycle("my-bucket")
 ```
 
 <a name="get_bucket_lifecycle"></a>
@@ -659,7 +673,7 @@ __Parameters__
 __Example__
 
 ```py
-config = minio.get_bucket_lifecycle("my-bucketname")
+config = client.get_bucket_lifecycle("my-bucket")
 ```
 
 <a name="set_bucket_lifecycle"></a>
@@ -694,7 +708,7 @@ config = LifecycleConfig(
         ),
     ],
 )
-minio.set_bucket_lifecycle("my-bucketname", config)
+client.set_bucket_lifecycle("my-bucket", config)
 ```
 
 <a name="delete_bucket_tags"></a>
@@ -712,7 +726,7 @@ __Parameters__
 __Example__
 
 ```py
-minio.delete_bucket_tags("my-bucketname")
+client.delete_bucket_tags("my-bucket")
 ```
 
 <a name="get_bucket_tags"></a>
@@ -734,7 +748,7 @@ __Parameters__
 __Example__
 
 ```py
-tags = minio.get_bucket_tags("my-bucketname")
+tags = client.get_bucket_tags("my-bucket")
 ```
 
 <a name="set_bucket_tags"></a>
@@ -756,7 +770,7 @@ __Example__
 tags = Tags.new_bucket_tags()
 tags["Project"] = "Project One"
 tags["User"] = "jsmith"
-client.set_bucket_tags("my-bucketname", tags)
+client.set_bucket_tags("my-bucket", tags)
 ```
 
 <a name="delete_object_lock_config"></a>
@@ -774,7 +788,7 @@ __Parameters__
 __Example__
 
 ```py
-minio.delete_object_lock_config("my-bucketname")
+client.delete_object_lock_config("my-bucket")
 ```
 
 <a name="get_object_lock_config"></a>
@@ -796,7 +810,7 @@ __Parameters__
 __Example__
 
 ```py
-config = minio.get_object_lock_config("my-bucketname")
+config = client.get_object_lock_config("my-bucket")
 ```
 
 <a name="set_object_lock_config"></a>
@@ -816,7 +830,7 @@ __Example__
 
 ```py
 config = ObjectLockConfig(GOVERNANCE, 15, DAYS)
-minio.set_object_lock_config("my-bucketname", config)
+client.set_object_lock_condig("my-bucket", config)
 ```
 
 ## 3. Object operations
@@ -849,18 +863,42 @@ __Return Value__
 __Example__
 
 ```py
-// Get entire object data.
- try:
-    response = minio.get_object('foo', 'bar')
-    // Read data from response.
+# Get data of an object.
+try:
+    response = client.get_object("my-bucket", "my-object")
+    # Read data from response.
 finally:
     response.close()
     response.release_conn()
 
-// Get object data for offset/length.
+# Get data of an object of version-ID.
 try:
-    response = minio.get_object('foo', 'bar', 2, 4)
-    // Read data from response.
+    response = client.get_object(
+        "my-bucket", "my-object",
+        version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
+    )
+    # Read data from response.
+finally:
+    response.close()
+    response.release_conn()
+
+# Get data of an object from offset and length.
+try:
+    response = client.get_object(
+        "my-bucket", "my-object", offset=512, length=1024,
+    )
+    # Read data from response.
+finally:
+    response.close()
+    response.release_conn()
+
+# Get data of an SSE-C encrypted object.
+try:
+    response = client.get_object(
+        "my-bucket", "my-object",
+        ssec=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
+    )
+    # Read data from response.
 finally:
     response.close()
     response.release_conn()
@@ -868,7 +906,7 @@ finally:
 
 <a name="select_object_content"></a>
 
-### select_object_content(bucket_name, object_name, opts)
+### select_object_content(bucket_name, object_name, request)
 
 Select content of an object by SQL expression.
 
@@ -931,9 +969,19 @@ __Return Value__
 __Example__
 
 ```py
-minio.fget_object('foo', 'bar', 'localfile')
-minio.fget_object(
-    'foo', 'bar', 'localfile', version_id='VERSION-ID',
+# Download data of an object.
+client.fget_object("my-bucket", "my-object", "my-filename")
+
+# Download data of an object of version-ID.
+client.fget_object(
+    "my-bucket", "my-object", "my-filename",
+    version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
+)
+
+# Download data of an SSE-C encrypted object.
+client.fget_object(
+    "my-bucket", "my-object", "my-filename",
+    ssec=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
 )
 ```
 
@@ -1343,14 +1391,42 @@ __Parameters__
 
 __Return Value__
 
-| Return   |
-|:---------|
+| Return                         |
+|:-------------------------------|
 | Object information as _Object_ |
 
 __Example__
 
 ```py
-stat = minio.stat_object("my-bucketname", "my-objectname")
+# Get object information.
+result = client.stat_object("my-bucket", "my-object")
+print(
+    "last-modified: {0}, size: {1}".format(
+        result.last_modified, result.size,
+    ),
+)
+
+# Get object information of version-ID.
+result = client.stat_object(
+    "my-bucket", "my-object",
+    version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
+)
+print(
+    "last-modified: {0}, size: {1}".format(
+        result.last_modified, result.size,
+    ),
+)
+
+# Get SSE-C encrypted object information.
+result = client.stat_object(
+    "my-bucket", "my-object",
+    ssec=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
+)
+print(
+    "last-modified: {0}, size: {1}".format(
+        result.last_modified, result.size,
+    ),
+)
 ```
 
 <a name="remove_object"></a>
@@ -1370,11 +1446,13 @@ __Parameters__
 __Example__
 
 ```py
-minio.remove_object("my-bucketname", "my-objectname")
-minio.remove_object(
-    "my-bucketname",
-    "my-objectname",
-    version_id="13f88b18-8dcd-4c83-88f2-8631fdb6250c",
+# Remove object.
+client.remove_object("my-bucket", "my-object")
+
+# Remove version of an object.
+client.remove_object(
+    "my-bucket", "my-object",
+    version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
 )
 ```
 
@@ -1401,17 +1479,24 @@ __Return Value__
 __Example__
 
 ```py
-errors = minio.remove_objects(
-    "my-bucketname",
+# Remove list of objects.
+errors = client.remove_objects(
+    "my-bucket",
     [
-        DeleteObject("my-objectname1"),
-        DeleteObject("my-objectname2"),
-        DeleteObject(
-            "my-objectname3",
-            "13f88b18-8dcd-4c83-88f2-8631fdb6250c",
-        ),
+        DeleteObject("my-object1"),
+        DeleteObject("my-object2"),
+        DeleteObject("my-object3", "13f88b18-8dcd-4c83-88f2-8631fdb6250c"),
     ],
 )
+for error in errors:
+    print("error occured when deleting object", error)
+
+# Remove a prefix recursively.
+delete_object_list = map(
+    lambda x: DeleteObject(x.object_name),
+    client.list_objects("my-bucket", "my/prefix/", recursive=True),
+)
+errors = client.remove_objects("my-bucket", delete_object_list)
 for error in errors:
     print("error occured when deleting object", error)
 ```
@@ -1433,7 +1518,7 @@ __Parameters__
 __Example__
 
 ```py
-minio.delete_object_tags("my-bucketname", "my-objectname")
+client.delete_object_tags("my-bucket", "my-object")
 ```
 
 <a name="get_object_tags"></a>
@@ -1457,7 +1542,7 @@ __Parameters__
 __Example__
 
 ```py
-tags = minio.get_object_tags("my-bucketname", "my-objectname")
+tags = client.get_object_tags("my-bucket", "my-object")
 ```
 
 <a name="set_object_tags"></a>
@@ -1481,7 +1566,7 @@ __Example__
 tags = Tags.new_object_tags()
 tags["Project"] = "Project One"
 tags["User"] = "jsmith"
-client.set_object_tags("my-bucketname", "my-objectname", tags)
+client.set_object_tags("my-bucket", "my-object", tags)
 ```
 
 <a name="enable_object_legal_hold"></a>
@@ -1501,7 +1586,7 @@ __Parameters__
 __Example__
 
 ```py
-minio.enable_object_legal_hold("my-bucketname", "my-objectname")
+client.enable_object_legal_hold("my-bucket", "my-object")
 ```
 
 <a name="disable_object_legal_hold"></a>
@@ -1521,7 +1606,7 @@ __Parameters__
 __Example__
 
 ```py
-minio.disable_object_legal_hold("my-bucketname", "my-objectname")
+client.disable_object_legal_hold("my-bucket", "my-object")
 ```
 
 <a name="is_object_legal_hold_enabled"></a>
@@ -1541,7 +1626,10 @@ __Parameters__
 __Example__
 
 ```py
-minio.is_object_legal_hold_enabled("my-bucketname", "my-objectname")
+if client.is_object_legal_hold_enabled("my-bucket", "my-object"):
+    print("legal hold is enabled on my-object")
+else:
+    print("legal hold is not enabled on my-object")
 ```
 
 <a name="get_object_retention"></a>
@@ -1568,7 +1656,7 @@ __Return Value__
 __Example__
 
 ```py
-config = minio.get_object_retention("my-bucketname", "my-objectname")
+config = client.get_object_retention("my-bucket", "my-object")
 ```
 
 <a name="set_object_retention"></a>
@@ -1590,7 +1678,7 @@ __Example__
 
 ```py
 config = Retention(GOVERNANCE, datetime.utcnow() + timedelta(days=10))
-minio.set_object_retention("my-bucketname", "my-objectname", config)
+client.set_object_retention("my-bucket", "my-object", config)
 ```
 
 <a name="presigned_get_object"></a>

@@ -14,18 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-# dummy values, please replace them with original values.
-
 from minio import Minio
-from minio.error import ResponseError
 
-client = Minio('s3.amazonaws.com',
-               access_key='YOUR-ACCESSKEYID',
-               secret_key='YOUR-SECRETACCESSKEY')
+client = Minio(
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+)
 
-# Make a new bucket
-try:
-    client.make_bucket('my-bucketname')
-except ResponseError as err:
-    print(err)
+# Create bucket.
+client.make_bucket("my-bucket")
+
+# Create bucket on specific region.
+client.make_bucket("my-bucket", "us-west-1")
+
+# Create bucket with object-lock feature on specific region.
+client.make_bucket("my-bucket", "eu-west-2", object_lock=True)

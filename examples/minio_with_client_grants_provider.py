@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
 import json
 
@@ -59,5 +58,5 @@ provider = ClientGrantsProvider(
 client = Minio("MINIO-HOST:MINIO-PORT", credentials=provider)
 
 # Get information of an object.
-stat = client.stat_object("my-bucketname", "my-objectname")
+stat = client.stat_object("my-bucket", "my-object")
 print(stat)

@@ -14,20 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-testfile, my-bucketname and
-# my-objectname are dummy values, please replace them with original values.
-
 from minio import Minio
 
-client = Minio('play.min.io',
-               access_key='Q3AM3UQ867SPQQA43P2F',
-               secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
+client = Minio(
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+)
 
-# Put a file with default content-type.
-events = client.listen_bucket_notification('my-bucket', 'my-prefix/',
-                                           '.my-suffix',
-                                           ['s3:ObjectCreated:*',
-                                            's3:ObjectRemoved:*',
-                                            's3:ObjectAccessed:*'])
+events = client.listen_bucket_notification(
+    "my-bucket",
+    prefix="my-prefix/",
+    events=["s3:ObjectCreated:*", "s3:ObjectRemoved:*"],
+)
 for event in events:
     print(event)

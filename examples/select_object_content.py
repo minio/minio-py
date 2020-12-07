@@ -20,9 +20,9 @@ from minio.select import (CSVInputSerialization, CSVOutputSerialization,
                           SelectRequest)
 
 client = Minio(
-    "s3.amazonaws.com",
-    access_key="YOUR-ACCESSKEY",
-    secret_key="YOUR-SECRETKEY",
+    "play.min.io",
+    access_key="Q3AM3UQ867SPQQA43P2F",
+    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
 with client.select_object_content(
