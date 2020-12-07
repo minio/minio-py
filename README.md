@@ -10,7 +10,7 @@ Python 3.6 or higher.
 ## Download using pip
 
 ```sh
-pip install minio
+pip3 install minio
 ```
 
 ## Download source
@@ -22,9 +22,9 @@ python setup.py install
 ```
 
 ## Quick Start Example - File Uploader
-This example program connects to an object storage server, makes a bucket on the server and then uploads a file to the bucket.
+This example program connects to an S3-compatible object storage server, make a bucket on that server, and upload a file to the bucket.
 
-You need three items in order to connect to an object storage server.
+You need the following items to connect to an S3-compatible object storage server:
 
 | Parameters | Description                                                |
 |------------|------------------------------------------------------------|
@@ -58,7 +58,7 @@ def main():
 
     # Upload '/home/user/Photos/asiaphotos.zip' as object name
     # 'asiaphotos-2015.zip' to bucket 'asiatrip'.
-    client.put_object(
+    client.fput_object(
         "asiatrip", "asiaphotos-2015.zip", "/home/user/Photos/asiaphotos.zip",
     )
     print(
