@@ -26,3 +26,5 @@ var/
 .#*
 .vscode
 #*
+tests/functional/.*
+tests/functional/minio*

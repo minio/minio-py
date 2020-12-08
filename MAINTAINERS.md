@@ -8,7 +8,7 @@ Fork [minio-py upstream](https://github.com/minio/minio-py/fork) source reposito
 ```sh
 $ git clone git@github.com:minio/minio-py
 $ cd minio-py
-$ pip install urllib3 certifi pyflakes faker twine
+$ pip install --user --upgrade twine
 ```
 
 ### Modify package version
@@ -23,10 +23,9 @@ __version__ = '2.2.5'
 ```
 
 ### Build and verify
-Run `./tests/unit_test.sh` and `./tests/functional_test.sh` to verify the SDK.
 ```sh
-$ ./tests/unit_test.sh
-$ ./tests/functional_test.sh all
+$ make
+$ python setup.py register
 $ python setup.py sdist bdist bdist_wheel
 ```
 

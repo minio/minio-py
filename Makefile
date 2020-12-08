@@ -1,9 +1,12 @@
-.PHONY: examples tests publish
+.PHONY: default
+default: tests
 
 getdeps:
-	@pip install --user --upgrade pylint autopep8
+	@echo "Installing required dependencies"
+	@pip install --user --upgrade autopep8 certifi configparser mock nose pylint urllib3
 
 check: getdeps
+	@echo "Running checks"
 	@pylint --reports=no --score=no --disable=R0401,R0801 minio/*py
 	@pylint --reports=no --score=no minio/credentials tests/functional
 	@isort --diff .
@@ -13,9 +16,8 @@ apply: getdeps
 	@isort .
 	@find . -name "*.py" -exec autopep8 --in-place {} +
 
-publish:
-	python setup.py register
-	python setup.py sdist bdist bdist_wheel upload
-
-tests:
-	python setup.py nosetests
+tests: check
+	@echo "Running unit tests"
+	@nosetests
+	@echo "Running functional tests"
+	@(env bash run_functional_tests.sh)
