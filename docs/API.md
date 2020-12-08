@@ -3,10 +3,7 @@
 ## 1. Constructor
 
 ### Minio(endpoint, access_key=None, secret_key=None, session_token=None, secure=True, region=None, http_client=None, credentials=None)
-|                                                                                                                                       |
-|---------------------------------------------------------------------------------------------------------------------------------------|
-| `Minio(endpoint, access_key=None, secret_key=None, session_token=None, secure=True, region=None, http_client=None, credentials=None)` |
-| Initializes a new client object.                                                                                                      |
+Initializes a new client object.
 
 __Parameters__
 
