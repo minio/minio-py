@@ -27,7 +27,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools
-        pip install certifi configparser urllib3 mock nose
+        pip install certifi urllib3 mock nose
     - name: Run unit tests
       run: |
         python setup.py install
