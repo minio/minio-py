@@ -16,11 +16,10 @@
 #
 
 function run_minio_server() {
-    if [ -f tests/functional/minio ]; then
-        rm -f tests/functional/minio
+    if [ ! -f tests/functional/minio ]; then
+        wget --quiet --output-document tests/functional/minio https://dl.min.io/server/minio/release/linux-amd64/minio
+        chmod +x tests/functional/minio
     fi
-    wget --quiet --output-document tests/functional/minio https://dl.min.io/server/minio/release/linux-amd64/minio
-    chmod +x tests/functional/minio
 
     export MINIO_ACCESS_KEY=minio
     export MINIO_SECRET_KEY=minio123
@@ -34,9 +33,19 @@ function run_minio_server() {
     tests/functional/minio server --config-dir tests/functional/.cfg tests/functional/.d{1...4} >tests/functional/minio.log 2>&1 &
 }
 
-run_minio_server
-sleep 3
+if [ -z ${SERVER_ENDPOINT+x} ]; then
+    run_minio_server
+    MINIO_PID=$!
+    trap 'kill -9 ${MINIO_PID} 2>/dev/null' INT
 
-pip install --user .
-SECRET_KEY=minio123 ACCESS_KEY=minio SERVER_ENDPOINT=localhost:9000 ENABLE_HTTPS=0 MINT_MODE=full PYTHONPATH=$PWD python tests/functional/tests.py
-pkill -9 minio
+    export MINT_MODE=full
+    export SERVER_ENDPOINT=localhost:9000
+    export ACCESS_KEY=minio
+    export SECRET_KEY=minio123
+    export ENABLE_HTTPS=0
+fi
+
+PYTHONPATH=$PWD python tests/functional/tests.py
+if [ -n "$MINIO_PID" ]; then
+    kill -9 "$MINIO_PID" 2>/dev/null
+fi
