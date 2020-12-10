@@ -43,7 +43,7 @@ setup(
     long_description_content_type="text/markdown",
     package_dir={"minio": "minio"},
     packages=["minio", "minio.credentials"],
-    install_requires=["certifi", "configparser", "urllib3"],
+    install_requires=["certifi", "urllib3"],
     tests_require=["mock", "nose"],
     license="Apache License 2.0",
     classifiers=[
