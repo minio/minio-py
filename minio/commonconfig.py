@@ -179,8 +179,6 @@ class Filter:
         )
         if not valid:
             raise ValueError("only one of and, prefix or tag must be provided")
-        if prefix is not None and not prefix:
-            raise ValueError("prefix must not be empty")
         self._and_operator = and_operator
         self._prefix = prefix
         self._tag = tag
