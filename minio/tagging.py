@@ -47,6 +47,5 @@ class Tagging:
         """Convert to XML."""
         element = Element("Tagging")
         if self._tags:
-            element = SubElement(element, "TagSet")
-            self._tags.toxml(element)
+            self._tags.toxml(SubElement(element, "TagSet"))
         return element
