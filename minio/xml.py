@@ -77,7 +77,7 @@ def findtext(element, name, strict=False):
         if strict:
             raise ValueError("XML element <{0}> not found".format(name))
         return None
-    return element.text
+    return element.text or ""
 
 
 def unmarshal(cls, xmlstring):

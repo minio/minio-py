@@ -41,6 +41,18 @@ class LifecycleConfigTest(TestCase):
         )
         xml.marshal(config)
 
+        config = LifecycleConfig(
+            [
+                Rule(
+                    ENABLED,
+                    rule_filter=Filter(prefix=""),
+                    rule_id="rule",
+                    expiration=Expiration(days=365),
+                ),
+            ],
+        )
+        xml.marshal(config)
+
         config = xml.unmarshal(
             LifecycleConfig,
             """<LifeCycleConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
@@ -64,6 +76,23 @@ class LifecycleConfigTest(TestCase):
       <NoncurrentDays>30</NoncurrentDays>
       <StorageClass>GLACIER</StorageClass>
     </NoncurrentVersionTransition>
+  </Rule>
+</LifeCycleConfiguration>""",
+        )
+        xml.marshal(config)
+
+        config = xml.unmarshal(
+            LifecycleConfig,
+            """<LifeCycleConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Rule>
+    <ID>DeleteAfterBecomingNonCurrent</ID>
+    <Filter>
+       <Prefix></Prefix>
+    </Filter>
+    <Status>Enabled</Status>
+    <NoncurrentVersionExpiration>
+      <NoncurrentDays>100</NoncurrentDays>
+    </NoncurrentVersionExpiration>
   </Rule>
 </LifeCycleConfiguration>""",
         )
