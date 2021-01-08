@@ -221,11 +221,10 @@ class Minio:  # pylint: disable=too-many-public-methods
             headers=None,
             query_params=None,
             preload_content=True,
+            no_body_trace=False,
     ):
         """Execute HTTP request."""
         creds = self._provider.retrieve() if self._provider else None
-        trace_body = isinstance(body, str)
-        body = body.encode() if trace_body else body
         url = self._base_url.build(
             method,
             region,
@@ -259,8 +258,12 @@ class Minio:  # pylint: disable=too-many-public-methods
                 headers_to_strings(headers, titled_key=True),
             )
             self._trace_stream.write("\n")
-            if trace_body:
-                self._trace_stream.write(body.decode())
+            if not no_body_trace and body is not None:
+                self._trace_stream.write("\n")
+                self._trace_stream.write(
+                    body.decode() if isinstance(body, bytes) else str(body),
+                )
+                self._trace_stream.write("\n")
             self._trace_stream.write("\n")
 
         http_headers = HTTPHeaderDict()
@@ -287,6 +290,10 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         if response.status in [200, 204, 206]:
             if self._trace_stream:
+                if preload_content:
+                    self._trace_stream.write("\n")
+                    self._trace_stream.write(response.data.decode())
+                    self._trace_stream.write("\n")
                 self._trace_stream.write("----------END-HTTP----------\n")
             return response
 
@@ -393,6 +400,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             headers=None,
             query_params=None,
             preload_content=True,
+            no_body_trace=False,
     ):
         """Execute HTTP request."""
         region = self._get_region(bucket_name, None)
@@ -407,6 +415,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 headers=headers,
                 query_params=query_params,
                 preload_content=preload_content,
+                no_body_trace=no_body_trace,
             )
         except S3Error as exc:
             if exc.code != "RetryHead":
@@ -423,6 +432,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 headers=headers,
                 query_params=query_params,
                 preload_content=preload_content,
+                no_body_trace=no_body_trace,
             )
         except S3Error as exc:
             if exc.code != "RetryHead":
@@ -1608,6 +1618,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             body=data,
             headers=headers,
             query_params=query_params,
+            no_body_trace=True,
         )
         return ObjectWriteResult(
             bucket_name,

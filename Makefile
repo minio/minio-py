@@ -20,4 +20,4 @@ tests: check
 	@echo "Running unit tests"
 	@nosetests
 	@echo "Running functional tests"
-	@(env bash run_functional_tests.sh)
+	@env bash run_functional_tests.sh
