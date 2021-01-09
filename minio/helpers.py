@@ -81,7 +81,7 @@ def headers_to_strings(headers, titled_key=False):
                     re.sub(
                         r"Signature=([0-9a-f]+)",
                         "Signature=*REDACTED*",
-                        value,
+                        value if isinstance(value, str) else str(value),
                     ),
                 ) if titled_key else value,
             ) for key, value in headers.items()
