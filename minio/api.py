@@ -2390,7 +2390,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 "GET", bucket_name, query_params={"tagging": ""},
             )
             tagging = unmarshal(Tagging, response.data.decode())
-            return tagging.tags()
+            return tagging.tags
         except S3Error as exc:
             if exc.code != "NoSuchTagSet":
                 raise
@@ -2467,7 +2467,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 query_params=query_params,
             )
             tagging = unmarshal(Tagging, response.data.decode())
-            return tagging.tags()
+            return tagging.tags
         except S3Error as exc:
             if exc.code != "NoSuchTagSet":
                 raise
