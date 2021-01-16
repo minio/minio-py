@@ -2603,9 +2603,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         Example::
             client.delete_object_lock_config("my-bucket")
         """
-        self.set_object_lock_config(
-            bucket_name, ObjectLockConfig(None, None, None),
-        )
+        self.set_object_lock_config(bucket_name, ObjectLockConfig(None, None, None))
 
     def get_object_lock_config(self, bucket_name):
         """
