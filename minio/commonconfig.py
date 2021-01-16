@@ -417,18 +417,6 @@ class ComposeSource(ObjectConditionalReadArgs):
 
     def _validate_size(self, object_size):
         """Validate object size with offset and length."""
-        def _get_error(name, value):
-            ver = ("?versionId="+self._version_id) if self._version_id else ""
-            return (
-                "Source {0}/{1}{2}: {3} {4} is beyond object size {5}".format(
-                    self._bucket_name,
-                    self._object_name,
-                    ver,
-                    name,
-                    value,
-                    object_size,
-                )
-            )
         if self._offset is not None and self._offset >= object_size:
             raise ValueError("offset", self._offset)
         if self._length is not None:
