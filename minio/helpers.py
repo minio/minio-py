@@ -351,6 +351,19 @@ def normalize_headers(headers):
 
 
 def to_http_headers(source_dict=None):
+    """
+    Transforms the given argument into ``HTTPHeaderDict`` instance.
+    No transformation is made if source_dict is already an
+    instance ``HTTPHeaderDict``.
+
+    :type source_dict: Union[dict, HTTPHeaderDict, None]
+    :param source_dict: The source headers as a plain Python
+    dictionary.
+
+    :rtype: ``HTTPHeaderDict``
+    :return: The source dictionary converted to ``HTTPHeaderDict``
+    (if necessary) or a new empty HTTPHeaderDict instance
+    """
     if isinstance(source_dict, HTTPHeaderDict):
         return source_dict
 
