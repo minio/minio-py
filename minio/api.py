@@ -510,7 +510,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         Enable http trace.
 
-        :param output_stream: Stream for writing HTTP call tracing.
+        :param stream: Stream for writing HTTP call tracing.
         """
         if not stream:
             raise ValueError('Input stream for trace output is invalid.')
@@ -755,7 +755,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         Set notification configuration of a bucket.
 
         :param bucket_name: Name of the bucket.
-        :param :class:`NotificationConfig <NotificationConfig>` object.
+        :param config: class:`NotificationConfig <NotificationConfig>` object.
 
         Example::
             config = NotificationConfig(
@@ -1034,6 +1034,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param ssec: Server-side encryption customer key.
         :param version_id: Version-ID of the object.
         :param extra_query_params: Extra query parameters for advanced usage.
+        :param tmp_file_path: Path to a temporary file
         :return: Object information.
 
         Example::
@@ -1081,6 +1082,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             os.remove(tmp_file_path)
             offset = 0
 
+        response = None
         try:
             response = self.get_object(
                 bucket_name,
@@ -2056,12 +2058,12 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param bucket_name: Name of the bucket.
         :param object_name: Object name in the bucket.
         :param expires: Expiry in seconds; defaults to 7 days.
-        :params response_headers: Optional response_headers argument to
-                                  specify response fields like date, size,
-                                  type of file, data about server, etc.
-        :params request_date: Optional request_date argument to
-                              specify a different request date. Default is
-                              current date.
+        :param response_headers: Optional response_headers argument to
+                                 specify response fields like date, size,
+                                 type of file, data about server, etc.
+        :param request_date: Optional request_date argument to
+                             specify a different request date. Default is
+                             current date.
         :param version_id: Version ID of the object.
         :param extra_query_params: Extra query parameters for advanced usage.
         :return: URL string.
@@ -2602,7 +2604,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             client.delete_object_lock_config("my-bucket")
         """
         self.set_object_lock_config(
-            self, bucket_name, ObjectLockConfig(None, None, None),
+            bucket_name, ObjectLockConfig(None, None, None)
         )
 
     def get_object_lock_config(self, bucket_name):
@@ -2789,7 +2791,6 @@ class Minio:  # pylint: disable=too-many-public-methods
         Execute ListMultipartUploads S3 API.
 
         :param bucket_name: Name of the bucket.
-        :param region: (Optional) Region of the bucket.
         :param delimiter: (Optional) Delimiter on listing.
         :param encoding_type: (Optional) Encoding type.
         :param key_marker: (Optional) Key marker.
@@ -2838,7 +2839,6 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param bucket_name: Name of the bucket.
         :param object_name: Object name in the bucket.
         :param upload_id: Upload ID.
-        :param region: (Optional) Region of the bucket.
         :param max_parts: (Optional) Maximum parts information to fetch.
         :param part_number_marker: (Optional) Part number marker.
         :param extra_headers: (Optional) Extra headers for advanced usage.
