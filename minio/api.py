@@ -34,7 +34,6 @@ from xml.etree import ElementTree as ET
 
 import certifi
 import urllib3
-from urllib3._collections import HTTPHeaderDict
 
 from . import __title__, __version__, time
 from .commonconfig import COPY, REPLACE, ComposeSource, CopySource, Tags
@@ -49,8 +48,9 @@ from .helpers import (MAX_MULTIPART_COUNT, MAX_MULTIPART_OBJECT_SIZE,
                       MAX_PART_SIZE, MIN_PART_SIZE, BaseURL, ObjectWriteResult,
                       ThreadPool, check_bucket_name, check_non_empty_string,
                       check_sse, check_ssec, genheaders, get_part_info,
-                      headers_to_strings, is_valid_policy_type, makedirs,
-                      md5sum_hash, read_part_data, sha256_hash)
+                      headers_to_strings, to_http_headers,
+                      is_valid_policy_type, makedirs, md5sum_hash,
+                      read_part_data, sha256_hash)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
@@ -184,15 +184,15 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def _build_headers(self, host, headers, body, creds):
         """Build headers with given parameters."""
-        headers = headers or {}
-        md5sum_added = headers.get("Content-MD5")
-        headers["Host"] = host
-        headers["User-Agent"] = self._user_agent
+        http_headers = to_http_headers(headers)
+        md5sum_added = http_headers.get("Content-MD5")
+        http_headers["Host"] = host
+        http_headers["User-Agent"] = self._user_agent
         sha256 = None
         md5sum = None
 
         if body:
-            headers["Content-Length"] = str(len(body))
+            http_headers["Content-Length"] = str(len(body))
         if creds:
             if self._base_url.is_https:
                 sha256 = "UNSIGNED-PAYLOAD"
@@ -202,14 +202,14 @@ class Minio:  # pylint: disable=too-many-public-methods
         else:
             md5sum = None if md5sum_added else md5sum_hash(body)
         if md5sum:
-            headers["Content-MD5"] = md5sum
+            http_headers["Content-MD5"] = md5sum
         if sha256:
-            headers["x-amz-content-sha256"] = sha256
+            http_headers["x-amz-content-sha256"] = sha256
         if creds and creds.session_token:
-            headers["X-Amz-Security-Token"] = creds.session_token
+            http_headers["X-Amz-Security-Token"] = creds.session_token
         date = time.utcnow()
-        headers["x-amz-date"] = time.to_amz_date(date)
-        return headers, date
+        http_headers["x-amz-date"] = time.to_amz_date(date)
+        return http_headers, date
 
     def _url_open(  # pylint: disable=too-many-branches
             self,
@@ -232,15 +232,17 @@ class Minio:  # pylint: disable=too-many-public-methods
             object_name=object_name,
             query_params=query_params,
         )
-        headers, date = self._build_headers(url.netloc, headers, body, creds)
+        http_headers, date = self._build_headers(
+            url.netloc, headers, body, creds
+        )
         if creds:
-            headers = sign_v4_s3(
+            http_headers = sign_v4_s3(
                 method,
                 url,
                 region,
-                headers,
+                http_headers,
                 creds,
-                headers.get("x-amz-content-sha256"),
+                http_headers.get("x-amz-content-sha256"),
                 date,
             )
 
@@ -266,12 +268,9 @@ class Minio:  # pylint: disable=too-many-public-methods
                 self._trace_stream.write("\n")
             self._trace_stream.write("\n")
 
-        http_headers = HTTPHeaderDict()
-        for key, value in (headers or {}).items():
+        for key, value in list(http_headers.items()):
             if isinstance(value, (list, tuple)):
                 _ = [http_headers.add(key, val) for val in value]
-            else:
-                http_headers.add(key, value)
 
         response = self._http.urlopen(
             method,

@@ -28,6 +28,8 @@ import urllib.parse
 from queue import Queue
 from threading import BoundedSemaphore, Thread
 
+from urllib3._collections import HTTPHeaderDict
+
 from .sse import Sse, SseCustomerKey
 from .time import to_iso8601utc
 
@@ -321,7 +323,7 @@ def _metadata_to_headers(metadata):
 
 def normalize_headers(headers):
     """Normalize headers by prefixing 'X-Amz-Meta-' for user metadata."""
-    headers = headers.copy() if headers else {}
+    http_headers = headers.copy() if headers else HTTPHeaderDict()
 
     def guess_user_metadata(key):
         key = key.lower()
@@ -337,21 +339,32 @@ def normalize_headers(headers):
         )
 
     user_metadata = {
-        key: value for key, value in headers.items()
+        key: value for key, value in http_headers.items()
         if guess_user_metadata(key)
     }
 
     # Remove guessed user metadata.
-    _ = [headers.pop(key) for key in user_metadata]
+    _ = [http_headers.pop(key) for key in user_metadata]
 
-    headers.update(_metadata_to_headers(user_metadata))
-    return headers
+    http_headers.update(_metadata_to_headers(user_metadata))
+    return http_headers
+
+
+def to_http_headers(source_dict=None):
+    if isinstance(source_dict, HTTPHeaderDict):
+        return source_dict
+
+    http_headers = HTTPHeaderDict()
+    for key, value in (source_dict or {}).items():
+        http_headers.add(key, value)
+    return http_headers
 
 
 def genheaders(headers, sse, tags, retention, legal_hold):
     """Generate headers for given parameters."""
-    headers = normalize_headers(headers)
-    headers.update(sse.headers() if sse else {})
+    http_headers = to_http_headers(headers)
+    http_headers = normalize_headers(http_headers)
+    http_headers.update(sse.headers() if sse else {})
     tagging = "&".join(
         [
             queryencode(key) + "=" + queryencode(value)
@@ -359,15 +372,15 @@ def genheaders(headers, sse, tags, retention, legal_hold):
         ],
     )
     if tagging:
-        headers["x-amz-tagging"] = tagging
+        http_headers["x-amz-tagging"] = tagging
     if retention and retention.mode():
-        headers["x-amz-object-lock-mode"] = retention.mode()
-        headers["x-amz-object-lock-retain-until-date"] = (
+        http_headers["x-amz-object-lock-mode"] = retention.mode()
+        http_headers["x-amz-object-lock-retain-until-date"] = (
             to_iso8601utc(retention.retain_until_date())
         )
     if legal_hold:
-        headers["x-amz-object-lock-legal-hold"] = "ON"
-    return headers
+        http_headers["x-amz-object-lock-legal-hold"] = "ON"
+    return http_headers
 
 
 def _extract_region(host):
