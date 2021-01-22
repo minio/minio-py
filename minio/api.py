@@ -145,9 +145,10 @@ class Minio:  # pylint: disable=too-many-public-methods
         self._provider = credentials
 
         # Load CA certificates from SSL_CERT_FILE file if set
+        timeout = timedelta(minutes=5).seconds
         ca_certs = os.environ.get('SSL_CERT_FILE') or certifi.where()
         self._http = http_client or urllib3.PoolManager(
-            timeout=urllib3.Timeout.DEFAULT_TIMEOUT,
+            timeout=urllib3.util.Timeout(connect=timeout, read=timeout),
             maxsize=10,
             cert_reqs='CERT_REQUIRED',
             ca_certs=ca_certs,
