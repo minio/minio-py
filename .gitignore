@@ -25,6 +25,7 @@ var/
 *~
 .#*
 .vscode
+.idea
 #*
 tests/functional/.*
 tests/functional/minio*
