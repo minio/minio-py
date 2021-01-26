@@ -159,6 +159,8 @@ def read_part_data(stream, size, part_data=b'', progress=None):
         data = stream.read(bytes_to_read)
         if not data:
             break  # EOF reached
+        if not isinstance(data, bytes):
+            raise ValueError("read() must return 'bytes' object")
         part_data += data
         if progress:
             progress.update(len(data))

@@ -1115,20 +1115,20 @@ Uploads data from a stream to an object in a bucket.
 
 __Parameters__
 
-| Param          | Type           | Description                                                         |
-|:---------------|:---------------|:--------------------------------------------------------------------|
-| `bucket_name`  | _str_          | Name of the bucket.                                                 |
-| `object_name`  | _str_          | Object name in the bucket.                                          |
-| `data`         | _io.RawIOBase_ | Contains object data.                                               |
-| `length`       | _int_          | Data size; -1 for unknown size and set valid part_size.             |
-| `content_type` | _str_          | Content type of the object.                                         |
-| `metadata`     | _dict_         | Any additional metadata to be uploaded along with your PUT request. |
-| `sse`          | _Sse_          | Server-side encryption.                                             |
-| `progress`     | _threading_    | A progress object.                                                  |
-| `part_size`    | _int_          | Multipart part size.                                                |
-| `tags`         | _Tags_         | Tags for the object.                                                |
-| `retention`    | _Retention_    | Retention configuration.                                            |
-| `legal_hold`   | _bool_         | Flag to set legal hold for the object.                              |
+| Param          | Type        | Description                                                         |
+|:---------------|:------------|:--------------------------------------------------------------------|
+| `bucket_name`  | _str_       | Name of the bucket.                                                 |
+| `object_name`  | _str_       | Object name in the bucket.                                          |
+| `data`         | _object_    | An object having callable read() returning bytes object.            |
+| `length`       | _int_       | Data size; -1 for unknown size and set valid part_size.             |
+| `content_type` | _str_       | Content type of the object.                                         |
+| `metadata`     | _dict_      | Any additional metadata to be uploaded along with your PUT request. |
+| `sse`          | _Sse_       | Server-side encryption.                                             |
+| `progress`     | _threading_ | A progress object.                                                  |
+| `part_size`    | _int_       | Multipart part size.                                                |
+| `tags`         | _Tags_      | Tags for the object.                                                |
+| `retention`    | _Retention_ | Retention configuration.                                            |
+| `legal_hold`   | _bool_      | Flag to set legal hold for the object.                              |
 
 __Return Value__
 

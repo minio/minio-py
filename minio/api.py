@@ -1657,7 +1657,7 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         :param bucket_name: Name of the bucket.
         :param object_name: Object name in the bucket.
-        :param data: Contains object data.
+        :param data: An object having callable read() returning bytes object.
         :param length: Data size; -1 for unknown size and set valid part_size.
         :param content_type: Content type of the object.
         :param metadata: Any additional metadata to be uploaded along
@@ -1674,12 +1674,12 @@ class Minio:  # pylint: disable=too-many-public-methods
         Example::
             # Upload data.
             result = client.put_object(
-                "my-bucket", "my-object", io.StringIO("hello"), 5,
+                "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
             )
 
             # Upload data with metadata.
             result = client.put_object(
-                "my-bucket", "my-object", io.StringIO("hello"), 5,
+                "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
                 metadata={"My-Project": "one"},
             )
 
@@ -1690,7 +1690,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             tags = Tags(for_object=True)
             tags["User"] = "jsmith"
             result = client.put_object(
-                "my-bucket", "my-object", io.StringIO("hello"), 5,
+                "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
                 tags=tags,
                 retention=Retention(GOVERNANCE, date),
                 legal_hold=True,
