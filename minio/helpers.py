@@ -360,10 +360,10 @@ def genheaders(headers, sse, tags, retention, legal_hold):
     )
     if tagging:
         headers["x-amz-tagging"] = tagging
-    if retention and retention.mode():
-        headers["x-amz-object-lock-mode"] = retention.mode()
+    if retention and retention.mode:
+        headers["x-amz-object-lock-mode"] = retention.mode
         headers["x-amz-object-lock-retain-until-date"] = (
-            to_iso8601utc(retention.retain_until_date())
+            to_iso8601utc(retention.retain_until_date)
         )
     if legal_hold:
         headers["x-amz-object-lock-legal-hold"] = "ON"
