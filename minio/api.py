@@ -626,7 +626,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         if location != "us-east-1":
             element = Element("CreateBucketConfiguration")
             SubElement(element, "LocationConstraint", location)
-            body = marshal(element)
+            body = getbytes(element)
         self._url_open(
             "PUT",
             location,
