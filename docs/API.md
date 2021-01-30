@@ -941,8 +941,7 @@ with client.select_object_content(
 
 <a name="fget_object"></a>
 
-### fget_object(bucket_name, object_name, file_path, request_headers=None, ssec=None, version_id=None, extra_query_params=None)
-
+### fget_object(bucket_name, object_name, file_path, request_headers=None, ssec=None, version_id=None, extra_query_params=None, tmp_file_path=None)
 Downloads data of an object to file.
 
 __Parameters__
@@ -956,6 +955,7 @@ __Parameters__
 | `ssec`               | _SseCustomerKey_ | Server-side encryption customer key.                 |
 | `version_id`         | _str_            | Version-ID of the object.                            |
 | `extra_query_params` | _dict_           | Extra query parameters for advanced usage.           |
+| `tmp_file_path`      | _str_            | Path to a temporary file.                            |
 
 __Return Value__
 
