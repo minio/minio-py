@@ -18,7 +18,7 @@
 # dummy values, please replace them with original values.
 
 from minio import Minio
-from minio.error import ResponseError
+from minio.error import InvalidResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
@@ -26,5 +26,5 @@ client = Minio('s3.amazonaws.com',
 
 try:
     print(client.bucket_exists('my-bucketname'))
-except ResponseError as err:
+except InvalidResponseError as err:
     print(err)
