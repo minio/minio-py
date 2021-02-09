@@ -98,11 +98,11 @@ class AssumeRoleProvider(Provider):
         query_params = {
             "Action": "AssumeRole",
             "Version": "2011-06-15",
-            "DurationSeconds": str(
+            "DurationSeconds": str(int(
                 duration_seconds
                 if duration_seconds > _DEFAULT_DURATION_SECONDS
                 else _DEFAULT_DURATION_SECONDS
-            ),
+            )),
         }
 
         if role_arn:
