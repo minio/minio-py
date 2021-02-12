@@ -37,9 +37,9 @@ from minio.xml import find, findtext
 
 from .credentials import Credentials
 
-_MIN_DURATION_SECONDS = timedelta(minutes=15).total_seconds()
-_MAX_DURATION_SECONDS = timedelta(days=7).total_seconds()
-_DEFAULT_DURATION_SECONDS = timedelta(hours=1).total_seconds()
+_MIN_DURATION_SECONDS = int(timedelta(minutes=15).total_seconds())
+_MAX_DURATION_SECONDS = int(timedelta(days=7).total_seconds())
+_DEFAULT_DURATION_SECONDS = int(timedelta(hours=1).total_seconds())
 
 
 def _parse_credentials(data, name):
