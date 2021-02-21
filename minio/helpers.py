@@ -152,16 +152,15 @@ def get_part_info(object_size, part_size):
 
 def read_part_data(stream, size, part_data=b'', progress=None):
     """Read part data of given size from stream."""
-    while len(part_data) < size:
-        bytes_to_read = size - len(part_data)
-        if bytes_to_read > 16384:
-            bytes_to_read = 16384
-        data = stream.read(bytes_to_read)
+    size -= len(part_data)
+    while size:
+        data = stream.read(size)
         if not data:
             break  # EOF reached
         if not isinstance(data, bytes):
             raise ValueError("read() must return 'bytes' object")
         part_data += data
+        size -= len(data)
         if progress:
             progress.update(len(data))
     return part_data
