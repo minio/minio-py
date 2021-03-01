@@ -159,6 +159,9 @@ class Minio:  # pylint: disable=too-many-public-methods
             )
         )
 
+    def __del__(self):
+        self._http.clear()
+
     def _handle_redirect_response(
             self, method, bucket_name, response, retry=False,
     ):
