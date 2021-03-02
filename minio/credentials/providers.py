@@ -307,13 +307,17 @@ class MinioClientConfigProvider(Provider):
         try:
             with open(self._filename) as conf_file:
                 config = json.load(conf_file)
-            if not config.get("hosts"):
+            if "aliases" in config:
+                key = "aliases"
+            elif "hosts" in config:
+                key = "hosts"
+            else:
                 raise ValueError(
                     "invalid configuration in file {0}".format(
                         self._filename,
                     ),
                 )
-            creds = config.get("hosts").get(self._alias)
+            creds = config.get(key).get(self._alias)
             if not creds:
                 raise ValueError(
                     (
