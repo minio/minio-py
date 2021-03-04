@@ -67,7 +67,7 @@ class InputSerialization:
     def toxml(self, element):
         """Convert to XML."""
         if self._compression_type is not None:
-            SubElement(element, "CompressionType")
+            SubElement(element, "CompressionType", self._compression_type)
         return element
 
 
