@@ -51,6 +51,19 @@ class Bucket:
         """Get creation date."""
         return self._creation_date
 
+    def __repr__(self):
+        return "{}({!r})".format(type(self).__name__, self.name)
+
+    def __str__(self):
+        return self.name
+
+    def __eq__(self, other):
+        if isinstance(other, Bucket):
+            return self.name == other.name
+        elif isinstance(other, str):
+            return self.name == other
+        return NotImplemented
+
 
 class ListAllMyBucketsResult:
     """LissBuckets API result."""
