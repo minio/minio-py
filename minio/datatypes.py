@@ -60,7 +60,7 @@ class Bucket:
     def __eq__(self, other):
         if isinstance(other, Bucket):
             return self.name == other.name
-        elif isinstance(other, str):
+        if isinstance(other, str):
             return self.name == other
         return NotImplemented
 
