@@ -2756,7 +2756,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 if fetch_owner:
                     query["fetch-owner"] = "true"
                 if include_user_meta:
-                    query["user-metadata"] = "true"
+                    query["metadata"] = "true"
             query["delimiter"] = delimiter or ""
             if encoding_type:
                 query["encoding-type"] = encoding_type
