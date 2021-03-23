@@ -453,16 +453,19 @@ class LdapIdentityProvider(Provider):
     """Credential provider using AssumeRoleWithLDAPIdentity API."""
 
     def __init__(
-            self, sts_endpoint, ldap_username, ldap_password, http_client=None,
+            self, sts_endpoint, ldap_username, ldap_password, policy=None,
+            http_client=None,
     ):
-        self._sts_endpoint = sts_endpoint + "?" + urlencode(
-            {
-                "Action": "AssumeRoleWithLDAPIdentity",
-                "Version": "2011-06-15",
-                "LDAPUsername": ldap_username,
-                "LDAPPassword": ldap_password,
-            },
-        )
+        params = {
+            "Action": "AssumeRoleWithLDAPIdentity",
+            "Version": "2011-06-15",
+            "LDAPUsername": ldap_username,
+            "LDAPPassword": ldap_password,
+        }
+        if policy:
+            policy = json.dumps(policy) if isinstance(policy, dict) else policy
+            params['Policy'] = policy
+        self._sts_endpoint = sts_endpoint + "?" + urlencode(params)
         self._http_client = http_client or urllib3.PoolManager(
             retries=urllib3.Retry(
                 total=5,
