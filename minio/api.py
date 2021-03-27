@@ -619,7 +619,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                         self._base_url.region, location,
                     ),
                 )
-        location = location or "us-east-1"
+        location = self._base_url.region or location or "us-east-1"
         headers = (
             {"x-amz-bucket-object-lock-enabled": "true"}
             if object_lock else None
