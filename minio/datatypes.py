@@ -88,7 +88,8 @@ class Object:
                  last_modified=None, etag=None,
                  size=None, metadata=None,
                  version_id=None, is_latest=None, storage_class=None,
-                 owner_id=None, owner_name=None, content_type=None):
+                 owner_id=None, owner_name=None, content_type=None,
+                 is_delete_marker=False):
         self._bucket_name = bucket_name
         self._object_name = object_name
         self._last_modified = last_modified
@@ -101,6 +102,7 @@ class Object:
         self._owner_id = owner_id
         self._owner_name = owner_name
         self._content_type = content_type
+        self._is_delete_marker = is_delete_marker
 
     @property
     def bucket_name(self):
@@ -165,7 +167,7 @@ class Object:
     @property
     def is_delete_marker(self):
         """Get whether this key is a delete marker."""
-        return self._size is None and self._version_id is not None
+        return self._is_delete_marker
 
     @property
     def content_type(self):
@@ -173,7 +175,7 @@ class Object:
         return self._content_type
 
     @classmethod
-    def fromxml(cls, element, bucket_name):
+    def fromxml(cls, element, bucket_name, is_delete_marker=False):
         """Create new object with values from XML element."""
         tag = findtext(element, "LastModified")
         last_modified = None if tag is None else from_iso8601utc(tag)
@@ -208,6 +210,7 @@ class Object:
             owner_id=owner_id,
             owner_name=owner_name,
             metadata=metadata,
+            is_delete_marker=is_delete_marker,
         )
 
 
@@ -228,7 +231,7 @@ def parse_list_objects(response, bucket_name):
     ]
 
     elements = findall(element, "DeleteMarker")
-    objects += [Object.fromxml(tag, bucket_name) for tag in elements]
+    objects += [Object.fromxml(tag, bucket_name, True) for tag in elements]
 
     is_truncated = (findtext(element, "IsTruncated") or "").lower() == "true"
     key_marker = findtext(element, "NextKeyMarker")
