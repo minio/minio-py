@@ -1785,6 +1785,8 @@ policy.add_content_length_range_condition(
 form_data = client.presigned_post_policy(policy)
 ```
 
+<a name="get_presigned_url"></a>
+
 ### get_presigned_url(method, bucket_name, object_name, expires=timedelta(days=7), response_headers=None, request_date=None, version_id=None, extra_query_params=None)
 
 Get presigned URL of an object for HTTP method, expiry time and custom request parameters.
