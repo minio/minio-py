@@ -48,9 +48,12 @@ class MinioAdmin:
             capture_output=True,
             timeout=self._timeout,
             check=True,
+            text=True,
         )
+        if not proc.stdout:
+            return [] if multiline else {}
         if multiline:
-            return [json.loads(line) for line in proc.stdout.split("\n")]
+            return [json.loads(line) for line in proc.stdout.splitlines()]
         return json.loads(proc.stdout)
 
     def service_restart(self):
