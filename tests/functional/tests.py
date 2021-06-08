@@ -466,8 +466,11 @@ def test_copy_object_with_metadata(log_entry):
     object_name = "{0}".format(uuid4())
     object_source = object_name + "-source"
     object_copy = object_name + "-copy"
-    metadata = {"testing-string": "string",
-                "testing-int": 1}
+    metadata = {
+        "testing-string": "string",
+        "testing-int": 1,
+        10: 'value',
+    }
 
     log_entry["args"] = {
         "bucket_name": bucket_name,
@@ -490,7 +493,8 @@ def test_copy_object_with_metadata(log_entry):
         # Verification
         st_obj = _CLIENT.stat_object(bucket_name, object_copy)
         expected_metadata = {'x-amz-meta-testing-int': '1',
-                             'x-amz-meta-testing-string': 'string'}
+                             'x-amz-meta-testing-string': 'string',
+                             'x-amz-meta-10': 'value'}
         _validate_stat(st_obj, size, expected_metadata)
     finally:
         _CLIENT.remove_object(bucket_name, object_source)
