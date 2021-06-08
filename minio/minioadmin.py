@@ -30,10 +30,11 @@ class MinioAdmin:
     def __init__(
             self, target,
             binary_path=None, config_dir=None, ignore_cert_check=False,
-            timeout=None,
+            timeout=None, env=None,
     ):
         self._target = target
         self._timeout = timeout
+        self._env = env
         self._base_args = [binary_path or "mc", "--json"]
         if config_dir:
             self._base_args += ["--config-dir", config_dir]
@@ -47,10 +48,14 @@ class MinioAdmin:
             self._base_args + args,
             capture_output=True,
             timeout=self._timeout,
+            env=self._env,
             check=True,
+            text=True,
         )
+        if not proc.stdout:
+            return [] if multiline else {}
         if multiline:
-            return [json.loads(line) for line in proc.stdout.split("\n")]
+            return [json.loads(line) for line in proc.stdout.splitlines()]
         return json.loads(proc.stdout)
 
     def service_restart(self):

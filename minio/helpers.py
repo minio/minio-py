@@ -127,8 +127,7 @@ def _get_part_info(object_size, part_size):
         return part_size, -1
 
     if part_size > 0:
-        if part_size > object_size:
-            part_size = object_size
+        part_size = min(part_size, object_size)
         return part_size, math.ceil(object_size / part_size) if part_size else 1
 
     part_size = math.ceil(
@@ -322,7 +321,7 @@ def _metadata_to_headers(metadata):
 
 def normalize_headers(headers):
     """Normalize headers by prefixing 'X-Amz-Meta-' for user metadata."""
-    headers = headers.copy() if headers else {}
+    headers = {str(key): value for key, value in (headers or {}).items()}
 
     def guess_user_metadata(key):
         key = key.lower()
@@ -699,7 +698,7 @@ class ThreadPool:
         the caller also prevents the latter from allocating a lot of
         memory while workers are still busy running their assigned tasks.
         """
-        self._sem.acquire()
+        self._sem.acquire()  # pylint: disable=consider-using-with
         cleanup_func = self._sem.release
         self._tasks_queue.put((func, args, kargs, cleanup_func))
 
