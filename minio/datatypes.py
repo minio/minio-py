@@ -33,6 +33,11 @@ from .signer import get_credential_string, post_presign_v4
 from .time import from_iso8601utc, to_amz_date, to_iso8601utc
 from .xml import find, findall, findtext
 
+try:
+    from json.decoder import JSONDecodeError
+except ImportError:
+    JSONDecodeError = ValueError
+
 
 class Bucket:
     """Bucket information."""
@@ -755,3 +760,49 @@ def parse_copy_object(response):
     if last_modified:
         last_modified = from_iso8601utc(last_modified)
     return etag, last_modified
+
+
+class EventIterable:
+    """Context manager friendly event iterable."""
+
+    def __init__(self, func):
+        self._func = func
+        self._response = None
+        self._stream = None
+
+    def _close_response(self):
+        """Close response."""
+        if self._response:
+            self._response.close()
+            self._response.release_conn()
+            self._response = None
+
+    def __iter__(self):
+        return self
+
+    def _get_records(self):
+        """Get event records from response stream."""
+        try:
+            line = self._stream.__next__().strip()
+            if not line:
+                return None
+            if hasattr(line, 'decode'):
+                line = line.decode()
+            event = json.loads(line)
+            if event['Records']:
+                return event
+        except (StopIteration, JSONDecodeError):
+            self._close_response()
+        return None
+
+    def __next__(self):
+        if not self._response:
+            self._response = self._func()
+            self._stream = self._response.stream()
+        return self._get_records() or self.__next__()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, value, traceback):
+        self._close_response()

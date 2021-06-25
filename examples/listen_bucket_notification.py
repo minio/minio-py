@@ -22,10 +22,10 @@ client = Minio(
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
-events = client.listen_bucket_notification(
+with client.listen_bucket_notification(
     "my-bucket",
     prefix="my-prefix/",
     events=["s3:ObjectCreated:*", "s3:ObjectRemoved:*"],
-)
-for event in events:
-    print(event)
+) as events:
+    for event in events:
+        print(event)
