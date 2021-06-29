@@ -42,8 +42,8 @@ class ListObjectsTest(TestCase):
         mock_server.mock_add_request(
             MockResponse(
                 "GET",
-                "https://localhost:9000/bucket?delimiter=&list-type=2"
-                "&max-keys=1000&prefix=",
+                "https://localhost:9000/bucket?delimiter=&encoding-type=url"
+                "&list-type=2&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
                 content=mock_data.encode(),
@@ -86,8 +86,8 @@ class ListObjectsTest(TestCase):
         mock_server.mock_add_request(
             MockResponse(
                 "GET",
-                "https://localhost:9000/bucket?delimiter=%2F&list-type=2"
-                "&max-keys=1000&prefix=",
+                "https://localhost:9000/bucket?delimiter=%2F&encoding-type=url"
+                "&list-type=2&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
                 content=mock_data.encode(),

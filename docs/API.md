@@ -182,21 +182,22 @@ client.remove_bucket("my-bucket")
 
 <a name="list_objects"></a>
 
-### list_objects(bucket_name, prefix=None, recursive=False, start_after=None, include_user_meta=False, include_version=False, use_api_v1=False)
+### list_objects(bucket_name, prefix=None, recursive=False, start_after=None, include_user_meta=False, include_version=False, use_api_v1=False, use_url_encoding_type=True)
 
 Lists object information of a bucket.
 
 __Parameters__
 
-| Param               | Type   | Description                                              |
-|:--------------------|:-------|:---------------------------------------------------------|
-| `bucket_name`       | _str_  | Name of the bucket.                                      |
-| `prefix`            | _str_  | Object name starts with prefix.                          |
-| `recursive`         | _bool_ | List recursively than directory structure emulation.     |
-| `start_after`       | _str_  | List objects after this key name.                        |
-| `include_user_meta` | _bool_ | MinIO specific flag to control to include user metadata. |
-| `include_version`   | _bool_ | Flag to control whether include object versions.         |
-| `use_api_v1`        | _bool_ | Flag to control to use ListObjectV1 S3 API or not.       |
+| Param                   | Type   | Description                                                  |
+|:------------------------|:-------|:-------------------------------------------------------------|
+| `bucket_name`           | _str_  | Name of the bucket.                                          |
+| `prefix`                | _str_  | Object name starts with prefix.                              |
+| `recursive`             | _bool_ | List recursively than directory structure emulation.         |
+| `start_after`           | _str_  | List objects after this key name.                            |
+| `include_user_meta`     | _bool_ | MinIO specific flag to control to include user metadata.     |
+| `include_version`       | _bool_ | Flag to control whether include object versions.             |
+| `use_api_v1`            | _bool_ | Flag to control to use ListObjectV1 S3 API or not.           |
+| `use_url_encoding_type` | _bool_ | Flag to control whether URL encoding type to be used or not. |
 
 __Return Value__
 

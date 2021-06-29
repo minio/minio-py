@@ -42,8 +42,8 @@ class ListObjectsV1Test(TestCase):
         mock_server.mock_add_request(
             MockResponse(
                 "GET",
-                "https://localhost:9000/bucket"
-                "?delimiter=&max-keys=1000&prefix=",
+                "https://localhost:9000/bucket?delimiter=&encoding-type=url"
+                "&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
                 content=mock_data.encode(),
@@ -97,8 +97,8 @@ class ListObjectsV1Test(TestCase):
         mock_server.mock_add_request(
             MockResponse(
                 "GET",
-                "https://localhost:9000/bucket"
-                "?delimiter=%2F&max-keys=1000&prefix=",
+                "https://localhost:9000/bucket?delimiter=%2F&encoding-type=url"
+                "&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
                 content=mock_data.encode(),
@@ -112,8 +112,8 @@ class ListObjectsV1Test(TestCase):
             mock_server.mock_add_request(
                 MockResponse(
                     "GET",
-                    "https://localhost:9000/bucket"
-                    "?delimiter=%2F&max-keys=1000&prefix=",
+                    "https://localhost:9000/bucket?delimiter=%2F&encoding-type=url"
+                    "&max-keys=1000&prefix=",
                     {"User-Agent": _DEFAULT_USER_AGENT},
                     200,
                     content=b"",
@@ -194,8 +194,8 @@ class ListObjectsV1Test(TestCase):
         mock_server.mock_add_request(
             MockResponse(
                 "GET",
-                "https://localhost:9000/bucket"
-                "?delimiter=&max-keys=1000&prefix=",
+                "https://localhost:9000/bucket?delimiter=&encoding-type=url"
+                "&max-keys=1000&prefix=",
                 {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
                 content=mock_data1.encode(),
@@ -210,8 +210,8 @@ class ListObjectsV1Test(TestCase):
             mock_server.mock_add_request(
                 MockResponse(
                     "GET",
-                    "https://localhost:9000/bucket"
-                    "?delimiter=&marker=marker&max-keys=1000&prefix=",
+                    "https://localhost:9000/bucket?delimiter=&encoding-type=url"
+                    "&marker=marker&max-keys=1000&prefix=",
                     {"User-Agent": _DEFAULT_USER_AGENT},
                     200,
                     content=mock_data2.encode(),

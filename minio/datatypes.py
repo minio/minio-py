@@ -196,7 +196,8 @@ class Object:
         return self._content_type
 
     @classmethod
-    def fromxml(cls, element, bucket_name, is_delete_marker=False):
+    def fromxml(cls, element, bucket_name, is_delete_marker=False,
+                encoding_type=None):
         """Create new object with values from XML element."""
         tag = findtext(element, "LastModified")
         last_modified = None if tag is None else from_iso8601utc(tag)
@@ -219,9 +220,13 @@ class Object:
             key = child.tag.split("}")[1] if "}" in child.tag else child.tag
             metadata[key] = child.text
 
+        object_name = findtext(element, "Key", True)
+        if encoding_type == "url":
+            object_name = unquote(object_name)
+
         return cls(
             bucket_name,
-            findtext(element, "Key"),
+            object_name,
             last_modified=last_modified,
             etag=etag,
             size=size,
@@ -235,33 +240,51 @@ class Object:
         )
 
 
-def parse_list_objects(response, bucket_name):
+def parse_list_objects(response, bucket_name=None):
     """Parse ListObjects/ListObjectsV2/ListObjectVersions response."""
     element = ET.fromstring(response.data.decode())
+    bucket_name = findtext(element, "Name", True)
+    encoding_type = findtext(element, "EncodingType")
     elements = findall(element, "Contents")
-    objects = [Object.fromxml(tag, bucket_name) for tag in elements]
+    objects = [
+        Object.fromxml(tag, bucket_name, encoding_type=encoding_type)
+        for tag in elements
+    ]
     marker = objects[-1].object_name if objects else None
 
     elements = findall(element, "Version")
-    objects += [Object.fromxml(tag, bucket_name) for tag in elements]
-
-    elements = findall(element, "CommonPrefixes")
     objects += [
-        Object(bucket_name, findtext(tag, "Prefix"))
+        Object.fromxml(tag, bucket_name, encoding_type=encoding_type)
         for tag in elements
     ]
 
+    elements = findall(element, "CommonPrefixes")
+    objects += [
+        Object(
+            bucket_name, unquote(findtext(tag, "Prefix", True))
+            if encoding_type == "url" else findtext(tag, "Prefix", True)
+        ) for tag in elements
+    ]
+
     elements = findall(element, "DeleteMarker")
-    objects += [Object.fromxml(tag, bucket_name, True) for tag in elements]
+    objects += [
+        Object.fromxml(tag, bucket_name, is_delete_marker=True,
+                       encoding_type=encoding_type)
+        for tag in elements
+    ]
 
     is_truncated = (findtext(element, "IsTruncated") or "").lower() == "true"
     key_marker = findtext(element, "NextKeyMarker")
+    if key_marker and encoding_type == "url":
+        key_marker = unquote(key_marker)
     version_id_marker = findtext(element, "NextVersionIdMarker")
     continuation_token = findtext(element, "NextContinuationToken")
     if key_marker is not None:
         continuation_token = key_marker
     if continuation_token is None:
         continuation_token = findtext(element, "NextMarker")
+        if continuation_token and encoding_type == "url":
+            continuation_token = unquote(continuation_token)
     if continuation_token is None and is_truncated:
         continuation_token = marker
     return objects, is_truncated, continuation_token, version_id_marker
@@ -457,8 +480,13 @@ class ListPartsResult:
 class Upload:
     """ Upload information of a multipart upload."""
 
-    def __init__(self, element):
-        self._object_name = unquote(findtext(element, "Key", True))
+    def __init__(self, element, encoding_type=None):
+        self._encoding_type = encoding_type
+        self._object_name = findtext(element, "Key", True)
+        self._object_name = (
+            unquote(self._object_name) if self._encoding_type == "url"
+            else self._object_name
+        )
         self._upload_id = findtext(element, "UploadId")
         tag = find(element, "Initiator")
         self._initiator_id = (
@@ -525,14 +553,21 @@ class ListMultipartUploadsResult:
 
     def __init__(self, response):
         element = ET.fromstring(response.data.decode())
+        self._encoding_type = findtext(element, "EncodingType")
         self._bucket_name = findtext(element, "Bucket")
         self._key_marker = findtext(element, "KeyMarker")
         if self._key_marker:
-            self._key_marker = unquote(self._key_marker)
+            self._key_marker = (
+                unquote(self._key_marker) if self._encoding_type == "url"
+                else self._key_marker
+            )
         self._upload_id_marker = findtext(element, "UploadIdMarker")
         self._next_key_marker = findtext(element, "NextKeyMarker")
         if self._next_key_marker:
-            self._next_key_marker = unquote(self._next_key_marker)
+            self._next_key_marker = (
+                unquote(self._next_key_marker) if self._encoding_type == "url"
+                else self._next_key_marker
+            )
         self._next_upload_id_marker = findtext(element, "NextUploadIdMarker")
         self._max_uploads = findtext(element, "MaxUploads")
         if self._max_uploads:
@@ -542,7 +577,10 @@ class ListMultipartUploadsResult:
             self._is_truncated is not None and
             self._is_truncated.lower() == "true"
         )
-        self._uploads = [Upload(tag) for tag in findall(element, "Upload")]
+        self._uploads = [
+            Upload(tag, self._encoding_type)
+            for tag in findall(element, "Upload")
+        ]
 
     @property
     def bucket_name(self):
@@ -578,6 +616,11 @@ class ListMultipartUploadsResult:
     def is_truncated(self):
         """Get is-truncated flag."""
         return self._is_truncated
+
+    @property
+    def encoding_type(self):
+        """Get encoding type."""
+        return self._encoding_type
 
     @property
     def uploads(self):

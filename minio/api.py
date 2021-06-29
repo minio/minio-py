@@ -1788,7 +1788,8 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def list_objects(self, bucket_name, prefix=None, recursive=False,
                      start_after=None, include_user_meta=False,
-                     include_version=False, use_api_v1=False):
+                     include_version=False, use_api_v1=False,
+                     use_url_encoding_type=True):
         """
         Lists object information of a bucket.
 
@@ -1801,6 +1802,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param include_version: Flag to control whether include object
                                 versions.
         :param use_api_v1: Flag to control to use ListObjectV1 S3 API or not.
+        :param use_url_encoding_type: Flag to control whether URL encoding type
+                                      to be used or not.
         :return: Iterator of :class:`Object <Object>`.
 
         Example::
@@ -1843,6 +1846,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             start_after=start_after,
             use_api_v1=use_api_v1,
             include_version=include_version,
+            encoding_type="url" if use_url_encoding_type else None,
         )
 
     def stat_object(self, bucket_name, object_name, ssec=None, version_id=None,
@@ -2753,7 +2757,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             response = self._execute("GET", bucket_name, query_params=query)
 
             objects, is_truncated, start_after, version_id_marker = (
-                parse_list_objects(response, bucket_name)
+                parse_list_objects(response)
             )
 
             if not include_version:
