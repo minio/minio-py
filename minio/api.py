@@ -24,7 +24,6 @@ Simple Storage Service (aka S3) client to perform bucket and object operations.
 from __future__ import absolute_import
 
 import itertools
-import json
 import os
 import platform
 from datetime import timedelta
@@ -39,10 +38,10 @@ from urllib3._collections import HTTPHeaderDict
 from . import __title__, __version__, time
 from .commonconfig import COPY, REPLACE, ComposeSource, CopySource, Tags
 from .credentials import StaticProvider
-from .datatypes import (CompleteMultipartUploadResult, ListAllMyBucketsResult,
-                        ListMultipartUploadsResult, ListPartsResult, Object,
-                        Part, PostPolicy, parse_copy_object,
-                        parse_list_objects)
+from .datatypes import (CompleteMultipartUploadResult, EventIterable,
+                        ListAllMyBucketsResult, ListMultipartUploadsResult,
+                        ListPartsResult, Object, Part, PostPolicy,
+                        parse_copy_object, parse_list_objects)
 from .deleteobjects import DeleteError, DeleteRequest, DeleteResult
 from .error import InvalidResponseError, S3Error, ServerError
 from .helpers import (MAX_MULTIPART_COUNT, MAX_MULTIPART_OBJECT_SIZE,
@@ -64,12 +63,6 @@ from .sseconfig import SSEConfig
 from .tagging import Tagging
 from .versioningconfig import VersioningConfig
 from .xml import Element, SubElement, findtext, getbytes, marshal, unmarshal
-
-try:
-    from json.decoder import JSONDecodeError
-except ImportError:
-    JSONDecodeError = ValueError
-
 
 _DEFAULT_USER_AGENT = "MinIO ({os}; {arch}) {lib}/{ver}".format(
     os=platform.system(), arch=platform.machine(),
@@ -880,13 +873,13 @@ class Minio:  # pylint: disable=too-many-public-methods
         :return: Iterator of event records as :dict:.
 
         Example::
-            events = client.listen_bucket_notification(
+            with client.listen_bucket_notification(
                 "my-bucket",
                 prefix="my-prefix/",
                 events=["s3:ObjectCreated:*", "s3:ObjectRemoved:*"],
-            )
-            for event in events:
-                print(event)
+            ) as events:
+                for event in events:
+                    print(event)
         """
         check_bucket_name(bucket_name)
         if self._base_url.is_aws_host:
@@ -894,8 +887,8 @@ class Minio:  # pylint: disable=too-many-public-methods
                 "ListenBucketNotification API is not supported in Amazon S3",
             )
 
-        while True:
-            response = self._execute(
+        return EventIterable(
+            lambda: self._execute(
                 "GET",
                 bucket_name,
                 query_params={
@@ -904,23 +897,8 @@ class Minio:  # pylint: disable=too-many-public-methods
                     "events": events,
                 },
                 preload_content=False,
-            )
-
-            try:
-                for line in response.stream():
-                    line = line.strip()
-                    if not line:
-                        continue
-                    if hasattr(line, 'decode'):
-                        line = line.decode()
-                    event = json.loads(line)
-                    if event['Records']:
-                        yield event
-            except JSONDecodeError:
-                pass  # Ignore this exception.
-            finally:
-                response.close()
-                response.release_conn()
+            ),
+        )
 
     def set_bucket_versioning(self, bucket_name, config):
         """

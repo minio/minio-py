@@ -442,13 +442,13 @@ __Return Value__
 | Iterator of event records as _dict_ |
 
 ```py
-events = client.listen_bucket_notification(
+with client.listen_bucket_notification(
     "my-bucket",
     prefix="my-prefix/",
     events=["s3:ObjectCreated:*", "s3:ObjectRemoved:*"],
-)
-for event in events:
-    print(event)
+) as events:
+    for event in events:
+        print(event)
 ```
 
 <a name="get_bucket_encryption"></a>
