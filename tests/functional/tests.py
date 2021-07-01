@@ -2025,7 +2025,8 @@ def main():
         if arg_list:
             args = ()
             kwargs = arg_list
-            _call_test(test_name, *args, **kwargs)
+            _call_test(
+                test_name, *args, **kwargs)  # pylint: disable=not-a-mapping
 
     # Remove temporary files.
     if not is_mint_env:
@@ -2038,6 +2039,6 @@ if __name__ == "__main__":
         main()
     except TestFailed:
         sys.exit(1)
-    except Exception as exc:  # pylint: disable=broad-except
-        print(exc)
+    except Exception as excp:  # pylint: disable=broad-except
+        print(excp)
         sys.exit(-1)
