@@ -815,6 +815,9 @@ class EventIterable:
 
     def _close_response(self):
         """Close response."""
+        if self._stream:
+            self._stream.close()
+            self._stream = None
         if self._response:
             self._response.close()
             self._response.release_conn()
