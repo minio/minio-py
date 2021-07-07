@@ -839,10 +839,13 @@ class EventIterable:
         return None
 
     def __next__(self):
-        if not self._response:
-            self._response = self._func()
-            self._stream = self._response.stream()
-        return self._get_records() or self.__next__()
+        records = None
+        while not records:
+            if not self._response:
+                self._response = self._func()
+                self._stream = self._response.stream()
+            records = self._get_records()
+        return records
 
     def __enter__(self):
         return self
