@@ -92,10 +92,6 @@ class Progress(Thread):
                 elapsed_time = time.time() - self.initial_time
                 if elapsed_time > displayed_time:
                     displayed_time = elapsed_time
-                self.print_status(current_size=self.current_size,
-                                  total_length=self.total_length,
-                                  displayed_time=displayed_time,
-                                  prefix=self.prefix)
                 continue
 
             current_size, total_length = task
