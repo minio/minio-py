@@ -88,7 +88,7 @@ class Transition(DateDays):
 
     def toxml(self, element):
         """Convert to XML."""
-        element = SubElement(element, "NoncurrentVersionTransition")
+        element = SubElement(element, "Transition")
         super().toxml(element)
         if self._storage_class:
             SubElement(element, "StorageClass", self._storage_class)
