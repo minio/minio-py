@@ -18,7 +18,7 @@
 # and my-testfile are dummy values, please replace them with original values.
 
 from minio import Minio
-from minio.error import ResponseError
+from minio.error import InvalidResponseError
 
 client = Minio('s3.amazonaws.com',
                access_key='YOUR-ACCESSKEYID',
