@@ -190,7 +190,7 @@ class ChainedProvider(Provider):
                 # Ignore this error and iterate other providers.
                 pass
 
-        return ValueError("All providers fail to fetch credentials")
+        raise ValueError("All providers fail to fetch credentials")
 
 
 class EnvAWSProvider(Provider):
@@ -305,7 +305,7 @@ class MinioClientConfigProvider(Provider):
     def retrieve(self):
         """Retrieve credential value from MinIO client configuration file."""
         try:
-            with open(self._filename) as conf_file:
+            with open(self._filename, encoding="utf-8") as conf_file:
                 config = json.load(conf_file)
             aliases = config.get("hosts") or config.get("aliases")
             if not aliases:
@@ -346,7 +346,7 @@ def _check_loopback_host(url):
 def _get_jwt_token(token_file):
     """Read and return content of token file. """
     try:
-        with open(token_file) as file:
+        with open(token_file, encoding="utf-8") as file:
             return {"access_token": file.read(), "expires_in": "0"}
     except (IOError, OSError) as exc:
         raise ValueError(

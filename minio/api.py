@@ -126,7 +126,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 "`urllib3.poolmanager.PoolManager`"
             )
 
-        self._region_map = dict()
+        self._region_map = {}
         self._base_url = BaseURL(
             ("https://" if secure else "http://") + endpoint,
             region,
