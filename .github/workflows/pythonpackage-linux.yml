@@ -27,7 +27,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools
-        pip install certifi urllib3 mock nose
+        pip install certifi urllib3 mock pytest
     - name: Run check
       run: |
         export PATH=${HOME}/.local/bin:${PATH}
@@ -35,7 +35,7 @@ jobs:
     - name: Run unit tests
       run: |
         python setup.py install
-        python setup.py nosetests
+        pytest
     - name: Run functional tests
       env:
         MINT_MODE: full

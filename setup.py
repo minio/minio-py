@@ -44,7 +44,7 @@ setup(
     package_dir={"minio": "minio"},
     packages=["minio", "minio.credentials"],
     install_requires=["certifi", "urllib3"],
-    tests_require=["mock", "nose"],
+    tests_require=["mock"],
     license="Apache License 2.0",
     classifiers=[
         "Development Status :: 5 - Production/Stable",

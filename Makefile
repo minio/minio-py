@@ -3,7 +3,7 @@ default: tests
 
 getdeps:
 	@echo "Installing required dependencies"
-	@pip install --user --upgrade autopep8 certifi mock nose pylint urllib3
+	@pip install --user --upgrade autopep8 certifi mock pytest pylint urllib3
 
 check: getdeps
 	@echo "Running checks"
@@ -18,6 +18,6 @@ apply: getdeps
 
 tests: check
 	@echo "Running unit tests"
-	@nosetests
+	@pytest
 	@echo "Running functional tests"
 	@env bash run_functional_tests.sh
