@@ -17,7 +17,6 @@
 from unittest import TestCase
 
 import mock
-from nose.tools import raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
@@ -28,15 +27,13 @@ from .minio_mocks import MockConnection, MockResponse
 
 
 class MakeBucket(TestCase):
-    @raises(TypeError)
     def test_bucket_is_string(self):
         client = Minio('localhost:9000')
-        client.make_bucket(1234)
+        self.assertRaises(TypeError, client.make_bucket, 1234)
 
-    @raises(ValueError)
     def test_bucket_is_not_empty_string(self):
         client = Minio('localhost:9000')
-        client.make_bucket('  \t \n  ')
+        self.assertRaises(ValueError, client.make_bucket, '  \t \n  ')
 
     @mock.patch('urllib3.PoolManager')
     def test_make_bucket_works(self, mock_connection):
@@ -51,7 +48,6 @@ class MakeBucket(TestCase):
         Minio('localhost:9000')
 
     @mock.patch('urllib3.PoolManager')
-    @raises(S3Error)
     def test_make_bucket_throws_fail(self, mock_connection):
         error_xml = generate_error('code', 'message', 'request_id',
                                    'host_id', 'resource', 'bucket',
@@ -67,4 +63,4 @@ class MakeBucket(TestCase):
                          content=error_xml.encode())
         )
         client = Minio('localhost:9000')
-        client.make_bucket('hello')
+        self.assertRaises(S3Error, client.make_bucket, 'hello')

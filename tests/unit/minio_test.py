@@ -17,8 +17,6 @@
 from unittest import TestCase
 from urllib.parse import urlunsplit
 
-from nose.tools import eq_, raises
-
 from minio import Minio
 from minio import __version__ as minio_version
 from minio.api import _DEFAULT_USER_AGENT
@@ -26,42 +24,37 @@ from minio.helpers import BaseURL, check_bucket_name
 
 
 class ValidBucketName(TestCase):
-    @raises(ValueError)
     def test_bucket_name(self):
-        check_bucket_name('bucketName=', False)
+        self.assertRaises(ValueError, check_bucket_name, 'bucketName=', False)
 
-    @raises(ValueError)
     def test_bucket_name_invalid_characters(self):
-        check_bucket_name('$$$bcuket', False)
+        self.assertRaises(ValueError, check_bucket_name, '$$$bcuket', False)
 
-    @raises(ValueError)
     def test_bucket_name_length(self):
-        check_bucket_name('dd', False)
+        self.assertRaises(ValueError, check_bucket_name, 'dd', False)
 
-    @raises(ValueError)
     def test_bucket_name_periods(self):
-        check_bucket_name('dd..mybucket', False)
+        self.assertRaises(ValueError, check_bucket_name, 'dd..mybucket', False)
 
-    @raises(ValueError)
     def test_bucket_name_begins_period(self):
-        check_bucket_name('.ddmybucket', False)
+        self.assertRaises(ValueError, check_bucket_name, '.ddmybucket', False)
 
 
 class GetURLTests(TestCase):
     def test_url_build(self):
         url = BaseURL('http://localhost:9000', None)
-        eq_(
+        self.assertEqual(
             urlunsplit(url.build("GET", None, bucket_name='bucket-name')),
             'http://localhost:9000/bucket-name',
         )
-        eq_(
+        self.assertEqual(
             urlunsplit(
                 url.build("GET", None, bucket_name='bucket-name',
                           object_name='objectName'),
             ),
             'http://localhost:9000/bucket-name/objectName',
         )
-        eq_(
+        self.assertEqual(
             urlunsplit(
                 url.build("GET", 'us-east-1', bucket_name='bucket-name',
                           object_name='objectName',
@@ -69,7 +62,7 @@ class GetURLTests(TestCase):
             ),
             'http://localhost:9000/bucket-name/objectName?foo=bar',
         )
-        eq_(
+        self.assertEqual(
             urlunsplit(
                 url.build("GET", 'us-east-1', bucket_name='bucket-name',
                           object_name='objectName',
@@ -77,7 +70,7 @@ class GetURLTests(TestCase):
             ),
             'http://localhost:9000/bucket-name/objectName?a=b&b=c&foo=bar',
         )
-        eq_(
+        self.assertEqual(
             urlunsplit(
                 url.build("GET", 'us-east-1', bucket_name='bucket-name',
                           object_name='path/to/objectName/'),
@@ -87,24 +80,24 @@ class GetURLTests(TestCase):
 
         # S3 urls.
         url = BaseURL('https://s3.amazonaws.com', None)
-        eq_(
+        self.assertEqual(
             urlunsplit(url.build("GET", "us-east-1")),
             'https://s3.us-east-1.amazonaws.com/',
         )
-        eq_(
+        self.assertEqual(
             urlunsplit(
                 url.build("GET", "eu-west-1", bucket_name='my.bucket.name'),
             ),
             'https://s3.eu-west-1.amazonaws.com/my.bucket.name',
         )
-        eq_(
+        self.assertEqual(
             urlunsplit(
                 url.build("GET", 'us-west-2', bucket_name='bucket-name',
                           object_name='objectName'),
             ),
             'https://bucket-name.s3.us-west-2.amazonaws.com/objectName',
         )
-        eq_(
+        self.assertEqual(
             urlunsplit(
                 url.build("GET", "us-east-1", bucket_name='bucket-name',
                           object_name='objectName',
@@ -114,60 +107,55 @@ class GetURLTests(TestCase):
             "/objectName?versionId=uuid",
         )
 
-    @raises(TypeError)
     def test_minio_requires_string(self):
-        Minio(10)
+        self.assertRaises(TypeError, Minio, 10)
 
-    @raises(ValueError)
     def test_minio_requires_hostname(self):
-        Minio('http://')
+        self.assertRaises(ValueError, Minio, 'http://')
 
 
 class UserAgentTests(TestCase):
     def test_default_user_agent(self):
         client = Minio('localhost')
-        eq_(client._user_agent, _DEFAULT_USER_AGENT)
+        self.assertEqual(client._user_agent, _DEFAULT_USER_AGENT)
 
     def test_set_app_info(self):
         client = Minio('localhost')
         expected_user_agent = _DEFAULT_USER_AGENT + ' hello/' + minio_version
         client.set_app_info('hello', minio_version)
-        eq_(client._user_agent, expected_user_agent)
+        self.assertEqual(client._user_agent, expected_user_agent)
 
-    @raises(ValueError)
     def test_set_app_info_requires_non_empty_name(self):
         client = Minio('localhost:9000')
-        client.set_app_info('', minio_version)
+        self.assertRaises(ValueError, client.set_app_info, '', minio_version)
 
-    @raises(ValueError)
     def test_set_app_info_requires_non_empty_version(self):
         client = Minio('localhost:9000')
-        client.set_app_info('hello', '')
+        self.assertRaises(ValueError, client.set_app_info, 'hello', '')
 
 
 class GetRegionTests(TestCase):
     def test_region_none(self):
         region = BaseURL('http://localhost', None).region
-        eq_(region, None)
+        self.assertIsNone(region)
 
     def test_region_us_west(self):
         region = BaseURL('https://s3-us-west-1.amazonaws.com', None).region
-        eq_(region, None)
+        self.assertIsNone(region)
 
     def test_region_with_dot(self):
         region = BaseURL('https://s3.us-west-1.amazonaws.com', None).region
-        eq_(region, 'us-west-1')
+        self.assertEqual(region, 'us-west-1')
 
     def test_region_with_dualstack(self):
         region = BaseURL(
             'https://s3.dualstack.us-west-1.amazonaws.com', None,
         ).region
-        eq_(region, 'us-west-1')
+        self.assertEqual(region, 'us-west-1')
 
     def test_region_us_east(self):
         region = BaseURL('http://s3.amazonaws.com', None).region
-        eq_(region, None)
+        self.assertIsNone(region)
 
-    @raises(ValueError)
     def test_invalid_value(self):
-        BaseURL(None, None)
+        self.assertRaises(ValueError, BaseURL, None, None)

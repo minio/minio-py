@@ -17,23 +17,24 @@
 from datetime import timedelta
 from unittest import TestCase
 
-from nose.tools import raises
-
 from minio import Minio
 
 
 class PresignedPutObjectTest(TestCase):
-    @raises(TypeError)
     def test_object_is_string(self):
         client = Minio('localhost:9000')
-        client.presigned_put_object('hello', 1234)
+        self.assertRaises(
+            TypeError, client.presigned_put_object, 'hello', 1234)
 
-    @raises(ValueError)
     def test_object_is_not_empty_string(self):
         client = Minio('localhost:9000')
-        client.presigned_put_object('hello', ' \t \n ')
+        self.assertRaises(
+            ValueError, client.presigned_put_object, 'hello', ' \t \n ')
 
-    @raises(ValueError)
     def test_expiry_limit(self):
         client = Minio('localhost:9000')
-        client.presigned_put_object('hello', 'key', expires=timedelta(days=8))
+        self.assertRaises(
+            ValueError,
+            client.presigned_put_object, 'hello', 'key',
+            expires=timedelta(days=8)
+        )

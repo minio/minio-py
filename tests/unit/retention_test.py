@@ -17,8 +17,6 @@
 from datetime import datetime, timedelta, timezone
 from unittest import TestCase
 
-from nose.tools import eq_
-
 from minio import xml
 from minio.commonconfig import COMPLIANCE, GOVERNANCE
 from minio.retention import Retention
@@ -37,8 +35,8 @@ class RetentionTest(TestCase):
 </Retention>""",
         )
         xml.marshal(config)
-        eq_(config.mode, COMPLIANCE)
-        eq_(
+        self.assertEqual(config.mode, COMPLIANCE)
+        self.assertEqual(
             config.retain_until_date,
             datetime(2020, 10, 2, 0, 0, 0, 0, timezone.utc),
         )

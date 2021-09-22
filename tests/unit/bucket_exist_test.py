@@ -17,7 +17,6 @@
 from unittest import TestCase
 
 import mock
-from nose.tools import eq_, raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
@@ -27,23 +26,19 @@ from .minio_mocks import MockConnection, MockResponse
 
 
 class BucketExists(TestCase):
-    @raises(TypeError)
     def test_bucket_is_string(self):
         client = Minio('localhost:9000')
-        client.bucket_exists(1234)
+        self.assertRaises(TypeError, client.bucket_exists, 1234)
 
-    @raises(ValueError)
     def test_bucket_is_not_empty_string(self):
         client = Minio('localhost:9000')
-        client.bucket_exists('  \t \n  ')
+        self.assertRaises(ValueError, client.bucket_exists, '  \t \n  ')
 
-    @raises(ValueError)
     def test_bucket_exists_invalid_name(self):
         client = Minio('localhost:9000')
-        client.bucket_exists('AB*CD')
+        self.assertRaises(ValueError, client.bucket_exists, 'AB*CD')
 
     @mock.patch('urllib3.PoolManager')
-    @raises(S3Error)
     def test_bucket_exists_bad_request(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
@@ -54,7 +49,7 @@ class BucketExists(TestCase):
                          400)
         )
         client = Minio('localhost:9000')
-        client.bucket_exists('hello')
+        self.assertRaises(S3Error, client.bucket_exists, 'hello')
 
     @mock.patch('urllib3.PoolManager')
     def test_bucket_exists_works(self, mock_connection):
@@ -68,7 +63,7 @@ class BucketExists(TestCase):
         )
         client = Minio('localhost:9000')
         result = client.bucket_exists('hello')
-        eq_(True, result)
+        self.assertTrue(result)
         mock_server.mock_add_request(
             MockResponse('HEAD',
                          'https://localhost:9000/goodbye',
@@ -76,4 +71,4 @@ class BucketExists(TestCase):
                          404)
         )
         false_result = client.bucket_exists('goodbye')
-        eq_(False, false_result)
+        self.assertFalse(false_result)

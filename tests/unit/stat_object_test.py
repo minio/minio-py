@@ -17,7 +17,6 @@
 from unittest import TestCase
 
 import mock
-from nose.tools import raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
@@ -26,20 +25,17 @@ from .minio_mocks import MockConnection, MockResponse
 
 
 class StatObject(TestCase):
-    @raises(TypeError)
     def test_object_is_string(self):
         client = Minio('localhost:9000')
-        client.stat_object('hello', 1234)
+        self.assertRaises(TypeError, client.stat_object, 'hello', 1234)
 
-    @raises(ValueError)
     def test_object_is_not_empty_string(self):
         client = Minio('localhost:9000')
-        client.stat_object('hello', '  \t \n  ')
+        self.assertRaises(ValueError, client.stat_object, 'hello', '  \t \n  ')
 
-    @raises(ValueError)
     def test_stat_object_invalid_name(self):
         client = Minio('localhost:9000')
-        client.stat_object('AB#CD', 'world')
+        self.assertRaises(ValueError, client.stat_object, 'AB#CD', 'world')
 
     @mock.patch('urllib3.PoolManager')
     def test_stat_object_works(self, mock_connection):

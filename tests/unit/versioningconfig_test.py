@@ -16,8 +16,6 @@
 
 from unittest import TestCase
 
-from nose.tools import eq_
-
 from minio import xml
 from minio.commonconfig import DISABLED, ENABLED
 from minio.versioningconfig import OFF, SUSPENDED, VersioningConfig
@@ -34,7 +32,7 @@ class VersioningConfigTest(TestCase):
 </VersioningConfiguration>""",
         )
         xml.marshal(config)
-        eq_(config.status, OFF)
+        self.assertEqual(config.status, OFF)
 
         config = xml.unmarshal(
             VersioningConfig,
@@ -43,7 +41,7 @@ class VersioningConfigTest(TestCase):
 </VersioningConfiguration>""",
         )
         xml.marshal(config)
-        eq_(config.status, ENABLED)
+        self.assertEqual(config.status, ENABLED)
 
         config = xml.unmarshal(
             VersioningConfig,
@@ -53,5 +51,5 @@ class VersioningConfigTest(TestCase):
 </VersioningConfiguration>""",
         )
         xml.marshal(config)
-        eq_(config.status, SUSPENDED)
-        eq_(config.mfa_delete, DISABLED)
+        self.assertEqual(config.status, SUSPENDED)
+        self.assertEqual(config.mfa_delete, DISABLED)

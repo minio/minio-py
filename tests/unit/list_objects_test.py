@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 from unittest import TestCase
 
 import mock
-from nose.tools import eq_, timed
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
@@ -54,11 +54,11 @@ class ListObjectsTest(TestCase):
         objects = []
         for obj in object_iter:
             objects.append(obj)
-        eq_(0, len(objects))
+        self.assertEqual(0, len(objects))
 
-    @timed(1)
     @mock.patch('urllib3.PoolManager')
     def test_list_objects_works(self, mock_connection):
+        start_time = time.time()
         mock_data = '''<?xml version="1.0" encoding="UTF-8"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
@@ -99,4 +99,6 @@ class ListObjectsTest(TestCase):
         for obj in objects_iter:
             objects.append(obj)
 
-        eq_(2, len(objects))
+        self.assertEqual(2, len(objects))
+        end_time = time.time()
+        self.assertLess(end_time-start_time, 1)

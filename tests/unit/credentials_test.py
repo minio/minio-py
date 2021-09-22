@@ -20,7 +20,6 @@ from datetime import datetime, timedelta
 from unittest import TestCase
 
 import mock
-from nose.tools import eq_, raises
 
 from minio.credentials.credentials import Credentials
 from minio.credentials.providers import (AWSConfigProvider, ChainedProvider,
@@ -41,9 +40,10 @@ class CredentialsTest(TestCase):
             alias="play",
         )
         creds = provider.retrieve()
-        eq_(creds.access_key, "Q3AM3UQ867SPQQA43P2F")
-        eq_(creds.secret_key, "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
-        eq_(creds.session_token, None)
+        self.assertEqual(creds.access_key, "Q3AM3UQ867SPQQA43P2F")
+        self.assertEqual(creds.secret_key,
+                         "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
+        self.assertEqual(creds.session_token, None)
 
 
 class CredListResponse(object):
@@ -70,10 +70,10 @@ class IamAwsProviderTest(TestCase):
         mock_connection.side_effect = [CredListResponse(), CredsResponse()]
         provider = IamAwsProvider()
         creds = provider.retrieve()
-        eq_(creds.access_key, "accessKey")
-        eq_(creds.secret_key, "secret")
-        eq_(creds.session_token, "token")
-        eq_(creds._expiration, datetime(2014, 12, 16, 1, 51, 37))
+        self.assertEqual(creds.access_key, "accessKey")
+        self.assertEqual(creds.secret_key, "secret")
+        self.assertEqual(creds.session_token, "token")
+        self.assertEqual(creds._expiration, datetime(2014, 12, 16, 1, 51, 37))
 
 
 class ChainedProviderTest(TestCase):
@@ -97,9 +97,9 @@ class ChainedProviderTest(TestCase):
         # retireve provider (env_aws) has priority
         creds = provider.retrieve()
         # assert provider credentials
-        eq_(creds.access_key, "access_aws")
-        eq_(creds.secret_key, "secret_aws")
-        eq_(creds.session_token, "token_aws")
+        self.assertEqual(creds.access_key, "access_aws")
+        self.assertEqual(creds.secret_key, "secret_aws")
+        self.assertEqual(creds.session_token, "token_aws")
 
 
 class EnvAWSProviderTest(TestCase):
@@ -110,9 +110,9 @@ class EnvAWSProviderTest(TestCase):
         os.environ["AWS_SESSION_TOKEN"] = "token"
         provider = EnvAWSProvider()
         creds = provider.retrieve()
-        eq_(creds.access_key, "access")
-        eq_(creds.secret_key, "secret")
-        eq_(creds.session_token, "token")
+        self.assertEqual(creds.access_key, "access")
+        self.assertEqual(creds.secret_key, "secret")
+        self.assertEqual(creds.session_token, "token")
 
     def test_env_aws_retrieve_no_token(self):
         os.environ.clear()
@@ -120,9 +120,9 @@ class EnvAWSProviderTest(TestCase):
         os.environ["AWS_SECRET_ACCESS_KEY"] = "secret"
         provider = EnvAWSProvider()
         creds = provider.retrieve()
-        eq_(creds.access_key, "access")
-        eq_(creds.secret_key, "secret")
-        eq_(creds.session_token, None)
+        self.assertEqual(creds.access_key, "access")
+        self.assertEqual(creds.secret_key, "secret")
+        self.assertEqual(creds.session_token, None)
 
 
 class EnvMinioTest(TestCase):
@@ -132,9 +132,9 @@ class EnvMinioTest(TestCase):
         os.environ["MINIO_SECRET_KEY"] = "secret"
         provider = EnvMinioProvider()
         creds = provider.retrieve()
-        eq_(creds.access_key, "access")
-        eq_(creds.secret_key, "secret")
-        eq_(creds.session_token, None)
+        self.assertEqual(creds.access_key, "access")
+        self.assertEqual(creds.secret_key, "secret")
+        self.assertEqual(creds.session_token, None)
 
 
 class AWSConfigProviderTest(TestCase):
@@ -142,9 +142,9 @@ class AWSConfigProviderTest(TestCase):
         os.environ.clear()
         provider = AWSConfigProvider(CREDENTIALS_SAMPLE)
         creds = provider.retrieve()
-        eq_(creds.access_key, "accessKey")
-        eq_(creds.secret_key, "secret")
-        eq_(creds.session_token, "token")
+        self.assertEqual(creds.access_key, "accessKey")
+        self.assertEqual(creds.secret_key, "secret")
+        self.assertEqual(creds.session_token, "token")
 
     def test_file_aws_from_env(self):
         os.environ.clear()
@@ -153,18 +153,18 @@ class AWSConfigProviderTest(TestCase):
         )
         provider = AWSConfigProvider()
         creds = provider.retrieve()
-        eq_(creds.access_key, "accessKey")
-        eq_(creds.secret_key, "secret")
-        eq_(creds.session_token, "token")
+        self.assertEqual(creds.access_key, "accessKey")
+        self.assertEqual(creds.secret_key, "secret")
+        self.assertEqual(creds.session_token, "token")
 
     def test_file_aws_env_profile(self):
         os.environ.clear()
         os.environ["AWS_PROFILE"] = "no_token"
         provider = AWSConfigProvider(CREDENTIALS_SAMPLE)
         creds = provider.retrieve()
-        eq_(creds.access_key, "accessKey")
-        eq_(creds.secret_key, "secret")
-        eq_(creds.session_token, None)
+        self.assertEqual(creds.access_key, "accessKey")
+        self.assertEqual(creds.secret_key, "secret")
+        self.assertEqual(creds.session_token, None)
 
     def test_file_aws_arg_profile(self):
         os.environ.clear()
@@ -173,9 +173,9 @@ class AWSConfigProviderTest(TestCase):
             "no_token",
         )
         creds = provider.retrieve()
-        eq_(creds.access_key, "accessKey")
-        eq_(creds.secret_key, "secret")
-        eq_(creds.session_token, None)
+        self.assertEqual(creds.access_key, "accessKey")
+        self.assertEqual(creds.secret_key, "secret")
+        self.assertEqual(creds.session_token, None)
 
     def test_file_aws_no_creds(self):
         os.environ.clear()
@@ -194,18 +194,19 @@ class MinioClientConfigProviderTest(TestCase):
         os.environ.clear()
         provider = MinioClientConfigProvider(filename=CONFIG_JSON_SAMPLE)
         creds = provider.retrieve()
-        eq_(creds.access_key, "accessKey")
-        eq_(creds.secret_key, "secret")
-        eq_(creds.session_token, None)
+        self.assertEqual(creds.access_key, "accessKey")
+        self.assertEqual(creds.secret_key, "secret")
+        self.assertEqual(creds.session_token, None)
 
     def test_file_minio_env_alias(self):
         os.environ.clear()
         os.environ["MINIO_ALIAS"] = "play"
         provider = MinioClientConfigProvider(filename=CONFIG_JSON_SAMPLE)
         creds = provider.retrieve()
-        eq_(creds.access_key, "Q3AM3UQ867SPQQA43P2F")
-        eq_(creds.secret_key, "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
-        eq_(creds.session_token, None)
+        self.assertEqual(creds.access_key, "Q3AM3UQ867SPQQA43P2F")
+        self.assertEqual(creds.secret_key,
+                         "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
+        self.assertEqual(creds.session_token, None)
 
     def test_file_minio_arg_alias(self):
         os.environ.clear()
@@ -214,15 +215,16 @@ class MinioClientConfigProviderTest(TestCase):
             alias="play",
         )
         creds = provider.retrieve()
-        eq_(creds.access_key, "Q3AM3UQ867SPQQA43P2F")
-        eq_(creds.secret_key, "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
-        eq_(creds.session_token, None)
+        self.assertEqual(creds.access_key, "Q3AM3UQ867SPQQA43P2F")
+        self.assertEqual(creds.secret_key,
+                         "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
+        self.assertEqual(creds.session_token, None)
 
 
 class StaticProviderTest(TestCase):
     def test_static_credentials(self):
         provider = StaticProvider("UXHW", "SECRET")
         creds = provider.retrieve()
-        eq_(creds.access_key, "UXHW")
-        eq_(creds.secret_key, "SECRET")
-        eq_(creds.session_token, None)
+        self.assertEqual(creds.access_key, "UXHW")
+        self.assertEqual(creds.secret_key, "SECRET")
+        self.assertEqual(creds.session_token, None)

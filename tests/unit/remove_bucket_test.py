@@ -17,7 +17,6 @@
 from unittest import TestCase
 
 import mock
-from nose.tools import raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
@@ -26,20 +25,17 @@ from .minio_mocks import MockConnection, MockResponse
 
 
 class RemoveBucket(TestCase):
-    @raises(TypeError)
     def test_bucket_is_string(self):
         client = Minio('localhost:9000')
-        client.remove_bucket(1234)
+        self.assertRaises(TypeError, client.remove_bucket, 1234)
 
-    @raises(ValueError)
     def test_bucket_is_not_empty_string(self):
         client = Minio('localhost:9000')
-        client.remove_bucket('  \t \n  ')
+        self.assertRaises(ValueError, client.remove_bucket, '  \t \n  ')
 
-    @raises(ValueError)
     def test_remove_bucket_invalid_name(self):
         client = Minio('localhost:9000')
-        client.remove_bucket('AB*CD')
+        self.assertRaises(ValueError, client.remove_bucket, 'AB*CD')
 
     @mock.patch('urllib3.PoolManager')
     def test_remove_bucket_works(self, mock_connection):
