@@ -48,10 +48,7 @@ def _hmac_hash(key, data, hexdigest=False):
 
 def _get_scope(date, region, service_name):
     """Get scope string."""
-
-    return "{0}/{1}/{2}/aws4_request".format(
-        time.to_signer_date(date), region, service_name,
-    )
+    return f"{time.to_signer_date(date)}/{region}/{service_name}/aws4_request"
 
 
 def _get_canonical_headers(headers):
@@ -72,10 +69,7 @@ def _get_canonical_headers(headers):
     canonical_headers = OrderedDict(sorted(canonical_headers.items()))
     signed_headers = ";".join(canonical_headers.keys())
     canonical_headers = "\n".join(
-        [
-            "{0}:{1}".format(key, value)
-            for key, value in canonical_headers.items()
-        ],
+        [f"{key}:{value}" for key, value in canonical_headers.items()],
     )
     return canonical_headers, signed_headers
 
@@ -95,7 +89,6 @@ def _get_canonical_query_string(query):
 
 def _get_canonical_request_hash(method, url, headers, content_sha256):
     """Get canonical request hash."""
-
     canonical_headers, signed_headers = _get_canonical_headers(headers)
     canonical_query_string = _get_canonical_query_string(url.query)
 
@@ -107,32 +100,21 @@ def _get_canonical_request_hash(method, url, headers, content_sha256):
     #   SignedHeaders + '\n' +
     #   HexEncode(Hash(RequestPayload))
     canonical_request = (
-        "{method}\n"
-        "{canonical_uri}\n"
-        "{canonical_query_string}\n"
-        "{canonical_headers}\n\n"
-        "{signed_headers}\n"
-        "{content_sha256}"
-    ).format(
-        method=method,
-        canonical_uri=url.path,
-        canonical_query_string=canonical_query_string,
-        canonical_headers=canonical_headers,
-        signed_headers=signed_headers,
-        content_sha256=content_sha256,
+        f"{method}\n"
+        f"{url.path}\n"
+        f"{canonical_query_string}\n"
+        f"{canonical_headers}\n\n"
+        f"{signed_headers}\n"
+        f"{content_sha256}"
     )
     return sha256_hash(canonical_request), signed_headers
 
 
 def _get_string_to_sign(date, scope, canonical_request_hash):
     """Get string-to-sign."""
-
     return (
-        "AWS4-HMAC-SHA256\n{date}\n{scope}\n{canonical_request_hash}".format(
-            date=time.to_amz_date(date),
-            scope=scope,
-            canonical_request_hash=canonical_request_hash,
-        )
+        f"AWS4-HMAC-SHA256\n{time.to_amz_date(date)}\n{scope}\n"
+        f"{canonical_request_hash}"
     )
 
 
@@ -158,15 +140,9 @@ def _get_signature(signing_key, string_to_sign):
 
 def _get_authorization(access_key, scope, signed_headers, signature):
     """Get authorization."""
-
     return (
-        "AWS4-HMAC-SHA256 Credential={access_key}/{scope}, "
-        "SignedHeaders={signed_headers}, Signature={signature}"
-    ).format(
-        access_key=access_key,
-        scope=scope,
-        signed_headers=signed_headers,
-        signature=signature,
+        f"AWS4-HMAC-SHA256 Credential={access_key}/{scope}, "
+        f"SignedHeaders={signed_headers}, Signature={signature}"
     )
 
 
@@ -246,21 +222,16 @@ def _get_presign_canonical_request_hash(  # pylint: disable=invalid-name
         method, url, access_key, scope, date, expires,
 ):
     """Get canonical request hash for presign request."""
-
+    x_amz_credential = queryencode(access_key + "/" + scope)
     canonical_headers, signed_headers = "host:" + url.netloc, "host"
 
     query = url.query+"&" if url.query else ""
     query += (
-        "X-Amz-Algorithm=AWS4-HMAC-SHA256"
-        "&X-Amz-Credential={0}"
-        "&X-Amz-Date={1}"
-        "&X-Amz-Expires={2}"
-        "&X-Amz-SignedHeaders={3}"
-    ).format(
-        queryencode(access_key + "/" + scope),
-        time.to_amz_date(date),
-        expires,
-        signed_headers,
+        f"X-Amz-Algorithm=AWS4-HMAC-SHA256"
+        f"&X-Amz-Credential={x_amz_credential}"
+        f"&X-Amz-Date={time.to_amz_date(date)}"
+        f"&X-Amz-Expires={expires}"
+        f"&X-Amz-SignedHeaders={signed_headers}"
     )
     parts = list(url)
     parts[3] = query
@@ -276,19 +247,12 @@ def _get_presign_canonical_request_hash(  # pylint: disable=invalid-name
     #   SignedHeaders + '\n' +
     #   HexEncode(Hash(RequestPayload))
     canonical_request = (
-        "{method}\n"
-        "{canonical_uri}\n"
-        "{canonical_query_string}\n"
-        "{canonical_headers}\n\n"
-        "{signed_headers}\n"
-        "{content_sha256}"
-    ).format(
-        method=method,
-        canonical_uri=url.path,
-        canonical_query_string=canonical_query_string,
-        canonical_headers=canonical_headers,
-        signed_headers=signed_headers,
-        content_sha256="UNSIGNED-PAYLOAD",
+        f"{method}\n"
+        f"{url.path}\n"
+        f"{canonical_query_string}\n"
+        f"{canonical_headers}\n\n"
+        f"{signed_headers}\n"
+        f"UNSIGNED-PAYLOAD"
     )
     return sha256_hash(canonical_request), url
 
@@ -319,12 +283,7 @@ def presign_v4(
 
 def get_credential_string(access_key, date, region):
     """Get credential string of given access key, date and region."""
-
-    return "{0}/{1}/{2}/s3/aws4_request".format(
-        access_key,
-        time.to_signer_date(date),
-        region,
-    )
+    return f"{access_key}/{time.to_signer_date(date)}/{region}/s3/aws4_request"
 
 
 def post_presign_v4(data, secret_key, date, region):

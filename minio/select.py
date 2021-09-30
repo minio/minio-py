@@ -56,11 +56,8 @@ class InputSerialization:
                 ]
         ):
             raise ValueError(
-                "compression type must be {0}, {1} or {2}".format(
-                    COMPRESSION_TYPE_NONE,
-                    COMPRESSION_TYPE_GZIP,
-                    COMPRESSION_TYPE_BZIP2,
-                ),
+                f"compression type must be {COMPRESSION_TYPE_NONE}, "
+                f"{COMPRESSION_TYPE_GZIP} or {COMPRESSION_TYPE_BZIP2}"
             )
         self._compression_type = compression_type
 
@@ -92,11 +89,8 @@ class CSVInputSerialization(InputSerialization):
                 ]
         ):
             raise ValueError(
-                "file header info must be {0}, {1} or {2}".format(
-                    FILE_HEADER_INFO_USE,
-                    FILE_HEADER_INFO_IGNORE,
-                    FILE_HEADER_INFO_NONE,
-                ),
+                f"file header info must be {FILE_HEADER_INFO_USE}, "
+                f"{FILE_HEADER_INFO_IGNORE} or {FILE_HEADER_INFO_NONE}"
             )
         self._file_header_info = file_header_info
         self._quote_character = quote_character
@@ -141,9 +135,7 @@ class JSONInputSerialization(InputSerialization):
                 json_type not in [JSON_TYPE_DOCUMENT, JSON_TYPE_LINES]
         ):
             raise ValueError(
-                "json type must be {0} or {1}".format(
-                    JSON_TYPE_DOCUMENT, JSON_TYPE_LINES,
-                ),
+                f"json type must be {JSON_TYPE_DOCUMENT} or {JSON_TYPE_LINES}"
             )
         self._json_type = json_type
 
@@ -183,9 +175,8 @@ class CSVOutputSerialization:
                 ]
         ):
             raise ValueError(
-                "quote fields must be {0} or {1}".format(
-                    QUOTE_FIELDS_ALWAYS, QUOTE_FIELDS_ASNEEDED,
-                ),
+                f"quote fields must be {QUOTE_FIELDS_ALWAYS} or "
+                f"{QUOTE_FIELDS_ASNEEDED}"
             )
         self._quote_fields = quote_fields
         self._record_delimiter = record_delimiter
@@ -381,9 +372,8 @@ class SelectObjectReader:
         prelude_crc = _read(self._response, 4)
         if _crc32(prelude) != _int(prelude_crc):
             raise IOError(
-                "prelude CRC mismatch; expected: {0}, got: {1}".format(
-                    _crc32(prelude), _int(prelude_crc),
-                ),
+                f"prelude CRC mismatch; expected: {_crc32(prelude)}, "
+                f"got: {_int(prelude_crc)}"
             )
 
         total_length = _int(prelude[:4])
@@ -391,10 +381,9 @@ class SelectObjectReader:
         message_crc = _int(_read(self._response, 4))
         if _crc32(prelude + prelude_crc + data) != message_crc:
             raise IOError(
-                "message CRC mismatch; expected: {0}, got: {1}".format(
-                    _crc32(prelude + prelude_crc + data),
-                    message_crc,
-                ),
+                f"message CRC mismatch; "
+                f"expected: {_crc32(prelude + prelude_crc + data)}, "
+                f"got: {message_crc}"
             )
 
         header_length = _int(prelude[4:])
@@ -402,9 +391,7 @@ class SelectObjectReader:
 
         if headers.get(":message-type") == "error":
             raise MinioException(
-                "{0}: {1}".format(
-                    headers.get(":error-code"), headers.get(":error-message"),
-                ),
+                f"{headers.get(':error-code')}: {headers.get(':error-message')}"
             )
 
         if headers.get(":event-type") == "End":
@@ -425,7 +412,7 @@ class SelectObjectReader:
             return len(payload)
 
         raise MinioException(
-            "unknown event-type {0}".format(headers.get(":event-type")),
+            f"unknown event-type {headers.get(':event-type')}",
         )
 
     def stream(self, num_bytes=32*1024):

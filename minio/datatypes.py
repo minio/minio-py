@@ -57,7 +57,7 @@ class Bucket:
         return self._creation_date
 
     def __repr__(self):
-        return "{}({!r})".format(type(self).__name__, self.name)
+        return f"{type(self).__name__}('{self.name}')"
 
     def __str__(self):
         return self.name
@@ -705,7 +705,7 @@ class PostPolicy:
                 )
         ):
             raise ValueError(
-                "{0} is unsupported for starts-with condition".format(element),
+                f"{element} is unsupported for starts-with condition",
             )
         if element in _RESERVED_ELEMENTS:
             raise ValueError(element + " cannot be set")
