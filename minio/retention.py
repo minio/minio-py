@@ -30,9 +30,7 @@ class Retention:
 
     def __init__(self, mode, retain_until_date):
         if mode not in [GOVERNANCE, COMPLIANCE]:
-            raise ValueError(
-                "mode must be {0} or {1}".format(GOVERNANCE, COMPLIANCE),
-            )
+            raise ValueError(f"mode must be {GOVERNANCE} or {COMPLIANCE}")
         if not isinstance(retain_until_date, datetime.datetime):
             raise ValueError(
                 "retain until date must be datetime.datetime type",

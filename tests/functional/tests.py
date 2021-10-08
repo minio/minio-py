@@ -65,7 +65,7 @@ HTTP = urllib3.PoolManager(
 
 def _gen_bucket_name():
     """Generate random bucket name."""
-    return "minio-py-test-{0}".format(uuid4())
+    return f"minio-py-test-{uuid4()}"
 
 
 def _get_sha256sum(filename):
@@ -129,19 +129,18 @@ def _call_test(func, *args, **kwargs):
             log_entry["alert"] = "Not Implemented"
             log_entry["status"] = "NA"
         else:
-            log_entry["message"] = "{0}".format(exc)
+            log_entry["message"] = f"{exc}"
             log_entry["error"] = traceback.format_exc()
             log_entry["status"] = "FAIL"
     except Exception as exc:  # pylint: disable=broad-except
-        log_entry["message"] = "{0}".format(exc)
+        log_entry["message"] = f"{exc}"
         log_entry["error"] = traceback.format_exc()
         log_entry["status"] = "FAIL"
 
     if log_entry.get("method"):
-        log_entry["function"] = "{0}({1})".format(
-            log_entry["method"].__name__,
-            # pylint: disable=deprecated-method
-            ', '.join(getfullargspec(log_entry["method"]).args[1:]))
+        # pylint: disable=deprecated-method
+        args_string = ', '.join(getfullargspec(log_entry["method"]).args[1:])
+        log_entry["function"] = f"{log_entry['method'].__name__}({args_string})"
     log_entry["args"] = {
         k: v for k, v in log_entry.get("args", {}).items() if v
     }
@@ -291,7 +290,7 @@ def test_select_object_content(log_entry):
             raise ValueError(
                 'Data mismatch Expected : '
                 '"col1,col2,col3\none,two,three\nX,Y,Z\n"',
-                'Received {0}'.format(records.getvalue().decode()))
+                f"Received {records.getvalue().decode()}")
     finally:
         _CLIENT.remove_object(bucket_name, csvfile)
         _CLIENT.remove_bucket(bucket_name)
@@ -321,7 +320,7 @@ def test_fput_object_small_file(log_entry, sse=None):
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}-f".format(uuid4())
+    object_name = f"{uuid4()}-f"
     metadata = {'x-amz-storage-class': 'STANDARD_IA'}
 
     log_entry["args"] = {
@@ -342,7 +341,7 @@ def test_fput_object_large_file(log_entry, sse=None):
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}-large".format(uuid4())
+    object_name = f"{uuid4()}-large"
     metadata = {'x-amz-storage-class': 'STANDARD_IA'}
 
     log_entry["args"] = {
@@ -362,7 +361,7 @@ def test_fput_object_with_content_type(  # pylint: disable=invalid-name
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}-f".format(uuid4())
+    object_name = f"{uuid4()}-f"
     metadata = {'x-amz-storage-class': 'STANDARD_IA'}
     content_type = 'application/octet-stream'
 
@@ -396,9 +395,8 @@ def _validate_stat(st_obj, expected_size, expected_meta, version_id=None):
 
     if st_obj.version_id != version_id:
         raise ValueError(
-            "version-id mismatch. expected={0}, got={1}".format(
-                version_id, st_obj.version_id,
-            ),
+            f"version-id mismatch. expected={version_id}, "
+            f"got={st_obj.version_id}"
         )
 
     # content_type by default can be either application/octet-stream or
@@ -430,7 +428,7 @@ def test_copy_object_no_copy_condition(  # pylint: disable=invalid-name
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     object_source = object_name + "-source"
     object_copy = object_name + "-copy"
 
@@ -463,7 +461,7 @@ def test_copy_object_with_metadata(log_entry):
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     object_source = object_name + "-source"
     object_copy = object_name + "-copy"
     metadata = {
@@ -507,7 +505,7 @@ def test_copy_object_etag_match(log_entry):
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     object_source = object_name + "-source"
     object_copy = object_name + "-copy"
 
@@ -546,7 +544,7 @@ def test_copy_object_negative_etag_match(  # pylint: disable=invalid-name
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     object_source = object_name + "-source"
     object_copy = object_name + "-copy"
 
@@ -585,7 +583,7 @@ def test_copy_object_modified_since(log_entry):
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     object_source = object_name + "-source"
     object_copy = object_name + "-copy"
 
@@ -623,7 +621,7 @@ def test_copy_object_unmodified_since(  # pylint: disable=invalid-name
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     object_source = object_name + "-source"
     object_copy = object_name + "-copy"
 
@@ -670,7 +668,7 @@ def test_put_object(log_entry, sse=None):
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     length = 1 * MB
 
     log_entry["args"] = {
@@ -711,8 +709,7 @@ def test_put_object(log_entry, sse=None):
             raise ValueError("Metadata key 'x-amz-meta-testing' not found")
         value = normalized_meta['x-amz-meta-testing']
         if value != 'value':
-            raise ValueError('Metadata key has unexpected'
-                             ' value {0}'.format(value))
+            raise ValueError(f"Metadata key has unexpected value {value}")
         if 'x-amz-meta-test-key' not in normalized_meta:
             raise ValueError("Metadata key 'x-amz-meta-test-key' not found")
     finally:
@@ -727,7 +724,7 @@ def test_negative_put_object_with_path_segment(  # pylint: disable=invalid-name
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "/a/b/c/{0}".format(uuid4())
+    object_name = f"/a/b/c/{uuid4()}"
     length = 0
 
     log_entry["args"] = {
@@ -756,7 +753,7 @@ def _test_stat_object(log_entry, sse=None, version_check=False):
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     length = 1 * MB
 
     log_entry["args"] = {
@@ -833,7 +830,7 @@ def _test_remove_object(log_entry, version_check=False):
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     length = 1 * KB
 
     log_entry["args"] = {
@@ -875,7 +872,7 @@ def _test_get_object(log_entry, sse=None, version_check=False):
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     length = 1 * MB
 
     log_entry["args"] = {
@@ -926,7 +923,7 @@ def _test_fget_object(log_entry, sse=None, version_check=False):
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     tmpfd, tmpfile = tempfile.mkstemp()
     os.close(tmpfd)
     length = 1 * MB
@@ -978,7 +975,7 @@ def test_get_object_with_default_length(  # pylint: disable=invalid-name
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     size = 1 * MB
     length = 1000
     offset = size - length
@@ -1018,7 +1015,7 @@ def test_get_partial_object(log_entry, sse=None):
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     size = 1 * MB
     offset = int(size / 2)
     length = offset - 1000
@@ -1055,7 +1052,7 @@ def _test_list_objects(log_entry, use_api_v1=False, version_check=False):
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     is_recursive = True
 
     log_entry["args"] = {
@@ -1091,9 +1088,9 @@ def _test_list_objects(log_entry, use_api_v1=False, version_check=False):
                  obj.etag, obj.size, obj.content_type)
             if obj.version_id not in [version_id1, version_id2]:
                 raise ValueError(
-                    "version ID mismatch. expected=any{0}, got:{1}".format(
-                        [version_id1, version_id2], obj.verion_id,
-                    )
+                    f"version ID mismatch. "
+                    f"expected=any{[version_id1, version_id2]}, "
+                    f"got:{obj.verion_id}"
                 )
     finally:
         _CLIENT.remove_object(
@@ -1131,8 +1128,9 @@ def _test_list_objects_api(bucket_name, expected_no, *argv):
 
     if expected_no != no_of_files:
         raise ValueError(
-            ("Listed no of objects ({}), does not match the "
-             "expected no of objects ({})").format(no_of_files, expected_no))
+            f"Listed no of objects ({no_of_files}), does not match the "
+            f"expected no of objects ({expected_no})"
+        )
 
 
 def test_list_objects_with_prefix(log_entry):
@@ -1140,7 +1138,7 @@ def test_list_objects_with_prefix(log_entry):
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
 
     log_entry["args"] = {
         "bucket_name": bucket_name,
@@ -1154,14 +1152,9 @@ def test_list_objects_with_prefix(log_entry):
         path_prefix = ""
         # Create files and directories
         for i in range(no_of_created_files):
-            _CLIENT.put_object(bucket_name,
-                               "{0}{1}_{2}".format(
-                                   path_prefix,
-                                   i,
-                                   object_name,
-                               ),
+            _CLIENT.put_object(bucket_name, f"{path_prefix}{i}_{object_name}",
                                LimitedRandomReader(size), size)
-            path_prefix = "{0}{1}/".format(path_prefix, i)
+            path_prefix = f"{path_prefix}{i}/"
 
         # Created files and directory structure
         # ._<bucket_name>/
@@ -1209,9 +1202,9 @@ def test_list_objects_with_prefix(log_entry):
         path_prefix = ""
         for i in range(no_of_created_files):
             _CLIENT.remove_object(
-                bucket_name,
-                "{0}{1}_{2}".format(path_prefix, i, object_name))
-            path_prefix = "{0}{1}/".format(path_prefix, i)
+                bucket_name, f"{path_prefix}{i}_{object_name}",
+            )
+            path_prefix = f"{path_prefix}{i}/"
         _CLIENT.remove_bucket(bucket_name)
     # Test passes
     log_entry["args"]["prefix"] = (
@@ -1226,11 +1219,11 @@ def test_list_objects_with_1001_files(  # pylint: disable=invalid-name
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
 
     log_entry["args"] = {
         "bucket_name": bucket_name,
-        "object_name": "{0}_0 ~ {0}_1000".format(object_name),
+        "object_name": f"{object_name}_0 ~ {0}_1000",
     }
 
     _CLIENT.make_bucket(bucket_name)
@@ -1239,16 +1232,14 @@ def test_list_objects_with_1001_files(  # pylint: disable=invalid-name
         no_of_created_files = 2000
         # Create files and directories
         for i in range(no_of_created_files):
-            _CLIENT.put_object(bucket_name,
-                               "{0}_{1}".format(object_name, i),
+            _CLIENT.put_object(bucket_name, f"{object_name}_{i}",
                                LimitedRandomReader(size), size)
 
         # List objects and check if 1001 files are returned
         _test_list_objects_api(bucket_name, no_of_created_files)
     finally:
         for i in range(no_of_created_files):
-            _CLIENT.remove_object(bucket_name,
-                                  "{0}_{1}".format(object_name, i))
+            _CLIENT.remove_object(bucket_name, f"{object_name}_{i}")
         _CLIENT.remove_bucket(bucket_name)
 
 
@@ -1268,7 +1259,7 @@ def test_presigned_get_object_default_expiry(  # pylint: disable=invalid-name
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
 
     log_entry["args"] = {
         "bucket_name": bucket_name,
@@ -1285,12 +1276,8 @@ def test_presigned_get_object_default_expiry(  # pylint: disable=invalid-name
         response = HTTP.urlopen('GET', presigned_get_object_url)
         if response.status != 200:
             raise Exception(
-                (
-                    "Presigned GET object URL {0} failed; "
-                    "code: {1}, error: {2}"
-                ).format(
-                    presigned_get_object_url, response.code, response.data,
-                ),
+                f"Presigned GET object URL {presigned_get_object_url} failed; "
+                f"code: {response.code}, error: {response.data}"
             )
     finally:
         _CLIENT.remove_object(bucket_name, object_name)
@@ -1303,7 +1290,7 @@ def test_presigned_get_object_expiry(  # pylint: disable=invalid-name
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
 
     log_entry["args"] = {
         "bucket_name": bucket_name,
@@ -1320,12 +1307,8 @@ def test_presigned_get_object_expiry(  # pylint: disable=invalid-name
         response = HTTP.urlopen('GET', presigned_get_object_url)
         if response.status != 200:
             raise Exception(
-                (
-                    "Presigned GET object URL {0} failed; "
-                    "code: {1}, error: {2}"
-                ).format(
-                    presigned_get_object_url, response.code, response.data,
-                ),
+                f"Presigned GET object URL {presigned_get_object_url} failed; "
+                f"code: {response.code}, error: {response.data}"
             )
 
         log_entry["args"]["presigned_get_object_url"] = (
@@ -1342,12 +1325,8 @@ def test_presigned_get_object_expiry(  # pylint: disable=invalid-name
 
         if response.status != 200:
             raise Exception(
-                (
-                    "Presigned GET object URL {0} failed; "
-                    "code: {1}, error: {2}"
-                ).format(
-                    presigned_get_object_url, response.code, response.data,
-                ),
+                f"Presigned GET object URL {presigned_get_object_url} failed; "
+                f"code: {response.code}, error: {response.data}"
             )
 
         presigned_get_object_url = _CLIENT.presigned_get_object(
@@ -1377,7 +1356,7 @@ def test_presigned_get_object_response_headers(  # pylint: disable=invalid-name
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
     content_type = 'text/plain'
     content_language = 'en_US'
 
@@ -1424,12 +1403,8 @@ def test_presigned_get_object_response_headers(  # pylint: disable=invalid-name
                 returned_content_type != content_type or
                 returned_content_language != content_language):
             raise Exception(
-                (
-                    "Presigned GET object URL {0} failed; "
-                    "code: {1}, error: {2}"
-                ).format(
-                    presigned_get_object_url, response.code, response.data,
-                ),
+                "Presigned GET object URL {presigned_get_object_url} failed; "
+                "code: {response.code}, error: {response.data}"
             )
     finally:
         _CLIENT.remove_object(bucket_name, object_name)
@@ -1442,7 +1417,7 @@ def test_presigned_get_object_version(  # pylint: disable=invalid-name
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
 
     log_entry["args"] = {
         "bucket_name": bucket_name,
@@ -1464,12 +1439,8 @@ def test_presigned_get_object_version(  # pylint: disable=invalid-name
         response = HTTP.urlopen('GET', presigned_get_object_url)
         if response.status != 200:
             raise Exception(
-                (
-                    "Presigned GET object URL {0} failed; "
-                    "code: {1}, error: {2}"
-                ).format(
-                    presigned_get_object_url, response.code, response.data,
-                ),
+                f"Presigned GET object URL {presigned_get_object_url} failed; "
+                f"code: {response.code}, error: {response.data}"
             )
     finally:
         _CLIENT.remove_object(bucket_name, object_name, version_id=version_id)
@@ -1482,7 +1453,7 @@ def test_presigned_put_object_default_expiry(  # pylint: disable=invalid-name
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
 
     log_entry["args"] = {
         "bucket_name": bucket_name,
@@ -1498,12 +1469,8 @@ def test_presigned_put_object_default_expiry(  # pylint: disable=invalid-name
                                 LimitedRandomReader(1 * KB))
         if response.status != 200:
             raise Exception(
-                (
-                    "Presigned PUT object URL {0} failed; "
-                    "code: {1}, error: {2}"
-                ).format(
-                    presigned_put_object_url, response.code, response.data,
-                ),
+                f"Presigned PUT object URL {presigned_put_object_url} failed; "
+                f"code: {response.code}, error: {response.data}"
             )
         _CLIENT.stat_object(bucket_name, object_name)
     finally:
@@ -1517,7 +1484,7 @@ def test_presigned_put_object_expiry(  # pylint: disable=invalid-name
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
 
     log_entry["args"] = {
         "bucket_name": bucket_name,
@@ -1581,7 +1548,7 @@ def test_thread_safe(log_entry):
 
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
-    object_name = "{0}".format(uuid4())
+    object_name = f"{uuid4()}"
 
     log_entry["args"] = {
         "bucket_name": bucket_name,
@@ -1597,7 +1564,7 @@ def test_thread_safe(log_entry):
     # exception is generated and saved in exceptions.
     def get_object_and_check(index):
         try:
-            local_file = "copied_file_{0}".format(index)
+            local_file = f"copied_file_{index}"
             _CLIENT.fget_object(bucket_name, object_name, local_file)
             copied_file_sha_sum = _get_sha256sum(local_file)
             # Compare sha-sum values of the source file and the copied one
@@ -1627,7 +1594,7 @@ def test_thread_safe(log_entry):
         thread_list = []
         for i in range(no_of_threads):
             # Create dynamic/varying names for to be created threads
-            thread_name = 'thread_{0}'.format(i)
+            thread_name = f"thread_{i}"
             vars()[thread_name] = Thread(
                 target=get_object_and_check, args=(i,))
             vars()[thread_name].start()
@@ -1738,7 +1705,7 @@ def test_set_bucket_policy_readonly(log_entry):
                     "Effect": "Allow",
                     "Principal": {"AWS": "*"},
                     "Action": "s3:GetObject",
-                    "Resource": "arn:aws:s3:::{0}/*".format(bucket_name)
+                    "Resource": f"arn:aws:s3:::{bucket_name}/*"
                 }
             ]
         }
@@ -1795,7 +1762,7 @@ def test_set_bucket_policy_readwrite(  # pylint: disable=invalid-name
                                "s3:DeleteObject",
                                "s3:PutObject"],
                     "Sid": "",
-                    "Resource": ["arn:aws:s3:::{0}/*".format(bucket_name)],
+                    "Resource": [f"arn:aws:s3:::{bucket_name}/*"],
                     "Effect": "Allow",
                     "Principal": {"AWS": "*"}
                 }
@@ -1830,7 +1797,7 @@ def _test_remove_objects(log_entry, version_check=False):
         size = 1 * KB
         # Upload some new objects to prepare for multi-object delete test.
         for i in range(10):
-            object_name = "prefix-{0}".format(i)
+            object_name = f"prefix-{i}"
             result = _CLIENT.put_object(
                 bucket_name, object_name, LimitedRandomReader(size), size,
             )
@@ -1848,12 +1815,12 @@ def _test_remove_objects(log_entry, version_check=False):
         # delete the objects in a single library call.
         errs = _CLIENT.remove_objects(bucket_name, delete_object_list)
         for err in errs:
-            raise ValueError("Remove objects err: {}".format(err))
+            raise ValueError(f"Remove objects err: {err}")
     finally:
         # Try to clean everything to keep our server intact
         errs = _CLIENT.remove_objects(bucket_name, delete_object_list)
         for err in errs:
-            raise ValueError("Remove objects err: {}".format(err))
+            raise ValueError(f"Remove objects err: {err}")
         _CLIENT.remove_bucket(bucket_name)
 
 

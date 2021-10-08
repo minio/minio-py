@@ -50,15 +50,12 @@ class Tags(dict):
     def __setitem__(self, key, value):
         limit = _MAX_OBJECT_TAG_COUNT if self._for_object else _MAX_TAG_COUNT
         if len(self) == limit:
-            raise ValueError(
-                "only {0} {1} tags are allowed".format(
-                    limit, "object" if self._for_object else "bucket",
-                ),
-            )
+            tag_type = "object" if self._for_object else "bucket"
+            raise ValueError(f"only {limit} {tag_type} tags are allowed")
         if not key or len(key) > _MAX_KEY_LENGTH or "&" in key:
-            raise ValueError("invalid tag key '{0}'".format(key))
+            raise ValueError(f"invalid tag key '{key}'")
         if value is None or len(value) > _MAX_VALUE_LENGTH or "&" in value:
-            raise ValueError("invalid tag value '{0}'".format(value))
+            raise ValueError(f"invalid tag value '{value}'")
         super().__setitem__(key, value)
 
     @classmethod
@@ -420,14 +417,8 @@ class ComposeSource(ObjectConditionalReadArgs):
         def make_error(name, value):
             ver = ("?versionId="+self._version_id) if self._version_id else ""
             return ValueError(
-                "Source {0}/{1}{2}: {3} {4} is beyond object size {5}".format(
-                    self._bucket_name,
-                    self._object_name,
-                    ver,
-                    name,
-                    value,
-                    object_size,
-                )
+                f"Source {self._bucket_name}/{self._object_name}{ver}: "
+                f"{name} {value} is beyond object size {object_size}"
             )
 
         if self._offset is not None and self._offset >= object_size:

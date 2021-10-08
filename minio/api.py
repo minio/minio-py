@@ -64,9 +64,9 @@ from .tagging import Tagging
 from .versioningconfig import VersioningConfig
 from .xml import Element, SubElement, findtext, getbytes, marshal, unmarshal
 
-_DEFAULT_USER_AGENT = "MinIO ({os}; {arch}) {lib}/{ver}".format(
-    os=platform.system(), arch=platform.machine(),
-    lib=__title__, ver=__version__,
+_DEFAULT_USER_AGENT = (
+    f"MinIO ({platform.system()}; {platform.machine()}) "
+    f"{__title__}/{__version__}"
 )
 
 
@@ -242,14 +242,8 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         if self._trace_stream:
             self._trace_stream.write("---------START-HTTP---------\n")
-            self._trace_stream.write(
-                "{0} {1}{2}{3} HTTP/1.1\n".format(
-                    method,
-                    url.path,
-                    "?" if url.query else "",
-                    url.query or "",
-                ),
-            )
+            query = ("?" + url.query) if url.query else ""
+            self._trace_stream.write(f"{method} {url.path}{query} HTTP/1.1\n")
             self._trace_stream.write(
                 headers_to_strings(headers, titled_key=True),
             )
@@ -278,7 +272,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         )
 
         if self._trace_stream:
-            self._trace_stream.write("HTTP/1.1 {0}\n".format(response.status))
+            self._trace_stream.write(f"HTTP/1.1 {response.status}\n")
             self._trace_stream.write(
                 headers_to_strings(response.getheaders()),
             )
@@ -367,9 +361,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             code, message = func() if func else (None, None)
             if not code:
                 raise ServerError(
-                    "server failed with HTTP status code {}".format(
-                        response.status,
-                    ),
+                    f"server failed with HTTP status code {response.status}"
                 )
             response_error = S3Error(
                 code,
@@ -450,9 +442,8 @@ class Minio:  # pylint: disable=too-many-public-methods
             # constructor.
             if self._base_url.region and self._base_url.region != region:
                 raise ValueError(
-                    "region must be {0}, but passed {1}".format(
-                        self._base_url.region, region,
-                    ),
+                    f"region must be {self._base_url.region}, "
+                    f"but passed {region}"
                 )
             return region
 
@@ -497,10 +488,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         if not (app_name and app_version):
             raise ValueError("Application name/version cannot be empty.")
-
-        self._user_agent = "{0} {1}/{2}".format(
-            _DEFAULT_USER_AGENT, app_name, app_version,
-        )
+        self._user_agent = f"{_DEFAULT_USER_AGENT} {app_name}/{app_version}"
 
     def trace_on(self, stream):
         """
@@ -607,9 +595,8 @@ class Minio:  # pylint: disable=too-many-public-methods
             # constructor.
             if location and self._base_url.region != location:
                 raise ValueError(
-                    "region must be {0}, but passed {1}".format(
-                        self._base_url.region, location,
-                    ),
+                    f"region must be {self._base_url.region}, "
+                    f"but passed {location}"
                 )
         location = self._base_url.region or location or "us-east-1"
         headers = (
@@ -1038,7 +1025,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         check_non_empty_string(object_name)
 
         if os.path.isdir(file_path):
-            raise ValueError("file {0} is a directory".format(file_path))
+            raise ValueError(f"file {file_path} is a directory")
 
         # Create top level directory if needed.
         makedirs(os.path.dirname(file_path))
@@ -1154,8 +1141,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         headers.update(request_headers or {})
 
         if offset or length:
-            headers['Range'] = 'bytes={}-{}'.format(
-                offset, offset + length - 1 if length else "")
+            end = (offset + length - 1) if length else ""
+            headers['Range'] = f"bytes={offset}-{end}"
 
         if version_id:
             extra_query_params = extra_query_params or {}
@@ -1238,16 +1225,12 @@ class Minio:  # pylint: disable=too-many-public-methods
                 metadata_directive is not None and
                 metadata_directive not in [COPY, REPLACE]
         ):
-            raise ValueError(
-                "metadata directive must be {0} or {1}".format(COPY, REPLACE),
-            )
+            raise ValueError(f"metadata directive must be {COPY} or {REPLACE}")
         if (
                 tagging_directive is not None and
                 tagging_directive not in [COPY, REPLACE]
         ):
-            raise ValueError(
-                "tagging directive must be {0} or {1}".format(COPY, REPLACE),
-            )
+            raise ValueError(f"tagging directive must be {COPY} or {REPLACE}")
 
         size = -1
         if source.offset is None and source.length is None:
@@ -1328,17 +1311,15 @@ class Minio:  # pylint: disable=too-many-public-methods
                     i != len(sources)
             ):
                 raise ValueError(
-                    "source {0}/{1}: size {2} must be greater than {3}".format(
-                        src.bucket_name, src.object_name, size, MIN_PART_SIZE,
-                    ),
+                    f"source {src.bucket_name}/{src.object_name}: size {size} "
+                    f"must be greater than {MIN_PART_SIZE}"
                 )
 
             object_size += size
             if object_size > MAX_MULTIPART_OBJECT_SIZE:
                 raise ValueError(
-                    "destination object size must be less than {0}".format(
-                        MAX_MULTIPART_OBJECT_SIZE,
-                    ),
+                    f"destination object size must be less than "
+                    f"{MAX_MULTIPART_OBJECT_SIZE}"
                 )
 
             if size > MAX_PART_SIZE:
@@ -1354,13 +1335,9 @@ class Minio:  # pylint: disable=too-many-public-methods
                         i != len(sources)
                 ):
                     raise ValueError(
-                        (
-                            "source {0}/{1}: for multipart split upload of "
-                            "{2}, last part size is less than {3}"
-                        ).format(
-                            src.bucket_name, src.object_name, size,
-                            MIN_PART_SIZE,
-                        ),
+                        f"source {src.bucket_name}/{src.object_name}: "
+                        f"for multipart split upload of {size}, "
+                        f"last part size is less than {MIN_PART_SIZE}"
                     )
                 part_count += count
             else:
@@ -1368,10 +1345,8 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         if part_count > MAX_MULTIPART_COUNT:
             raise ValueError(
-                (
-                    "Compose sources create more than allowed multipart "
-                    "count {0}"
-                ).format(MAX_MULTIPART_COUNT),
+                f"Compose sources create more than allowed multipart "
+                f"count {MAX_MULTIPART_COUNT}"
             )
         return part_count
 
@@ -1447,9 +1422,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         i = 0
         for src in sources:
             if not isinstance(src, ComposeSource):
-                raise ValueError(
-                    "sources[{0}] must be ComposeSource type".format(i),
-                )
+                raise ValueError(f"sources[{i}] must be ComposeSource type")
             i += 1
         check_sse(sse)
         if tags is not None and not isinstance(tags, Tags):
@@ -1492,11 +1465,11 @@ class Minio:  # pylint: disable=too-many-public-methods
                     part_number += 1
                     if src.length is not None:
                         headers["x-amz-copy-source-range"] = (
-                            "bytes={0}-{1}".format(offset, offset+src.length-1)
+                            f"bytes={offset}-{offset+src.length-1}"
                         )
                     elif src.offset is not None:
                         headers["x-amz-copy-source-range"] = (
-                            "bytes={0}-{1}".format(offset, offset+size-1)
+                            f"bytes={offset}-{offset+size-1}"
                         )
                     etag, _ = self._upload_part_copy(
                         bucket_name,
@@ -1515,7 +1488,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                         end_bytes = start_bytes + size
                     headers_copy = headers.copy()
                     headers_copy["x-amz-copy-source-range"] = (
-                        "bytes={0}-{1}".format(start_bytes, end_bytes)
+                        f"bytes={start_bytes}-{end_bytes}"
                     )
                     etag, _ = self._upload_part_copy(
                         bucket_name,
@@ -1716,10 +1689,9 @@ class Minio:  # pylint: disable=too-many-public-methods
                     )
                     if len(part_data) != part_size:
                         raise IOError(
-                            (
-                                "stream having not enough data;"
-                                "expected: {0}, got: {1} bytes"
-                            ).format(part_size, len(part_data))
+                            f"stream having not enough data;"
+                            f"expected: {part_size}, "
+                            f"got: {len(part_data)} bytes"
                         )
                 else:
                     part_data = read_part_data(
