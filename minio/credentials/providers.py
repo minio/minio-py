@@ -60,9 +60,7 @@ def _urlopen(http_client, method, url, body=None, headers=None):
     """Wrapper of urlopen() handles HTTP status code."""
     res = http_client.urlopen(method, url, body=body, headers=headers)
     if res.status not in [200, 204, 206]:
-        raise ValueError(
-            "{0} failed with HTTP status code {1}".format(url, res.status),
-        )
+        raise ValueError(f"{url} failed with HTTP status code {res.status}")
     return res
 
 
@@ -263,22 +261,14 @@ class AWSConfigProvider(Provider):
 
         if not access_key:
             raise ValueError(
-                (
-                    "access key does not exist in profile "
-                    "{0} in AWS credential file {1}"
-                ).format(
-                    self._profile, self._filename,
-                ),
+                f"access key does not exist in profile "
+                f"{self._profile} in AWS credential file {self._filename}"
             )
 
         if not secret_key:
             raise ValueError(
-                (
-                    "secret key does not exist in profile "
-                    "{0} in AWS credential file {1}"
-                ).format(
-                    self._profile, self._filename,
-                ),
+                f"secret key does not exist in profile "
+                f"{self._profile} in AWS credential file {self._filename}"
             )
 
         return Credentials(
@@ -310,24 +300,18 @@ class MinioClientConfigProvider(Provider):
             aliases = config.get("hosts") or config.get("aliases")
             if not aliases:
                 raise ValueError(
-                    "invalid configuration in file {0}".format(
-                        self._filename,
-                    ),
+                    f"invalid configuration in file {self._filename}",
                 )
             creds = aliases.get(self._alias)
             if not creds:
                 raise ValueError(
-                    (
-                        "alias {0} not found in MinIO client"
-                        "configuration file {1}"
-                    ).format(
-                        self._alias, self._filename,
-                    ),
+                    f"alias {self._alias} not found in MinIO client"
+                    f"configuration file {self._filename}"
                 )
             return Credentials(creds.get("accessKey"), creds.get("secretKey"))
         except (IOError, OSError) as exc:
             raise ValueError(
-                "error in reading file {0}".format(self._filename),
+                f"error in reading file {self._filename}",
             ) from exc
 
 
@@ -349,9 +333,7 @@ def _get_jwt_token(token_file):
         with open(token_file, encoding="utf-8") as file:
             return {"access_token": file.read(), "expires_in": "0"}
     except (IOError, OSError) as exc:
-        raise ValueError(
-            "error in reading file {0}".format(token_file),
-        ) from exc
+        raise ValueError(f"error in reading file {token_file}") from exc
 
 
 class IamAwsProvider(Provider):
@@ -385,9 +367,8 @@ class IamAwsProvider(Provider):
         data = json.loads(res.data)
         if data.get("Code", "Success") != "Success":
             raise ValueError(
-                "{0} failed with code {1} message {2}".format(
-                    url, data["Code"], data.get("Message"),
-                ),
+                f"{url} failed with code {data['Code']} "
+                f"message {data.get('Message')}"
             )
         data["Expiration"] = from_iso8601utc(data["Expiration"])
 
@@ -409,9 +390,7 @@ class IamAwsProvider(Provider):
             if not url:
                 url = "https://sts.amazonaws.com"
                 if self._aws_region:
-                    url = "https://sts.{0}.amazonaws.com".format(
-                        self._aws_region
-                    )
+                    url = f"https://sts.{self._aws_region}.amazonaws.com"
 
             provider = WebIdentityProvider(
                 lambda: _get_jwt_token(self._token_file),
@@ -440,9 +419,7 @@ class IamAwsProvider(Provider):
             res = _urlopen(self._http_client, "GET", url)
             role_names = res.data.decode("utf-8").split("\n")
             if not role_names:
-                raise ValueError(
-                    "no IAM roles attached to EC2 service {0}".format(url),
-                )
+                raise ValueError(f"no IAM roles attached to EC2 service {url}")
             url += "/" + role_names[0].strip("\r")
 
         self._credentials = self.fetch(url)

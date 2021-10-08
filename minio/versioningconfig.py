@@ -30,13 +30,9 @@ class VersioningConfig:
 
     def __init__(self, status=None, mfa_delete=None):
         if status is not None and status not in [ENABLED, SUSPENDED]:
-            raise ValueError(
-                "status must be {0} or {1}".format(ENABLED, SUSPENDED),
-            )
+            raise ValueError(f"status must be {ENABLED} or {SUSPENDED}")
         if mfa_delete is not None and mfa_delete not in [ENABLED, DISABLED]:
-            raise ValueError(
-                "MFA delete must be {0} or {1}".format(ENABLED, DISABLED),
-            )
+            raise ValueError(f"MFA delete must be {ENABLED} or {DISABLED}")
         self._status = status
         self._mfa_delete = mfa_delete
 

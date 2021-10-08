@@ -71,20 +71,24 @@ def queryencode(query, safe='', encoding=None, errors=None):
 
 def headers_to_strings(headers, titled_key=False):
     """Convert HTTP headers to multi-line string."""
+    def _get_key(key):
+        return key.title() if titled_key else key
+
+    def _get_value(value):
+        return re.sub(
+            r"Credential=([^/]+)",
+            "Credential=*REDACTED*",
+            re.sub(
+                r"Signature=([0-9a-f]+)",
+                "Signature=*REDACTED*",
+                value if isinstance(value, str) else str(value),
+            ),
+        ) if titled_key else value
+
     return "\n".join(
         [
-            "{0}: {1}".format(
-                key.title() if titled_key else key,
-                re.sub(
-                    r"Credential=([^/]+)",
-                    "Credential=*REDACTED*",
-                    re.sub(
-                        r"Signature=([0-9a-f]+)",
-                        "Signature=*REDACTED*",
-                        value if isinstance(value, str) else str(value),
-                    ),
-                ) if titled_key else value,
-            ) for key, value in headers.items()
+            f"{_get_key(key)}: {_get_value(value)}"
+            for key, value in headers.items()
         ]
     )
 
@@ -94,24 +98,18 @@ def _validate_sizes(object_size, part_size):
     if part_size > 0:
         if part_size < MIN_PART_SIZE:
             raise ValueError(
-                "part size {0} is not supported; minimum allowed 5MiB".format(
-                    part_size,
-                ),
+                f"part size {part_size} is not supported; minimum allowed 5MiB",
             )
         if part_size > MAX_PART_SIZE:
             raise ValueError(
-                "part size {0} is not supported; minimum allowed 5GiB".format(
-                    part_size,
-                ),
+                f"part size {part_size} is not supported; minimum allowed 5GiB",
             )
 
     if object_size >= 0:
         if object_size > MAX_MULTIPART_OBJECT_SIZE:
             raise ValueError(
-                (
-                    "object size {0} is not supported; "
-                    "maximum allowed 5TiB"
-                ).format(object_size),
+                f"object size {object_size} is not supported; "
+                f"maximum allowed 5TiB"
             )
     elif part_size <= 0:
         raise ValueError(
@@ -141,10 +139,8 @@ def get_part_info(object_size, part_size):
     part_size, part_count = _get_part_info(object_size, part_size)
     if part_count > MAX_MULTIPART_COUNT:
         raise ValueError(
-            (
-                "object size {0} and part size {1} "
-                "make more than {2} parts for upload"
-            ).format(object_size, part_size, MAX_MULTIPART_COUNT),
+            f"object size {object_size} and part size {part_size} "
+            f"make more than {MAX_MULTIPART_COUNT} parts for upload"
         )
     return part_size, part_count
 
@@ -175,9 +171,7 @@ def makedirs(path):
             raise
 
         if not os.path.isdir(path):
-            raise ValueError(
-                "path {0} is not a directory".format(path),
-            ) from exc
+            raise ValueError(f"path {path} is not a directory") from exc
 
 
 def check_bucket_name(bucket_name, strict=False):
@@ -214,8 +208,9 @@ def check_bucket_name(bucket_name, strict=False):
 
     match = _VALID_BUCKETNAME_REGEX.match(bucket_name)
     if (not match) or match.end() != len(bucket_name):
-        raise ValueError('Bucket name does not follow S3 standards.'
-                         ' Bucket: {0}'.format(bucket_name))
+        raise ValueError(
+            f"Bucket name does not follow S3 standards. Bucket: {bucket_name}",
+        )
 
 
 def check_non_empty_string(string):
@@ -301,10 +296,8 @@ def _metadata_to_headers(metadata):
             value.encode("us-ascii")
         except UnicodeEncodeError as exc:
             raise ValueError(
-                (
-                    "unsupported metadata value {0}; "
-                    "only US-ASCII encoded characters are supported"
-                ).format(value)
+                f"unsupported metadata value {value}; "
+                f"only US-ASCII encoded characters are supported"
             ) from exc
         return value
 
@@ -456,9 +449,7 @@ class BaseURL:
 
             if is_aws_china_host and not region_in_host and not region:
                 raise ValueError(
-                    "region missing in Amazon S3 China endpoint {0}".format(
-                        endpoint,
-                    ),
+                    f"region missing in Amazon S3 China endpoint {endpoint}",
                 )
             self._dualstack_host_flag = ".dualstack." in host
         else:
@@ -527,14 +518,14 @@ class BaseURL:
 
         if not bucket_name and object_name:
             raise ValueError(
-                "empty bucket name for object name {0}".format(object_name),
+                f"empty bucket name for object name {object_name}",
             )
 
         query = []
         for key, values in sorted((query_params or {}).items()):
             values = values if isinstance(values, (list, tuple)) else [values]
             query += [
-                "{0}={1}".format(queryencode(key), queryencode(value))
+                f"{queryencode(key)}={queryencode(value)}"
                 for value in sorted(values)
             ]
         url = url_replace(self._url, query="&".join(query))
@@ -564,10 +555,8 @@ class BaseURL:
             if self._accelerate_host_flag:
                 if "." in bucket_name:
                     raise ValueError(
-                        (
-                            "bucket name '{0}' with '.' is not allowed "
-                            "for accelerated endpoint"
-                        ).format(bucket_name),
+                        f"bucket name '{bucket_name}' with '.' is not allowed "
+                        f"for accelerated endpoint"
                     )
 
                 if not enforce_path_style:
