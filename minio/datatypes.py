@@ -24,7 +24,7 @@ import base64
 import datetime
 import json
 from collections import OrderedDict
-from urllib.parse import unquote
+from urllib.parse import unquote_plus
 from xml.etree import ElementTree as ET
 
 from .credentials import Credentials
@@ -222,7 +222,7 @@ class Object:
 
         object_name = findtext(element, "Key", True)
         if encoding_type == "url":
-            object_name = unquote(object_name)
+            object_name = unquote_plus(object_name)
 
         return cls(
             bucket_name,
@@ -261,7 +261,7 @@ def parse_list_objects(response, bucket_name=None):
     elements = findall(element, "CommonPrefixes")
     objects += [
         Object(
-            bucket_name, unquote(findtext(tag, "Prefix", True))
+            bucket_name, unquote_plus(findtext(tag, "Prefix", True))
             if encoding_type == "url" else findtext(tag, "Prefix", True)
         ) for tag in elements
     ]
@@ -276,7 +276,7 @@ def parse_list_objects(response, bucket_name=None):
     is_truncated = (findtext(element, "IsTruncated") or "").lower() == "true"
     key_marker = findtext(element, "NextKeyMarker")
     if key_marker and encoding_type == "url":
-        key_marker = unquote(key_marker)
+        key_marker = unquote_plus(key_marker)
     version_id_marker = findtext(element, "NextVersionIdMarker")
     continuation_token = findtext(element, "NextContinuationToken")
     if key_marker is not None:
@@ -284,7 +284,7 @@ def parse_list_objects(response, bucket_name=None):
     if continuation_token is None:
         continuation_token = findtext(element, "NextMarker")
         if continuation_token and encoding_type == "url":
-            continuation_token = unquote(continuation_token)
+            continuation_token = unquote_plus(continuation_token)
     if continuation_token is None and is_truncated:
         continuation_token = marker
     return objects, is_truncated, continuation_token, version_id_marker
@@ -484,7 +484,7 @@ class Upload:
         self._encoding_type = encoding_type
         self._object_name = findtext(element, "Key", True)
         self._object_name = (
-            unquote(self._object_name) if self._encoding_type == "url"
+            unquote_plus(self._object_name) if self._encoding_type == "url"
             else self._object_name
         )
         self._upload_id = findtext(element, "UploadId")
@@ -558,15 +558,15 @@ class ListMultipartUploadsResult:
         self._key_marker = findtext(element, "KeyMarker")
         if self._key_marker:
             self._key_marker = (
-                unquote(self._key_marker) if self._encoding_type == "url"
+                unquote_plus(self._key_marker) if self._encoding_type == "url"
                 else self._key_marker
             )
         self._upload_id_marker = findtext(element, "UploadIdMarker")
         self._next_key_marker = findtext(element, "NextKeyMarker")
         if self._next_key_marker:
             self._next_key_marker = (
-                unquote(self._next_key_marker) if self._encoding_type == "url"
-                else self._next_key_marker
+                unquote_plus(self._next_key_marker)
+                if self._encoding_type == "url" else self._next_key_marker
             )
         self._next_upload_id_marker = findtext(element, "NextUploadIdMarker")
         self._max_uploads = findtext(element, "MaxUploads")
