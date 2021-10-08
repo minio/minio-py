@@ -37,15 +37,11 @@ class ObjectLockConfig:
                 raise ValueError("mode must be provided")
             raise ValueError("duration must be provided")
         if mode is not None and mode not in [GOVERNANCE, COMPLIANCE]:
-            raise ValueError(
-                "mode must be {0} or {1}".format(GOVERNANCE, COMPLIANCE),
-            )
+            raise ValueError(f"mode must be {GOVERNANCE} or {COMPLIANCE}")
         if duration_unit:
             duration_unit = duration_unit.title()
         if duration is not None and duration_unit not in [DAYS, YEARS]:
-            raise ValueError(
-                "duration unit must be {0} or {1}".format(DAYS, YEARS),
-            )
+            raise ValueError(f"duration unit must be {DAYS} or {YEARS}")
         self._mode = mode
         self._duration = duration
         self._duration_unit = duration_unit

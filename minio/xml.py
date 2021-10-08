@@ -75,7 +75,7 @@ def findtext(element, name, strict=False):
     element = find(element, name)
     if element is None:
         if strict:
-            raise ValueError("XML element <{0}> not found".format(name))
+            raise ValueError(f"XML element <{name}> not found")
         return None
     return element.text or ""
 

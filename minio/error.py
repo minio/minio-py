@@ -45,10 +45,8 @@ class InvalidResponseError(MinioException):
         self._content_type = content_type
         self._body = body
         super().__init__(
-            (
-                "non-XML response from server; "
-                "Response code: {0}, Content-Type: {1}, Body: {2}"
-            ).format(code, content_type, body),
+            f"non-XML response from server; "
+            f"Response code: {code}, Content-Type: {content_type}, Body: {body}"
         )
 
 
@@ -72,25 +70,19 @@ class S3Error(MinioException):
         self._response = response
         self._bucket_name = bucket_name
         self._object_name = object_name
+
+        bucket_message = (
+            (", bucket_name: " + self._bucket_name)
+            if self._bucket_name else ""
+        )
+        object_message = (
+            (", object_name: " + self._object_name)
+            if self._object_name else ""
+        )
         super().__init__(
-            (
-                "S3 operation failed; code: {0}, message: {1}, "
-                "resource: {2}, request_id: {3}, host_id: {4}{5}{6}"
-            ).format(
-                self._code,
-                self._message,
-                self._resource,
-                self._request_id,
-                self._host_id,
-                (
-                    (", bucket_name: " + self._bucket_name)
-                    if self._bucket_name else ""
-                ),
-                (
-                    (", object_name: " + self._object_name)
-                    if self._object_name else ""
-                ),
-            ),
+            f"S3 operation failed; code: {code}, message: {message}, "
+            f"resource: {resource}, request_id: {request_id}, "
+            f"host_id: {host_id}{bucket_message}{object_message}"
         )
 
     @property
