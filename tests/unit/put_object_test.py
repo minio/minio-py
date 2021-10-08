@@ -16,28 +16,34 @@
 
 from unittest import TestCase
 
-from nose.tools import raises
-
 from minio import Minio
 
 
 class PutObjectTest(TestCase):
-    @raises(TypeError)
     def test_object_is_string(self):
         client = Minio('localhost:9000')
-        client.put_object('hello', 1234, 1, iter([1, 2, 3]))
+        self.assertRaises(
+            TypeError,
+            client.put_object, 'hello', 1234, 1, iter([1, 2, 3])
+        )
 
-    @raises(ValueError)
     def test_object_is_not_empty_string(self):
         client = Minio('localhost:9000')
-        client.put_object('hello', ' \t \n ', 1, iter([1, 2, 3]))
+        self.assertRaises(
+            ValueError,
+            client.put_object, 'hello', ' \t \n ', 1, iter([1, 2, 3])
+        )
 
-    @raises(TypeError)
     def test_length_is_string(self):
         client = Minio('localhost:9000')
-        client.put_object('hello', 1234, '1', iter([1, 2, 3]))
+        self.assertRaises(
+            TypeError,
+            client.put_object, 'hello', 1234, '1', iter([1, 2, 3])
+        )
 
-    @raises(ValueError)
     def test_length_is_not_empty_string(self):
         client = Minio('localhost:9000')
-        client.put_object('hello', ' \t \n ', -1, iter([1, 2, 3]))
+        self.assertRaises(
+            ValueError,
+            client.put_object, 'hello', ' \t \n ', -1, iter([1, 2, 3])
+        )

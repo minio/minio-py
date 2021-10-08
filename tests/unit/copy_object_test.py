@@ -16,30 +16,36 @@
 
 from unittest import TestCase
 
-from nose.tools import raises
-
 from minio import Minio
 from minio.commonconfig import CopySource
 
 
 class CopyObjectTest(TestCase):
-    @raises(ValueError)
     def test_valid_copy_source(self):
         client = Minio('localhost:9000')
-        client.copy_object('hello', '1', '/testbucket/object')
+        self.assertRaises(
+            ValueError,
+            client.copy_object, 'hello', '1', '/testbucket/object'
+        )
 
-    @raises(ValueError)
     def test_valid_match_etag(self):
-        CopySource("src-bucket", "src-object", match_etag='')
+        self.assertRaises(
+            ValueError, CopySource, "src-bucket", "src-object", match_etag='')
 
-    @raises(ValueError)
     def test_not_match_etag(self):
-        CopySource("src-bucket", "src-object", not_match_etag='')
+        self.assertRaises(
+            ValueError,
+            CopySource, "src-bucket", "src-object", not_match_etag=''
+        )
 
-    @raises(ValueError)
     def test_valid_modified_since(self):
-        CopySource("src-bucket", "src-object", modified_since='')
+        self.assertRaises(
+            ValueError,
+            CopySource, "src-bucket", "src-object", modified_since=''
+        )
 
-    @raises(ValueError)
     def test_valid_unmodified_since(self):
-        CopySource("src-bucket", "src-object", unmodified_since='')
+        self.assertRaises(
+            ValueError,
+            CopySource, "src-bucket", "src-object", unmodified_since=''
+        )

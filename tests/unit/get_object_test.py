@@ -17,7 +17,6 @@
 from unittest import TestCase
 
 import mock
-from nose.tools import raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
@@ -28,18 +27,15 @@ from .minio_mocks import MockConnection, MockResponse
 
 
 class GetObjectTest(TestCase):
-    @raises(TypeError)
     def test_object_is_string(self):
         client = Minio('localhost:9000')
-        client.get_object('hello', 1234)
+        self.assertRaises(TypeError, client.get_object, 'hello', 1234)
 
-    @raises(ValueError)
     def test_object_is_not_empty_string(self):
         client = Minio('localhost:9000')
-        client.get_object('hello', ' \t \n ')
+        self.assertRaises(ValueError, client.get_object, 'hello', ' \t \n ')
 
     @mock.patch('urllib3.PoolManager')
-    @raises(S3Error)
     def test_get_object_throws_fail(self, mock_connection):
         error_xml = generate_error('code', 'message', 'request_id',
                                    'host_id', 'resource', 'bucket',
@@ -55,4 +51,4 @@ class GetObjectTest(TestCase):
                          content=error_xml.encode())
         )
         client = Minio('localhost:9000')
-        client.get_object('hello', 'key')
+        self.assertRaises(S3Error, client.get_object, 'hello', 'key')

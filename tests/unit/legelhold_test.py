@@ -16,8 +16,6 @@
 
 from unittest import TestCase
 
-from nose.tools import eq_
-
 from minio import xml
 from minio.legalhold import LegalHold
 
@@ -34,4 +32,4 @@ class LegalHoldTest(TestCase):
 </LegalHold>""",
         )
         xml.marshal(config)
-        eq_(config.status, False)
+        self.assertFalse(config.status)

@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 from unittest import TestCase
 
 import mock
-from nose.tools import eq_, timed
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
@@ -56,11 +56,11 @@ class ListObjectsV1Test(TestCase):
         buckets = []
         for bucket in bucket_iter:
             buckets.append(bucket)
-        eq_(0, len(buckets))
+        self.assertEqual(0, len(buckets))
 
-    @timed(1)
     @mock.patch('urllib3.PoolManager')
     def test_list_objects_works(self, mock_connection):
+        start_time = time.time()
         mock_data = '''<?xml version="1.0"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
@@ -121,11 +121,13 @@ class ListObjectsV1Test(TestCase):
             )
             buckets.append(bucket)
 
-        eq_(2, len(buckets))
+        self.assertEqual(2, len(buckets))
+        end_time = time.time()
+        self.assertLess(end_time-start_time, 1)
 
-    @timed(1)
     @mock.patch('urllib3.PoolManager')
     def test_list_objects_works_well(self, mock_connection):
+        start_time = time.time()
         mock_data1 = '''<?xml version="1.0"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
@@ -219,4 +221,6 @@ class ListObjectsV1Test(TestCase):
             )
             buckets.append(bucket)
 
-        eq_(4, len(buckets))
+        self.assertEqual(4, len(buckets))
+        end_time = time.time()
+        self.assertLess(end_time-start_time, 1)

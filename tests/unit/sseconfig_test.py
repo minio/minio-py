@@ -16,8 +16,6 @@
 
 from unittest import TestCase
 
-from nose.tools import eq_
-
 from minio import xml
 from minio.sseconfig import AWS_KMS, Rule, SSEConfig
 
@@ -40,8 +38,8 @@ class ReplicationConfigTest(TestCase):
         """,
         )
         xml.marshal(config)
-        eq_(config.rule.sse_algorithm, AWS_KMS)
-        eq_(
+        self.assertEqual(config.rule.sse_algorithm, AWS_KMS)
+        self.assertEqual(
             config.rule.kms_master_key_id,
             "arn:aws:kms:us-east-1:1234/5678example",
         )

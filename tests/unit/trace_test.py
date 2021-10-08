@@ -16,13 +16,10 @@
 
 from unittest import TestCase
 
-from nose.tools import raises
-
 from minio import Minio
 
 
 class TraceTest(TestCase):
-    @raises(ValueError)
     def test_bucket_is_string(self):
         client = Minio('localhost:9000')
-        client.trace_on(None)
+        self.assertRaises(ValueError, client.trace_on, None)

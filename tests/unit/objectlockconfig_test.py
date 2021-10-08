@@ -16,8 +16,6 @@
 
 from unittest import TestCase
 
-from nose.tools import eq_
-
 from minio import xml
 from minio.commonconfig import COMPLIANCE, GOVERNANCE
 from minio.objectlockconfig import DAYS, YEARS, ObjectLockConfig
@@ -41,5 +39,5 @@ class ObjectLockConfigTest(TestCase):
 </ObjectLockConfiguration>""",
         )
         xml.marshal(config)
-        eq_(config.mode, COMPLIANCE)
-        eq_(config.duration, (3, YEARS))
+        self.assertEqual(config.mode, COMPLIANCE)
+        self.assertEqual(config.duration, (3, YEARS))

@@ -19,7 +19,6 @@ import json
 from unittest import TestCase
 
 import mock
-from nose.tools import eq_, raises
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
@@ -29,7 +28,6 @@ from tests.unit.minio_mocks import MockConnection, MockResponse
 
 class GetBucketPolicyTest(TestCase):
     @mock.patch('urllib3.PoolManager')
-    @raises(S3Error)
     def test_get_policy_for_non_existent_bucket(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
@@ -52,7 +50,7 @@ class GetBucketPolicyTest(TestCase):
             )
         )
         client = Minio('localhost:9000')
-        client.get_bucket_policy(bucket_name)
+        self.assertRaises(S3Error, client.get_bucket_policy, bucket_name)
 
     @mock.patch('urllib3.PoolManager')
     def test_get_policy_for_existent_bucket(self, mock_connection):
@@ -96,4 +94,4 @@ class GetBucketPolicyTest(TestCase):
         )
         client = Minio('localhost:9000')
         response = client.get_bucket_policy(bucket_name)
-        eq_(response, mock_data.decode())
+        self.assertEqual(response, mock_data.decode())

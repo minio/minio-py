@@ -16,8 +16,6 @@
 
 from http import client as httplib
 
-from nose.tools import eq_
-
 
 class MockResponse(object):
     def __init__(self, method, url, headers, status_code,
@@ -41,13 +39,13 @@ class MockResponse(object):
         return self.data
 
     def mock_verify(self, method, url, headers):
-        eq_(self.method, method)
-        eq_(self.url, url)
+        assert self.method == method
+        assert self.url == url
         headers = {
             key.lower(): value for key, value in headers.items()
         }
         for header in self.request_headers:
-            eq_(self.request_headers[header], headers[header])
+            assert self.request_headers[header] == headers[header]
 
     # noinspection PyUnusedLocal
     def stream(self, chunk_size=1, decode_unicode=False):
