@@ -81,6 +81,7 @@ class Minio:  # pylint: disable=too-many-public-methods
     :param session_token: Session token of your account in S3 service.
     :param secure: Flag to indicate to use secure (TLS) connection to S3
         service or not.
+        If endpoint starts with "https://" or "http://", it is not affected.
     :param region: Region name of buckets in S3 service.
     :param http_client: Customized HTTP client.
     :param credentials: Credentials provider of your account in S3 service.
@@ -100,6 +101,9 @@ class Minio:  # pylint: disable=too-many-public-methods
             secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
             region="my-region",
         )
+
+        # Create client with endpoint url schema
+        client = Minio("https://play.minio.io:9000", "ACCESS-KEY", "SECRET-KEY")
 
     **NOTE on concurrent usage:** `Minio` object is thread safe when using
     the Python `threading` library. Specifically, it is **NOT** safe to share
@@ -127,10 +131,14 @@ class Minio:  # pylint: disable=too-many-public-methods
             )
 
         self._region_map = {}
-        self._base_url = BaseURL(
-            ("https://" if secure else "http://") + endpoint,
-            region,
-        )
+        if endpoint.startswith("https://") or endpoint.startswith("http://"):
+            self._base_url = endpoint
+        else:
+            self._base_url = BaseURL(
+                ("https://" if secure else "http://") + endpoint,
+                region,
+            )
+
         self._user_agent = _DEFAULT_USER_AGENT
         self._trace_stream = None
         if access_key:
