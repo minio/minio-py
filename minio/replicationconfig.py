@@ -459,8 +459,6 @@ class ReplicationConfig:
     """Replication configuration."""
 
     def __init__(self, role, rules):
-        if not role:
-            raise ValueError("role must be provided")
         if not rules:
             raise ValueError("rules must be provided")
         if len(rules) > 1000:
