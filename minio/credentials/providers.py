@@ -115,6 +115,7 @@ class AssumeRoleProvider(Provider):
         self._body = urlencode(query_params)
         self._content_sha256 = sha256_hash(self._body)
         url = urlsplit(sts_endpoint)
+        self._url = url
         self._host = url.netloc
         if (
                 (url.scheme == "http" and url.port == 80) or
@@ -131,7 +132,7 @@ class AssumeRoleProvider(Provider):
         utctime = utcnow()
         headers = sign_v4_sts(
             "POST",
-            urlsplit(self._sts_endpoint),
+            self._url,
             self._region,
             {
                 "Content-Type": "application/x-www-form-urlencoded",
