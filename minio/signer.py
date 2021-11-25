@@ -58,8 +58,8 @@ def _get_canonical_headers(headers):
     for key, values in headers.items():
         key = key.lower()
         if key not in (
-                "authorization", "content-type",
-                "content-length", "user-agent",
+                "authorization",
+                "user-agent",
         ):
             values = values if isinstance(values, (list, tuple)) else [values]
             canonical_headers[key] = ",".join([
@@ -101,7 +101,7 @@ def _get_canonical_request_hash(method, url, headers, content_sha256):
     #   HexEncode(Hash(RequestPayload))
     canonical_request = (
         f"{method}\n"
-        f"{url.path}\n"
+        f"{url.path or '/'}\n"
         f"{canonical_query_string}\n"
         f"{canonical_headers}\n\n"
         f"{signed_headers}\n"
@@ -248,7 +248,7 @@ def _get_presign_canonical_request_hash(  # pylint: disable=invalid-name
     #   HexEncode(Hash(RequestPayload))
     canonical_request = (
         f"{method}\n"
-        f"{url.path}\n"
+        f"{url.path or '/'}\n"
         f"{canonical_query_string}\n"
         f"{canonical_headers}\n\n"
         f"{signed_headers}\n"
