@@ -66,6 +66,7 @@ def _urlopen(http_client, method, url, body=None, headers=None):
 
 
 def _user_home_dir():
+    """Return current user home folder."""
     return (
         os.environ.get("HOME") or
         os.environ.get("UserProfile") or
