@@ -196,37 +196,38 @@ class EnvAWSProvider(Provider):
     """Credential provider from AWS environment variables."""
 
     def __init__(self):
-        access_key = (
+        self._access_key = (
             os.environ.get("AWS_ACCESS_KEY_ID") or
             os.environ.get("AWS_ACCESS_KEY")
         )
-        secret_key = (
+        self._secret_key = (
             os.environ.get("AWS_SECRET_ACCESS_KEY") or
             os.environ.get("AWS_SECRET_KEY")
         )
-        self._credentials = Credentials(
-            access_key,
-            secret_key,
-            session_token=os.environ.get("AWS_SESSION_TOKEN"),
-        )
+        self._session_token = os.environ.get("AWS_SESSION_TOKEN")
 
     def retrieve(self):
         """Retrieve credentials."""
-        return self._credentials
+        return Credentials(
+            access_key=self._access_key,
+            secret_key=self._secret_key,
+            session_token=self._session_token,
+        )
 
 
 class EnvMinioProvider(Provider):
     """Credential provider from MinIO environment variables."""
 
     def __init__(self):
-        self._credentials = Credentials(
-            os.environ.get("MINIO_ACCESS_KEY"),
-            os.environ.get("MINIO_SECRET_KEY"),
-        )
+        self._access_key = os.environ.get("MINIO_ACCESS_KEY")
+        self._secret_key = os.environ.get("MINIO_SECRET_KEY")
 
     def retrieve(self):
         """Retrieve credentials."""
-        return self._credentials
+        return Credentials(
+            access_key=self._access_key,
+            secret_key=self._secret_key,
+        )
 
 
 class AWSConfigProvider(Provider):
@@ -473,11 +474,17 @@ class StaticProvider(Provider):
     """Fixed credential provider."""
 
     def __init__(self, access_key, secret_key, session_token=None):
-        self._credentials = Credentials(access_key, secret_key, session_token)
+        self._access_key = access_key
+        self._secret_key = secret_key
+        self._session_token = session_token
 
     def retrieve(self):
         """Return passed credentials."""
-        return self._credentials
+        return Credentials(
+            access_key=self._access_key,
+            secret_key=self._secret_key,
+            session_token=self._session_token,
+        )
 
 
 class WebIdentityClientGrantsProvider(Provider):
