@@ -233,10 +233,18 @@ class AWSConfigProvider(Provider):
     """Credential provider from AWS credential file."""
 
     def __init__(self, filename=None, profile=None):
+        from pathlib import Path
+
         self._filename = (
             filename or
             os.environ.get("AWS_SHARED_CREDENTIALS_FILE") or
-            os.path.join(os.environ.get("HOME"), ".aws", "credentials")
+            os.path.join(
+                os.environ.get("HOME") or
+                os.environ.get("UserProfile") or
+                str(Path.home()),
+                ".aws",
+                "credentials",
+            )
         )
         self._profile = profile or os.environ.get("AWS_PROFILE") or "default"
 
@@ -283,10 +291,14 @@ class MinioClientConfigProvider(Provider):
     """Credential provider from MinIO Client configuration file."""
 
     def __init__(self, filename=None, alias=None):
+        from pathlib import Path
+
         self._filename = (
             filename or
             os.path.join(
-                os.environ.get("HOME"),
+                os.environ.get("HOME") or
+                os.environ.get("UserProfile") or
+                str(Path.home()),
                 "mc" if sys.platform == "win32" else ".mc",
                 "config.json",
             )
