@@ -27,6 +27,7 @@ from abc import ABCMeta, abstractmethod
 from datetime import timedelta
 from urllib.parse import urlencode, urlsplit
 from xml.etree import ElementTree
+from pathlib import Path
 
 import urllib3
 
@@ -62,6 +63,14 @@ def _urlopen(http_client, method, url, body=None, headers=None):
     if res.status not in [200, 204, 206]:
         raise ValueError(f"{url} failed with HTTP status code {res.status}")
     return res
+
+
+def _user_home_dir():
+    return (
+        os.environ.get("HOME") or
+        os.environ.get("UserProfile") or
+        str(Path.home())
+    )
 
 
 class Provider:  # pylint: disable=too-few-public-methods
@@ -233,18 +242,10 @@ class AWSConfigProvider(Provider):
     """Credential provider from AWS credential file."""
 
     def __init__(self, filename=None, profile=None):
-        from pathlib import Path
-
         self._filename = (
             filename or
             os.environ.get("AWS_SHARED_CREDENTIALS_FILE") or
-            os.path.join(
-                os.environ.get("HOME") or
-                os.environ.get("UserProfile") or
-                str(Path.home()),
-                ".aws",
-                "credentials",
-            )
+            os.path.join(_user_home_dir(), ".aws", "credentials")
         )
         self._profile = profile or os.environ.get("AWS_PROFILE") or "default"
 
@@ -291,14 +292,10 @@ class MinioClientConfigProvider(Provider):
     """Credential provider from MinIO Client configuration file."""
 
     def __init__(self, filename=None, alias=None):
-        from pathlib import Path
-
         self._filename = (
             filename or
             os.path.join(
-                os.environ.get("HOME") or
-                os.environ.get("UserProfile") or
-                str(Path.home()),
+                _user_home_dir(),
                 "mc" if sys.platform == "win32" else ".mc",
                 "config.json",
             )
