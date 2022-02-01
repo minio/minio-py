@@ -205,38 +205,30 @@ class ChainedProvider(Provider):
 class EnvAWSProvider(Provider):
     """Credential provider from AWS environment variables."""
 
-    def __init__(self):
-        access_key = (
-            os.environ.get("AWS_ACCESS_KEY_ID") or
-            os.environ.get("AWS_ACCESS_KEY")
-        )
-        secret_key = (
-            os.environ.get("AWS_SECRET_ACCESS_KEY") or
-            os.environ.get("AWS_SECRET_KEY")
-        )
-        self._credentials = Credentials(
-            access_key,
-            secret_key,
-            session_token=os.environ.get("AWS_SESSION_TOKEN"),
-        )
-
     def retrieve(self):
         """Retrieve credentials."""
-        return self._credentials
+        return Credentials(
+            access_key=(
+                os.environ.get("AWS_ACCESS_KEY_ID") or
+                os.environ.get("AWS_ACCESS_KEY")
+            ),
+            secret_key=(
+                os.environ.get("AWS_SECRET_ACCESS_KEY") or
+                os.environ.get("AWS_SECRET_KEY")
+            ),
+            session_token=os.environ.get("AWS_SESSION_TOKEN"),
+        )
 
 
 class EnvMinioProvider(Provider):
     """Credential provider from MinIO environment variables."""
 
-    def __init__(self):
-        self._credentials = Credentials(
-            os.environ.get("MINIO_ACCESS_KEY"),
-            os.environ.get("MINIO_SECRET_KEY"),
-        )
-
     def retrieve(self):
         """Retrieve credentials."""
-        return self._credentials
+        return Credentials(
+            access_key=os.environ.get("MINIO_ACCESS_KEY"),
+            secret_key=os.environ.get("MINIO_SECRET_KEY"),
+        )
 
 
 class AWSConfigProvider(Provider):

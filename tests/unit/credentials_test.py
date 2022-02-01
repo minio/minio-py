@@ -94,12 +94,32 @@ class ChainedProviderTest(TestCase):
                 EnvAWSProvider(), EnvMinioProvider(),
             ]
         )
-        # retireve provider (env_aws) has priority
+        # retrieve provider (env_aws) has priority
         creds = provider.retrieve()
         # assert provider credentials
         self.assertEqual(creds.access_key, "access_aws")
         self.assertEqual(creds.secret_key, "secret_aws")
         self.assertEqual(creds.session_token, "token_aws")
+
+    def test_chain_retrieve_failed_provider(self):
+        # clear environment
+        os.environ.clear()
+        # prepare env for env_minio
+        os.environ["MINIO_ACCESS_KEY"] = "access_minio"
+        os.environ["MINIO_SECRET_KEY"] = "secret_minio"
+        # create chain provider with env_aws and env_minio providers
+
+        provider = ChainedProvider(
+            [
+                EnvAWSProvider(), EnvMinioProvider(),
+            ]
+        )
+        # retrieve provider: (env_minio) will be retrieved
+        creds = provider.retrieve()
+        # assert provider credentials
+        self.assertEqual(creds.access_key, "access_minio")
+        self.assertEqual(creds.secret_key, "secret_minio")
+        self.assertEqual(creds.session_token, None)
 
 
 class EnvAWSProviderTest(TestCase):
