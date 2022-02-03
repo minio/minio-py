@@ -828,7 +828,7 @@ __Example__
 
 ```py
 config = ObjectLockConfig(GOVERNANCE, 15, DAYS)
-client.set_object_lock_condig("my-bucket", config)
+client.set_object_lock_config("my-bucket", config)
 ```
 
 ## 3. Object operations
