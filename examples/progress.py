@@ -106,7 +106,9 @@ class Progress(Thread):
                               prefix=self.prefix)
             self.display_queue.task_done()
             if current_size == total_length:
+                # once we have done uploading everything return
                 self.done_progress()
+                return
 
     def update(self, size):
         """
