@@ -39,12 +39,13 @@ jobs:
     - name: Run functional tests
       env:
         MINT_MODE: full
-        SERVER_ENDPOINT: localhost:9000
         ACCESS_KEY: minio
         SECRET_KEY: minio123
         ENABLE_HTTPS: 1
         MINIO_ACCESS_KEY: minio
         MINIO_SECRET_KEY: minio123
+        MINIO_CI_CD: 1
+        SERVER_ENDPOINT: localhost:9000
         SSL_CERT_FILE: /tmp/minio-config/certs/public.crt
       run: |
         wget --quiet -O /tmp/minio https://dl.min.io/server/minio/release/linux-amd64/minio
