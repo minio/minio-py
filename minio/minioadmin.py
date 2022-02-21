@@ -153,6 +153,17 @@ class MinioAdmin:
             )
         raise ValueError("either user or group must be set")
 
+    def policy_unset(self, policy_name, user=None, group=None):
+        """Unset an IAM policy for a user or group."""
+        if (user is not None) ^ (group is not None):
+            return self._run(
+                [
+                    "policy", "unset", self._target, policy_name,
+                    ("user=" if user else "group=") + (user or group),
+                ],
+            )
+        raise ValueError("either user or group must be set")
+
     def config_get(self, key=None):
         """Get configuration parameters."""
         return self._run(
