@@ -30,6 +30,7 @@ function run_minio_server() {
     export MINIO_NOTIFY_WEBHOOK_ENABLE_miniopytest=on
     export MINIO_NOTIFY_WEBHOOK_ENDPOINT_miniopytest=http://example.org/
     export SQS_ARN="arn:minio:sqs::miniopytest:webhook"
+    export MINIO_CI_CD=1
     tests/functional/minio server --config-dir tests/functional/.cfg tests/functional/.d{1...4} >tests/functional/minio.log 2>&1 &
 }
 
