@@ -25,9 +25,9 @@ import sys
 import time
 from abc import ABCMeta, abstractmethod
 from datetime import timedelta
+from pathlib import Path
 from urllib.parse import urlencode, urlsplit
 from xml.etree import ElementTree
-from pathlib import Path
 
 import urllib3
 
