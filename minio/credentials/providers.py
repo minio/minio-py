@@ -29,6 +29,7 @@ from pathlib import Path
 from urllib.parse import urlencode, urlsplit
 from xml.etree import ElementTree
 
+import certifi
 import urllib3
 
 from minio.helpers import sha256_hash
@@ -593,3 +594,66 @@ class WebIdentityProvider(WebIdentityClientGrantsProvider):
 
     def _is_web_identity(self):
         return True
+
+
+class CertificateIdentityProvider(Provider):
+    """Credential provider using AssumeRoleWithCertificate API."""
+
+    def __init__(
+            self, sts_endpoint, cert_file=None, key_file=None,
+            key_password=None, ca_certs=None, duration_seconds=0,
+            http_client=None,
+    ):
+        if urlsplit(sts_endpoint).scheme != "https":
+            raise ValueError("STS endpoint scheme must be HTTPS")
+
+        if bool(http_client) != (cert_file and key_file):
+            pass
+        else:
+            raise ValueError(
+                "either cert/key file or custom http_client must be provided",
+            )
+
+        self._sts_endpoint = sts_endpoint + "?" + urlencode(
+            {
+                "Action": "AssumeRoleWithCertificate",
+                "Version": "2011-06-15",
+                "DurationSeconds": str(
+                    duration_seconds
+                    if duration_seconds > _DEFAULT_DURATION_SECONDS
+                    else _DEFAULT_DURATION_SECONDS
+                ),
+            },
+        )
+        self._http_client = http_client or urllib3.PoolManager(
+            maxsize=10,
+            cert_file=cert_file,
+            cert_reqs='CERT_REQUIRED',
+            key_file=key_file,
+            key_password=key_password,
+            ca_certs=ca_certs or certifi.where(),
+            retries=urllib3.Retry(
+                total=5,
+                backoff_factor=0.2,
+                status_forcelist=[500, 502, 503, 504],
+            ),
+        )
+        self._credentials = None
+
+    def retrieve(self):
+        """Retrieve credentials."""
+
+        if self._credentials and not self._credentials.is_expired():
+            return self._credentials
+
+        res = _urlopen(
+            self._http_client,
+            "POST",
+            self._sts_endpoint,
+        )
+
+        self._credentials = _parse_credentials(
+            res.data.decode(), "AssumeRoleWithCertificateResult",
+        )
+
+        return self._credentials
