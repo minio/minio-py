@@ -200,7 +200,7 @@ class Expiration(DateDays):
             SubElement(
                 element,
                 "ExpiredObjectDeleteMarker",
-                str(self._expired_object_delete_marker),
+                str(self._expired_object_delete_marker).lower(),
             )
         return element
 
