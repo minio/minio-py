@@ -17,7 +17,7 @@
 from datetime import timedelta
 from unittest import TestCase
 
-import mock
+import unittest.mock as mock
 
 from minio import Minio
 

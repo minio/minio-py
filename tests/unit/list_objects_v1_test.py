@@ -17,7 +17,7 @@
 import time
 from unittest import TestCase
 
-import mock
+import unittest.mock as mock
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
