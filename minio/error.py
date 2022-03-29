@@ -49,6 +49,9 @@ class InvalidResponseError(MinioException):
             f"Response code: {code}, Content-Type: {content_type}, Body: {body}"
         )
 
+    def __reduce__(self):
+        return type(self), (self._code, self._content_type, self._body)
+
 
 class ServerError(MinioException):
     """Raised to indicate that S3 service returning HTTP server error."""
@@ -84,6 +87,11 @@ class S3Error(MinioException):
             f"resource: {resource}, request_id: {request_id}, "
             f"host_id: {host_id}{bucket_message}{object_message}"
         )
+
+    def __reduce__(self):
+        return type(self), (self._code, self._message, self._resource,
+                            self._request_id, self._host_id, self._response,
+                            self._bucket_name, self._object_name)
 
     @property
     def code(self):
