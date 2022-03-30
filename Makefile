@@ -3,7 +3,7 @@ default: tests
 
 getdeps:
 	@echo "Installing required dependencies"
-	@pip install --user --upgrade autopep8 certifi mock pytest pylint urllib3
+	@pip install --user --upgrade autopep8 certifi pytest pylint urllib3
 
 check: getdeps
 	@echo "Running checks"

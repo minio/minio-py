@@ -19,7 +19,7 @@ import os
 from datetime import datetime, timedelta
 from unittest import TestCase
 
-import mock
+import unittest.mock as mock
 
 from minio.credentials.credentials import Credentials
 from minio.credentials.providers import (AWSConfigProvider, ChainedProvider,
