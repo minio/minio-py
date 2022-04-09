@@ -35,7 +35,7 @@ class RemoveObjectsTest(TestCase):
             MockResponse('POST',
                          'https://localhost:9000/hello?delete=',
                          {'User-Agent': _DEFAULT_USER_AGENT,
-                          'Content-Md5': u'YcTFWle4oiLJ6sT95FwpdA=='}, 200,
+                          'Content-Md5': u'Te1kmIjQRNNz70DJjsrD8A=='}, 200,
                          content=b'<Delete/>')
         )
         client = Minio('localhost:9000')
@@ -53,7 +53,7 @@ class RemoveObjectsTest(TestCase):
             MockResponse('POST',
                          'https://localhost:9000/hello?delete=',
                          {'User-Agent': _DEFAULT_USER_AGENT,
-                          'Content-Md5': u'YcTFWle4oiLJ6sT95FwpdA=='}, 200,
+                          'Content-Md5': u'Te1kmIjQRNNz70DJjsrD8A=='}, 200,
                          content=b'<Delete/>')
         )
         client = Minio('localhost:9000')
@@ -71,7 +71,7 @@ class RemoveObjectsTest(TestCase):
             MockResponse('POST',
                          'https://localhost:9000/hello?delete=',
                          {'User-Agent': _DEFAULT_USER_AGENT,
-                          'Content-Md5': u'YcTFWle4oiLJ6sT95FwpdA=='}, 200,
+                          'Content-Md5': u'Te1kmIjQRNNz70DJjsrD8A=='}, 200,
                          content=b'<Delete/>')
         )
         client = Minio('localhost:9000')
