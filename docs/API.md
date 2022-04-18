@@ -1458,7 +1458,7 @@ client.remove_object(
 
 ### remove_objects(bucket_name, delete_object_list, bypass_governance_mode=False)
 
-Remove multiple objects.
+Removes multiple objects. Uses the "DeleteObjects" S3 API call under the hood, which can delete up to 1000 keys with a single request. If `delete_object_list` contains more than 1000 entries, `remove_objects` splits it into smaller chunks and calls "DeleteObjects" multiple times.
 
 __Parameters__
 
