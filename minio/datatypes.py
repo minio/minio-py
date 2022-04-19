@@ -811,7 +811,6 @@ class EventIterable:
     def __init__(self, func):
         self._func = func
         self._response = None
-        self._stream = None
 
     def _close_response(self):
         """Close response."""
@@ -826,7 +825,7 @@ class EventIterable:
     def _get_records(self):
         """Get event records from response stream."""
         try:
-            line = self._stream.__next__().strip()
+            line = self._response.readline().strip()
             if not line:
                 return None
             if hasattr(line, 'decode'):
@@ -843,7 +842,6 @@ class EventIterable:
         while not records:
             if not self._response:
                 self._response = self._func()
-                self._stream = self._response.stream()
             records = self._get_records()
         return records
 
