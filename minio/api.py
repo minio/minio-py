@@ -2479,7 +2479,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
         body = marshal(LegalHold(True))
-        query_params = {"versionId", version_id} if version_id else {}
+        query_params = {"versionId": version_id} if version_id else {}
         query_params["legal-hold"] = ""
         self._execute(
             "PUT",
@@ -2506,7 +2506,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
         body = marshal(LegalHold(False))
-        query_params = {"versionId", version_id} if version_id else {}
+        query_params = {"versionId": version_id} if version_id else {}
         query_params["legal-hold"] = ""
         self._execute(
             "PUT",
@@ -2535,7 +2535,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
-        query_params = {"versionId", version_id} if version_id else {}
+        query_params = {"versionId": version_id} if version_id else {}
         query_params["legal-hold"] = ""
         try:
             response = self._execute(
@@ -2619,7 +2619,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
-        query_params = {"versionId", version_id} if version_id else {}
+        query_params = {"versionId": version_id} if version_id else {}
         query_params["retention"] = ""
         try:
             response = self._execute(
@@ -2656,7 +2656,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         if not isinstance(config, Retention):
             raise ValueError("config must be Retention type")
         body = marshal(config)
-        query_params = {"versionId", version_id} if version_id else {}
+        query_params = {"versionId": version_id} if version_id else {}
         query_params["retention"] = ""
         self._execute(
             "PUT",
