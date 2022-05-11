@@ -25,7 +25,6 @@ This module contains core API parsers.
 
 """
 import base64
-import hashlib
 import json
 from abc import ABCMeta, abstractmethod
 
@@ -56,9 +55,9 @@ class SseCustomerKey(Sse):
                 "SSE-C keys need to be 256 bit base64 encoded",
             )
         b64key = base64.b64encode(key).decode()
-        md5 = hashlib.md5()
-        md5.update(key)
-        md5key = base64.b64encode(md5.digest()).decode()
+        from .helpers import \
+            md5sum_hash  # pylint: disable=import-outside-toplevel
+        md5key = md5sum_hash(key)
         self._headers = {
             "X-Amz-Server-Side-Encryption-Customer-Algorithm": "AES256",
             "X-Amz-Server-Side-Encryption-Customer-Key": b64key,
