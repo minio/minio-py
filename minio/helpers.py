@@ -255,7 +255,7 @@ def md5sum_hash(data):
     if data is None:
         return None
 
-    # "usedforsecurity=False" indicate md5 hashing algorithm is not used in a security context.
+    # indicate md5 hashing algorithm is not used in a security context.
     # Refer https://bugs.python.org/issue9216 for more information.
     hasher = hashlib.new("md5", usedforsecurity=False)
     hasher.update(data.encode() if isinstance(data, str) else data)
