@@ -255,7 +255,9 @@ def md5sum_hash(data):
     if data is None:
         return None
 
-    hasher = hashlib.md5()
+    # indicate md5 hashing algorithm is not used in a security context.
+    # Refer https://bugs.python.org/issue9216 for more information.
+    hasher = hashlib.new("md5", usedforsecurity=False)
     hasher.update(data.encode() if isinstance(data, str) else data)
     md5sum = base64.b64encode(hasher.digest())
     return md5sum.decode() if isinstance(md5sum, bytes) else md5sum
