@@ -56,6 +56,15 @@ class InvalidResponseError(MinioException):
 class ServerError(MinioException):
     """Raised to indicate that S3 service returning HTTP server error."""
 
+    def __init__(self, message, status_code):
+        self._status_code = status_code
+        super().__init__(message)
+
+    @property
+    def status_code(self):
+        """Get HTTP status code."""
+        return self._status_code
+
 
 class S3Error(MinioException):
     """
