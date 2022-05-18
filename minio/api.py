@@ -303,6 +303,11 @@ class Minio:  # pylint: disable=too-many-public-methods
         ):
             if self._trace_stream:
                 self._trace_stream.write("----------END-HTTP----------\n")
+            if response.status == 304 and not response.data:
+                raise ServerError(
+                    f"server failed with HTTP status code {response.status}",
+                    response.status,
+                )
             raise InvalidResponseError(
                 response.status,
                 response.getheader("content-type"),
@@ -361,7 +366,8 @@ class Minio:  # pylint: disable=too-many-public-methods
             code, message = func() if func else (None, None)
             if not code:
                 raise ServerError(
-                    f"server failed with HTTP status code {response.status}"
+                    f"server failed with HTTP status code {response.status}",
+                    response.status,
                 )
             response_error = S3Error(
                 code,
