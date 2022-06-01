@@ -102,7 +102,7 @@ def _validate_sizes(object_size, part_size):
             )
         if part_size > MAX_PART_SIZE:
             raise ValueError(
-                f"part size {part_size} is not supported; minimum allowed 5GiB",
+                f"part size {part_size} is not supported; maximum allowed 5GiB",
             )
 
     if object_size >= 0:
