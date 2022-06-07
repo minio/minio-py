@@ -13,7 +13,7 @@
 #rcfile=
 
 # Profiled execution.
-profile=no
+#profile=no
 
 # Add <file or directory> to the black list. It should be a base name, not a
 # path. You may set this option multiple times.
@@ -23,12 +23,12 @@ ignore=.svn
 persistent=yes
 
 # Set the cache size for astng objects.
-cache-size=500
+#cache-size=500
 
 # List of plugins (as comma separated values of python modules names) to load,
 # usually to register additional checkers.
-load-plugins=
-
+#load-plugins=
+load-plugins=pylint.extensions.no_self_use
 
 [MESSAGES CONTROL]
 
@@ -51,7 +51,7 @@ load-plugins=
 
 # Disable the message(s) with the given id(s).
 # disable-msg=C0323,W0142,C0301,C0103,C0111,E0213,C0302,C0203,W0703,R0201
-disable-msg=C0301,C0111,C0103,R0201,W0702,C0324
+# disable-msg=C0301,C0111,C0103,R0201,W0702,C0324
 
 [REPORTS]
 
@@ -62,7 +62,7 @@ output-format=colorized
 # Put messages in a separate file for each module / package specified on the
 # command line instead of printing them on stdout. Reports (if any) will be
 # written in a file name "pylint_global.[txt|html]".
-files-output=no
+#files-output=no
 
 # Tells wether to display a full report or only the messages
 reports=yes
@@ -76,7 +76,7 @@ evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / stateme
 
 # Add a comment according to your evaluation note. This is used by the global
 # evaluation report (R0004).
-comment=no
+#comment=no
 
 # Enable the report(s) with the given id(s).
 #enable-report=
@@ -113,11 +113,11 @@ ignore-mixin-members=yes
 
 # When zope mode is activated, consider the acquired-members option to ignore
 # access to some undefined attributes.
-zope=no
+#zope=no
 
 # List of members which are usually get through zope's acquisition mecanism and
 # so shouldn't trigger E0201 when accessed (need zope=yes to be considered).
-acquired-members=REQUEST,acl_users,aq_parent
+#acquired-members=REQUEST,acl_users,aq_parent
 
 
 # checks for :
@@ -133,7 +133,7 @@ acquired-members=REQUEST,acl_users,aq_parent
 [BASIC]
 
 # Required attributes for module, separated by a comma
-required-attributes=
+#required-attributes=
 
 # Regular expression which should only match functions or classes name which do
 # not require a docstring
@@ -174,7 +174,7 @@ good-names=i,j,k,ex,Run,_
 bad-names=foo,bar,baz,toto,tutu,tata
 
 # List of builtins function names that should not be used, separated by a comma
-bad-functions=apply,input
+#bad-functions=apply,input
 
 
 # checks for sign of poor/misdesign:
@@ -193,7 +193,7 @@ max-locals=30
 max-returns=12
 
 # Maximum number of branch for function / method body
-max-branchs=30
+#max-branchs=30
 
 # Maximum number of statements in function / method body
 max-statements=60

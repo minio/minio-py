@@ -16,10 +16,9 @@
 
 import json
 import os
+import unittest.mock as mock
 from datetime import datetime, timedelta
 from unittest import TestCase
-
-import unittest.mock as mock
 
 from minio.credentials.credentials import Credentials
 from minio.credentials.providers import (AWSConfigProvider, ChainedProvider,
