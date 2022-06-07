@@ -5,7 +5,7 @@ MinIO Python SDK is Simple Storage Service (aka S3) client to perform bucket and
 For a complete list of APIs and examples, please take a look at the [Python Client API Reference](https://docs.min.io/docs/python-client-api-reference)
 
 ## Minimum Requirements
-Python 3.6 or higher.
+Python 3.7 or higher.
 
 ## Download using pip
 

@@ -15,9 +15,8 @@
 # limitations under the License.
 
 import itertools
-from unittest import TestCase
-
 import unittest.mock as mock
+from unittest import TestCase
 
 from minio import Minio
 from minio.api import _DEFAULT_USER_AGENT
