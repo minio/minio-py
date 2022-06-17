@@ -34,6 +34,7 @@ import traceback
 from binascii import crc32
 from datetime import datetime, timedelta, timezone
 from inspect import getfullargspec
+from pathlib import Path
 from threading import Thread
 from uuid import uuid4
 
