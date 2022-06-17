@@ -915,7 +915,7 @@ def test_get_object_version(log_entry, sse=None):
     _test_get_object(log_entry, sse, version_check=True)
 
 
-def _test_fget_object(log_entry, sse=None, version_check=False):
+def _test_fget_object(log_entry, sse=None, version_check=False, use_pathlib=False):
     """Test fget_object()."""
 
     if sse:
@@ -925,6 +925,8 @@ def _test_fget_object(log_entry, sse=None, version_check=False):
     bucket_name = _gen_bucket_name()
     object_name = f"{uuid4()}"
     tmpfd, tmpfile = tempfile.mkstemp()
+    if use_pathlib:
+        tmpfile = Path(tmpfile)
     os.close(tmpfd)
     length = 1 * MB
 
@@ -959,6 +961,11 @@ def _test_fget_object(log_entry, sse=None, version_check=False):
 def test_fget_object(log_entry, sse=None):
     """Test fget_object()."""
     _test_fget_object(log_entry, sse)
+
+
+def test_fget_object_pathlib(log_entry, sse=None):
+    """Test fget_object() with a pathlib object."""
+    _test_fget_object(log_entry, sse, use_pathlib=True)
 
 
 def test_fget_object_version(log_entry, sse=None):
@@ -1930,6 +1937,7 @@ def main():
             test_get_object: {"sse": ssec} if ssec else None,
             test_get_object_version: {"sse": ssec} if ssec else None,
             test_fget_object: {"sse": ssec} if ssec else None,
+            test_fget_object_pathlib: {"sse": ssec} if ssec else None,
             test_fget_object_version: {"sse": ssec} if ssec else None,
             test_get_object_with_default_length: None,
             test_get_partial_object: {"sse": ssec} if ssec else None,

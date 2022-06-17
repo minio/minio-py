@@ -947,16 +947,16 @@ Downloads data of an object to file.
 
 __Parameters__
 
-| Param                | Type             | Description                                          |
-|:---------------------|:-----------------|:-----------------------------------------------------|
-| `bucket_name`        | _str_            | Name of the bucket.                                  |
-| `object_name`        | _str_            | Object name in the bucket.                           |
-| `file_path`          | _str_            | Name of file to download.                            |
-| `request_headers`    | _dict_           | Any additional headers to be added with GET request. |
-| `ssec`               | _SseCustomerKey_ | Server-side encryption customer key.                 |
-| `version_id`         | _str_            | Version-ID of the object.                            |
-| `extra_query_params` | _dict_           | Extra query parameters for advanced usage.           |
-| `tmp_file_path`      | _str_            | Path to a temporary file.                            |
+| Param                | Type                      | Description                                          |
+|:---------------------|:--------------------------|:-----------------------------------------------------|
+| `bucket_name`        | _str_                     | Name of the bucket.                                  |
+| `object_name`        | _str_                     | Object name in the bucket.                           |
+| `file_path`          | _Union[str, os.PathLike]_ | Name of file to download.                            |
+| `request_headers`    | _dict_                    | Any additional headers to be added with GET request. |
+| `ssec`               | _SseCustomerKey_          | Server-side encryption customer key.                 |
+| `version_id`         | _str_                     | Version-ID of the object.                            |
+| `extra_query_params` | _dict_                    | Extra query parameters for advanced usage.           |
+| `tmp_file_path`      | _Union[str, os.PathLike]_ | Path to a temporary file.                            |
 
 __Return Value__
 

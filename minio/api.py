@@ -28,6 +28,7 @@ import os
 import platform
 from datetime import timedelta
 from threading import Thread
+from typing import Union, Dict, Optional, Any
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
@@ -994,15 +995,21 @@ class Minio:  # pylint: disable=too-many-public-methods
                 tags=tags, retention=retention, legal_hold=legal_hold,
             )
 
-    def fget_object(self, bucket_name, object_name, file_path,
-                    request_headers=None, ssec=None, version_id=None,
-                    extra_query_params=None, tmp_file_path=None):
+    def fget_object(self,
+                    bucket_name: str,
+                    object_name: str,
+                    file_path: Union[str, os.PathLike],
+                    request_headers: Optional[Dict[str, str]] = None,
+                    ssec: Optional[SseCustomerKey] = None,
+                    version_id: Optional[str] = None,
+                    extra_query_params: Optional[Dict[str, Any]] = None,
+                    tmp_file_path:  Union[str, os.PathLike, None] = None):
         """
         Downloads data of an object to file.
 
         :param bucket_name: Name of the bucket.
         :param object_name: Object name in the bucket.
-        :param file_path: Name of file to download.
+        :param file_path: Path of file to download.
         :param request_headers: Any additional headers to be added with GET
                                 request.
         :param ssec: Server-side encryption customer key.
@@ -1044,6 +1051,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         )
 
         # Write to a temporary file "file_path.part.minio" before saving.
+        file_path = os.fspath(file_path)
+        tmp_file_path = tmp_file_path or os.fspath(tmp_file_path)
         tmp_file_path = (
             tmp_file_path or file_path + "." + stat.etag + ".part.minio"
         )
