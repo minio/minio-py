@@ -28,6 +28,7 @@ import os
 import platform
 from datetime import timedelta
 from threading import Thread
+from typing import Optional
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
@@ -35,6 +36,7 @@ import certifi
 import urllib3
 from urllib3._collections import HTTPHeaderDict
 
+import minio.credentials
 from . import __title__, __version__, time
 from .commonconfig import COPY, REPLACE, ComposeSource, CopySource, Tags
 from .credentials import StaticProvider
@@ -110,13 +112,15 @@ class Minio:  # pylint: disable=too-many-public-methods
     """
 
     # pylint: disable=too-many-function-args
-    def __init__(self, endpoint, access_key=None,
-                 secret_key=None,
-                 session_token=None,
-                 secure=True,
-                 region=None,
-                 http_client=None,
-                 credentials=None):
+    def __init__(self,
+                 endpoint: str,
+                 access_key: Optional[str] = None,
+                 secret_key: Optional[str] = None,
+                 session_token: Optional[str] = None,
+                 secure: bool = True,
+                 region: Optional[str] = None,
+                 http_client: Optional[urllib3.poolmanager.PoolManager] = None,
+                 credentials: Optional[minio.credentials.Provider] = None):
         # Validate http client has correct base class.
         if http_client and not isinstance(
                 http_client,
