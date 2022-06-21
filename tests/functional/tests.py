@@ -916,7 +916,12 @@ def test_get_object_version(log_entry, sse=None):
     _test_get_object(log_entry, sse, version_check=True)
 
 
-def _test_fget_object(log_entry, sse=None, version_check=False, use_pathlib=False):
+def _test_fget_object(
+    log_entry,
+    sse=None,
+    version_check=False,
+    use_pathlib=False
+):
     """Test fget_object()."""
 
     if sse:
