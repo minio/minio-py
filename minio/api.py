@@ -1047,27 +1047,18 @@ class Minio:  # pylint: disable=too-many-public-methods
         tmp_file_path = (
             tmp_file_path or file_path + "." + stat.etag + ".part.minio"
         )
-        try:
-            tmp_file_stat = os.stat(tmp_file_path)
-        except IOError:
-            tmp_file_stat = None  # Ignore this error.
-        offset = tmp_file_stat.st_size if tmp_file_stat else 0
-        if offset > stat.size:
-            os.remove(tmp_file_path)
-            offset = 0
 
         response = None
         try:
             response = self.get_object(
                 bucket_name,
                 object_name,
-                offset=offset,
                 request_headers=request_headers,
                 ssec=ssec,
                 version_id=version_id,
                 extra_query_params=extra_query_params,
             )
-            with open(tmp_file_path, "ab") as tmp_file:
+            with open(tmp_file_path, "wb") as tmp_file:
                 for data in response.stream(amt=1024*1024):
                     tmp_file.write(data)
             if os.path.exists(file_path):
