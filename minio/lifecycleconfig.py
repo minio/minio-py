@@ -246,8 +246,15 @@ class Rule(BaseRule):
                  noncurrent_version_transition=None,
                  transition=None):
         check_status(status)
-        if not rule_filter:
-            raise ValueError("Rule filter must be provided")
+        if (not abort_incomplete_multipart_upload and not expiration
+            and not noncurrent_version_expiration
+            and not noncurrent_version_transition
+                and not transition):
+            raise ValueError(
+                "at least one of action (AbortIncompleteMultipartUpload, "
+                "Expiration, NoncurrentVersionExpiration, "
+                "NoncurrentVersionTransition or Transition) must be specified "
+                "in a rule")
 
         super().__init__(rule_filter, rule_id)
 
