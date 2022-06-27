@@ -255,6 +255,8 @@ class Rule(BaseRule):
                 "Expiration, NoncurrentVersionExpiration, "
                 "NoncurrentVersionTransition or Transition) must be specified "
                 "in a rule")
+        if not rule_filter:
+            raise ValueError("Rule filter must be provided")
 
         super().__init__(rule_filter, rule_id)
 
