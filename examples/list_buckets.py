@@ -14,14 +14,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from minio import Minio
 
-client = Minio(
-    "play.min.io",
-    access_key="Q3AM3UQ867SPQQA43P2F",
-    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
-)
+def client_from_env()->Minio:
+    url = os.environ.get("MINIO_ADDRESS")
+    user = os.environ.get("MINIO_ACCESS_KEY")
+    pw = os.environ.get("MINIO_SECRET_KEY")
+    sec_var = os.environ.get("MINIO_SECURE",'off')
+    if sec_var == 'on':
+        sec = True
+    else:
+        sec = False
 
-buckets = client.list_buckets()
-for bucket in buckets:
-    print(bucket.name, bucket.creation_date)
+    if url or user or pw:
+        client = Minio(
+            url,
+            access_key=user,
+            secret_key=pw,
+            secure=sec
+        )
+        return client
+    else:
+        return None
+
+def client_from_play()->Minio:
+    client = Minio(
+        'play.min.io',
+        access_key='Q3AM3UQ867SPQQA43P2F',
+        secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
+    )
+    return client
+
+def main():
+    # Setup a client instance
+    client = client_from_env()
+    if client == None:
+        client = client_from_play()
+
+    # Gets list of buckets
+    buckets = client.list_buckets()
+    for bucket in buckets:
+        print(bucket.name, bucket.creation_date)
+
+if __name__=='__main__':
+    main()

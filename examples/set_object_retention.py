@@ -14,17 +14,61 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import io
+from random import randint
 from datetime import datetime, timedelta
 
 from minio import Minio
 from minio.commonconfig import GOVERNANCE
 from minio.retention import Retention
 
-client = Minio(
-    "play.min.io",
-    access_key="Q3AM3UQ867SPQQA43P2F",
-    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
-)
+def client_from_env()->Minio:
+    url = os.environ.get("MINIO_ADDRESS")
+    user = os.environ.get("MINIO_ACCESS_KEY")
+    pw = os.environ.get("MINIO_SECRET_KEY")
+    sec_var = os.environ.get("MINIO_SECURE",'off')
+    if sec_var == 'on':
+        sec = True
+    else:
+        sec = False
 
-config = Retention(GOVERNANCE, datetime.utcnow() + timedelta(days=10))
-client.set_object_retention("my-bucket", "my-object", config)
+    if url or user or pw:
+        client = Minio(
+            url,
+            access_key=user,
+            secret_key=pw,
+            secure=sec
+        )
+        return client
+    else:
+        return None
+
+def client_from_play()->Minio:
+    client = Minio(
+        'play.min.io',
+        access_key='Q3AM3UQ867SPQQA43P2F',
+        secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
+    )
+    return client
+
+def main():
+    # Setup a client instance
+    client = client_from_env()
+    if client == None:
+        client = client_from_play()
+    
+    # Create bucket
+    bucket_name = "my-bucket"+str(randint(10000,99999))
+    client.make_bucket(bucket_name,"us-west-2",object_lock=True)
+    print(bucket_name)
+
+    # Create object
+    client.put_object(bucket_name, "my-object", io.BytesIO(b"hello"), 5,)
+
+    # Create retention and apply to object
+    config = Retention(GOVERNANCE, datetime.utcnow() + timedelta(days=10))
+    client.set_object_retention(bucket_name, "my-object", config)
+
+if __name__ == '__main__':
+    main()

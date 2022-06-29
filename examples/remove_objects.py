@@ -14,32 +14,86 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import io
+from random import randint
+
+from minio.commonconfig import ENABLED
+from minio.versioningconfig import VersioningConfig
 from minio import Minio
 from minio.deleteobjects import DeleteObject
 
-client = Minio(
-    "play.min.io",
-    access_key="Q3AM3UQ867SPQQA43P2F",
-    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
-)
+def client_from_env()->Minio:
+    url = os.environ.get("MINIO_ADDRESS")
+    user = os.environ.get("MINIO_ACCESS_KEY")
+    pw = os.environ.get("MINIO_SECRET_KEY")
+    sec_var = os.environ.get("MINIO_SECURE",'off')
+    if sec_var == 'on':
+        sec = True
+    else:
+        sec = False
 
-# Remove list of objects.
-errors = client.remove_objects(
-    "my-bucket",
-    [
-        DeleteObject("my-object1"),
-        DeleteObject("my-object2"),
-        DeleteObject("my-object3", "13f88b18-8dcd-4c83-88f2-8631fdb6250c"),
-    ],
-)
-for error in errors:
-    print("error occured when deleting object", error)
+    if url or user or pw:
+        client = Minio(
+            url,
+            access_key=user,
+            secret_key=pw,
+            secure=sec
+        )
+        return client
+    else:
+        return None
 
-# Remove a prefix recursively.
-delete_object_list = map(
-    lambda x: DeleteObject(x.object_name),
-    client.list_objects("my-bucket", "my/prefix/", recursive=True),
-)
-errors = client.remove_objects("my-bucket", delete_object_list)
-for error in errors:
-    print("error occured when deleting object", error)
+def client_from_play()->Minio:
+    client = Minio(
+        'play.min.io',
+        access_key='Q3AM3UQ867SPQQA43P2F',
+        secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
+    )
+    return client
+
+def main():
+    # Setup a client instance
+    client = client_from_env()
+    if client == None:
+        client = client_from_play()
+    
+    # Create bucket
+    bucket_name = "my-bucket"+str(randint(10000,99999))
+    client.make_bucket(bucket_name)
+    print(bucket_name)
+
+    # Create objects
+    for i in range(1,4):
+        client.put_object(bucket_name, "my-object"+str(i), io.BytesIO(b"hello"), 5,)
+
+    # Create objects in my/prefix/
+    for i in range(1,10):
+       client.put_object(bucket_name, "my/prefix/"+str(i), io.BytesIO(b"hello"), 5,)  
+
+    # Create not-my-object
+    client.put_object(bucket_name, "not-my-object", io.BytesIO(b"hello"), 5,)
+    
+    # Remove list of objects.
+    errors = client.remove_objects(
+        bucket_name,
+        [
+            DeleteObject("my-object1"),
+            DeleteObject("my-object2"),
+            DeleteObject("my-object3", "13f88b18-8dcd-4c83-88f2-8631fdb6250c"),
+        ],
+    )
+    for error in errors:
+        print("error occured when deleting object", error)
+
+    # Remove a prefix recursively.
+    delete_object_list = map(
+        lambda x: DeleteObject(x.object_name),
+        client.list_objects(bucket_name, "my/prefix/", recursive=True),
+    )
+    errors = client.remove_objects(bucket_name, delete_object_list)
+    for error in errors:
+        print("error occured when deleting object", error)
+    
+if __name__ == '__main__':
+    main()

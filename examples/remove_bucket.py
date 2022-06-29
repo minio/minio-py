@@ -14,12 +14,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+from random import randint
 from minio import Minio
 
-client = Minio(
-    "play.min.io",
-    access_key="Q3AM3UQ867SPQQA43P2F",
-    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
-)
+def client_from_env()->Minio:
+    url = os.environ.get("MINIO_ADDRESS")
+    user = os.environ.get("MINIO_ACCESS_KEY")
+    pw = os.environ.get("MINIO_SECRET_KEY")
+    sec_var = os.environ.get("MINIO_SECURE",'off')
+    if sec_var == 'on':
+        sec = True
+    else:
+        sec = False
 
-client.remove_bucket("my-bucket")
+    if url or user or pw:
+        client = Minio(
+            url,
+            access_key=user,
+            secret_key=pw,
+            secure=sec
+        )
+        return client
+    else:
+        return None
+
+def client_from_play()->Minio:
+    client = Minio(
+        'play.min.io',
+        access_key='Q3AM3UQ867SPQQA43P2F',
+        secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
+    )
+    return client
+
+def main():
+    # Setup a client instance
+    client = client_from_env()
+    if client == None:
+        client = client_from_play()
+
+    # Create bucket
+    bucket_name = "my-bucket"+str(randint(10000,99999))
+    client.make_bucket(bucket_name)
+    print(bucket_name)
+
+    # Remove bucket
+    client.remove_bucket(bucket_name)
+
+if __name__ == '__main__':
+    main()
+    

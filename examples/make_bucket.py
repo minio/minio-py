@@ -14,19 +14,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from minio import Minio
+from random import randint
 
-client = Minio(
-    "play.min.io",
-    access_key="Q3AM3UQ867SPQQA43P2F",
-    secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
-)
+def client_from_env()->Minio:
+    url = os.environ.get("MINIO_ADDRESS")
+    user = os.environ.get("MINIO_ACCESS_KEY")
+    pw = os.environ.get("MINIO_SECRET_KEY")
+    sec_var = os.environ.get("MINIO_SECURE",'off')
+    if sec_var == 'on':
+        sec = True
+    else:
+        sec = False
 
-# Create bucket.
-client.make_bucket("my-bucket")
+    if url or user or pw:
+        client = Minio(
+            url,
+            access_key=user,
+            secret_key=pw,
+            secure=sec
+        )
+        return client
+    else:
+        return None
 
-# Create bucket on specific region.
-client.make_bucket("my-bucket", "us-west-1")
+def client_from_play()->Minio:
+    client = Minio(
+        'play.min.io',
+        access_key='Q3AM3UQ867SPQQA43P2F',
+        secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
+    )
+    return client
 
-# Create bucket with object-lock feature on specific region.
-client.make_bucket("my-bucket", "eu-west-2", object_lock=True)
+def main():
+    # Setup a client instance
+    client = client_from_env()
+    if client == None:
+        client = client_from_play()
+
+    # Create bucket.
+    client.make_bucket("my-bucket"+str(randint(10000,99999)))
+
+    # Create bucket on specific region.
+    client.make_bucket("my-bucket"+str(randint(10000,99999)), "us-west-1")
+
+    # Create bucket with object-lock feature on specific region.
+    client.make_bucket("my-bucket"+str(randint(10000,99999)), "eu-west-2", object_lock=True)
+
+if __name__ == '__main__':
+    main()
