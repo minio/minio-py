@@ -20,11 +20,12 @@ from random import randint
 from minio import Minio
 from minio.sseconfig import Rule, SSEConfig
 
-def client_from_env()->Minio:
+
+def client_from_env() -> Minio:
     url = os.environ.get("MINIO_ADDRESS")
     user = os.environ.get("MINIO_ACCESS_KEY")
     pw = os.environ.get("MINIO_SECRET_KEY")
-    sec_var = os.environ.get("MINIO_SECURE",'off')
+    sec_var = os.environ.get("MINIO_SECURE", 'off')
     if sec_var == 'on':
         sec = True
     else:
@@ -41,7 +42,8 @@ def client_from_env()->Minio:
     else:
         return None
 
-def client_from_play()->Minio:
+
+def client_from_play() -> Minio:
     client = Minio(
         'play.min.io',
         access_key='Q3AM3UQ867SPQQA43P2F',
@@ -49,22 +51,24 @@ def client_from_play()->Minio:
     )
     return client
 
+
 def main():
     # Setup a client instance
     client = client_from_env()
-    if client == None:
+    if client is None:
         client = client_from_play()
-    
+
     # Create bucket with encryption
-    bucket_name = "my-bucket"+str(randint(10000,99999))
+    bucket_name = "my-bucket" + str(randint(10000, 99999))
     client.make_bucket(bucket_name)
     client.set_bucket_encryption(
-    bucket_name, SSEConfig(Rule.new_sse_s3_rule()),
+        bucket_name, SSEConfig(Rule.new_sse_s3_rule()),
     )
     print(bucket_name)
 
     # Get bucket encryption as SSEConfig object
     conifig = client.get_bucket_encryption(bucket_name)
+
 
 if __name__ == '__main__':
     main()

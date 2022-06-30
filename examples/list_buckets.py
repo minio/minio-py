@@ -15,13 +15,15 @@
 # limitations under the License.
 
 import os
+
 from minio import Minio
 
-def client_from_env()->Minio:
+
+def client_from_env() -> Minio:
     url = os.environ.get("MINIO_ADDRESS")
     user = os.environ.get("MINIO_ACCESS_KEY")
     pw = os.environ.get("MINIO_SECRET_KEY")
-    sec_var = os.environ.get("MINIO_SECURE",'off')
+    sec_var = os.environ.get("MINIO_SECURE", 'off')
     if sec_var == 'on':
         sec = True
     else:
@@ -38,7 +40,8 @@ def client_from_env()->Minio:
     else:
         return None
 
-def client_from_play()->Minio:
+
+def client_from_play() -> Minio:
     client = Minio(
         'play.min.io',
         access_key='Q3AM3UQ867SPQQA43P2F',
@@ -46,10 +49,11 @@ def client_from_play()->Minio:
     )
     return client
 
+
 def main():
     # Setup a client instance
     client = client_from_env()
-    if client == None:
+    if client is None:
         client = client_from_play()
 
     # Gets list of buckets
@@ -57,5 +61,6 @@ def main():
     for bucket in buckets:
         print(bucket.name, bucket.creation_date)
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     main()

@@ -30,19 +30,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import io
-from random import randint
+import os
 from datetime import datetime, timezone
+from random import randint
 
 from minio import Minio
 from minio.commonconfig import REPLACE, CopySource
 
-def client_from_env()->Minio:
+
+def client_from_env() -> Minio:
     url = os.environ.get("MINIO_ADDRESS")
     user = os.environ.get("MINIO_ACCESS_KEY")
     pw = os.environ.get("MINIO_SECRET_KEY")
-    sec_var = os.environ.get("MINIO_SECURE",'off')
+    sec_var = os.environ.get("MINIO_SECURE", 'off')
     if sec_var == 'on':
         sec = True
     else:
@@ -59,7 +60,8 @@ def client_from_env()->Minio:
     else:
         return None
 
-def client_from_play()->Minio:
+
+def client_from_play() -> Minio:
     client = Minio(
         'play.min.io',
         access_key='Q3AM3UQ867SPQQA43P2F',
@@ -67,22 +69,28 @@ def client_from_play()->Minio:
     )
     return client
 
+
 def main():
     # Setup a client instance
     client = client_from_env()
-    if client == None:
+    if client is None:
         client = client_from_play()
-    
+
     # Create source and destination buckets
-    source_bucket_name = "copy-source-bucket"+str(randint(10000,99999))
+    source_bucket_name = "copy-source-bucket" + str(randint(10000, 99999))
     client.make_bucket(source_bucket_name)
-    dest_bucket_name = "copy-dest-bucket"+str(randint(10000,99999))
+    dest_bucket_name = "copy-dest-bucket" + str(randint(10000, 99999))
     client.make_bucket(dest_bucket_name)
     print(dest_bucket_name)
 
     # Create source object
-    client.put_object(source_bucket_name, "my-source-object", io.BytesIO(b"hello"), 5,)
-    
+    client.put_object(
+        source_bucket_name,
+        "my-source-object",
+        io.BytesIO(b"hello"),
+        5,
+    )
+
     # copy an object from a bucket to another.
     result = client.copy_object(
         dest_bucket_name,
@@ -113,6 +121,7 @@ def main():
         metadata_directive=REPLACE,
     )
     print(result.object_name, result.version_id)
+
 
 if __name__ == '__main__':
     main()

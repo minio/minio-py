@@ -14,20 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import io
+import os
 from random import randint
 
-from minio.commonconfig import ENABLED
-from minio.versioningconfig import VersioningConfig
 from minio import Minio
+from minio.commonconfig import ENABLED
 from minio.deleteobjects import DeleteObject
+from minio.versioningconfig import VersioningConfig
 
-def client_from_env()->Minio:
+
+def client_from_env() -> Minio:
     url = os.environ.get("MINIO_ADDRESS")
     user = os.environ.get("MINIO_ACCESS_KEY")
     pw = os.environ.get("MINIO_SECRET_KEY")
-    sec_var = os.environ.get("MINIO_SECURE",'off')
+    sec_var = os.environ.get("MINIO_SECURE", 'off')
     if sec_var == 'on':
         sec = True
     else:
@@ -44,7 +45,8 @@ def client_from_env()->Minio:
     else:
         return None
 
-def client_from_play()->Minio:
+
+def client_from_play() -> Minio:
     client = Minio(
         'play.min.io',
         access_key='Q3AM3UQ867SPQQA43P2F',
@@ -52,28 +54,41 @@ def client_from_play()->Minio:
     )
     return client
 
+
 def main():
     # Setup a client instance
     client = client_from_env()
-    if client == None:
+    if client is None:
         client = client_from_play()
-    
+
     # Create bucket
-    bucket_name = "my-bucket"+str(randint(10000,99999))
+    bucket_name = "my-bucket" + str(randint(10000, 99999))
     client.make_bucket(bucket_name)
     print(bucket_name)
 
     # Create objects
-    for i in range(1,4):
-        client.put_object(bucket_name, "my-object"+str(i), io.BytesIO(b"hello"), 5,)
+    for i in range(1, 4):
+        client.put_object(
+            bucket_name,
+            "my-object" +
+            str(i),
+            io.BytesIO(b"hello"),
+            5,
+        )
 
     # Create objects in my/prefix/
-    for i in range(1,10):
-       client.put_object(bucket_name, "my/prefix/"+str(i), io.BytesIO(b"hello"), 5,)  
+    for i in range(1, 10):
+        client.put_object(
+            bucket_name,
+            "my/prefix/" +
+            str(i),
+            io.BytesIO(b"hello"),
+            5,
+        )
 
     # Create not-my-object
     client.put_object(bucket_name, "not-my-object", io.BytesIO(b"hello"), 5,)
-    
+
     # Remove list of objects.
     errors = client.remove_objects(
         bucket_name,
@@ -94,6 +109,7 @@ def main():
     errors = client.remove_objects(bucket_name, delete_object_list)
     for error in errors:
         print("error occured when deleting object", error)
-    
+
+
 if __name__ == '__main__':
     main()
