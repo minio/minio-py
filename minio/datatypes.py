@@ -840,7 +840,7 @@ class EventIterable:
     def __next__(self):
         records = None
         while not records:
-            if not self._response:
+            if not self._response or self._response.closed:
                 self._response = self._func()
             records = self._get_records()
         return records
