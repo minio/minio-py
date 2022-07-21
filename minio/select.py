@@ -421,7 +421,7 @@ class SelectObjectReader:
         should call self.close() to release network resources.
         """
         while True:
-            if self._payload:
+            while self._payload:
                 result = self._payload
                 if num_bytes < len(self._payload):
                     result = self._payload[:num_bytes]
