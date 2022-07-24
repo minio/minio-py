@@ -281,7 +281,7 @@ def test_select_object_content(log_entry):
         data = _CLIENT.select_object_content(bucket_name, csvfile, request)
         # Get the records
         records = io.BytesIO()
-        for data_bytes in data.stream(10*KB):
+        for data_bytes in data.stream(16):
             records.write(data_bytes)
 
         expected_crc = crc32(content.getvalue()) & 0xffffffff

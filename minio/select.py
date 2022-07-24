@@ -420,13 +420,10 @@ class SelectObjectReader:
         Stream extracted payload from response data. Upon completion, caller
         should call self.close() to release network resources.
         """
-        while True:
-            if self._payload:
+        while self._read() > 0:
+            while self._payload:
                 result = self._payload
                 if num_bytes < len(self._payload):
                     result = self._payload[:num_bytes]
                 self._payload = self._payload[len(result):]
                 yield result
-
-            if self._read() <= 0:
-                break
