@@ -1793,6 +1793,7 @@ form_data = client.presigned_post_policy(policy)
 Get presigned URL of an object for HTTP method, expiry time and custom request parameters.
 
 __Parameters__
+
 | Param                | Type                 | Description                                                                                                          |
 |:---------------------|:---------------------|:---------------------------------------------------------------------------------------------------------------------|
 | `method`             | _str_                | HTTP method.                                                                                                         |
