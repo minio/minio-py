@@ -34,6 +34,7 @@ from xml.etree import ElementTree as ET
 import certifi
 import urllib3
 from urllib3._collections import HTTPHeaderDict
+from tqdm import tqdm
 
 from . import __title__, __version__, time
 from .commonconfig import COPY, REPLACE, ComposeSource, CopySource, Tags
@@ -1058,7 +1059,8 @@ class Minio:  # pylint: disable=too-many-public-methods
                 version_id=version_id,
                 extra_query_params=extra_query_params,
             )
-            with open(tmp_file_path, "wb") as tmp_file:
+            with open(tmp_file_path, "wb") as tmp_file,
+                tqdm():
                 for data in response.stream(amt=1024*1024):
                     tmp_file.write(data)
             if os.path.exists(file_path):
