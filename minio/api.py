@@ -1059,8 +1059,13 @@ class Minio:  # pylint: disable=too-many-public-methods
                 version_id=version_id,
                 extra_query_params=extra_query_params,
             )
-            with open(tmp_file_path, "wb") as tmp_file,
-                tqdm():
+            total = int(response.headers.get('content-length', 0))
+            with open(tmp_file_path, "wb") as tmp_file, tqdm(
+                    desc=object_name,
+                    total=total,
+                    unit='iB',
+                    unit_scale=True,
+                    unit_divisor=1024) as bar:
                 for data in response.stream(amt=1024*1024):
                     tmp_file.write(data)
             if os.path.exists(file_path):
