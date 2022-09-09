@@ -1009,6 +1009,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param version_id: Version-ID of the object.
         :param extra_query_params: Extra query parameters for advanced usage.
         :param tmp_file_path: Path to a temporary file.
+        :param progress: A progress object
         :return: Object information.
 
         Example::
