@@ -1059,13 +1059,15 @@ class Minio:  # pylint: disable=too-many-public-methods
                 version_id=version_id,
                 extra_query_params=extra_query_params,
             )
-            total = int(response.headers.get('content-length', 0))
-            with open(tmp_file_path, "wb") as tmp_file, tqdm(
-                    desc=object_name,
-                    total=total,
-                    unit='iB',
-                    unit_scale=True,
-                    unit_divisor=1024) as bar:
+
+            if progress:
+                length = int(response.headers.get('content-length', 0))
+                if not isinstance(progress, Thread):
+                    raise TypeError("progress object must be instance of Thread")
+                # Set progress bar length and object name before upload
+                progress.set_meta(object_name=object_name, total_length=length)
+
+            with open(tmp_file_path, "wb") as tmp_file:
                 for data in response.stream(amt=1024*1024):
                     size = tmp_file.write(data)
                     bar.update(size)
