@@ -34,7 +34,6 @@ from xml.etree import ElementTree as ET
 import certifi
 import urllib3
 from urllib3._collections import HTTPHeaderDict
-from tqdm import tqdm
 
 from . import __title__, __version__, time
 from .commonconfig import COPY, REPLACE, ComposeSource, CopySource, Tags
