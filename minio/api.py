@@ -996,8 +996,8 @@ class Minio:  # pylint: disable=too-many-public-methods
             )
 
     def fget_object(self, bucket_name, object_name, file_path,
-                    request_headers=None, ssec=None, version_id=None,
-                    extra_query_params=None, tmp_file_path=None):
+                    request_headers=None, ssec=None, progress=None,
+                    version_id=None, extra_query_params=None, tmp_file_path=None):
         """
         Downloads data of an object to file.
 
