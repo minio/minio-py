@@ -1070,7 +1070,8 @@ class Minio:  # pylint: disable=too-many-public-methods
             with open(tmp_file_path, "wb") as tmp_file:
                 for data in response.stream(amt=1024*1024):
                     size = tmp_file.write(data)
-                    bar.update(size)
+                    if progress:
+                        progress.update(size)
             if os.path.exists(file_path):
                 os.remove(file_path)  # For windows compatibility.
             os.rename(tmp_file_path, file_path)
