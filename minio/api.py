@@ -1030,9 +1030,9 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
-
-        if not isinstance(progress, Thread):
-            raise TypeError("progress object must be instance of Thread")
+        if progress:
+            if not isinstance(progress, Thread):
+                raise TypeError("progress object must be instance of Thread")
 
         if os.path.isdir(file_path):
             raise ValueError(f"file {file_path} is a directory")
