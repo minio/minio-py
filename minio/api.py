@@ -996,7 +996,7 @@ class Minio:  # pylint: disable=too-many-public-methods
 
     def fget_object(self, bucket_name, object_name, file_path,
                     request_headers=None, ssec=None, version_id=None,
-                    extra_query_params=None, tmp_file_path=None):
+                    extra_query_params=None, tmp_file_path=None, progress=None):
         """
         Downloads data of an object to file.
 
@@ -1009,6 +1009,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param version_id: Version-ID of the object.
         :param extra_query_params: Extra query parameters for advanced usage.
         :param tmp_file_path: Path to a temporary file.
+        :param progress: A progress object
         :return: Object information.
 
         Example::
@@ -1029,6 +1030,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
+        if progress and not isinstance(progress, Thread):
+            raise TypeError("progress object must be instance of Thread")
 
         if os.path.isdir(file_path):
             raise ValueError(f"file {file_path} is a directory")
@@ -1058,9 +1061,17 @@ class Minio:  # pylint: disable=too-many-public-methods
                 version_id=version_id,
                 extra_query_params=extra_query_params,
             )
+
+            if progress:
+                # Set progress bar length and object name before upload
+                length = int(response.headers.get('content-length', 0))
+                progress.set_meta(object_name=object_name, total_length=length)
+
             with open(tmp_file_path, "wb") as tmp_file:
                 for data in response.stream(amt=1024*1024):
-                    tmp_file.write(data)
+                    size = tmp_file.write(data)
+                    if progress:
+                        progress.update(size)
             if os.path.exists(file_path):
                 os.remove(file_path)  # For windows compatibility.
             os.rename(tmp_file_path, file_path)
