@@ -1031,6 +1031,9 @@ class Minio:  # pylint: disable=too-many-public-methods
         check_bucket_name(bucket_name)
         check_non_empty_string(object_name)
 
+        if not isinstance(progress, Thread):
+            raise TypeError("progress object must be instance of Thread")
+
         if os.path.isdir(file_path):
             raise ValueError(f"file {file_path} is a directory")
 
@@ -1061,10 +1064,8 @@ class Minio:  # pylint: disable=too-many-public-methods
             )
 
             if progress:
-                length = int(response.headers.get('content-length', 0))
-                if not isinstance(progress, Thread):
-                    raise TypeError("progress object must be instance of Thread")
                 # Set progress bar length and object name before upload
+                length = int(response.headers.get('content-length', 0))
                 progress.set_meta(object_name=object_name, total_length=length)
 
             with open(tmp_file_path, "wb") as tmp_file:
