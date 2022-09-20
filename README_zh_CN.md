@@ -2,7 +2,7 @@
 
 MinIO Python Client SDK提供简单的API来访问任何与Amazon S3兼容的对象存储服务。
 
-本文我们将学习如何安装MinIO client SDK，并运行一个python的示例程序。对于完整的API以及示例，请参考[Python Client API Reference](https://docs.min.io/docs/python-client-api-reference)。
+本文我们将学习如何安装MinIO client SDK，并运行一个python的示例程序。对于完整的API以及示例，请参考[Python Client API Reference](https://min.io/docs/minio/linux/developers/python/API.html)。
 
 本文假设你已经有一个可运行的 [Python](https://www.python.org/downloads/)开发环境。
 
@@ -93,51 +93,51 @@ mc ls play/maylogs/
 ## API文档
 
 完整的API文档在这里。
-* [完整API文档](https://docs.min.io/docs/python-client-api-reference)
+* [完整API文档](https://min.io/docs/minio/linux/developers/python/API.html)
 
 ### API文档 : 操作存储桶
 
-* [`make_bucket`](https://docs.min.io/docs/python-client-api-reference#make_bucket)
-* [`list_buckets`](https://docs.min.io/docs/python-client-api-reference#list_buckets)
-* [`bucket_exists`](https://docs.min.io/docs/python-client-api-reference#bucket_exists)
-* [`remove_bucket`](https://docs.min.io/docs/python-client-api-reference#remove_bucket)
-* [`list_objects`](https://docs.min.io/docs/python-client-api-reference#list_objects)
-* [`list_objects_v2`](https://docs.min.io/docs/python-client-api-reference#list_objects_v2)
-* [`list_incomplete_uploads`](https://docs.min.io/docs/python-client-api-reference#list_incomplete_uploads)
+* [`make_bucket`](https://min.io/docs/minio/linux/developers/python/API.html#make_bucket)
+* [`list_buckets`](https://min.io/docs/minio/linux/developers/python/API.html#list_buckets)
+* [`bucket_exists`](https://min.io/docs/minio/linux/developers/python/API.html#bucket_exists)
+* [`remove_bucket`](https://min.io/docs/minio/linux/developers/python/API.html#remove_bucket)
+* [`list_objects`](https://min.io/docs/minio/linux/developers/python/API.html#list_objects)
+* [`list_objects_v2`](https://min.io/docs/minio/linux/developers/python/API.html#list_objects_v2)
+* [`list_incomplete_uploads`](https://min.io/docs/minio/linux/developers/python/API.html#list_incomplete_uploads)
 
 ### API文档 : 存储桶策略
 
-* [`get_bucket_policy`](https://docs.min.io/docs/python-client-api-reference#get_bucket_policy)
-* [`set_bucket_policy`](https://docs.min.io/docs/python-client-api-reference#set_bucket_policy)
+* [`get_bucket_policy`](https://min.io/docs/minio/linux/developers/python/API.html#get_bucket_policy)
+* [`set_bucket_policy`](https://min.io/docs/minio/linux/developers/python/API.html#set_bucket_policy)
 
 ### API文档 : 存储桶通知
 
-* [`set_bucket_notification`](https://docs.min.io/docs/python-client-api-reference#set_bucket_notification)
-* [`get_bucket_notification`](https://docs.min.io/docs/python-client-api-reference#get_bucket_notification)
-* [`remove_all_bucket_notification`](https://docs.min.io/docs/python-client-api-reference#remove_all_bucket_notification)
-* [`listen_bucket_notification`](https://docs.min.io/docs/python-client-api-reference#listen_bucket_notification)
+* [`set_bucket_notification`](https://min.io/docs/minio/linux/developers/python/API.html#set_bucket_notification)
+* [`get_bucket_notification`](https://min.io/docs/minio/linux/developers/python/API.html#get_bucket_notification)
+* [`remove_all_bucket_notification`](https://min.io/docs/minio/linux/developers/python/API.html#remove_all_bucket_notification)
+* [`listen_bucket_notification`](https://min.io/docs/minio/linux/developers/python/API.html#listen_bucket_notification)
 
 ### API文档 : 操作文件对象
 
-* [`fput_object`](https://docs.min.io/docs/python-client-api-reference#fput_object)
-* [`fget_object`](https://docs.min.io/docs/python-client-api-reference#fget_object)
+* [`fput_object`](https://min.io/docs/minio/linux/developers/python/API.html#fput_object)
+* [`fget_object`](https://min.io/docs/minio/linux/developers/python/API.html#fget_object)
 
 ### API文档 : 操作对象
 
-* [`get_object`](https://docs.min.io/docs/python-client-api-reference#get_object)
-* [`put_object`](https://docs.min.io/docs/python-client-api-reference#put_object)
-* [`stat_object`](https://docs.min.io/docs/python-client-api-reference#stat_object)
-* [`copy_object`](https://docs.min.io/docs/python-client-api-reference#copy_object)
-* [`get_partial_object`](https://docs.min.io/docs/python-client-api-reference#get_partial_object)
-* [`remove_object`](https://docs.min.io/docs/python-client-api-reference#remove_object)
-* [`remove_objects`](https://docs.min.io/docs/python-client-api-reference#remove_objects)
-* [`remove_incomplete_upload`](https://docs.min.io/docs/python-client-api-reference#remove_incomplete_upload)
+* [`get_object`](https://min.io/docs/minio/linux/developers/python/API.html#get_object)
+* [`put_object`](https://min.io/docs/minio/linux/developers/python/API.html#put_object)
+* [`stat_object`](https://min.io/docs/minio/linux/developers/python/API.html#stat_object)
+* [`copy_object`](https://min.io/docs/minio/linux/developers/python/API.html#copy_object)
+* [`get_partial_object`](https://min.io/docs/minio/linux/developers/python/API.html#get_partial_object)
+* [`remove_object`](https://min.io/docs/minio/linux/developers/python/API.html#remove_object)
+* [`remove_objects`](https://min.io/docs/minio/linux/developers/python/API.html#remove_objects)
+* [`remove_incomplete_upload`](https://min.io/docs/minio/linux/developers/python/API.html#remove_incomplete_upload)
 
 ### API文档 : Presigned操作
 
-* [`presigned_get_object`](https://docs.min.io/docs/python-client-api-reference#presigned_get_object)
-* [`presigned_put_object`](https://docs.min.io/docs/python-client-api-reference#presigned_put_object)
-* [`presigned_post_policy`](https://docs.min.io/docs/python-client-api-reference#presigned_post_policy)
+* [`presigned_get_object`](https://min.io/docs/minio/linux/developers/python/API.html#presigned_get_object)
+* [`presigned_put_object`](https://min.io/docs/minio/linux/developers/python/API.html#presigned_put_object)
+* [`presigned_post_policy`](https://min.io/docs/minio/linux/developers/python/API.html#presigned_post_policy)
 
 ## 完整示例
 
@@ -186,8 +186,8 @@ mc ls play/maylogs/
 
 ## 了解更多
 
-* [完整文档](https://docs.min.io)
-* [MinIO Python SDK API文档](https://docs.min.io/docs/python-client-api-reference)
+* [完整文档](https://min.io/docs/minio/kubernetes/upstream/index.html)
+* [MinIO Python SDK API文档](https://min.io/docs/minio/linux/developers/python/API.html)
 
 ## 贡献
 

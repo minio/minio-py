@@ -1849,6 +1849,6 @@ print(url)
 
 ## 5. Explore Further
 
-- [MinIO Golang Client SDK Quickstart Guide](https://docs.min.io/docs/golang-client-quickstart-guide)
-- [MinIO Java Client SDK Quickstart Guide](https://docs.min.io/docs/java-client-quickstart-guide)
-- [MinIO JavaScript Client SDK Quickstart Guide](https://docs.min.io/docs/javascript-client-quickstart-guide)
+- [MinIO Golang Client SDK Quickstart Guide](https://min.io/docs/minio/linux/developers/go/minio-go.html)
+- [MinIO Java Client SDK Quickstart Guide](https://min.io/docs/minio/linux/developers/java/minio-java.html)
+- [MinIO JavaScript Client SDK Quickstart Guide](https://min.io/docs/minio/linux/developers/javascript/minio-javascript.html)
