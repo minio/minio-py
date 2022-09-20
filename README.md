@@ -2,7 +2,7 @@
 
 MinIO Python SDK is Simple Storage Service (aka S3) client to perform bucket and object operations to any Amazon S3 compatible object storage service.
 
-For a complete list of APIs and examples, please take a look at the [Python Client API Reference](https://docs.min.io/docs/python-client-api-reference)
+For a complete list of APIs and examples, please take a look at the [Python Client API Reference](https://min.io/docs/minio/linux/developers/python/API.html)
 
 ## Minimum Requirements
 Python 3.7 or higher.
@@ -84,11 +84,11 @@ $ mc ls play/asiatrip/
 ```
 
 ## More References
-* [Python Client API Reference](https://docs.min.io/docs/python-client-api-reference)
+* [Python Client API Reference](https://min.io/docs/minio/linux/developers/python/API.html)
 * [Examples](https://github.com/minio/minio-py/tree/release/examples)
 
 ## Explore Further
-* [Complete Documentation](https://docs.min.io)
+* [Complete Documentation](https://min.io/docs/minio/kubernetes/upstream/index.html)
 
 ## Contribute
 Please refer [Contributors Guide](https://github.com/minio/minio-py/blob/release/CONTRIBUTING.md)

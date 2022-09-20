@@ -1044,6 +1044,6 @@ print(' '.join(curl_cmd))
 
 ## 5. 了解更多
 
-- [MinIO Golang Client SDK快速入门](https://docs.min.io/docs/golang-client-quickstart-guide)
-- [MinIO Java Client SDK快速入门](https://docs.min.io/docs/java-client-quickstart-guide)
-- [MinIO JavaScript Client SDK快速入门](https://docs.min.io/docs/javascript-client-quickstart-guide)
+- [MinIO Golang Client SDK快速入门](https://min.io/docs/minio/linux/developers/go/minio-go.html)
+- [MinIO Java Client SDK快速入门](https://min.io/docs/minio/linux/developers/java/minio-java.html)
+- [MinIO JavaScript Client SDK快速入门](https://min.io/docs/minio/linux/developers/javascript/minio-javascript.html)
