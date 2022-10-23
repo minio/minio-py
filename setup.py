@@ -45,7 +45,7 @@ setup(
     packages=["minio", "minio.credentials"],
     install_requires=["certifi", "urllib3"],
     tests_require=[],
-    license="Apache License 2.0",
+    license="Apache-2.0",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
