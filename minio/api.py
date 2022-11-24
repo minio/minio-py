@@ -274,7 +274,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         if self._trace_stream:
             self._trace_stream.write(f"HTTP/1.1 {response.status}\n")
             self._trace_stream.write(
-                headers_to_strings(response.getheaders()),
+                headers_to_strings(response.headers),
             )
             self._trace_stream.write("\n")
 
@@ -1289,7 +1289,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             object_name,
             response.getheader("x-amz-version-id"),
             etag,
-            response.getheaders(),
+            response.headers,
             last_modified=last_modified,
         )
 
@@ -1589,7 +1589,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             object_name,
             response.getheader("x-amz-version-id"),
             response.getheader("etag").replace('"', ""),
-            response.getheaders(),
+            response.headers,
         )
 
     def _upload_part(self, bucket_name, object_name, data, headers,
