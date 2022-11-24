@@ -304,7 +304,7 @@ class CompleteMultipartUploadResult:
         if self._etag:
             self._etag = self._etag.replace('"', "")
         self._version_id = response.getheader("x-amz-version-id")
-        self._http_headers = response.getheaders()
+        self._http_headers = response.headers
 
     @property
     def bucket_name(self):
