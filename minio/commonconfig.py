@@ -387,7 +387,7 @@ class ObjectConditionalReadArgs:
 
 
 class CopySource(ObjectConditionalReadArgs):
-    """A source object defintion for copy_object method."""
+    """A source object definition for copy_object method."""
     @classmethod
     def of(cls, src):
         """Create CopySource from another source."""
@@ -399,7 +399,7 @@ class CopySource(ObjectConditionalReadArgs):
 
 
 class ComposeSource(ObjectConditionalReadArgs):
-    """A source object defintion for compose_object method."""
+    """A source object definition for compose_object method."""
 
     def __init__(self, bucket_name, object_name, region=None, version_id=None,
                  ssec=None, offset=None, length=None, match_etag=None,

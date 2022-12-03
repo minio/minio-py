@@ -73,7 +73,7 @@ class Rule:
 
 
 class SSEConfig:
-    """server-side encyption configuration."""
+    """server-side encryption configuration."""
 
     def __init__(self, rule):
         if not rule:

@@ -1970,7 +1970,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 ],
             )
             for error in errors:
-                print("error occured when deleting object", error)
+                print("error occurred when deleting object", error)
 
             # Remove a prefix recursively.
             delete_object_list = map(
@@ -1979,7 +1979,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             )
             errors = client.remove_objects("my-bucket", delete_object_list)
             for error in errors:
-                print("error occured when deleting object", error)
+                print("error occurred when deleting object", error)
         """
         check_bucket_name(bucket_name)
 
@@ -2597,7 +2597,7 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         Example::
             config = ObjectLockConfig(GOVERNANCE, 15, DAYS)
-            client.set_object_lock_condig("my-bucket", config)
+            client.set_object_lock_config("my-bucket", config)
         """
         check_bucket_name(bucket_name)
         if not isinstance(config, ObjectLockConfig):
