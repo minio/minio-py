@@ -1090,7 +1090,7 @@ def _test_list_objects(log_entry, use_api_v1=False, version_check=False):
                 raise ValueError(
                     f"version ID mismatch. "
                     f"expected=any{[version_id1, version_id2]}, "
-                    f"got:{obj.verion_id}"
+                    f"got:{obj.version_id}"
                 )
     finally:
         _CLIENT.remove_object(

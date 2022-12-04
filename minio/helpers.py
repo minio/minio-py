@@ -650,7 +650,7 @@ class Worker(Thread):
         self.start()
 
     def run(self):
-        """ Continously receive tasks and execute them """
+        """ Continuously receive tasks and execute them """
         while True:
             task = self._tasks_queue.get()
             if not task:

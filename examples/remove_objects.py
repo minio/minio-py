@@ -33,7 +33,7 @@ errors = client.remove_objects(
     ],
 )
 for error in errors:
-    print("error occured when deleting object", error)
+    print("error occurred when deleting object", error)
 
 # Remove a prefix recursively.
 delete_object_list = map(
@@ -42,4 +42,4 @@ delete_object_list = map(
 )
 errors = client.remove_objects("my-bucket", delete_object_list)
 for error in errors:
-    print("error occured when deleting object", error)
+    print("error occurred when deleting object", error)

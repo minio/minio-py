@@ -219,7 +219,7 @@ class SelectRequest:
     def __init__(self, expression, input_serialization, output_serialization,
                  request_progress=False, scan_start_range=None,
                  scan_end_range=None):
-        self._expession = expression
+        self._expression = expression
         if not isinstance(
                 input_serialization,
                 (
@@ -249,7 +249,7 @@ class SelectRequest:
     def toxml(self, element):
         """Convert to XML."""
         element = Element("SelectObjectContentRequest")
-        SubElement(element, "Expression", self._expession)
+        SubElement(element, "Expression", self._expression)
         SubElement(element, "ExpressionType", "SQL")
         self._input_serialization.toxml(
             SubElement(element, "InputSerialization"),
