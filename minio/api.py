@@ -20,14 +20,15 @@
 """
 Simple Storage Service (aka S3) client to perform bucket and object operations.
 """
-
 from __future__ import absolute_import
-
+import csv
+from http import client
 import itertools
 import os
 import platform
 from datetime import timedelta
 from threading import Thread
+from typing_extensions import Self
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
@@ -150,6 +151,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 status_forcelist=[500, 502, 503, 504]
             )
         )
+
 
     def __del__(self):
         self._http.clear()
@@ -595,7 +597,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             # Create bucket with object-lock feature on specific region.
             client.make_bucket("my-bucket", "eu-west-2", object_lock=True)
         """
-        check_bucket_name(bucket_name, True)
+        check_bucket_name(bucket_name,True)
         if self._base_url.region:
             # Error out if region does not match with region passed via
             # constructor.
@@ -623,6 +625,10 @@ class Minio:  # pylint: disable=too-many-public-methods
             headers=headers,
         )
         self._region_map[bucket_name] = location
+        # self.update_super_log_file(bucket_name)
+        # self.fput_object(bucket_name,"sub_log_file","H:\BITS M.E Computer Science\Semester 3\Cloud Computing\Repo\minio-py\my_experiments\sub_log_file.csv",)
+        # self.update_sub_log_file(bucket_name)
+      
 
     def list_buckets(self):
         """
@@ -662,6 +668,23 @@ class Minio:  # pylint: disable=too-many-public-methods
                 raise
         return False
 
+
+    def update_sub_log_file(self,bucket_name):
+        with open('sub_log_file.csv', 'w', encoding='UTF8', newline='') as f:
+            writer=csv.writer(f)
+        # response = self._execute("GET", bucket_name, query_params={"owner": ""},)
+        # bucket_owner=response.data.decode()
+        bucket_policy=self.get_bucket_policy(bucket_name)
+        bucket_notification=self.get_bucket_notification(bucket_name)
+        bucket_encryption=self.get_bucket_encryption(bucket_name)
+        # response = self._execute("GET",bucket_name,query_params={"url": ""},)
+        # bucket_url=response.data.decode()
+        # response = self._execute("GET", bucket_name, query_params={"size": ""},)
+        # bucket_size=response.data.decode()
+        data=[bucket_name,bucket_policy,bucket_notification,bucket_encryption]
+        writer.writerow(data)
+    
+
     def remove_bucket(self, bucket_name):
         """
         Remove an empty bucket.
@@ -674,6 +697,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         check_bucket_name(bucket_name)
         self._execute("DELETE", bucket_name)
         self._region_map.pop(bucket_name, None)
+        
+
 
     def get_bucket_policy(self, bucket_name):
         """
@@ -722,6 +747,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             headers={"Content-MD5": md5sum_hash(policy)},
             query_params={"policy": ""},
         )
+        self.update_sub_log_file(self,bucket_name,policy)
 
     def get_bucket_notification(self, bucket_name):
         """
