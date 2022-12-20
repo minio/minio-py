@@ -303,7 +303,7 @@ class CompleteMultipartUploadResult:
         self._etag = findtext(element, "ETag")
         if self._etag:
             self._etag = self._etag.replace('"', "")
-        self._version_id = response.getheader("x-amz-version-id")
+        self._version_id = response.headers.get("x-amz-version-id")
         self._http_headers = response.headers
 
     @property
