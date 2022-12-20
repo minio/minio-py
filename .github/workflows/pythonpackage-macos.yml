@@ -55,6 +55,7 @@ jobs:
         SSL_CERT_FILE: /tmp/minio-config/certs/public.crt
       run: |
         set -x
+        brew install ca-certificates
         wget -v -O /tmp/minio https://dl.min.io/server/minio/release/darwin-amd64/minio
         chmod +x /tmp/minio
         ls -alhtr /tmp/minio
