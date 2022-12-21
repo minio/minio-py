@@ -36,30 +36,3 @@ jobs:
       run: |
         python setup.py install
         pytest
-    - name: Install wget if not there
-      shell: bash {0}
-      run: |
-        if ! [ -x "$(command -v wget)" ]; then
-          brew install wget
-        fi
-    - name: Run functional tests
-      env:
-        MINT_MODE: full
-        ACCESS_KEY: minio
-        SECRET_KEY: minio123
-        ENABLE_HTTPS: 1
-        MINIO_ACCESS_KEY: minio
-        MINIO_SECRET_KEY: minio123
-        MINIO_CI_CD: 1
-        SERVER_ENDPOINT: localhost:9000
-        SSL_CERT_FILE: /tmp/minio-config/certs/public.crt
-      run: |
-        set -x
-        brew install ca-certificates
-        wget -v -O /tmp/minio https://dl.min.io/server/minio/release/darwin-amd64/minio
-        chmod +x /tmp/minio
-        ls -alhtr /tmp/minio
-        mkdir -p /tmp/minio-config/certs/
-        cp tests/certs/* /tmp/minio-config/certs/
-        /tmp/minio -C /tmp/minio-config server /tmp/fs{1...4} &
-        python tests/functional/tests.py
