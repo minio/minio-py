@@ -1768,7 +1768,7 @@ class Minio:  # pylint: disable=too-many-public-methods
     def list_objects(self, bucket_name, prefix=None, recursive=False,
                      start_after=None, include_user_meta=False,
                      include_version=False, use_api_v1=False,
-                     use_url_encoding_type=True, fetch_owner=False,):
+                     use_url_encoding_type=True, fetch_owner=False):
         """
         Lists object information of a bucket.
 
