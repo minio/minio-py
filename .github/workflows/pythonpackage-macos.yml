@@ -31,10 +31,11 @@ jobs:
     - name: Add to PATH if Python version >= 3.11
       if: matrix.python-version == '3.11' && matrix.os == 'macos-12'
       run: |
-        export PATH=${HOME}/Library/Python/3.11/bin:${PATH}
+        export PATH=/Users/runner/Library/Python/3.11/bin:${PATH}
     - name: Add to PATH for Python version < 3.11
       run: |
         export PATH=${HOME}/.local/bin:${PATH}
+        export PATH=/Users/runner/.local/bin:${PATH}
     - name: Run checks
       run: |
         make check
