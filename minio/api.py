@@ -166,7 +166,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             307: ("Redirect", "Temporary redirect"),
             400: ("BadRequest", "Bad request"),
         }.get(response.status, (None, None))
-        region = response.getheader("x-amz-bucket-region")
+        region = response.headers.get("x-amz-bucket-region")
         if message and region:
             message += "; use region " + region
 
@@ -297,7 +297,7 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         if (
                 method != "HEAD" and
-                "application/xml" not in response.getheader(
+                "application/xml" not in response.headers.get(
                     "content-type", "",
                 ).split(";")
         ):
@@ -310,7 +310,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 )
             raise InvalidResponseError(
                 response.status,
-                response.getheader("content-type"),
+                response.headers.get("content-type"),
                 response.data.decode() if response.data else None,
             )
 
@@ -319,7 +319,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 self._trace_stream.write("----------END-HTTP----------\n")
             raise InvalidResponseError(
                 response.status,
-                response.getheader("content-type"),
+                response.headers.get("content-type"),
                 None,
             )
 
@@ -373,8 +373,8 @@ class Minio:  # pylint: disable=too-many-public-methods
                 code,
                 message,
                 url.path,
-                response.getheader("x-amz-request-id"),
-                response.getheader("x-amz-id-2"),
+                response.headers.get("x-amz-request-id"),
+                response.headers.get("x-amz-id-2"),
                 response,
                 bucket_name=bucket_name,
                 object_name=object_name,
@@ -1287,7 +1287,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         return ObjectWriteResult(
             bucket_name,
             object_name,
-            response.getheader("x-amz-version-id"),
+            response.headers.get("x-amz-version-id"),
             etag,
             response.headers,
             last_modified=last_modified,
@@ -1587,8 +1587,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         return ObjectWriteResult(
             bucket_name,
             object_name,
-            response.getheader("x-amz-version-id"),
-            response.getheader("etag").replace('"', ""),
+            response.headers.get("x-amz-version-id"),
+            response.headers.get("etag").replace('"', ""),
             response.headers,
         )
 
@@ -1873,7 +1873,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             query_params=query_params,
         )
 
-        last_modified = response.getheader("last-modified")
+        last_modified = response.headers.get("last-modified")
         if last_modified:
             last_modified = time.from_http_header(last_modified)
 
@@ -1881,11 +1881,11 @@ class Minio:  # pylint: disable=too-many-public-methods
             bucket_name,
             object_name,
             last_modified=last_modified,
-            etag=response.getheader("etag", "").replace('"', ""),
-            size=int(response.getheader("content-length", "0")),
-            content_type=response.getheader("content-type"),
+            etag=response.headers.get("etag", "").replace('"', ""),
+            size=int(response.headers.get("content-length", "0")),
+            content_type=response.headers.get("content-type"),
             metadata=response.headers,
-            version_id=response.getheader("x-amz-version-id"),
+            version_id=response.headers.get("x-amz-version-id"),
         )
 
     def remove_object(self, bucket_name, object_name, version_id=None):
