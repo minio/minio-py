@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+    - master
+  push:
+    branches:
+    - master
+
+env:
+  MINIO_ROOT_USER: minio
+  MINIO_ROOT_PASSWORD: minio123
+  MINIO_CI_CD: 1
+  MINT_MODE: full
+  SERVER_ENDPOINT: localhost:9000
+  ACCESS_KEY: minio
+  SECRET_KEY: minio123
+  ENABLE_HTTPS: 1
+
+# This ensures that previous jobs for the PR are canceled when the PR is
+# updated.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test on python ${{ matrix.python-version }} and ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run spell check on Ubuntu
+      if: matrix.os == 'ubuntu-latest'
+      uses: codespell-project/actions-codespell@master
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools
+        pip install certifi urllib3 mock pytest
+    - name: Run check if Ubuntu
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        export PATH=${HOME}/.local/bin:${PATH}
+        make check
+    - name: Setup PATH if macOS
+      if: matrix.os == 'macos-latest'
+      run: |
+        echo "/Users/runner/Library/Python/3.11/bin" >> $GITHUB_PATH
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        echo "/Users/runner/.local/bin" >> $GITHUB_PATH
+    - name: Run unit tests
+      run: |
+        python setup.py install
+        pytest
+    - name: Run functional tests on Ubuntu
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        wget --quiet -O /tmp/minio https://dl.min.io/server/minio/release/linux-amd64/minio
+        chmod +x /tmp/minio
+        mkdir -p /tmp/minio-config/certs/
+        cp tests/certs/* /tmp/minio-config/certs/
+        /tmp/minio -C /tmp/minio-config server /tmp/fs{1...4} &
+        SSL_CERT_FILE=/tmp/minio-config/certs/public.crt python tests/functional/tests.py
+    - name: Run functional tests on Windows
+      if: matrix.os == 'windows-latest'
+      run: |
+        New-Item -ItemType Directory -Path "$env:temp/minio-config/certs/"
+        Copy-Item -Path tests\certs\* -Destination "$env:temp/minio-config/certs/"
+        Invoke-WebRequest -Uri https://dl.minio.io/server/minio/release/windows-amd64/minio.exe -OutFile $HOME/minio.exe
+        Start-Process -NoNewWindow -FilePath "$HOME/minio.exe" -ArgumentList "-C", "$env:temp/minio-config", "server", "$env:temp/fs{1...4}"
+        $env:SSL_CERT_FILE = "$env:temp/minio-config/certs/public.crt"
+        python tests/functional/tests.py
