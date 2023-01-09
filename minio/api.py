@@ -1047,9 +1047,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         )
 
         # Write to a temporary file "file_path.part.minio" before saving.
-        tmp_file_path = (
-            tmp_file_path or file_path + "." + stat.etag + ".part.minio"
-        )
+        tmp_file_path = tmp_file_path or f"{file_path}.{stat.etag}.part.minio"
 
         response = None
         try:
