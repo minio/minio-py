@@ -84,6 +84,7 @@ class Minio:  # pylint: disable=too-many-public-methods
     :param region: Region name of buckets in S3 service.
     :param http_client: Customized HTTP client.
     :param credentials: Credentials provider of your account in S3 service.
+    :param verify_ssl: Flag to indicate to verify SSL certificate or not.
     :return: :class:`Minio <Minio>` object
 
     Example::
@@ -116,7 +117,8 @@ class Minio:  # pylint: disable=too-many-public-methods
                  secure=True,
                  region=None,
                  http_client=None,
-                 credentials=None):
+                 credentials=None,
+                 verify_ssl=True):
         # Validate http client has correct base class.
         if http_client and not isinstance(
                 http_client,
@@ -142,7 +144,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         self._http = http_client or urllib3.PoolManager(
             timeout=urllib3.util.Timeout(connect=timeout, read=timeout),
             maxsize=10,
-            cert_reqs='CERT_REQUIRED',
+            cert_reqs='CERT_REQUIRED' if verify_ssl else 'CERT_NONE',
             ca_certs=os.environ.get('SSL_CERT_FILE') or certifi.where(),
             retries=urllib3.Retry(
                 total=5,
