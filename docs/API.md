@@ -84,7 +84,7 @@ client = Minio(
 | [`delete_bucket_notification`](#delete_bucket_notification) | [`presigned_put_object`](#presigned_put_object)                 |
 | [`get_bucket_notification`](#get_bucket_notification)       | [`presigned_post_policy`](#presigned_post_policy)               |
 | [`set_bucket_notification`](#set_bucket_notification)       | [`get_presigned_url`](#get_presigned_url)                       |
-| [`listen_bucket_notification`](#listen_bucket_notification) |                                                                 |
+| [`listen_bucket_notification`](#listen_bucket_notification) | [`upload_snowball_objects`](#upload_snowball_objects)           |
 | [`delete_bucket_encryption`](#delete_bucket_encryption)     |                                                                 |
 | [`get_bucket_encryption`](#get_bucket_encryption)           |                                                                 |
 | [`set_bucket_encryption`](#set_bucket_encryption)           |                                                                 |
@@ -1845,6 +1845,51 @@ url = client.get_presigned_url(
     expires=timedelta(hours=2),
 )
 print(url)
+```
+
+<a name="upload_snowball_objects"></a>
+
+### upload_snowball_objects(bucket_name, object_list, metadata=None, sse=None, tags=None, retention=None, legal_hold=False, staging_filename=None, compression=False)
+
+Uploads multiple objects in a single put call. It is done by creating intermediate TAR file optionally compressed which is uploaded to S3 service.
+
+__Parameters__
+
+| Param              | Type        | Description                                                             |
+|:-------------------|:------------|:------------------------------------------------------------------------|
+| `bucket_name`      | _str_       | Name of the bucket.                                                     |
+| `object_list`      | _iterable_  | An iterable containing :class:`SnowballObject <SnowballObject>` object. |
+| `metadata`         | _dict_      | Any additional metadata to be uploaded along with your PUT request.     |
+| `sse`              | _Sse_       | Server-side encryption.                                                 |
+| `tags`             | _Tags_      | Tags for the object.                                                    |
+| `retention`        | _Retention_ | Retention configuration.                                                |
+| `legal_hold`       | _bool_      | Flag to set legal hold for the object.                                  |
+| `staging_filename` | _str_       | A staging filename to create intermediate tarball.                      |
+| `compression`      | _bool_      | Flag to compress tarball.                                               |
+
+__Return Value__
+
+| Return                      |
+|:----------------------------|
+| _ObjectWriteResult_ object. |
+
+__Example__
+
+```py
+# Upload snowball object.
+client.upload_snowball_objects(
+    "my-bucket",
+    [
+        SnowballObject("my-object1", filename="/etc/hostname"),
+        SnowballObject(
+            "my-object2", data=io.BytesIO("hello"), length=5,
+        ),
+        SnowballObject(
+            "my-object3", data=io.BytesIO("world"), length=5,
+            mod_time=datetime.now(),
+        ),
+    ],
+)
 ```
 
 ## 5. Explore Further
