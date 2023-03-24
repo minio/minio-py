@@ -26,7 +26,10 @@ from __future__ import absolute_import
 import itertools
 import os
 import platform
+import tarfile
 from datetime import timedelta
+from io import BytesIO
+from random import random
 from threading import Thread
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
@@ -2675,6 +2678,79 @@ class Minio:  # pylint: disable=too-many-public-methods
             headers={"Content-MD5": md5sum_hash(body)},
             query_params=query_params,
         )
+
+    def upload_snowball_objects(self, bucket_name, object_list, metadata=None,
+                                sse=None, tags=None, retention=None,
+                                legal_hold=False, staging_filename=None,
+                                compression=False):
+        """
+        Uploads multiple objects in a single put call. It is done by creating
+        intermediate TAR file optionally compressed which is uploaded to S3
+        service.
+
+        :param bucket_name: Name of the bucket.
+        :param object_list: An iterable containing
+            :class:`SnowballObject <SnowballObject>` object.
+        :param metadata: Any additional metadata to be uploaded along
+            with your PUT request.
+        :param sse: Server-side encryption.
+        :param tags: :class:`Tags` for the object.
+        :param retention: :class:`Retention` configuration object.
+        :param legal_hold: Flag to set legal hold for the object.
+        :param staging_filename: A staging filename to create intermediate
+            tarball.
+        :param compression: Flag to compress TAR ball.
+        :return: :class:`ObjectWriteResult` object.
+
+        Example::
+            # Upload snowball object.
+            result = client.upload_snowball_objects(
+                "my-bucket",
+                [
+                    SnowballObject("my-object1", filename="/etc/hostname"),
+                    SnowballObject(
+                        "my-object2", data=io.BytesIO("hello"), length=5,
+                    ),
+                    SnowballObject(
+                        "my-object3", data=io.BytesIO("world"), length=5,
+                        mod_time=datetime.now(),
+                    ),
+                ],
+            )
+        """
+        check_bucket_name(bucket_name)
+
+        object_name = f"snowball.{random()}.tar"
+
+        # turn list like objects into an iterator.
+        object_list = itertools.chain(object_list)
+
+        metadata = metadata or {}
+        metadata["X-Amz-Meta-Snowball-Auto-Extract"] = "true"
+
+        name = staging_filename
+        mode = "w:gz" if compression else "w"
+        fileobj = None if name else BytesIO()
+        with tarfile.open(name=name, mode=mode, fileobj=fileobj) as tar:
+            for obj in object_list:
+                if obj.filename:
+                    tar.add(obj.filename, obj.object_name)
+                else:
+                    info = tarfile.TarInfo(obj.object_name)
+                    info.size = obj.length
+                    if obj.mod_time:
+                        info.mtime = time.to_float(obj.mod_time)
+                    tar.addfile(info, obj.data)
+
+        if name:
+            return self.fput_object(bucket_name, object_name, staging_filename,
+                                    metadata=metadata, sse=sse,
+                                    tags=tags, retention=retention,
+                                    legal_hold=legal_hold)
+        return self.put_object(bucket_name, object_name, fileobj,
+                               fileobj.tell(), metadata=metadata, sse=sse,
+                               tags=tags, retention=retention,
+                               legal_hold=legal_hold)
 
     def _list_objects(  # pylint: disable=too-many-arguments,too-many-branches
             self,
