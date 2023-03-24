@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines,broad-exception-raised
 """Functional tests of minio-py."""
 
 from __future__ import absolute_import, division
