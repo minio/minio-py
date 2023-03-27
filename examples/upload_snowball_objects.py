@@ -31,10 +31,10 @@ client.upload_snowball_objects(
     [
         SnowballObject("my-object1", filename="/etc/hostname"),
         SnowballObject(
-            "my-object2", data=io.BytesIO("hello"), length=5,
+            "my-object2", data=io.BytesIO(b"hello"), length=5,
         ),
         SnowballObject(
-            "my-object3", data=io.BytesIO("world"), length=5,
+            "my-object3", data=io.BytesIO(b"world"), length=5,
             mod_time=datetime.now(),
         ),
     ],
