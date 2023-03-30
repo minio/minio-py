@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015 MinIO, Inc.
+# (C) 2015 to 2023 MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ form_data = client.presigned_post_policy(policy)
 curl_cmd = (
     "curl -X POST "
     "https://play.min.io/my-bucket "
-    "{0} -F file=@<FILE>"
+    "{0} -F file=@<FILE> -F key=<OBJECT-NAME>"
 ).format(
     " ".join(["-F {0}={1}".format(k, v) for k, v in form_data.items()]),
 )
