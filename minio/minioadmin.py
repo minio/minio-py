@@ -127,7 +127,7 @@ class MinioAdmin:
     def policy_add(self, policy_name, policy_file):
         """Add new policy."""
         return self._run(
-            ["policy", "add", self._target, policy_name, policy_file],
+            ["policy", "create", self._target, policy_name, policy_file],
         )
 
     def policy_remove(self, policy_name):
@@ -147,8 +147,8 @@ class MinioAdmin:
         if (user is not None) ^ (group is not None):
             return self._run(
                 [
-                    "policy", "set", self._target, policy_name,
-                    ("user=" if user else "group=") + (user or group),
+                    "policy", "attach", self._target, policy_name,
+                    "--user" if user else "--group", user or group,
                 ],
             )
         raise ValueError("either user or group must be set")
@@ -158,8 +158,8 @@ class MinioAdmin:
         if (user is not None) ^ (group is not None):
             return self._run(
                 [
-                    "policy", "unset", self._target, policy_name,
-                    ("user=" if user else "group=") + (user or group),
+                    "policy", "detach", self._target, policy_name,
+                    "--user" if user else "--group", user or group,
                 ],
             )
         raise ValueError("either user or group must be set")
