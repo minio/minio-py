@@ -2738,19 +2738,22 @@ class Minio:  # pylint: disable=too-many-public-methods
                 else:
                     info = tarfile.TarInfo(obj.object_name)
                     info.size = obj.length
-                    if obj.mod_time:
-                        info.mtime = time.to_float(obj.mod_time)
+                    info.mtime = time.to_float(obj.mod_time or time.utcnow())
                     tar.addfile(info, obj.data)
+
+        if not name:
+            length = fileobj.tell()
+            fileobj.seek(0)
 
         if name:
             return self.fput_object(bucket_name, object_name, staging_filename,
                                     metadata=metadata, sse=sse,
                                     tags=tags, retention=retention,
-                                    legal_hold=legal_hold)
+                                    legal_hold=legal_hold, part_size=length)
         return self.put_object(bucket_name, object_name, fileobj,
-                               fileobj.tell(), metadata=metadata, sse=sse,
+                               length, metadata=metadata, sse=sse,
                                tags=tags, retention=retention,
-                               legal_hold=legal_hold)
+                               legal_hold=legal_hold, part_size=length)
 
     def _list_objects(  # pylint: disable=too-many-arguments,too-many-branches
             self,
