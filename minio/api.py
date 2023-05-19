@@ -2747,11 +2747,11 @@ class Minio:  # pylint: disable=too-many-public-methods
             return self.fput_object(bucket_name, object_name, staging_filename,
                                     metadata=metadata, sse=sse,
                                     tags=tags, retention=retention,
-                                    legal_hold=legal_hold)
+                                    legal_hold=legal_hold, part_size=length)
         return self.put_object(bucket_name, object_name, fileobj,
                                length, metadata=metadata, sse=sse,
                                tags=tags, retention=retention,
-                               legal_hold=legal_hold)
+                               legal_hold=legal_hold, part_size=length)
 
     def _list_objects(  # pylint: disable=too-many-arguments,too-many-branches
             self,
