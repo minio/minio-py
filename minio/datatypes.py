@@ -214,13 +214,11 @@ class Object:
             else (findtext(tag, "ID"), findtext(tag, "DisplayName"))
         )
 
+        tag = find(element, "UserMetadata") or []
         metadata = {}
-        selement = find(element, "UserMetadata")
-        if selement:
-            for child in findall(selement, "Items"):
-                key = findtext(child, "Key", True)
-                value = findtext(child, "Value", True)
-                metadata[key] = value
+        for child in tag:
+            key = child.tag.split("}")[1] if "}" in child.tag else child.tag
+            metadata[key] = child.text
 
         object_name = findtext(element, "Key", True)
         if encoding_type == "url":
