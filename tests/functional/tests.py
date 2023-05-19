@@ -41,7 +41,7 @@ import certifi
 import urllib3
 
 from minio import Minio
-from minio.commonconfig import ENABLED, REPLACE, CopySource
+from minio.commonconfig import ENABLED, REPLACE, CopySource, SnowballObject
 from minio.datatypes import PostPolicy
 from minio.deleteobjects import DeleteObject
 from minio.error import S3Error
@@ -1856,6 +1856,42 @@ def test_remove_bucket(log_entry):
     _CLIENT.remove_bucket(bucket_name)
 
 
+def test_upload_snowball_objects(log_entry):
+    """Test upload_snowball_objects()."""
+
+    # Get a unique bucket_name
+    bucket_name = _gen_bucket_name()
+
+    log_entry["args"] = {
+        "bucket_name": bucket_name,
+    }
+
+    try:
+        _CLIENT.make_bucket(bucket_name)
+        size = 3 * MB
+        reader1 = LimitedRandomReader(size)
+        reader2 = LimitedRandomReader(size)
+        _CLIENT.upload_snowball_objects(
+            bucket_name,
+            [
+                SnowballObject("my-object1", data=io.BytesIO(b"py"), length=2),
+                SnowballObject(
+                    "my-object2", data=reader1, length=size,
+                ),
+                SnowballObject(
+                    "my-object3", data=reader2, length=size,
+                    mod_time=datetime.now(),
+                ),
+            ],
+        )
+        _test_list_objects_api(bucket_name, 3)
+    finally:
+        _CLIENT.remove_object(bucket_name, "my-object1")
+        _CLIENT.remove_object(bucket_name, "my-object2")
+        _CLIENT.remove_object(bucket_name, "my-object3")
+        _CLIENT.remove_bucket(bucket_name)
+
+
 def main():
     """
     Functional testing of minio python library.
@@ -1952,6 +1988,7 @@ def main():
             test_set_bucket_policy_readwrite: None,
             test_get_bucket_notification: None,
             test_select_object_content: None,
+            test_upload_snowball_objects: None,
         }
     else:
         tests = {
@@ -1972,6 +2009,7 @@ def main():
             test_get_bucket_policy: None,
             test_set_bucket_policy_readonly: None,
             test_get_bucket_notification: None,
+            test_upload_snowball_objects: None,
         }
 
     tests.update(
