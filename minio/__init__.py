@@ -37,10 +37,6 @@ __version__ = "7.1.15"
 __license__ = "Apache 2.0"
 __copyright__ = "Copyright 2015, 2016, 2017, 2018, 2019, 2020 MinIO, Inc."
 
-import threading
-
-__LOCALE_LOCK__ = threading.Lock()
-
 # pylint: disable=unused-import
 from .api import Minio
 from .error import InvalidResponseError, S3Error, ServerError
