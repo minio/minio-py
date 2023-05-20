@@ -772,9 +772,9 @@ class PostPolicy:
             )
         policy["conditions"].append([_EQ, "$x-amz-date", amz_date])
 
-        policy = base64.b64encode(json.dumps(policy).encode())
+        policy = base64.b64encode(json.dumps(policy).encode()).decode("utf-8")
         signature = post_presign_v4(
-            policy.decode(), creds.secret_key, utcnow, region,
+            policy, creds.secret_key, utcnow, region,
         )
         form_data = {
             "x-amz-algorithm": _ALGORITHM,
