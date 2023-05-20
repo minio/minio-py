@@ -772,11 +772,7 @@ class PostPolicy:
             )
         policy["conditions"].append([_EQ, "$x-amz-date", amz_date])
 
-        policy = base64.b64encode(json.dumps(policy).encode())
-        if isinstance(policy, (bytes, bytearray)):
-            policy = policy.decode()  # convert policy to string
-        if isinstance(policy, str) is not True:
-            raise ValueError("policy has to be string")
+        policy = base64.b64encode(json.dumps(policy).encode()).decode("utf-8")
         signature = post_presign_v4(
             policy, creds.secret_key, utcnow, region,
         )
