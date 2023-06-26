@@ -1891,6 +1891,32 @@ def test_upload_snowball_objects(log_entry):
         _CLIENT.remove_object(bucket_name, "my-object3")
         _CLIENT.remove_bucket(bucket_name)
 
+    # run with staging file option
+    try:
+        _CLIENT.make_bucket(bucket_name)
+        size = 3 * MB
+        reader1 = LimitedRandomReader(size)
+        reader2 = LimitedRandomReader(size)
+        _CLIENT.upload_snowball_objects(
+            bucket_name,
+            [
+                SnowballObject("my-object1", data=io.BytesIO(b"py"), length=2),
+                SnowballObject(
+                    "my-object2", data=reader1, length=size,
+                ),
+                SnowballObject(
+                    "my-object3", data=reader2, length=size,
+                    mod_time=datetime.now(),
+                ),
+            ],
+            staging_filename="staging.tar"
+        )
+        _test_list_objects_api(bucket_name, 3)
+    finally:
+        _CLIENT.remove_object(bucket_name, "my-object1")
+        _CLIENT.remove_object(bucket_name, "my-object2")
+        _CLIENT.remove_object(bucket_name, "my-object3")
+        _CLIENT.remove_bucket(bucket_name)
 
 def main():
     """
