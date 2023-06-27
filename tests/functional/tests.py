@@ -1856,7 +1856,7 @@ def test_remove_bucket(log_entry):
     _CLIENT.remove_bucket(bucket_name)
 
 
-def test_upload_snowball_objects(log_entry):
+def _test_upload_snowball_objects(log_entry, staging_filename=None):
     """Test upload_snowball_objects()."""
 
     # Get a unique bucket_name
@@ -1883,6 +1883,7 @@ def test_upload_snowball_objects(log_entry):
                     mod_time=datetime.now(),
                 ),
             ],
+            staging_filename=staging_filename
         )
         _test_list_objects_api(bucket_name, 3)
     finally:
@@ -1890,43 +1891,19 @@ def test_upload_snowball_objects(log_entry):
         _CLIENT.remove_object(bucket_name, "my-object2")
         _CLIENT.remove_object(bucket_name, "my-object3")
         _CLIENT.remove_bucket(bucket_name)
+        if staging_filename and os.path.exists(staging_filename):
+            os.remove(staging_filename)
+
+def test_upload_snowball_objects(log_entry):
+    """Test upload_snowball_objects()."""
+    _test_upload_snowball_objects(log_entry)
+
 
 def test_upload_snowball_objects_with_staging(log_entry):
     """Test upload_snowball_objects() with staging file."""
+    staging_filename = f"{uuid4()}.tar"
+    _test_upload_snowball_objects(log_entry, staging_filename)
 
-    # Get a unique bucket_name
-    bucket_name = _gen_bucket_name()
-
-    log_entry["args"] = {
-        "bucket_name": bucket_name,
-    }
-
-    try:
-        _CLIENT.make_bucket(bucket_name)
-        size = 3 * MB
-        reader1 = LimitedRandomReader(size)
-        reader2 = LimitedRandomReader(size)
-        _CLIENT.upload_snowball_objects(
-            bucket_name,
-            [
-                SnowballObject("my-object1", data=io.BytesIO(b"py"), length=2),
-                SnowballObject(
-                    "my-object2", data=reader1, length=size,
-                ),
-                SnowballObject(
-                    "my-object3", data=reader2, length=size,
-                    mod_time=datetime.now(),
-                ),
-            ],
-            staging_filename="staging.tar"
-        )
-        _test_list_objects_api(bucket_name, 3)
-    finally:
-        _CLIENT.remove_object(bucket_name, "my-object1")
-        _CLIENT.remove_object(bucket_name, "my-object2")
-        _CLIENT.remove_object(bucket_name, "my-object3")
-        _CLIENT.remove_bucket(bucket_name)
-        os.remove("staging.tar")
 
 def main():
     """
