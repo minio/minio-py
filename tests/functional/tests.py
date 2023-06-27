@@ -1899,7 +1899,8 @@ def test_upload_snowball_objects(log_entry):
     _test_upload_snowball_objects(log_entry)
 
 
-def test_upload_snowball_objects_with_staging(log_entry):
+def test_upload_snowball_objects_with_staging( # pylint: disable=invalid-name
+        log_entry):
     """Test upload_snowball_objects() with staging file."""
     staging_filename = f"{uuid4()}.tar"
     _test_upload_snowball_objects(log_entry, staging_filename)
