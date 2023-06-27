@@ -1891,7 +1891,16 @@ def test_upload_snowball_objects(log_entry):
         _CLIENT.remove_object(bucket_name, "my-object3")
         _CLIENT.remove_bucket(bucket_name)
 
-    # run with staging file option
+def test_upload_snowball_objects_with_staging(log_entry):
+    """Test upload_snowball_objects() with staging file."""
+
+    # Get a unique bucket_name
+    bucket_name = _gen_bucket_name()
+
+    log_entry["args"] = {
+        "bucket_name": bucket_name,
+    }
+
     try:
         _CLIENT.make_bucket(bucket_name)
         size = 3 * MB
@@ -1917,6 +1926,7 @@ def test_upload_snowball_objects(log_entry):
         _CLIENT.remove_object(bucket_name, "my-object2")
         _CLIENT.remove_object(bucket_name, "my-object3")
         _CLIENT.remove_bucket(bucket_name)
+        os.remove("staging.tar")
 
 def main():
     """
@@ -2015,6 +2025,7 @@ def main():
             test_get_bucket_notification: None,
             test_select_object_content: None,
             test_upload_snowball_objects: None,
+            test_upload_snowball_objects_with_staging: None,
         }
     else:
         tests = {
