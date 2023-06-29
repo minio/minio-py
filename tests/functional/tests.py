@@ -1894,12 +1894,13 @@ def _test_upload_snowball_objects(log_entry, staging_filename=None):
         if staging_filename and os.path.exists(staging_filename):
             os.remove(staging_filename)
 
+
 def test_upload_snowball_objects(log_entry):
     """Test upload_snowball_objects()."""
     _test_upload_snowball_objects(log_entry)
 
 
-def test_upload_snowball_objects_with_staging( # pylint: disable=invalid-name
+def test_upload_snowball_objects_with_staging(  # pylint: disable=invalid-name
         log_entry):
     """Test upload_snowball_objects() with staging file."""
     staging_filename = f"{uuid4()}.tar"
