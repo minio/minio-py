@@ -85,12 +85,12 @@ $ mc ls play/asiatrip/
 
 ## More References
 * [Python Client API Reference](https://min.io/docs/minio/linux/developers/python/API.html)
-* [Examples](https://github.com/minio/minio-py/tree/release/examples)
+* [Examples](https://github.com/minio/minio-py/tree/master/examples)
 
 ## Explore Further
 * [Complete Documentation](https://min.io/docs/minio/kubernetes/upstream/index.html)
 
 ## Contribute
-Please refer [Contributors Guide](https://github.com/minio/minio-py/blob/release/CONTRIBUTING.md)
+Please refer [Contributors Guide](https://github.com/minio/minio-py/blob/master/CONTRIBUTING.md)
 
 [![PYPI](https://img.shields.io/pypi/v/minio.svg)](https://pypi.python.org/pypi/minio)
