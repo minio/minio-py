@@ -512,15 +512,20 @@ class BaseURL:
         """Check to use virtual style or not."""
         self._virtual_style_flag = flag
 
-    def build(
-            self, method, region,
-            bucket_name=None, object_name=None, query_params=None,
+    def build(  # pylint: disable=too-many-branches
+        self, method, region,
+        bucket_name=None, object_name=None, query_params=None, path=None
     ):
         """Build URL for given information."""
 
         if not bucket_name and object_name:
             raise ValueError(
                 f"empty bucket name for object name {object_name}",
+            )
+
+        if path and bucket_name:
+            raise ValueError(
+                "path and bucket name can't be set at the same time"
             )
 
         query = []
@@ -535,6 +540,8 @@ class BaseURL:
 
         if not bucket_name:
             url = url_replace(url, path="/")
+            if path:
+                url = url_replace(url, path=path)
             return (
                 url_replace(url, netloc="s3." + region + "." + host)
                 if self._is_aws_host else url

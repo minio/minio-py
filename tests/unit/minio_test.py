@@ -77,6 +77,14 @@ class GetURLTests(TestCase):
             ),
             'http://localhost:9000/bucket-name/path/to/objectName/',
         )
+        self.assertEqual(
+            urlunsplit(
+                url.build("GET", 'us-east-1', path='some/method/path'),
+            ),
+            'http://localhost:9000/some/method/path',
+        )
+        self.assertRaises(ValueError, url.build, "GET", 'us-east-1',
+                          bucket_name='bucket-name', path='some/method/path')
 
         # S3 urls.
         url = BaseURL('https://s3.amazonaws.com', None)
@@ -105,6 +113,12 @@ class GetURLTests(TestCase):
             ),
             "https://bucket-name.s3.us-east-1.amazonaws.com"
             "/objectName?versionId=uuid",
+        )
+        self.assertEqual(
+            urlunsplit(
+                url.build("GET", 'us-east-1', path='some/method/path'),
+            ),
+            'https://s3.us-east-1.amazonaws.com/some/method/path',
         )
 
     def test_minio_requires_string(self):
