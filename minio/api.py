@@ -25,7 +25,6 @@ from __future__ import absolute_import
 
 import itertools
 import os
-import platform
 import tarfile
 from datetime import timedelta
 from io import BytesIO
@@ -34,13 +33,12 @@ from threading import Thread
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
-import certifi
-import urllib3
-from urllib3._collections import HTTPHeaderDict
+
+from minio.http import (HttpClient, _DEFAULT_USER_AGENT,
+                        convert_to_urllib3_headers)
 
 from . import __title__, __version__, time
 from .commonconfig import COPY, REPLACE, ComposeSource, CopySource, Tags
-from .credentials import StaticProvider
 from .datatypes import (CompleteMultipartUploadResult, EventIterable,
                         ListAllMyBucketsResult, ListMultipartUploadsResult,
                         ListPartsResult, Object, Part, PostPolicy,
@@ -48,11 +46,11 @@ from .datatypes import (CompleteMultipartUploadResult, EventIterable,
 from .deleteobjects import DeleteError, DeleteRequest, DeleteResult
 from .error import InvalidResponseError, S3Error, ServerError
 from .helpers import (MAX_MULTIPART_COUNT, MAX_MULTIPART_OBJECT_SIZE,
-                      MAX_PART_SIZE, MIN_PART_SIZE, BaseURL, ObjectWriteResult,
+                      MAX_PART_SIZE, MIN_PART_SIZE, ObjectWriteResult,
                       ThreadPool, check_bucket_name, check_non_empty_string,
                       check_sse, check_ssec, genheaders, get_part_info,
                       headers_to_strings, is_valid_policy_type, makedirs,
-                      md5sum_hash, read_part_data, sha256_hash)
+                      md5sum_hash, read_part_data)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
@@ -60,20 +58,15 @@ from .objectlockconfig import ObjectLockConfig
 from .replicationconfig import ReplicationConfig
 from .retention import Retention
 from .select import SelectObjectReader, SelectRequest
-from .signer import presign_v4, sign_v4_s3
+from .signer import presign_v4
 from .sse import SseCustomerKey
 from .sseconfig import SSEConfig
 from .tagging import Tagging
 from .versioningconfig import VersioningConfig
 from .xml import Element, SubElement, findtext, getbytes, marshal, unmarshal
 
-_DEFAULT_USER_AGENT = (
-    f"MinIO ({platform.system()}; {platform.machine()}) "
-    f"{__title__}/{__version__}"
-)
 
-
-class Minio:  # pylint: disable=too-many-public-methods
+class Minio(HttpClient):  # pylint: disable=too-many-public-methods
     """
     Simple Storage Service (aka S3) client to perform bucket and object
     operations.
@@ -122,42 +115,11 @@ class Minio:  # pylint: disable=too-many-public-methods
                  http_client=None,
                  credentials=None,
                  cert_check=True):
-        # Validate http client has correct base class.
-        if http_client and not isinstance(
-                http_client,
-                urllib3.poolmanager.PoolManager):
-            raise ValueError(
-                "HTTP client should be instance of "
-                "`urllib3.poolmanager.PoolManager`"
-            )
+        super().__init__(endpoint, access_key, secret_key, session_token,
+                         secure, region, http_client, credentials, cert_check)
 
         self._region_map = {}
-        self._base_url = BaseURL(
-            ("https://" if secure else "http://") + endpoint,
-            region,
-        )
-        self._user_agent = _DEFAULT_USER_AGENT
         self._trace_stream = None
-        if access_key:
-            credentials = StaticProvider(access_key, secret_key, session_token)
-        self._provider = credentials
-
-        # Load CA certificates from SSL_CERT_FILE file if set
-        timeout = timedelta(minutes=5).seconds
-        self._http = http_client or urllib3.PoolManager(
-            timeout=urllib3.util.Timeout(connect=timeout, read=timeout),
-            maxsize=10,
-            cert_reqs='CERT_REQUIRED' if cert_check else 'CERT_NONE',
-            ca_certs=os.environ.get('SSL_CERT_FILE') or certifi.where(),
-            retries=urllib3.Retry(
-                total=5,
-                backoff_factor=0.2,
-                status_forcelist=[500, 502, 503, 504]
-            )
-        )
-
-    def __del__(self):
-        self._http.clear()
 
     def _handle_redirect_response(
             self, method, bucket_name, response, retry=False,
@@ -183,35 +145,6 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         return code, message
 
-    def _build_headers(self, host, headers, body, creds):
-        """Build headers with given parameters."""
-        headers = headers or {}
-        md5sum_added = headers.get("Content-MD5")
-        headers["Host"] = host
-        headers["User-Agent"] = self._user_agent
-        sha256 = None
-        md5sum = None
-
-        if body:
-            headers["Content-Length"] = str(len(body))
-        if creds:
-            if self._base_url.is_https:
-                sha256 = "UNSIGNED-PAYLOAD"
-                md5sum = None if md5sum_added else md5sum_hash(body)
-            else:
-                sha256 = sha256_hash(body)
-        else:
-            md5sum = None if md5sum_added else md5sum_hash(body)
-        if md5sum:
-            headers["Content-MD5"] = md5sum
-        if sha256:
-            headers["x-amz-content-sha256"] = sha256
-        if creds and creds.session_token:
-            headers["X-Amz-Security-Token"] = creds.session_token
-        date = time.utcnow()
-        headers["x-amz-date"] = time.to_amz_date(date)
-        return headers, date
-
     def _url_open(  # pylint: disable=too-many-branches
             self,
             method,
@@ -233,17 +166,14 @@ class Minio:  # pylint: disable=too-many-public-methods
             object_name=object_name,
             query_params=query_params,
         )
-        headers, date = self._build_headers(url.netloc, headers, body, creds)
-        if creds:
-            headers = sign_v4_s3(
-                method,
-                url,
-                region,
-                headers,
-                creds,
-                headers.get("x-amz-content-sha256"),
-                date,
-            )
+        headers = self._build_signed_headers(
+            url,
+            headers,
+            body,
+            creds,
+            method,
+            region
+        )
 
         if self._trace_stream:
             self._trace_stream.write("---------START-HTTP---------\n")
@@ -261,13 +191,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 self._trace_stream.write("\n")
             self._trace_stream.write("\n")
 
-        http_headers = HTTPHeaderDict()
-        for key, value in (headers or {}).items():
-            if isinstance(value, (list, tuple)):
-                _ = [http_headers.add(key, val) for val in value]
-            else:
-                http_headers.add(key, value)
-
+        http_headers = convert_to_urllib3_headers(headers)
         response = self._http.urlopen(
             method,
             urlunsplit(url),
