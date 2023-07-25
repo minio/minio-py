@@ -41,3 +41,4 @@ __copyright__ = "Copyright 2015, 2016, 2017, 2018, 2019, 2020 MinIO, Inc."
 from .api import Minio
 from .error import InvalidResponseError, S3Error, ServerError
 from .minioadmin import MinioAdmin
+from .minioadminhttp import MinioAdminHttp

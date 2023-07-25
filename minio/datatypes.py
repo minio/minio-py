@@ -850,3 +850,60 @@ class EventIterable:
 
     def __exit__(self, exc_type, value, traceback):
         self._close_response()
+
+
+class UserInfo():
+    """MinIO user information."""
+
+    def __init__(self, status: str, member_of: list[str], policies: list[str]):
+        self._status = status
+        self._member_of = member_of
+        self._policies = policies
+
+    @property
+    def status(self):
+        """Get status"""
+        return self._status
+
+    @property
+    def member_of(self):
+        """Get list of groups user is member of"""
+        return self._member_of
+
+    @property
+    def policies(self):
+        """Get list of policies attached to user"""
+        return self._policies
+
+    def __repr__(self):
+        return f"{type(self).__name__}()"
+
+    @classmethod
+    def fromjson(cls, data: str):
+        """Create new object with values from JSON string"""
+        parsed_data = json.loads(data)
+        return cls.fromdict(parsed_data)
+
+    @classmethod
+    def fromdict(cls, data: dict):
+        """Create new object with values from python dictionary"""
+        return cls(
+            data['status'],
+            data.get('memberOf', []),
+            _parse_policies(data.get('policyName', ''))
+        )
+
+
+def _parse_policies(policy_string: str) -> list[str]:
+    """Parse string of policies to list"""
+    policies = policy_string.split(',')
+    return [p for p in policies if p]
+
+
+def parse_list_users(data: str) -> dict:
+    """Parsa data returned from list-users"""
+    json_data = json.loads(data)
+    result = {}
+    for access_key, user_data in json_data.items():
+        result[access_key] = UserInfo.fromdict(user_data)
+    return result
