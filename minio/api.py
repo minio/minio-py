@@ -2737,6 +2737,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         if not name:
             length = fileobj.tell()
             fileobj.seek(0)
+        else:
+            length = os.stat(name).st_size
 
         if name:
             return self.fput_object(bucket_name, object_name, staging_filename,
