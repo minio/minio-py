@@ -37,18 +37,36 @@ MAX_MULTIPART_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
 MAX_PART_SIZE = 5 * 1024 * 1024 * 1024  # 5GiB
 MIN_PART_SIZE = 5 * 1024 * 1024  # 5MiB
 
-_VALID_BUCKETNAME_REGEX = re.compile(
-    '^[A-Za-z0-9][A-Za-z0-9\\.\\-\\_\\:]{1,61}[A-Za-z0-9]$')
-_VALID_BUCKETNAME_STRICT_REGEX = re.compile(
-    '^[a-z0-9][a-z0-9\\.\\-]{1,61}[a-z0-9]$')
-_VALID_IP_ADDRESS = re.compile(
-    r'^(\d+\.){3}\d+$')
-_ALLOWED_HOSTNAME_REGEX = re.compile(
-    '^((?!-)(?!_)[A-Z_\\d-]{1,63}(?<!-)(?<!_)\\.)*((?!_)(?!-)' +
-    '[A-Z_\\d-]{1,63}(?<!-)(?<!_))$',
-    re.IGNORECASE)
+_AWS_S3_PREFIX = (r'^(((bucket\.|accesspoint\.)'
+                  r'vpce(-(?!_)[a-z_\d]+(?<!-)(?<!_))+\.s3\.)|'
+                  r'((?!s3)(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.)'
+                  r's3-control(-(?!_)[a-z_\d]+(?<!-)(?<!_))*\.|'
+                  r'(s3(-(?!_)[a-z_\d]+(?<!-)(?<!_))*\.))')
 
-_EXTRACT_REGION_REGEX = re.compile('s3[.-]?(.+?).amazonaws.com')
+_BUCKET_NAME_REGEX = re.compile(r'^[a-z0-9][a-z0-9\.\-]{1,61}[a-z0-9]$')
+_OLD_BUCKET_NAME_REGEX = re.compile(r'^[a-z0-9][a-z0-9_\.\-\:]{1,61}[a-z0-9]$',
+                                    re.IGNORECASE)
+_IPV4_REGEX = re.compile(
+    r'^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}'
+    r'(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$')
+_HOSTNAME_REGEX = re.compile(
+    r'^((?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.)*'
+    r'((?!_)(?!-)[a-z_\d-]{1,63}(?<!-)(?<!_))$',
+    re.IGNORECASE)
+_AWS_ENDPOINT_REGEX = re.compile(r'.*\.amazonaws\.com(|\.cn)$', re.IGNORECASE)
+_AWS_S3_ENDPOINT_REGEX = re.compile(
+    _AWS_S3_PREFIX +
+    r'((?!s3)(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.)*'
+    r'amazonaws\.com(|\.cn)$',
+    re.IGNORECASE)
+_AWS_ELB_ENDPOINT_REGEX = re.compile(
+    r'^(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.'
+    r'(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.'
+    r'elb\.amazonaws\.com$',
+    re.IGNORECASE)
+_AWS_S3_PREFIX_REGEX = re.compile(_AWS_S3_PREFIX, re.IGNORECASE)
+_REGION_REGEX = re.compile(r'^((?!_)(?!-)[a-z_\d-]{1,63}(?<!-)(?<!_))$',
+                           re.IGNORECASE)
 
 
 def quote(resource, safe='/', encoding=None, errors=None):
@@ -174,43 +192,34 @@ def makedirs(path):
             raise ValueError(f"path {path} is not a directory") from exc
 
 
-def check_bucket_name(bucket_name, strict=False):
+def check_bucket_name(bucket_name, strict=False, s3_check=False):
     """Check whether bucket name is valid optional with strict check or not."""
 
-    # Verify bucket name is not empty
-    bucket_name = str(bucket_name).strip()
-    if not bucket_name:
-        raise ValueError('Bucket name cannot be empty.')
+    if strict:
+        if not _BUCKET_NAME_REGEX.match(bucket_name):
+            raise ValueError('invalid bucket name {bucket_name}')
+    else:
+        if not _OLD_BUCKET_NAME_REGEX.match(bucket_name):
+            raise ValueError('invalid bucket name {bucket_name}')
 
-    # Verify bucket name length.
-    if len(bucket_name) < 3:
-        raise ValueError('Bucket name cannot be less than'
-                         ' 3 characters.')
-    if len(bucket_name) > 63:
-        raise ValueError('Bucket name cannot be greater than'
-                         ' 63 characters.')
-
-    match = _VALID_IP_ADDRESS.match(bucket_name)
-    if match:
-        raise ValueError('Bucket name cannot be an ip address')
+    if _IPV4_REGEX.match(bucket_name):
+        raise ValueError('bucket name {bucket_name} must not be formatted '
+                         'as an IP address')
 
     unallowed_successive_chars = ['..', '.-', '-.']
     if any(x in bucket_name for x in unallowed_successive_chars):
-        raise ValueError('Bucket name contains invalid '
-                         'successive chars '
-                         + str(unallowed_successive_chars) + '.')
+        raise ValueError('bucket name {bucket_name} contains invalid '
+                         'successive characters')
 
-    if strict:
-        match = _VALID_BUCKETNAME_STRICT_REGEX.match(bucket_name)
-        if (not match) or match.end() != len(bucket_name):
-            raise ValueError('Bucket name contains invalid '
-                             'characters (strictly enforced).')
-
-    match = _VALID_BUCKETNAME_REGEX.match(bucket_name)
-    if (not match) or match.end() != len(bucket_name):
-        raise ValueError(
-            f"Bucket name does not follow S3 standards. Bucket: {bucket_name}",
-        )
+    if (
+            s3_check and
+            bucket_name.startswith("xn--") or
+            bucket_name.endswith("-s3alias") or
+            bucket_name.endswith("--ol-s3")
+    ):
+        raise ValueError("bucket name {bucket_name} must not start with "
+                         "'xn--' and must not end with '--s3alias' or "
+                         "'--ol-s3'")
 
 
 def check_non_empty_string(string):
@@ -365,22 +374,57 @@ def genheaders(headers, sse, tags, retention, legal_hold):
     return headers
 
 
-def _extract_region(host):
-    """Extract region from Amazon S3 host."""
+def _get_aws_info(host, https, region):
+    """Extract AWS domain information. """
 
-    tokens = host.split(".")
-    token = tokens[1]
+    if not _HOSTNAME_REGEX.match(host):
+        return (None, None)
 
-    # If token is "dualstack", then region might be in next token.
-    if token == "dualstack":
-        token = tokens[2]
+    if _AWS_ELB_ENDPOINT_REGEX.match(host):
+        region_in_host = host.split(".elb.amazonaws.com", 1)[0].split(".")[-1]
+        return (None, region or region_in_host)
 
-    # If token is equal to "amazonaws", region is not passed in the host.
-    if token == "amazonaws":
-        return None
+    if not _AWS_ENDPOINT_REGEX.match(host):
+        return (None, None)
 
-    # Return token as region.
-    return token
+    if not _AWS_S3_ENDPOINT_REGEX.match(host):
+        raise ValueError(f"invalid Amazon AWS host {host}")
+
+    end = _AWS_S3_PREFIX_REGEX.match(host).end()
+    aws_s3_prefix = host[:end]
+
+    if "s3-accesspoint" in aws_s3_prefix and not https:
+        raise ValueError(f"use HTTPS scheme for host {host}")
+
+    tokens = host[end:].split(".")
+    dualstack = tokens[0] == "dualstack"
+    if dualstack:
+        tokens = tokens[1:]
+    region_in_host = None
+    if tokens[0] not in ["vpce", "amazonaws"]:
+        region_in_host = tokens[0]
+        tokens = tokens[1:]
+    aws_domain_suffix = ".".join(tokens)
+
+    if host in "s3-external-1.amazonaws.com":
+        region_in_host = "us-east-1"
+
+    if host in ["s3-us-gov-west-1.amazonaws.com",
+                "s3-fips-us-gov-west-1.amazonaws.com"]:
+        region_in_host = "us-gov-west-1"
+
+    if (aws_domain_suffix.endswith(".cn") and
+        not aws_s3_prefix.endswith("s3-accelerate.") and
+        not region_in_host and
+            not region):
+        raise ValueError(
+            f"region missing in Amazon S3 China endpoint {host}",
+        )
+
+    return ({"s3_prefix": aws_s3_prefix,
+             "domain_suffix": aws_domain_suffix,
+             "region": region or region_in_host,
+             "dualstack": dualstack}, None)
 
 
 class BaseURL:
@@ -423,42 +467,22 @@ class BaseURL:
         ):
             url = url_replace(url, netloc=host)
 
-        self._accelerate_host_flag = host.startswith("s3-accelerate.")
-        self._is_aws_host = (
-            (
-                host.startswith("s3.") or self._accelerate_host_flag
-            ) and
-            (
-                host.endswith(".amazonaws.com") or
-                host.endswith(".amazonaws.com.cn")
-            )
-        )
+        if region and not _REGION_REGEX.match(region):
+            raise ValueError(f"invalid region {region}")
+
+        self._aws_info, region_in_host = _get_aws_info(
+            host, url.scheme == "https", region)
         self._virtual_style_flag = (
-            self._is_aws_host or host.endswith("aliyuncs.com")
+            self._aws_info or host.endswith("aliyuncs.com")
         )
-
-        region_in_host = None
-        if self._is_aws_host:
-            is_aws_china_host = host.endswith(".cn")
-            url = url_replace(
-                url,
-                netloc=(
-                    "amazonaws.com.cn"
-                    if is_aws_china_host else "amazonaws.com"
-                ),
-            )
-            region_in_host = _extract_region(host)
-
-            if is_aws_china_host and not region_in_host and not region:
-                raise ValueError(
-                    f"region missing in Amazon S3 China endpoint {endpoint}",
-                )
-            self._dualstack_host_flag = ".dualstack." in host
-        else:
-            self._accelerate_host_flag = False
-
         self._url = url
         self._region = region or region_in_host
+        self._accelerate_host_flag = False
+        if self._aws_info:
+            self._region = self._aws_info["region"]
+            self._accelerate_host_flag = (
+                self._aws_info["s3_prefix"].endswith("s3-accelerate.")
+            )
 
     @property
     def region(self):
@@ -478,29 +502,41 @@ class BaseURL:
     @property
     def is_aws_host(self):
         """Check if URL points to AWS host."""
-        return self._is_aws_host
+        return self._aws_info is not None
+
+    @property
+    def aws_s3_prefix(self):
+        """Get AWS S3 domain prefix."""
+        return self._aws_info["s3_prefix"] if self._aws_info else None
+
+    @aws_s3_prefix.setter
+    def aws_s3_prefix(self, s3_prefix):
+        """Set AWS s3 domain prefix."""
+        if not _AWS_S3_PREFIX_REGEX.match(s3_prefix):
+            raise ValueError(f"invalid AWS S3 domain prefix {s3_prefix}")
+        if self._aws_info:
+            self._aws_info["s3_prefix"] = s3_prefix
 
     @property
     def accelerate_host_flag(self):
-        """Check if URL points to AWS accelerate host."""
+        """Get AWS accelerate host flag."""
         return self._accelerate_host_flag
 
     @accelerate_host_flag.setter
     def accelerate_host_flag(self, flag):
-        """Check if URL points to AWS accelerate host."""
-        if self._is_aws_host:
-            self._accelerate_host_flag = flag
+        """Set AWS accelerate host flag."""
+        self._accelerate_host_flag = flag
 
     @property
     def dualstack_host_flag(self):
         """Check if URL points to AWS dualstack host."""
-        return self._dualstack_host_flag
+        return self._aws_info["dualstack"] if self._aws_info else False
 
     @dualstack_host_flag.setter
     def dualstack_host_flag(self, flag):
-        """Check to use virtual style or not."""
-        if self._is_aws_host:
-            self._dualstack_host_flag = flag
+        """Set AWS dualstack host."""
+        if self._aws_info:
+            self._aws_info["dualstack"] = flag
 
     @property
     def virtual_style_flag(self):
@@ -512,16 +548,66 @@ class BaseURL:
         """Check to use virtual style or not."""
         self._virtual_style_flag = flag
 
+    def _build_aws_url(self, url, bucket_name, enforce_path_style, region):
+        """Build URL for given information."""
+        s3_prefix = self._aws_info["s3_prefix"]
+        domain_suffix = self._aws_info["domain_suffix"]
+
+        host = f"{s3_prefix}{domain_suffix}"
+        if host in ["s3-external-1.amazonaws.com",
+                    "s3-us-gov-west-1.amazonaws.com",
+                    "s3-fips-us-gov-west-1.amazonaws.com"]:
+            return url_replace(url, netloc=host)
+
+        netloc = s3_prefix
+        if "s3-accelerate" in s3_prefix:
+            if "." in bucket_name:
+                raise ValueError(
+                    f"bucket name '{bucket_name}' with '.' is not allowed "
+                    f"for accelerate endpoint"
+                )
+            if enforce_path_style:
+                netloc = netloc.replace("-accelerate", "", 1)
+
+        if self._aws_info["dualstack"]:
+            netloc += "dualstack."
+        if "s3-accelerate" not in s3_prefix:
+            netloc += region + "."
+        netloc += domain_suffix
+
+        return url_replace(url, netloc=netloc)
+
+    def _build_list_buckets_url(self, url, region):
+        """Build URL for ListBuckets API."""
+        if not self._aws_info:
+            return url
+
+        s3_prefix = self._aws_info["s3_prefix"]
+        domain_suffix = self._aws_info["domain_suffix"]
+
+        host = f"{s3_prefix}{domain_suffix}"
+        if host in ["s3-external-1.amazonaws.com",
+                    "s3-us-gov-west-1.amazonaws.com",
+                    "s3-fips-us-gov-west-1.amazonaws.com"]:
+            return url_replace(url, netloc=host)
+
+        if s3_prefix.startswith("s3.") or s3_prefix.startswith("s3-"):
+            s3_prefix = "s3."
+            cn_suffix = ".cn" if domain_suffix.endswith(".cn") else ""
+            domain_suffix = f"amazonaws.com{cn_suffix}"
+        return url_replace(url, netloc=f"{s3_prefix}{region}.{domain_suffix}")
+
     def build(
             self, method, region,
             bucket_name=None, object_name=None, query_params=None,
     ):
         """Build URL for given information."""
-
         if not bucket_name and object_name:
             raise ValueError(
                 f"empty bucket name for object name {object_name}",
             )
+
+        url = url_replace(self._url, path="/")
 
         query = []
         for key, values in sorted((query_params or {}).items()):
@@ -530,15 +616,10 @@ class BaseURL:
                 f"{queryencode(key)}={queryencode(value)}"
                 for value in sorted(values)
             ]
-        url = url_replace(self._url, query="&".join(query))
-        host = self._url.netloc
+        url = url_replace(url, query="&".join(query))
 
         if not bucket_name:
-            url = url_replace(url, path="/")
-            return (
-                url_replace(url, netloc="s3." + region + "." + host)
-                if self._is_aws_host else url
-            )
+            return self._build_list_buckets_url(url, region)
 
         enforce_path_style = (
             # CreateBucket API requires path style in Amazon AWS S3.
@@ -552,40 +633,21 @@ class BaseURL:
             ("." in bucket_name and self._url.scheme == "https")
         )
 
-        if self._is_aws_host:
-            s3_domain = "s3."
-            if self._accelerate_host_flag:
-                if "." in bucket_name:
-                    raise ValueError(
-                        f"bucket name '{bucket_name}' with '.' is not allowed "
-                        f"for accelerated endpoint"
-                    )
+        if self._aws_info:
+            url = self._build_aws_url(
+                url, bucket_name, enforce_path_style, region)
 
-                if not enforce_path_style:
-                    s3_domain = "s3-accelerate."
-
-            dual_stack = "dualstack." if self._dualstack_host_flag else ""
-            endpoint = s3_domain + dual_stack
-            if enforce_path_style or not self._accelerate_host_flag:
-                endpoint += region + "."
-            host = endpoint + host
+        netloc = url.netloc
+        path = "/"
 
         if enforce_path_style or not self._virtual_style_flag:
-            url = url_replace(url, netloc=host)
-            url = url_replace(url, path="/" + bucket_name)
+            path = f"/{bucket_name}"
         else:
-            url = url_replace(
-                url,
-                netloc=bucket_name + "." + host,
-                path="/",
-            )
-
+            netloc = f"{bucket_name}.{netloc}"
         if object_name:
-            path = url.path
             path += ("" if path.endswith("/") else "/") + quote(object_name)
-            url = url_replace(url, path=path)
 
-        return url
+        return url_replace(url, netloc=netloc, path=path)
 
 
 class ObjectWriteResult:
