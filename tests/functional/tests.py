@@ -1856,7 +1856,7 @@ def test_remove_bucket(log_entry):
     _CLIENT.remove_bucket(bucket_name)
 
 
-def test_upload_snowball_objects(log_entry):
+def _test_upload_snowball_objects(log_entry, staging_filename=None):
     """Test upload_snowball_objects()."""
 
     # Get a unique bucket_name
@@ -1883,6 +1883,7 @@ def test_upload_snowball_objects(log_entry):
                     mod_time=datetime.now(),
                 ),
             ],
+            staging_filename=staging_filename
         )
         _test_list_objects_api(bucket_name, 3)
     finally:
@@ -1890,6 +1891,20 @@ def test_upload_snowball_objects(log_entry):
         _CLIENT.remove_object(bucket_name, "my-object2")
         _CLIENT.remove_object(bucket_name, "my-object3")
         _CLIENT.remove_bucket(bucket_name)
+        if staging_filename and os.path.exists(staging_filename):
+            os.remove(staging_filename)
+
+
+def test_upload_snowball_objects(log_entry):
+    """Test upload_snowball_objects()."""
+    _test_upload_snowball_objects(log_entry)
+
+
+def test_upload_snowball_objects_with_staging(  # pylint: disable=invalid-name
+        log_entry):
+    """Test upload_snowball_objects() with staging file."""
+    staging_filename = f"{uuid4()}.tar"
+    _test_upload_snowball_objects(log_entry, staging_filename)
 
 
 def main():
@@ -1989,6 +2004,7 @@ def main():
             test_get_bucket_notification: None,
             test_select_object_content: None,
             test_upload_snowball_objects: None,
+            test_upload_snowball_objects_with_staging: None,
         }
     else:
         tests = {
