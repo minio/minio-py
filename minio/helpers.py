@@ -650,6 +650,71 @@ class BaseURL:
         return url_replace(url, netloc=netloc, path=path)
 
 
+class AdminURL:
+    """URL of Minio Admin endpoint"""
+
+    def __init__(self, endpoint):
+        url = urllib.parse.urlsplit(endpoint)
+        host = url.hostname
+
+        if url.scheme.lower() not in ["http", "https"]:
+            raise ValueError("scheme in endpoint must be http or https")
+
+        url = url_replace(url, scheme=url.scheme.lower())
+
+        if url.path and url.path != "/":
+            raise ValueError("path in endpoint is not allowed")
+
+        url = url_replace(url, path="")
+
+        if url.query:
+            raise ValueError("query in endpoint is not allowed")
+
+        if url.fragment:
+            raise ValueError("fragment in endpoint is not allowed")
+
+        try:
+            url.port
+        except ValueError as exc:
+            raise ValueError("invalid port") from exc
+
+        if url.username:
+            raise ValueError("username in endpoint is not allowed")
+
+        if url.password:
+            raise ValueError("password in endpoint is not allowed")
+
+        if (
+                (url.scheme == "http" and url.port == 80) or
+                (url.scheme == "https" and url.port == 443)
+        ):
+            url = url_replace(url, netloc=host)
+
+        self._url = url
+
+    @property
+    def is_https(self):
+        """Check if scheme is HTTPS."""
+        return self._url.scheme == "https"
+
+    def build(
+            self, path, query_params=None
+    ):
+        """Build URL for given information."""
+        url = url_replace(self._url, path=path)
+
+        query = []
+        for key, values in sorted((query_params or {}).items()):
+            values = values if isinstance(values, (list, tuple)) else [values]
+            query += [
+                f"{queryencode(key)}={queryencode(value)}"
+                for value in sorted(values)
+            ]
+        url = url_replace(url, query="&".join(query))
+
+        return url
+
+
 class ObjectWriteResult:
     """Result class of any APIs doing object creation."""
 

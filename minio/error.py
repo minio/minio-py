@@ -53,6 +53,22 @@ class InvalidResponseError(MinioException):
         return type(self), (self._code, self._content_type, self._body)
 
 
+class AdminResponseError(Exception):
+    """Raised to indicate error response from server."""
+
+    def __init__(self, code, content_type, body):
+        self._code = code
+        self._content_type = content_type
+        self._body = body
+        super().__init__(
+            f"Error admin response from server; "
+            f"Response code: {code}, Body: {body}"
+        )
+
+    def __reduce__(self):
+        return type(self), (self._code, self._content_type, self._body)
+
+
 class ServerError(MinioException):
     """Raised to indicate that S3 service returning HTTP server error."""
 
