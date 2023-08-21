@@ -21,11 +21,14 @@
 from __future__ import absolute_import
 
 from datetime import timedelta
+import json
 from urllib.parse import urlunsplit
 import os
 
 import certifi
 import urllib3
+
+from minio.crypto import decrypt, encrypt
 
 from . import time
 
@@ -185,10 +188,15 @@ class MinioAdmin:
     #     """Get MinIO server information."""
     #     return self._run(["info", self._target])
 
-    # def user_add(self, access_key, secret_key):
-    #     """Add a new user."""
-    #     return self._run(["user", "add", self._target,
-    #                       access_key, secret_key])
+    def user_add(self, access_key, secret_key):
+        """Create user with access and secret keys"""
+        params = {"accessKey": access_key}
+        body = {"status": "enabled", "secretKey": secret_key}
+        plain_body = json.dumps(body).encode()
+        cipher_body = encrypt(plain_body, self._credentials.secret_key)
+        response = self._url_open("PUT", "/add-user",
+                                  query_params=params, body=cipher_body)
+        return response.data.decode()
 
     # def user_disable(self, access_key):
     #     """Disable user."""
@@ -198,17 +206,23 @@ class MinioAdmin:
     #     """Enable user."""
     #     return self._run(["user", "enable", self._target, access_key])
 
-    # def user_remove(self, access_key):
-    #     """Remove user."""
-    #     return self._run(["user", "remove", self._target, access_key])
+    def user_remove(self, access_key):
+        """Delete user"""
+        params = {"accessKey": access_key}
+        response = self._url_open("DELETE", "/remove-user", query_params=params)
+        return response.data.decode()
 
-    # def user_info(self, access_key):
-    #     """Get user information."""
-    #     return self._run(["user", "info", self._target, access_key])
+    def user_info(self, access_key):
+        """Get information about user"""
+        params = {"accessKey": access_key}
+        response = self._url_open("GET", "/user-info", query_params=params)
+        return response.data.decode()
 
-    # def user_list(self):
-    #     """List users."""
-    #     return self._run(["user", "list", self._target], multiline=True)
+    def user_list(self):
+        """List all users"""
+        response = self._url_open("GET", "/list-users")
+        plain_data = decrypt(response.data, self._credentials.secret_key)
+        return plain_data.decode()
 
     # def group_add(self, group_name, members):
     #     """Add users a new or existing group."""
