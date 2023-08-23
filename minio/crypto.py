@@ -20,9 +20,9 @@
 """Cryptography to read and write encrypted MinIO Admin payload"""
 
 import os
-from Crypto.Cipher import AES
-from Crypto.Cipher import ChaCha20_Poly1305
-from argon2.low_level import hash_secret_raw, Type
+
+from argon2.low_level import Type, hash_secret_raw
+from Crypto.Cipher import AES, ChaCha20_Poly1305
 
 _NONCE_LEN = 8
 _SALT_LEN = 32

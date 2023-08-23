@@ -16,161 +16,211 @@
 
 # pylint: disable=too-many-public-methods
 
-"""MinIO Admin wrapper using MinIO Client (mc) tool."""
+"""MinIO Admin Client to perform MinIO administration operations."""
 
 from __future__ import absolute_import
 
-from datetime import timedelta
 import json
-from urllib.parse import urlunsplit
 import os
+from datetime import timedelta
+from enum import Enum
+from urllib.parse import urlunsplit
 
 import certifi
 import urllib3
+from urllib3._collections import HTTPHeaderDict
 
 from minio.crypto import decrypt, encrypt
 
 from . import time
-
-from .credentials.providers import StaticProvider
-from .error import AdminResponseError
-from .helpers import AdminURL, sha256_hash
+from .credentials.providers import Provider
+from .error import MinioAdminException
+from .helpers import (_DEFAULT_USER_AGENT, _REGION_REGEX, _parse_url,
+                      headers_to_strings, queryencode, sha256_hash,
+                      url_replace)
 from .signer import sign_v4_s3
 
-
-_ADMIN_PATH_PREFIX = "/minio/admin/v3"
+_COMMAND = Enum(
+    "Command",
+    {
+        "ADD_USER": "add-user",
+        "USER_INFO": "user-info",
+        "LIST_USERS": "list-users",
+        "REMOVE_USER": "remove-user",
+        "ADD_CANNED_POLICY": "add-canned-policy",
+        "SET_USER_OR_GROUP_POLICY": "set-user-or-group-policy",
+        "LIST_CANNED_POLICIES": "list-canned-policies",
+        "REMOVE_CANNED_POLICY": "remove-canned-policy",
+        "SET_BUCKET_QUOTA": "set-bucket-quota",
+        "GET_BUCKET_QUOTA": "get-bucket-quota",
+        "DATA_USAGE_INFO": "datausageinfo",
+        "ADD_UPDATE_REMOVE_GROUP": "update-group-members",
+        "GROUP_INFO": "group",
+        "LIST_GROUPS": "groups",
+        "INFO": "info",
+    },
+)
 
 
 class MinioAdmin:
-    """MinIO Admin wrapper using MinIO Client (mc) tool."""
+    """Client to perform MinIO administration operations."""
 
-    def __init__(self, endpoint, access_key,
-                 secret_key,
+    def __init__(self, endpoint,
+                 credentials,
+                 region="",
                  secure=True,
-                 cert_check=True):
-        self._base_url = AdminURL(
-            ("https://" if secure else "http://") + endpoint
-        )
-        self._credentials = StaticProvider(access_key, secret_key).retrieve()
-
-        timeout = timedelta(minutes=5).seconds
-        self._http = urllib3.PoolManager(
-            timeout=urllib3.util.Timeout(connect=timeout, read=timeout),
-            maxsize=10,
-            cert_reqs='CERT_REQUIRED' if cert_check else 'CERT_NONE',
-            ca_certs=os.environ.get('SSL_CERT_FILE') or certifi.where(),
-            retries=urllib3.Retry(
-                total=5,
-                backoff_factor=0.2,
-                status_forcelist=[500, 502, 503, 504]
+                 cert_check=True,
+                 http_client=None):
+        url = _parse_url(("https://" if secure else "http://") + endpoint)
+        if not isinstance(credentials, Provider):
+            raise ValueError("valid credentials must be provided")
+        if region and not _REGION_REGEX.match(region):
+            raise ValueError(f"invalid region {region}")
+        if http_client:
+            if not isinstance(http_client, urllib3.poolmanager.PoolManager):
+                raise ValueError(
+                    "HTTP client should be instance of "
+                    "`urllib3.poolmanager.PoolManager`"
+                )
+        else:
+            timeout = timedelta(minutes=5).seconds
+            http_client = urllib3.PoolManager(
+                timeout=urllib3.util.Timeout(connect=timeout, read=timeout),
+                maxsize=10,
+                cert_reqs='CERT_REQUIRED' if cert_check else 'CERT_NONE',
+                ca_certs=os.environ.get('SSL_CERT_FILE') or certifi.where(),
+                retries=urllib3.Retry(
+                    total=5,
+                    backoff_factor=0.2,
+                    status_forcelist=[500, 502, 503, 504]
+                )
             )
-        )
+
+        self._url = url
+        self._provider = credentials
+        self._region = region
+        self._secure = secure
+        self._cert_check = cert_check
+        self._http = http_client
+        self._user_agent = _DEFAULT_USER_AGENT
+        self._trace_stream = None
 
     def __del__(self):
         self._http.clear()
 
-    def _build_headers(self, host, body):
-        """Build headers with given parameters."""
-        headers = {}
-        headers["Host"] = host
-        sha256 = None
+    def _url_open(self, method, command, query_params=None, body=None):
+        """Execute HTTP request."""
+        creds = self._provider.retrieve()
 
-        if self._base_url.is_https:
-            sha256 = "UNSIGNED-PAYLOAD"
-        else:
-            sha256 = sha256_hash(body)
-        if sha256:
-            headers["x-amz-content-sha256"] = sha256
+        url = url_replace(self._url, path="/minio/admin/v3/"+command.value)
+        query = []
+        for key, values in sorted((query_params or {}).items()):
+            values = values if isinstance(values, (list, tuple)) else [values]
+            query += [
+                f"{queryencode(key)}={queryencode(value)}"
+                for value in sorted(values)
+            ]
+        url = url_replace(url, query="&".join(query))
+
         date = time.utcnow()
-        headers["x-amz-date"] = time.to_amz_date(date)
-        return headers, date
+        headers = {
+            "Host": url.netloc,
+            "User-Agent": self._user_agent,
+            "x-amz-date": time.to_amz_date(date),
+            "x-amz-content-sha256": sha256_hash(body),
+        }
+        if creds.session_token:
+            headers["X-Amz-Security-Token"] = creds.session_token
+        if body:
+            headers["Content-Length"] = str(len(body))
 
-    def _build_signed_headers(self, url, body, method):
-        """Build signed headers"""
-        headers, date = self._build_headers(url.netloc, body)
         headers = sign_v4_s3(
             method,
             url,
-            '',
+            self._region,
             headers,
-            self._credentials,
+            creds,
             headers.get("x-amz-content-sha256"),
             date,
         )
 
-        return headers
+        if self._trace_stream:
+            self._trace_stream.write("---------START-HTTP---------\n")
+            query = ("?" + url.query) if url.query else ""
+            self._trace_stream.write(f"{method} {url.path}{query} HTTP/1.1\n")
+            self._trace_stream.write(
+                headers_to_strings(headers, titled_key=True),
+            )
+            self._trace_stream.write("\n")
+            if body is not None:
+                self._trace_stream.write("\n")
+                self._trace_stream.write(
+                    body.decode() if isinstance(body, bytes) else str(body),
+                )
+                self._trace_stream.write("\n")
+            self._trace_stream.write("\n")
 
-    def _send_request(self, method, url, body):
-        """Send HTTP request with given parameters"""
+        http_headers = HTTPHeaderDict()
+        for key, value in headers.items():
+            if isinstance(value, (list, tuple)):
+                _ = [http_headers.add(key, val) for val in value]
+            else:
+                http_headers.add(key, value)
 
-        headers = self._build_signed_headers(
-            url,
-            body,
-            method
-        )
-
-        return self._http.urlopen(
-            method=method,
-            url=urlunsplit(url),
+        response = self._http.urlopen(
+            method,
+            urlunsplit(url),
             body=body,
-            headers=_convert_to_urllib3_headers(headers)
+            headers=http_headers,
+            preload_content=True,
         )
 
-    def _url_open(
-            self,
-            method,
-            path,
-            body=None,
-            query_params=None,
-    ):
-        """Execute HTTP request."""
-        url = self._base_url.build(
-            path=_ADMIN_PATH_PREFIX + path,
-            query_params=query_params,
-        )
-
-        response = self._send_request(
-            method,
-            url,
-            body,
-        )
+        if self._trace_stream:
+            self._trace_stream.write(f"HTTP/1.1 {response.status}\n")
+            self._trace_stream.write(
+                headers_to_strings(response.headers),
+            )
+            self._trace_stream.write("\n")
+            self._trace_stream.write("\n")
+            self._trace_stream.write(response.data.decode())
+            self._trace_stream.write("\n")
+            self._trace_stream.write("----------END-HTTP----------\n")
 
         if response.status in [200, 204, 206]:
             return response
 
-        raise AdminResponseError(
-            response.status,
-            response.headers.get("content-type"),
-            response.data.decode() if response.data else None
-        )
+        raise MinioAdminException(response.status, response.data.decode())
 
-    def _execute(
-            self,
-            method,
-            path,
-            body=None,
-            query_params=None,
-    ):
-        """Execute HTTP request."""
-        url = self._base_url.build(
-            path=_ADMIN_PATH_PREFIX + path,
-            query_params=query_params,
-        )
+    def set_app_info(self, app_name, app_version):
+        """
+        Set your application name and version to user agent header.
 
-        response = self._send_request(
-            method,
-            url,
-            body,
-        )
+        :param app_name: Application name.
+        :param app_version: Application version.
 
-        if response.status in [200, 204, 206]:
-            return response
+        Example::
+            client.set_app_info('my_app', '1.0.2')
+        """
+        if not (app_name and app_version):
+            raise ValueError("Application name/version cannot be empty.")
+        self._user_agent = f"{_DEFAULT_USER_AGENT} {app_name}/{app_version}"
 
-        raise AdminResponseError(
-            response.status,
-            response.headers.get("content-type"),
-            response.data.decode() if response.data else None
-        )
+    def trace_on(self, stream):
+        """
+        Enable http trace.
+
+        :param stream: Stream for writing HTTP call tracing.
+        """
+        if not stream:
+            raise ValueError('Input stream for trace output is invalid.')
+        # Save new output stream.
+        self._trace_stream = stream
+
+    def trace_off(self):
+        """
+        Disable HTTP trace.
+        """
+        self._trace_stream = None
 
     # def service_restart(self):
     #     """Restart MinIO service."""
@@ -190,12 +240,14 @@ class MinioAdmin:
 
     def user_add(self, access_key, secret_key):
         """Create user with access and secret keys"""
-        params = {"accessKey": access_key}
-        body = {"status": "enabled", "secretKey": secret_key}
-        plain_body = json.dumps(body).encode()
-        cipher_body = encrypt(plain_body, self._credentials.secret_key)
-        response = self._url_open("PUT", "/add-user",
-                                  query_params=params, body=cipher_body)
+        body = json.dumps(
+            {"status": "enabled", "secretKey": secret_key}).encode()
+        response = self._url_open(
+            "PUT",
+            _COMMAND.ADD_USER,
+            query_params={"accessKey": access_key},
+            body=encrypt(body, self._provider.secret_key),
+        )
         return response.data.decode()
 
     # def user_disable(self, access_key):
@@ -208,20 +260,26 @@ class MinioAdmin:
 
     def user_remove(self, access_key):
         """Delete user"""
-        params = {"accessKey": access_key}
-        response = self._url_open("DELETE", "/remove-user", query_params=params)
+        response = self._url_open(
+            "DELETE",
+            _COMMAND.REMOVE_USER,
+            query_params={"accessKey": access_key},
+        )
         return response.data.decode()
 
     def user_info(self, access_key):
         """Get information about user"""
-        params = {"accessKey": access_key}
-        response = self._url_open("GET", "/user-info", query_params=params)
+        response = self._url_open(
+            "GET",
+            _COMMAND.USER_INFO,
+            query_params={"accessKey": access_key},
+        )
         return response.data.decode()
 
     def user_list(self):
         """List all users"""
-        response = self._url_open("GET", "/list-users")
-        plain_data = decrypt(response.data, self._credentials.secret_key)
+        response = self._url_open("GET", _COMMAND.LIST_USERS)
+        plain_data = decrypt(response.data, self._provider.secret_key)
         return plain_data.decode()
 
     # def group_add(self, group_name, members):
@@ -421,14 +479,3 @@ class MinioAdmin:
     # def bucket_quota_get(self, bucket):
     #     """Get bucket quota configuration."""
     #     return self._run(["bucket", "quota", self._target + "/" + bucket])
-
-
-def _convert_to_urllib3_headers(headers):
-    """Convert headers to urllib3 format"""
-    http_headers = urllib3.HTTPHeaderDict()
-    for key, value in (headers or {}).items():
-        if isinstance(value, (list, tuple)):
-            _ = [http_headers.add(key, val) for val in value]
-        else:
-            http_headers.add(key, value)
-    return http_headers

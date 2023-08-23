@@ -16,7 +16,7 @@
 
 from unittest import TestCase
 
-from minio.crypto import encrypt, decrypt
+from minio.crypto import decrypt, encrypt
 
 
 class CryptoTest(TestCase):

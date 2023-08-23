@@ -25,7 +25,6 @@ from __future__ import absolute_import
 
 import itertools
 import os
-import platform
 import tarfile
 from datetime import timedelta
 from io import BytesIO
@@ -47,10 +46,11 @@ from .datatypes import (CompleteMultipartUploadResult, EventIterable,
                         parse_copy_object, parse_list_objects)
 from .deleteobjects import DeleteError, DeleteRequest, DeleteResult
 from .error import InvalidResponseError, S3Error, ServerError
-from .helpers import (MAX_MULTIPART_COUNT, MAX_MULTIPART_OBJECT_SIZE,
-                      MAX_PART_SIZE, MIN_PART_SIZE, BaseURL, ObjectWriteResult,
-                      ThreadPool, check_bucket_name, check_non_empty_string,
-                      check_sse, check_ssec, genheaders, get_part_info,
+from .helpers import (_DEFAULT_USER_AGENT, MAX_MULTIPART_COUNT,
+                      MAX_MULTIPART_OBJECT_SIZE, MAX_PART_SIZE, MIN_PART_SIZE,
+                      BaseURL, ObjectWriteResult, ThreadPool,
+                      check_bucket_name, check_non_empty_string, check_sse,
+                      check_ssec, genheaders, get_part_info,
                       headers_to_strings, is_valid_policy_type, makedirs,
                       md5sum_hash, read_part_data, sha256_hash)
 from .legalhold import LegalHold
@@ -66,11 +66,6 @@ from .sseconfig import SSEConfig
 from .tagging import Tagging
 from .versioningconfig import VersioningConfig
 from .xml import Element, SubElement, findtext, getbytes, marshal, unmarshal
-
-_DEFAULT_USER_AGENT = (
-    f"MinIO ({platform.system()}; {platform.machine()}) "
-    f"{__title__}/{__version__}"
-)
 
 
 class Minio:  # pylint: disable=too-many-public-methods

@@ -23,15 +23,22 @@ import errno
 import hashlib
 import math
 import os
+import platform
 import re
 import urllib.parse
 from queue import Queue
 from threading import BoundedSemaphore, Thread
 
+from . import __title__, __version__
 from .sse import Sse, SseCustomerKey
 from .time import to_iso8601utc
 
 # Constants
+_DEFAULT_USER_AGENT = (
+    f"MinIO ({platform.system()}; {platform.machine()}) "
+    f"{__title__}/{__version__}"
+)
+
 MAX_MULTIPART_COUNT = 10000  # 10000 parts
 MAX_MULTIPART_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
 MAX_PART_SIZE = 5 * 1024 * 1024 * 1024  # 5GiB
@@ -427,53 +434,61 @@ def _get_aws_info(host, https, region):
              "dualstack": dualstack}, None)
 
 
+def _parse_url(endpoint):
+    """Parse url string."""
+
+    url = urllib.parse.urlsplit(endpoint)
+    host = url.hostname
+
+    if url.scheme.lower() not in ["http", "https"]:
+        raise ValueError("scheme in endpoint must be http or https")
+
+    url = url_replace(url, scheme=url.scheme.lower())
+
+    if url.path and url.path != "/":
+        raise ValueError("path in endpoint is not allowed")
+
+    url = url_replace(url, path="")
+
+    if url.query:
+        raise ValueError("query in endpoint is not allowed")
+
+    if url.fragment:
+        raise ValueError("fragment in endpoint is not allowed")
+
+    try:
+        url.port
+    except ValueError as exc:
+        raise ValueError("invalid port") from exc
+
+    if url.username:
+        raise ValueError("username in endpoint is not allowed")
+
+    if url.password:
+        raise ValueError("password in endpoint is not allowed")
+
+    if (
+            (url.scheme == "http" and url.port == 80) or
+            (url.scheme == "https" and url.port == 443)
+    ):
+        url = url_replace(url, netloc=host)
+
+    return url
+
+
 class BaseURL:
     """Base URL of S3 endpoint."""
 
     def __init__(self, endpoint, region):
-        url = urllib.parse.urlsplit(endpoint)
-        host = url.hostname
-
-        if url.scheme.lower() not in ["http", "https"]:
-            raise ValueError("scheme in endpoint must be http or https")
-
-        url = url_replace(url, scheme=url.scheme.lower())
-
-        if url.path and url.path != "/":
-            raise ValueError("path in endpoint is not allowed")
-
-        url = url_replace(url, path="")
-
-        if url.query:
-            raise ValueError("query in endpoint is not allowed")
-
-        if url.fragment:
-            raise ValueError("fragment in endpoint is not allowed")
-
-        try:
-            url.port
-        except ValueError as exc:
-            raise ValueError("invalid port") from exc
-
-        if url.username:
-            raise ValueError("username in endpoint is not allowed")
-
-        if url.password:
-            raise ValueError("password in endpoint is not allowed")
-
-        if (
-                (url.scheme == "http" and url.port == 80) or
-                (url.scheme == "https" and url.port == 443)
-        ):
-            url = url_replace(url, netloc=host)
+        url = _parse_url(endpoint)
 
         if region and not _REGION_REGEX.match(region):
             raise ValueError(f"invalid region {region}")
 
         self._aws_info, region_in_host = _get_aws_info(
-            host, url.scheme == "https", region)
+            url.hostname, url.scheme == "https", region)
         self._virtual_style_flag = (
-            self._aws_info or host.endswith("aliyuncs.com")
+            self._aws_info or url.hostname.endswith("aliyuncs.com")
         )
         self._url = url
         self._region = region or region_in_host
@@ -648,71 +663,6 @@ class BaseURL:
             path += ("" if path.endswith("/") else "/") + quote(object_name)
 
         return url_replace(url, netloc=netloc, path=path)
-
-
-class AdminURL:
-    """URL of Minio Admin endpoint"""
-
-    def __init__(self, endpoint):
-        url = urllib.parse.urlsplit(endpoint)
-        host = url.hostname
-
-        if url.scheme.lower() not in ["http", "https"]:
-            raise ValueError("scheme in endpoint must be http or https")
-
-        url = url_replace(url, scheme=url.scheme.lower())
-
-        if url.path and url.path != "/":
-            raise ValueError("path in endpoint is not allowed")
-
-        url = url_replace(url, path="")
-
-        if url.query:
-            raise ValueError("query in endpoint is not allowed")
-
-        if url.fragment:
-            raise ValueError("fragment in endpoint is not allowed")
-
-        try:
-            url.port
-        except ValueError as exc:
-            raise ValueError("invalid port") from exc
-
-        if url.username:
-            raise ValueError("username in endpoint is not allowed")
-
-        if url.password:
-            raise ValueError("password in endpoint is not allowed")
-
-        if (
-                (url.scheme == "http" and url.port == 80) or
-                (url.scheme == "https" and url.port == 443)
-        ):
-            url = url_replace(url, netloc=host)
-
-        self._url = url
-
-    @property
-    def is_https(self):
-        """Check if scheme is HTTPS."""
-        return self._url.scheme == "https"
-
-    def build(
-            self, path, query_params=None
-    ):
-        """Build URL for given information."""
-        url = url_replace(self._url, path=path)
-
-        query = []
-        for key, values in sorted((query_params or {}).items()):
-            values = values if isinstance(values, (list, tuple)) else [values]
-            query += [
-                f"{queryencode(key)}={queryencode(value)}"
-                for value in sorted(values)
-            ]
-        url = url_replace(url, query="&".join(query))
-
-        return url
 
 
 class ObjectWriteResult:
