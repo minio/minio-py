@@ -246,7 +246,7 @@ class MinioAdmin:
             "PUT",
             _COMMAND.ADD_USER,
             query_params={"accessKey": access_key},
-            body=encrypt(body, self._provider.secret_key),
+            body=encrypt(body, self._provider.retrieve().secret_key),
         )
         return response.data.decode()
 
@@ -279,7 +279,9 @@ class MinioAdmin:
     def user_list(self):
         """List all users"""
         response = self._url_open("GET", _COMMAND.LIST_USERS)
-        plain_data = decrypt(response.data, self._provider.secret_key)
+        plain_data = decrypt(
+            response.data, self._provider.retrieve().secret_key
+        )
         return plain_data.decode()
 
     # def group_add(self, group_name, members):
