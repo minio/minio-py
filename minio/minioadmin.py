@@ -51,6 +51,8 @@ _COMMAND = Enum(
         "SET_USER_OR_GROUP_POLICY": "set-user-or-group-policy",
         "LIST_CANNED_POLICIES": "list-canned-policies",
         "REMOVE_CANNED_POLICY": "remove-canned-policy",
+        "UNSET_USER_OR_GROUP_POLICY": "idp/builtin/policy/detach",
+        "CANNED_POLICY_INFO": "info-canned-policy",
         "SET_BUCKET_QUOTA": "set-bucket-quota",
         "GET_BUCKET_QUOTA": "get-bucket-quota",
         "DATA_USAGE_INFO": "datausageinfo",
@@ -128,6 +130,7 @@ class MinioAdmin:
             "User-Agent": self._user_agent,
             "x-amz-date": time.to_amz_date(date),
             "x-amz-content-sha256": sha256_hash(body),
+            "Content-Type": "application/octet-stream"
         }
         if creds.session_token:
             headers["X-Amz-Security-Token"] = creds.session_token
@@ -310,45 +313,71 @@ class MinioAdmin:
     #     """List groups."""
     #     return self._run(["group", "list", self._target], multiline=True)
 
-    # def policy_add(self, policy_name, policy_file):
-    #     """Add new policy."""
-    #     return self._run(
-    #         ["policy", "create", self._target, policy_name, policy_file],
-    #     )
+    def policy_add(self, policy_name, policy_file):
+        """Add new policy."""
+        with open(policy_file, encoding='utf-8') as file:
+            response = self._url_open(
+                "PUT",
+                _COMMAND.ADD_CANNED_POLICY,
+                query_params={"name": policy_name},
+                body=file.read().encode(),
+            )
+            return response.data.decode()
 
-    # def policy_remove(self, policy_name):
-    #     """Remove policy."""
-    #     return self._run(["policy", "remove", self._target, policy_name])
+    def policy_remove(self, policy_name):
+        """Remove policy."""
+        response = self._url_open(
+            "DELETE",
+            _COMMAND.REMOVE_CANNED_POLICY,
+            query_params={"name": policy_name},
+        )
+        return response.data.decode()
 
-    # def policy_info(self, policy_name):
-    #     """Get policy information."""
-    #     return self._run(["policy", "info", self._target, policy_name])
+    def policy_info(self, policy_name):
+        """Get policy information."""
+        response = self._url_open(
+            "GET",
+            _COMMAND.CANNED_POLICY_INFO,
+            query_params={"name": policy_name},
+        )
+        return response.data.decode()
 
-    # def policy_list(self):
-    #     """List policies."""
-    #     return self._run(["policy", "list", self._target], multiline=True)
+    def policy_list(self):
+        """List policies."""
+        response = self._url_open("GET", _COMMAND.LIST_CANNED_POLICIES)
+        return response.data.decode()
 
-    # def policy_set(self, policy_name, user=None, group=None):
-    #     """Set IAM policy on a user or group."""
-    #     if (user is not None) ^ (group is not None):
-    #         return self._run(
-    #             [
-    #                 "policy", "attach", self._target, policy_name,
-    #                 "--user" if user else "--group", user or group,
-    #             ],
-    #         )
-    #     raise ValueError("either user or group must be set")
+    def policy_set(self, policy_name, user=None, group=None):
+        """Set IAM policy on a user or group."""
+        if (user is not None) ^ (group is not None):
+            response = self._url_open(
+                "PUT",
+                _COMMAND.SET_USER_OR_GROUP_POLICY,
+                query_params={"userOrGroup": user or group,
+                              "isGroup": "true" if group else "false",
+                              "policyName": policy_name},
+            )
+            return response.data.decode()
+        raise ValueError("either user or group must be set")
 
-    # def policy_unset(self, policy_name, user=None, group=None):
-    #     """Unset an IAM policy for a user or group."""
-    #     if (user is not None) ^ (group is not None):
-    #         return self._run(
-    #             [
-    #                 "policy", "detach", self._target, policy_name,
-    #                 "--user" if user else "--group", user or group,
-    #             ],
-    #         )
-    #     raise ValueError("either user or group must be set")
+    def policy_unset(self, policy_name, user=None, group=None):
+        """Unset an IAM policy for a user or group."""
+        body = json.dumps({
+            "policies": [policy_name],
+            "group": group,
+            "user": user
+        }).encode()
+        if (user is not None) ^ (group is not None):
+            response = self._url_open(
+                "POST",
+                _COMMAND.UNSET_USER_OR_GROUP_POLICY,
+                body=encrypt(body, self._provider.retrieve().secret_key),
+            )
+            plain_data = decrypt(
+                response.data, self._provider.retrieve().secret_key
+            )
+            return plain_data.decode()
+        raise ValueError("either user or group must be set")
 
     # def config_get(self, key=None):
     #     """Get configuration parameters."""
