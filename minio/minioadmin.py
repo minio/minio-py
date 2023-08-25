@@ -57,6 +57,7 @@ _COMMAND = Enum(
         "GET_BUCKET_QUOTA": "get-bucket-quota",
         "DATA_USAGE_INFO": "datausageinfo",
         "ADD_UPDATE_REMOVE_GROUP": "update-group-members",
+        "SET_GROUP_STATUS": "set-group-status",
         "GROUP_INFO": "group",
         "LIST_GROUPS": "groups",
         "INFO": "info",
@@ -287,31 +288,65 @@ class MinioAdmin:
         )
         return plain_data.decode()
 
-    # def group_add(self, group_name, members):
-    #     """Add users a new or existing group."""
-    #     return self._run(["group", "add", self._target, group_name] + members)
+    def group_add(self, group_name, members):
+        """Add users a new or existing group."""
+        body = json.dumps({
+            "group": group_name,
+            "members": members,
+            "isRemove": False
+        }).encode()
+        response = self._url_open(
+            "PUT",
+            _COMMAND.ADD_UPDATE_REMOVE_GROUP,
+            body=body,
+        )
+        return response.data.decode()
 
-    # def group_disable(self, group_name):
-    #     """Disable group."""
-    #     return self._run(["group", "disable", self._target, group_name])
+    def group_disable(self, group_name):
+        """Disable group."""
+        response = self._url_open(
+            "PUT",
+            _COMMAND.SET_GROUP_STATUS,
+            query_params={"group": group_name, "status": "disabled"}
+        )
+        return response.data.decode()
 
-    # def group_enable(self, group_name):
-    #     """Enable group."""
-    #     return self._run(["group", "enable", self._target, group_name])
+    def group_enable(self, group_name):
+        """Enable group."""
+        response = self._url_open(
+            "PUT",
+            _COMMAND.SET_GROUP_STATUS,
+            query_params={"group": group_name, "status": "enabled"}
+        )
+        return response.data.decode()
 
-    # def group_remove(self, group_name, members=None):
-    #     """Remove group or members from a group."""
-    #     return self._run(
-    #         ["group", "remove", self._target, group_name] + (members or []),
-    #     )
+    def group_remove(self, group_name, members=None):
+        """Remove group or members from a group."""
+        body = json.dumps({
+            "group": group_name,
+            "members": members,
+            "isRemove": True
+        }).encode()
+        response = self._url_open(
+            "PUT",
+            _COMMAND.ADD_UPDATE_REMOVE_GROUP,
+            body=body,
+        )
+        return response.data.decode()
 
-    # def group_info(self, group_name):
-    #     """Get group information."""
-    #     return self._run(["group", "info", self._target, group_name])
+    def group_info(self, group_name):
+        """Get group information."""
+        response = self._url_open(
+            "GET",
+            _COMMAND.GROUP_INFO,
+            query_params={"group": group_name},
+        )
+        return response.data.decode()
 
-    # def group_list(self):
-    #     """List groups."""
-    #     return self._run(["group", "list", self._target], multiline=True)
+    def group_list(self):
+        """List groups."""
+        response = self._url_open("GET", _COMMAND.LIST_GROUPS)
+        return response.data.decode()
 
     def policy_add(self, policy_name, policy_file):
         """Add new policy."""
