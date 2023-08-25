@@ -62,6 +62,7 @@ _COMMAND = Enum(
         "GROUP_INFO": "group",
         "LIST_GROUPS": "groups",
         "INFO": "info",
+        "SERVICE": "service"
     },
 )
 
@@ -227,13 +228,23 @@ class MinioAdmin:
         """
         self._trace_stream = None
 
-    # def service_restart(self):
-    #     """Restart MinIO service."""
-    #     return self._run(["service", "restart", self._target])
+    def service_restart(self):
+        """Restart MinIO service."""
+        response = self._url_open(
+            "POST",
+            _COMMAND.SERVICE,
+            query_params={"action": "restart"}
+        )
+        return response.data.decode()
 
-    # def service_stop(self):
-    #     """Stop MinIO service."""
-    #     return self._run(["service", "stop", self._target])
+    def service_stop(self):
+        """Stop MinIO service."""
+        response = self._url_open(
+            "POST",
+            _COMMAND.SERVICE,
+            query_params={"action": "stop"}
+        )
+        return response.data.decode()
 
     # def update(self):
     #     """Update MinIO."""
