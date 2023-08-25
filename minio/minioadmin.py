@@ -47,6 +47,7 @@ _COMMAND = Enum(
         "USER_INFO": "user-info",
         "LIST_USERS": "list-users",
         "REMOVE_USER": "remove-user",
+        "SET_USER_STATUS": "set-user-status",
         "ADD_CANNED_POLICY": "add-canned-policy",
         "SET_USER_OR_GROUP_POLICY": "set-user-or-group-policy",
         "LIST_CANNED_POLICIES": "list-canned-policies",
@@ -254,13 +255,23 @@ class MinioAdmin:
         )
         return response.data.decode()
 
-    # def user_disable(self, access_key):
-    #     """Disable user."""
-    #     return self._run(["user", "disable", self._target, access_key])
+    def user_disable(self, access_key):
+        """Disable user."""
+        response = self._url_open(
+            "PUT",
+            _COMMAND.SET_USER_STATUS,
+            query_params={"accessKey": access_key, "status": "disabled"}
+        )
+        return response.data.decode()
 
-    # def user_enable(self, access_key):
-    #     """Enable user."""
-    #     return self._run(["user", "enable", self._target, access_key])
+    def user_enable(self, access_key):
+        """Enable user."""
+        response = self._url_open(
+            "PUT",
+            _COMMAND.SET_USER_STATUS,
+            query_params={"accessKey": access_key, "status": "enabled"}
+        )
+        return response.data.decode()
 
     def user_remove(self, access_key):
         """Delete user"""
