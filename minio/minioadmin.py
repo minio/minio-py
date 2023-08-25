@@ -62,7 +62,9 @@ _COMMAND = Enum(
         "GROUP_INFO": "group",
         "LIST_GROUPS": "groups",
         "INFO": "info",
-        "SERVICE": "service"
+        "SERVICE": "service",
+        "UPDATE": "update",
+        "TOP_LOCKS": "top/locks"
     },
 )
 
@@ -246,13 +248,22 @@ class MinioAdmin:
         )
         return response.data.decode()
 
-    # def update(self):
-    #     """Update MinIO."""
-    #     return self._run(["update", self._target])
+    def update(self):
+        """Update MinIO."""
+        response = self._url_open(
+            "POST",
+            _COMMAND.UPDATE,
+            query_params={"updateURL": ""}
+        )
+        return response.data.decode()
 
-    # def info(self):
-    #     """Get MinIO server information."""
-    #     return self._run(["info", self._target])
+    def info(self):
+        """Get MinIO server information."""
+        response = self._url_open(
+            "GET",
+            _COMMAND.INFO,
+        )
+        return response.data.decode()
 
     def user_add(self, access_key, secret_key):
         """Create user with access and secret keys"""
@@ -478,9 +489,13 @@ class MinioAdmin:
     #     """Stop and download profile data."""
     #     return self._run(["profile", "stop", self._target])
 
-    # def top_locks(self):
-    #     """Get a list of the 10 oldest locks on a MinIO cluster."""
-    #     return self._run(["top", "locks", self._target], multiline=True)
+    def top_locks(self):
+        """Get a list of the 10 oldest locks on a MinIO cluster."""
+        response = self._url_open(
+            "GET",
+            _COMMAND.TOP_LOCKS,
+        )
+        return response.data.decode()
 
     # def prometheus_generate(self):
     #     """Generate prometheus configuration."""
