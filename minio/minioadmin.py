@@ -182,10 +182,6 @@ class MinioAdmin:
             key += ":" + name
         return self._run(["config", "reset", self._target, key])
 
-    def config_remove(self, access_key):
-        """Remove config."""
-        return self._run(["config", "remove", self._target, access_key])
-
     def config_history(self):
         """Get historic configuration changes."""
         return self._run(["config", "history", self._target], multiline=True)
