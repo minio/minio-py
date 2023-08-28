@@ -64,7 +64,13 @@ _COMMAND = Enum(
         "INFO": "info",
         "SERVICE": "service",
         "UPDATE": "update",
-        "TOP_LOCKS": "top/locks"
+        "TOP_LOCKS": "top/locks",
+        "HELP_CONFIG": "help-config-kv",
+        "GET_CONFIG": "get-config-kv",
+        "SET_CONFIG": "set-config-kv",
+        "DELETE_CONFIG": "del-config-kv",
+        "LIST_CONFIG_HISTORY": "list-config-history-kv",
+        "RESOTRE_CONFIG_HISTORY": "restore-config-history-kv"
     },
 )
 
@@ -447,35 +453,70 @@ class MinioAdmin:
             return plain_data.decode()
         raise ValueError("either user or group must be set")
 
-    # def config_get(self, key=None):
-    #     """Get configuration parameters."""
-    #     return self._run(
-    #         ["config", "get", self._target] + [key] if key else [],
-    #         key,
-    #     )
+    def config_get(self, key=None):
+        """Get configuration parameters."""
+        if not key:
+            response = self._url_open(
+                "GET",
+                _COMMAND.HELP_CONFIG,
+                query_params={"key": "", "subSys": ""},
+            )
+            return response.data.decode()
+        else:
+            response = self._url_open(
+                "GET",
+                _COMMAND.GET_CONFIG,
+                query_params={"key": key, "subSys": ""},
+            )
+            plain_text = decrypt(
+                response.data, self._provider.retrieve().secret_key
+            )
+            return plain_text.decode()
 
-    # def config_set(self, key, config):
-    #     """Set configuration parameters."""
-    #     args = [name + "=" + value for name, value in config.items()]
-    #     return self._run(["config", "set", self._target, key] + args)
+    def config_set(self, key=None, config=None):
+        """Set configuration parameters."""
+        body = " ".join(
+            [key] + [f"{name}={value}" for name, value in config.items()]
+        ).encode()
+        response = self._url_open(
+            "PUT",
+            _COMMAND.SET_CONFIG,
+            body=encrypt(body, self._provider.retrieve().secret_key),
+        )
+        return response.data.decode()
 
-    # def config_reset(self, key, name=None):
-    #     """Reset configuration parameters."""
-    #     if name:
-    #         key += ":" + name
-    #     return self._run(["config", "reset", self._target, key])
+    def config_reset(self, key, name=None):
+        """Reset configuration parameters."""
+        if name:
+            key += ":" + name
+        body = key.encode()
+        response = self._url_open(
+            "DELETE",
+            _COMMAND.DELETE_CONFIG,
+            body=encrypt(body, self._provider.retrieve().secret_key),
+        )
+        return response.data.decode()
 
-    # def config_remove(self, access_key):
-    #     """Remove config."""
-    #     return self._run(["config", "remove", self._target, access_key])
+    def config_history(self):
+        """Get historic configuration changes."""
+        response = self._url_open(
+            "GET",
+            _COMMAND.LIST_CONFIG_HISTORY,
+            query_params={"count": "10"}
+        )
+        plain_text = decrypt(
+            response.data, self._provider.retrieve().secret_key
+        )
+        return plain_text.decode()
 
-    # def config_history(self):
-    #     """Get historic configuration changes."""
-    #     return self._run(["config", "history", self._target], multiline=True)
-
-    # def config_restore(self, restore_id):
-    #     """Restore to a specific configuration history."""
-    #     return self._run(["config", "restore", self._target, restore_id])
+    def config_restore(self, restore_id):
+        """Restore to a specific configuration history."""
+        response = self._url_open(
+            "PUT",
+            _COMMAND.RESOTRE_CONFIG_HISTORY,
+            query_params={"restoreId": restore_id}
+        )
+        return response.data.decode()
 
     # def profile_start(self, profilers=()):
     #     """Start recording profile data."""
