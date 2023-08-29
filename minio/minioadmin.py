@@ -70,7 +70,8 @@ _COMMAND = Enum(
         "SET_CONFIG": "set-config-kv",
         "DELETE_CONFIG": "del-config-kv",
         "LIST_CONFIG_HISTORY": "list-config-history-kv",
-        "RESOTRE_CONFIG_HISTORY": "restore-config-history-kv"
+        "RESOTRE_CONFIG_HISTORY": "restore-config-history-kv",
+        "START_PROFILE": "profile"
     },
 )
 
@@ -518,17 +519,14 @@ class MinioAdmin:
         )
         return response.data.decode()
 
-    # def profile_start(self, profilers=()):
-    #     """Start recording profile data."""
-    #     args = ["profile", "start"]
-    #     if profilers:
-    #         args += ["--type", ",".join(profilers)]
-    #     args.append(self._target)
-    #     return self._run(args)
-
-    # def profile_stop(self):
-    #     """Stop and download profile data."""
-    #     return self._run(["profile", "stop", self._target])
+    def profile_start(self, profilers=()):
+        """Runs a system profile"""
+        response = self._url_open(
+            "POST",
+            _COMMAND.START_PROFILE,
+            query_params={"profilerType;": ",".join(profilers)},
+        )
+        return response.data
 
     def top_locks(self):
         """Get a list of the 10 oldest locks on a MinIO cluster."""
@@ -603,23 +601,33 @@ class MinioAdmin:
     #         ],
     #     )
 
-    # def bucket_quota_set(self, bucket, fifo=None, hard=None):
-    #     """Set bucket quota configuration."""
-    #     if fifo is None and hard is None:
-    #         raise ValueError("fifo or hard must be set")
-    #     args = ["bucket", "quota", self._target + "/" + bucket]
-    #     if fifo:
-    #         args += ["--fifo", fifo]
-    #     if hard:
-    #         args += ["--hard", hard]
-    #     return self._run(args)
+    def bucket_quota_set(self, bucket, size):
+        """Set bucket quota configuration."""
+        body = json.dumps({"quota": size, "quotatype": "hard"}).encode()
+        response = self._url_open(
+            "PUT",
+            _COMMAND.SET_BUCKET_QUOTA,
+            query_params={"bucket": bucket},
+            body=body
+        )
+        return response.data.decode()
 
-    # def bucket_quota_clear(self, bucket):
-    #     """Clear bucket quota configuration."""
-    #     return self._run(
-    #         ["bucket", "quota", self._target + "/" + bucket, "--clear"],
-    #     )
+    def bucket_quota_clear(self, bucket):
+        """Clear bucket quota configuration."""
+        body = json.dumps({"quota": 0, "quotatype": "hard"}).encode()
+        response = self._url_open(
+            "PUT",
+            _COMMAND.SET_BUCKET_QUOTA,
+            query_params={"bucket": bucket},
+            body=body
+        )
+        return response.data.decode()
 
-    # def bucket_quota_get(self, bucket):
-    #     """Get bucket quota configuration."""
-    #     return self._run(["bucket", "quota", self._target + "/" + bucket])
+    def bucket_quota_get(self, bucket):
+        """Get bucket quota configuration."""
+        response = self._url_open(
+            "GET",
+            _COMMAND.GET_BUCKET_QUOTA,
+            query_params={"bucket": bucket}
+        )
+        return response.data.decode()
