@@ -71,7 +71,9 @@ _COMMAND = Enum(
         "DELETE_CONFIG": "del-config-kv",
         "LIST_CONFIG_HISTORY": "list-config-history-kv",
         "RESOTRE_CONFIG_HISTORY": "restore-config-history-kv",
-        "START_PROFILE": "profile"
+        "START_PROFILE": "profile",
+        "CREATE_KMS_KEY": "kms/key/create",
+        "GET_KMS_KEY_STATUS": "kms/key/status"
     },
 )
 
@@ -540,21 +542,23 @@ class MinioAdmin:
     #     """Generate prometheus configuration."""
     #     return self._run(["prometheus", "generate", self._target])
 
-    # def kms_key_create(self, key=None):
-    #     """Create a new KMS master key."""
-    #     return self._run(
-    #         [
-    #             "kms", "key", "create", self._target, key
-    #         ] + ([key] if key else []),
-    #     )
+    def kms_key_create(self, key=None):
+        """Create a new KMS master key."""
+        response = self._url_open(
+            "POST",
+            _COMMAND.CREATE_KMS_KEY,
+            query_params={"key-id": key},
+        )
+        return response.data.decode()
 
-    # def kms_key_status(self, key=None):
-    #     """Get status information of a KMS master key."""
-    #     return self._run(
-    #         [
-    #             "kms", "key", "status", self._target, key
-    #         ] + ([key] if key else []),
-    #     )
+    def kms_key_status(self, key=None):
+        """Get status information of a KMS master key."""
+        response = self._url_open(
+            "GET",
+            _COMMAND.GET_KMS_STATUS,
+            query_params={"key-id": key or ""}
+        )
+        return response.data.decode()
 
     # def bucket_remote_add(
     #         self, src_bucket, dest_url,
