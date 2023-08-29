@@ -462,16 +462,16 @@ class MinioAdmin:
                 query_params={"key": "", "subSys": ""},
             )
             return response.data.decode()
-        else:
-            response = self._url_open(
-                "GET",
-                _COMMAND.GET_CONFIG,
-                query_params={"key": key, "subSys": ""},
-            )
-            plain_text = decrypt(
-                response.data, self._provider.retrieve().secret_key
-            )
-            return plain_text.decode()
+
+        response = self._url_open(
+            "GET",
+            _COMMAND.GET_CONFIG,
+            query_params={"key": key, "subSys": ""},
+        )
+        plain_text = decrypt(
+            response.data, self._provider.retrieve().secret_key
+        )
+        return plain_text.decode()
 
     def config_set(self, key=None, config=None):
         """Set configuration parameters."""
