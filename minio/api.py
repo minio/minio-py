@@ -21,7 +21,7 @@
 Simple Storage Service (aka S3) client to perform bucket and object operations.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
 
 import itertools
 import os
@@ -40,7 +40,7 @@ from urllib3._collections import HTTPHeaderDict
 
 from . import __title__, __version__, time
 from .commonconfig import COPY, REPLACE, ComposeSource, CopySource, Tags
-from .credentials import StaticProvider
+from .credentials import StaticProvider, Provider
 from .datatypes import (CompleteMultipartUploadResult, EventIterable,
                         ListAllMyBucketsResult, ListMultipartUploadsResult,
                         ListPartsResult, Object, Part, PostPolicy,
@@ -114,14 +114,18 @@ class Minio:  # pylint: disable=too-many-public-methods
     """
 
     # pylint: disable=too-many-function-args
-    def __init__(self, endpoint, access_key=None,
-                 secret_key=None,
-                 session_token=None,
-                 secure=True,
-                 region=None,
-                 http_client=None,
-                 credentials=None,
-                 cert_check=True):
+    def __init__(
+        self,
+        endpoint: str,
+        access_key: str | None = None,
+        secret_key: str | None = None,
+        session_token: str | None = None,
+        secure: bool = True,
+        region: str | None = None,
+        http_client: urllib3.PoolManager | None = None,
+        credentials: Provider | None = None,
+        cert_check: bool = True
+    ):
         # Validate http client has correct base class.
         if http_client and not isinstance(
                 http_client,
@@ -131,7 +135,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 "`urllib3.poolmanager.PoolManager`"
             )
 
-        self._region_map = {}
+        self._region_map: dict[str, str] = {}
         self._base_url = BaseURL(
             ("https://" if secure else "http://") + endpoint,
             region,
