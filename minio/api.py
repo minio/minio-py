@@ -1611,7 +1611,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         length: int,
         content_type: str = "application/octet-stream",
         metadata: dict[str, str] | None = None,
-        sse: Sse = None,
+        sse: Sse | None = None,
         progress: Thread | None = None,
         part_size: int = 0,
         num_parallel_uploads: int = 3,
