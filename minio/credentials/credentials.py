@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 
 class Credentials:
@@ -34,8 +33,8 @@ class Credentials:
             self,
             access_key: str,
             secret_key: str,
-            session_token: Optional[str] = None,
-            expiration: Optional[datetime] = None,
+            session_token: str | None = None,
+            expiration: datetime | None = None,
     ):
         if not access_key:
             raise ValueError("Access key must not be empty")
