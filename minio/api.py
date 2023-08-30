@@ -21,16 +21,18 @@
 Simple Storage Service (aka S3) client to perform bucket and object operations.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
 
 import itertools
 import os
+from typing import Protocol, Mapping, Sequence
 import platform
 import tarfile
 from datetime import timedelta
 from io import BytesIO
 from random import random
 from threading import Thread
+from typing import Optional
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
@@ -40,7 +42,7 @@ from urllib3._collections import HTTPHeaderDict
 
 from . import __title__, __version__, time
 from .commonconfig import COPY, REPLACE, ComposeSource, CopySource, Tags
-from .credentials import StaticProvider
+from .credentials import StaticProvider, Provider
 from .datatypes import (CompleteMultipartUploadResult, EventIterable,
                         ListAllMyBucketsResult, ListMultipartUploadsResult,
                         ListPartsResult, Object, Part, PostPolicy,
@@ -57,15 +59,22 @@ from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
 from .objectlockconfig import ObjectLockConfig
+from .progress import Progress
 from .replicationconfig import ReplicationConfig
 from .retention import Retention
 from .select import SelectObjectReader, SelectRequest
 from .signer import presign_v4, sign_v4_s3
-from .sse import SseCustomerKey
+from .sse import SseCustomerKey, Sse
 from .sseconfig import SSEConfig
 from .tagging import Tagging
 from .versioningconfig import VersioningConfig
 from .xml import Element, SubElement, findtext, getbytes, marshal, unmarshal
+
+
+class Data(Protocol):
+    def read(self, size=-1) -> bytes:
+        ...
+
 
 _DEFAULT_USER_AGENT = (
     f"MinIO ({platform.system()}; {platform.machine()}) "
@@ -114,14 +123,16 @@ class Minio:  # pylint: disable=too-many-public-methods
     """
 
     # pylint: disable=too-many-function-args
-    def __init__(self, endpoint, access_key=None,
-                 secret_key=None,
-                 session_token=None,
-                 secure=True,
-                 region=None,
-                 http_client=None,
-                 credentials=None,
-                 cert_check=True):
+    def __init__(self,
+                 endpoint: str,
+                 access_key: Optional[str] = None,
+                 secret_key: Optional[str] = None,
+                 session_token: Optional[str] = None,
+                 secure: bool = True,
+                 region: Optional[str] = None,
+                 http_client: Optional[urllib3.PoolManager] = None,
+                 credentials: Optional[Provider] = None,
+                 cert_check: bool = True):
         # Validate http client has correct base class.
         if http_client and not isinstance(
                 http_client,
@@ -131,7 +142,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 "`urllib3.poolmanager.PoolManager`"
             )
 
-        self._region_map = {}
+        self._region_map: dict[str, str] = {}
         self._base_url = BaseURL(
             ("https://" if secure else "http://") + endpoint,
             region,
@@ -160,7 +171,11 @@ class Minio:  # pylint: disable=too-many-public-methods
         self._http.clear()
 
     def _handle_redirect_response(
-            self, method, bucket_name, response, retry=False,
+            self,
+            method: str,
+            bucket_name: str,
+            response: urllib3.BaseHTTPResponse,
+            retry: bool = False,
     ):
         """
         Handle redirect response indicates whether retry HEAD request
@@ -302,9 +317,8 @@ class Minio:  # pylint: disable=too-many-public-methods
 
         if (
                 method != "HEAD" and
-                "application/xml" not in response.headers.get(
-                    "content-type", "",
-                ).split(";")
+                "application/xml" not in response.headers.get("content-type", "").split(
+            ";")
         ):
             if self._trace_stream:
                 self._trace_stream.write("----------END-HTTP----------\n")
@@ -400,7 +414,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             query_params=None,
             preload_content=True,
             no_body_trace=False,
-    ):
+    ) -> urllib3.BaseHTTPResponse:
         """Execute HTTP request."""
         region = self._get_region(bucket_name)
 
@@ -1062,7 +1076,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 progress.set_meta(object_name=object_name, total_length=length)
 
             with open(tmp_file_path, "wb") as tmp_file:
-                for data in response.stream(amt=1024*1024):
+                for data in response.stream(amt=1024 * 1024):
                     size = tmp_file.write(data)
                     if progress:
                         progress.update(size)
@@ -1075,9 +1089,17 @@ class Minio:  # pylint: disable=too-many-public-methods
                 response.close()
                 response.release_conn()
 
-    def get_object(self, bucket_name, object_name, offset=0, length=0,
-                   request_headers=None, ssec=None, version_id=None,
-                   extra_query_params=None):
+    def get_object(
+            self,
+            bucket_name: str,
+            object_name: str,
+            offset: int = 0,
+            length: int = 0,
+            request_headers: Mapping[str, str | int | bool] | None = None,
+            ssec: Optional[SseCustomerKey] = None,
+            version_id: str | None = None,
+            extra_query_params: dict[str, str | int | bool] | None = None
+    ) -> urllib3.BaseHTTPResponse:
         """
         Get data of an object. Returned response should be closed after use to
         release network resources. To reuse the connection, it's required to
@@ -1467,11 +1489,11 @@ class Minio:  # pylint: disable=too-many-public-methods
                     part_number += 1
                     if src.length is not None:
                         headers["x-amz-copy-source-range"] = (
-                            f"bytes={offset}-{offset+src.length-1}"
+                            f"bytes={offset}-{offset + src.length - 1}"
                         )
                     elif src.offset is not None:
                         headers["x-amz-copy-source-range"] = (
-                            f"bytes={offset}-{offset+size-1}"
+                            f"bytes={offset}-{offset + size - 1}"
                         )
                     etag, _ = self._upload_part_copy(
                         bucket_name,
@@ -1602,11 +1624,24 @@ class Minio:  # pylint: disable=too-many-public-methods
         """Upload_part task for ThreadPool."""
         return args[5], self._upload_part(*args)
 
-    def put_object(self, bucket_name, object_name, data, length,
-                   content_type="application/octet-stream",
-                   metadata=None, sse=None, progress=None,
-                   part_size=0, num_parallel_uploads=3,
-                   tags=None, retention=None, legal_hold=False):
+    def put_object(
+            self,
+            bucket_name: str,
+            object_name: str,
+            data: Data,
+            length: int,
+            content_type: str = "application/octet-stream",
+            metadata: Mapping[
+                          str, bool | str | int | Sequence[
+                              bool | str | int]] | None = None,
+            sse: Optional[Sse] = None,
+            progress: Progress | None = None,
+            part_size: int = 0,
+            num_parallel_uploads: int = 3,
+            tags: Optional[Tags] = None,
+            retention: Optional[Retention] = None,
+            legal_hold: bool = False
+    ):
         """
         Uploads data from a stream to an object in a bucket.
 
@@ -1665,7 +1700,8 @@ class Minio:  # pylint: disable=too-many-public-methods
             if not isinstance(progress, Thread):
                 raise TypeError("progress object must be instance of Thread")
             # Set progress bar length and object name before upload
-            progress.set_meta(object_name=object_name, total_length=length)
+            progress.set_meta(object_name=object_name,
+                              total_length=length)  # type: ignore
 
         headers = genheaders(metadata, sse, tags, retention, legal_hold)
         headers["Content-Type"] = content_type or "application/octet-stream"
@@ -1739,7 +1775,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 parts = [None] * part_count
                 while not result.empty():
                     part_number, etag = result.get()
-                    parts[part_number-1] = Part(part_number, etag)
+                    parts[part_number - 1] = Part(part_number, etag)
 
             result = self._complete_multipart_upload(
                 bucket_name, object_name, upload_id, parts,
