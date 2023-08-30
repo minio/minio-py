@@ -1700,8 +1700,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             if not isinstance(progress, Thread):
                 raise TypeError("progress object must be instance of Thread")
             # Set progress bar length and object name before upload
-            progress.set_meta(object_name=object_name,
-                              total_length=length)  # type: ignore
+            progress.set_meta(object_name=object_name, total_length=length)  # type: ignore
 
         headers = genheaders(metadata, sse, tags, retention, legal_hold)
         headers["Content-Type"] = content_type or "application/octet-stream"
