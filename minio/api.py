@@ -31,7 +31,7 @@ from datetime import timedelta
 from io import BytesIO
 from random import random
 from threading import Thread
-from typing import Any, BinaryIO
+from typing import BinaryIO
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
