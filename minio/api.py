@@ -62,7 +62,7 @@ from .replicationconfig import ReplicationConfig
 from .retention import Retention
 from .select import SelectObjectReader, SelectRequest
 from .signer import presign_v4, sign_v4_s3
-from .sse import SseCustomerKey, Sse
+from .sse import Sse, SseCustomerKey
 from .sseconfig import SSEConfig
 from .tagging import Tagging
 from .versioningconfig import VersioningConfig
