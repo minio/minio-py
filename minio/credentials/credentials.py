@@ -47,7 +47,9 @@ class Credentials:
         self._secret_key = secret_key
         self._session_token = session_token
         if expiration and expiration.tzinfo:
-            expiration = expiration.astimezone(timezone.utc).replace(tzinfo=None)
+            expiration = (
+                expiration.astimezone(timezone.utc).replace(tzinfo=None)
+            )
         self._expiration = expiration
 
     @property
