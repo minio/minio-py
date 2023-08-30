@@ -71,6 +71,5 @@ class Credentials:
         """Check whether this credentials expired or not."""
         return (
             self._expiration < (datetime.utcnow() + timedelta(seconds=10))
-            if self._expiration
-            else False
+            if self._expiration else False
         )
