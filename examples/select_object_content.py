@@ -16,11 +16,7 @@
 
 
 from minio import Minio
-from minio.select import (
-    CSVInputSerialization,
-    CSVOutputSerialization,
-    SelectRequest,
-)
+from minio.select import CSVInputSerialization, CSVOutputSerialization, SelectRequest
 
 client = Minio(
     "play.min.io",

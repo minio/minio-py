@@ -103,7 +103,7 @@ class ListAllMyBucketsResult:
 class Object:
     """Object information."""
 
-    def __init__(   # pylint: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         bucket_name,
         object_name,

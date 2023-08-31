@@ -40,7 +40,7 @@ def get_jwt(client_id, client_secret, idp_client_id, idp_endpoint):
 
 # IDP endpoint.
 idp_endpoint = (
-    "https://IDP-HOST:IDP-PORT/auth/realms/master" "/protocol/openid-connect/token"
+    "https://IDP-HOST:IDP-PORT/auth/realms/master/protocol/openid-connect/token"
 )
 
 # Client-ID to fetch JWT.

@@ -17,11 +17,7 @@
 from unittest import TestCase
 
 from minio import xml
-from minio.notificationconfig import (
-    NotificationConfig,
-    PrefixFilterRule,
-    QueueConfig,
-)
+from minio.notificationconfig import NotificationConfig, PrefixFilterRule, QueueConfig
 
 
 class NotificationConfigTest(TestCase):

@@ -15,11 +15,7 @@
 # limitations under the License.
 
 from minio import Minio
-from minio.notificationconfig import (
-    NotificationConfig,
-    PrefixFilterRule,
-    QueueConfig,
-)
+from minio.notificationconfig import NotificationConfig, PrefixFilterRule, QueueConfig
 
 client = Minio(
     "play.min.io",

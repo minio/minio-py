@@ -45,11 +45,7 @@ from minio.commonconfig import ENABLED, REPLACE, CopySource, SnowballObject
 from minio.datatypes import PostPolicy
 from minio.deleteobjects import DeleteObject
 from minio.error import S3Error
-from minio.select import (
-    CSVInputSerialization,
-    CSVOutputSerialization,
-    SelectRequest,
-)
+from minio.select import CSVInputSerialization, CSVOutputSerialization, SelectRequest
 from minio.sse import SseCustomerKey
 from minio.time import to_http_header
 from minio.versioningconfig import VersioningConfig
