@@ -31,11 +31,13 @@ from datetime import timedelta
 from io import BytesIO
 from random import random
 from threading import Thread
+from typing import TextIO
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
 import certifi
 import urllib3
+from urllib3 import PoolManager
 from urllib3._collections import HTTPHeaderDict
 
 from . import __title__, __version__, time
@@ -112,6 +114,12 @@ class Minio:  # pylint: disable=too-many-public-methods
     object in each process, and not share it between processes.
 
     """
+    _region_map: dict[str, str]
+    _base_url: BaseURL
+    _user_agent: str
+    _trace_stream: TextIO | None
+    _provider: StaticProvider | Provider | None
+    _http: PoolManager
 
     # pylint: disable=too-many-function-args
     def __init__(
@@ -135,7 +143,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 "`urllib3.poolmanager.PoolManager`"
             )
 
-        self._region_map: dict[str, str] = {}
+        self._region_map = {}
         self._base_url = BaseURL(
             ("https://" if secure else "http://") + endpoint,
             region,
