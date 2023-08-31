@@ -28,9 +28,7 @@ class PresignedGetObjectTest(TestCase):
 
     def test_object_is_not_empty_string(self):
         client = Minio("localhost:9000")
-        self.assertRaises(
-            ValueError, client.presigned_get_object, "hello", " \t \n "
-        )
+        self.assertRaises(ValueError, client.presigned_get_object, "hello", " \t \n ")
 
     def test_expiry_limit(self):
         client = Minio("localhost:9000")
@@ -43,9 +41,7 @@ class PresignedGetObjectTest(TestCase):
         )
 
     def test_can_include_response_headers(self):
-        client = Minio(
-            "localhost:9000", "my_access_key", "my_secret_key", secure=True
-        )
+        client = Minio("localhost:9000", "my_access_key", "my_secret_key", secure=True)
         client._get_region = mock.Mock(return_value="us-east-1")
         r = client.presigned_get_object(
             "mybucket",

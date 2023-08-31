@@ -27,9 +27,7 @@ class PresignedPutObjectTest(TestCase):
 
     def test_object_is_not_empty_string(self):
         client = Minio("localhost:9000")
-        self.assertRaises(
-            ValueError, client.presigned_put_object, "hello", " \t \n "
-        )
+        self.assertRaises(ValueError, client.presigned_put_object, "hello", " \t \n ")
 
     def test_expiry_limit(self):
         client = Minio("localhost:9000")

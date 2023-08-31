@@ -57,9 +57,7 @@ class DeleteRequest:
 class DeletedObject:
     """Deleted object information."""
 
-    def __init__(
-        self, name, version_id, delete_marker, delete_marker_version_id
-    ):
+    def __init__(self, name, version_id, delete_marker, delete_marker_version_id):
         self._name = name
         self._version_id = version_id
         self._delete_marker = delete_marker
@@ -91,9 +89,7 @@ class DeletedObject:
         name = findtext(element, "Key", True)
         version_id = findtext(element, "VersionId")
         delete_marker = findtext(element, "DeleteMarker")
-        delete_marker = (
-            delete_marker is not None and delete_marker.title() == "True"
-        )
+        delete_marker = delete_marker is not None and delete_marker.title() == "True"
         delete_marker_version_id = findtext(element, "DeleteMarkerVersionId")
         return cls(name, version_id, delete_marker, delete_marker_version_id)
 

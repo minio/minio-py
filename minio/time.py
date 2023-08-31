@@ -41,9 +41,7 @@ _MONTHS = [
 def _to_utc(value):
     """Convert to UTC time if value is not naive."""
     return (
-        value.astimezone(timezone.utc).replace(tzinfo=None)
-        if value.tzinfo
-        else value
+        value.astimezone(timezone.utc).replace(tzinfo=None) if value.tzinfo else value
     )
 
 

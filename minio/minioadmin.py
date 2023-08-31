@@ -229,15 +229,13 @@ class MinioAdmin:
     def kms_key_create(self, key=None):
         """Create a new KMS master key."""
         return self._run(
-            ["kms", "key", "create", self._target, key]
-            + ([key] if key else []),
+            ["kms", "key", "create", self._target, key] + ([key] if key else []),
         )
 
     def kms_key_status(self, key=None):
         """Get status information of a KMS master key."""
         return self._run(
-            ["kms", "key", "status", self._target, key]
-            + ([key] if key else []),
+            ["kms", "key", "status", self._target, key] + ([key] if key else []),
         )
 
     def bucket_remote_add(

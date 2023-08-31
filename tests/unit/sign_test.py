@@ -108,18 +108,14 @@ class StringToSignTest(TestCase):
             _get_scope(dt, "us-east-1", "s3"),
             "b93e86965c269a0dfef37a8bec231ef8acf8cdb101a64eb700a46c452c1ad233",
         )
-        self.assertEqual(
-            "\n".join(expected_signing_key_list), actual_signing_key
-        )
+        self.assertEqual("\n".join(expected_signing_key_list), actual_signing_key)
 
 
 class SigningKeyTest(TestCase):
     def test_generate_signing_key(self):
         key1_string = "AWS4" + "S3CR3T"
         key1 = key1_string.encode("utf-8")
-        key2 = hmac.new(
-            key1, "20150620".encode("utf-8"), hashlib.sha256
-        ).digest()
+        key2 = hmac.new(key1, "20150620".encode("utf-8"), hashlib.sha256).digest()
         key3 = hmac.new(key2, "region".encode("utf-8"), hashlib.sha256).digest()
         key4 = hmac.new(key3, "s3".encode("utf-8"), hashlib.sha256).digest()
         expected_result = hmac.new(
@@ -144,9 +140,7 @@ class AuthorizationHeaderTest(TestCase):
             "host;X-Amz-Content-Sha256;X-Amz-Date",
             "signed_request",
         )
-        self.assertEqual(
-            expected_authorization_header, actual_authorization_header
-        )
+        self.assertEqual(expected_authorization_header, actual_authorization_header)
 
 
 class PresignURLTest(TestCase):
@@ -154,9 +148,7 @@ class PresignURLTest(TestCase):
         credentials = Credentials("minio", "minio123")
         url = presign_v4(
             "GET",
-            urlsplit(
-                "http://localhost:9000/bucket-name/objectName?versionId=uuid"
-            ),
+            urlsplit("http://localhost:9000/bucket-name/objectName?versionId=uuid"),
             "us-east-1",
             credentials,
             dt,

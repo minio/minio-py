@@ -172,26 +172,19 @@ def format_string(current_size, total_length, elapsed_time):
     n_to_mb = current_size / _KILOBYTE / _KILOBYTE
     elapsed_str = seconds_to_time(elapsed_time)
 
-    rate = (
-        _RATE_FORMAT % (n_to_mb / elapsed_time)
-        if elapsed_time
-        else _UNKNOWN_SIZE
-    )
+    rate = _RATE_FORMAT % (n_to_mb / elapsed_time) if elapsed_time else _UNKNOWN_SIZE
     frac = float(current_size) / total_length
     bar_length = int(frac * _BAR_SIZE)
     bar = _FINISHED_BAR * bar_length + _REMAINING_BAR * (_BAR_SIZE - bar_length)
     percentage = _PERCENTAGE_FORMAT % (frac * 100)
     left_str = (
-        seconds_to_time(
-            elapsed_time / current_size * (total_length - current_size)
-        )
+        seconds_to_time(elapsed_time / current_size * (total_length - current_size))
         if current_size
         else _UNKNOWN_SIZE
     )
 
     humanized_total = (
-        _HUMANINZED_FORMAT % (total_length / _KILOBYTE / _KILOBYTE)
-        + _STR_MEGABYTE
+        _HUMANINZED_FORMAT % (total_length / _KILOBYTE / _KILOBYTE) + _STR_MEGABYTE
     )
     humanized_n = _HUMANINZED_FORMAT % n_to_mb + _STR_MEGABYTE
 

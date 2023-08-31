@@ -79,9 +79,7 @@ class CommonConfig:
 
     __metaclass__ = ABCMeta
 
-    def __init__(
-        self, events, config_id, prefix_filter_rule, suffix_filter_rule
-    ):
+    def __init__(self, events, config_id, prefix_filter_rule, suffix_filter_rule):
         if not events:
             raise ValueError("events must be provided")
         self._events = events
@@ -233,9 +231,7 @@ class QueueConfig(CommonConfig):
             prefix_filter_rule,
             suffix_filter_rule,
         ) = cls.parsexml(element)
-        return cls(
-            queue, events, config_id, prefix_filter_rule, suffix_filter_rule
-        )
+        return cls(queue, events, config_id, prefix_filter_rule, suffix_filter_rule)
 
     def toxml(self, element):
         """Convert to XML."""
@@ -281,9 +277,7 @@ class TopicConfig(CommonConfig):
             prefix_filter_rule,
             suffix_filter_rule,
         ) = cls.parsexml(element)
-        return cls(
-            topic, events, config_id, prefix_filter_rule, suffix_filter_rule
-        )
+        return cls(topic, events, config_id, prefix_filter_rule, suffix_filter_rule)
 
     def toxml(self, element):
         """Convert to XML."""

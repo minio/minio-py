@@ -71,9 +71,7 @@ _AWS_ELB_ENDPOINT_REGEX = re.compile(
     re.IGNORECASE,
 )
 _AWS_S3_PREFIX_REGEX = re.compile(_AWS_S3_PREFIX, re.IGNORECASE)
-_REGION_REGEX = re.compile(
-    r"^((?!_)(?!-)[a-z_\d-]{1,63}(?<!-)(?<!_))$", re.IGNORECASE
-)
+_REGION_REGEX = re.compile(r"^((?!_)(?!-)[a-z_\d-]{1,63}(?<!-)(?<!_))$", re.IGNORECASE)
 
 
 def quote(resource, safe="/", encoding=None, errors=None):
@@ -116,10 +114,7 @@ def headers_to_strings(headers, titled_key=False):
         )
 
     return "\n".join(
-        [
-            f"{_get_key(key)}: {_get_value(value)}"
-            for key, value in headers.items()
-        ]
+        [f"{_get_key(key)}: {_get_value(value)}" for key, value in headers.items()]
     )
 
 
@@ -138,8 +133,7 @@ def _validate_sizes(object_size, part_size):
     if object_size >= 0:
         if object_size > MAX_MULTIPART_OBJECT_SIZE:
             raise ValueError(
-                f"object size {object_size} is not supported; "
-                f"maximum allowed 5TiB"
+                f"object size {object_size} is not supported; " f"maximum allowed 5TiB"
             )
     elif part_size <= 0:
         raise ValueError(
@@ -219,15 +213,13 @@ def check_bucket_name(bucket_name, strict=False, s3_check=False):
 
     if _IPV4_REGEX.match(bucket_name):
         raise ValueError(
-            "bucket name {bucket_name} must not be formatted "
-            "as an IP address"
+            "bucket name {bucket_name} must not be formatted " "as an IP address"
         )
 
     unallowed_successive_chars = ["..", ".-", "-."]
     if any(x in bucket_name for x in unallowed_successive_chars):
         raise ValueError(
-            "bucket name {bucket_name} contains invalid "
-            "successive characters"
+            "bucket name {bucket_name} contains invalid " "successive characters"
         )
 
     if (
@@ -302,9 +294,7 @@ def sha256_hash(data):
     return sha256sum.decode() if isinstance(sha256sum, bytes) else sha256sum
 
 
-def url_replace(
-    url, scheme=None, netloc=None, path=None, query=None, fragment=None
-):
+def url_replace(url, scheme=None, netloc=None, path=None, query=None, fragment=None):
     """Return new URL with replaced properties in given URL."""
     return urllib.parse.SplitResult(
         scheme if scheme is not None else url.scheme,
@@ -503,9 +493,7 @@ class BaseURL:
         self._aws_info, region_in_host = _get_aws_info(
             host, url.scheme == "https", region
         )
-        self._virtual_style_flag = self._aws_info or host.endswith(
-            "aliyuncs.com"
-        )
+        self._virtual_style_flag = self._aws_info or host.endswith("aliyuncs.com")
         self._url = url
         self._region = region or region_in_host
         self._accelerate_host_flag = False
@@ -652,8 +640,7 @@ class BaseURL:
         for key, values in sorted((query_params or {}).items()):
             values = values if isinstance(values, (list, tuple)) else [values]
             query += [
-                f"{queryencode(key)}={queryencode(value)}"
-                for value in sorted(values)
+                f"{queryencode(key)}={queryencode(value)}" for value in sorted(values)
             ]
         url = url_replace(url, query="&".join(query))
 
@@ -673,9 +660,7 @@ class BaseURL:
         )
 
         if self._aws_info:
-            url = self._build_aws_url(
-                url, bucket_name, enforce_path_style, region
-            )
+            url = self._build_aws_url(url, bucket_name, enforce_path_style, region)
 
         netloc = url.netloc
         path = "/"

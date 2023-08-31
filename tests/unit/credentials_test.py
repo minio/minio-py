@@ -44,9 +44,7 @@ class CredentialsTest(TestCase):
         )
         creds = provider.retrieve()
         self.assertEqual(creds.access_key, "Q3AM3UQ867SPQQA43P2F")
-        self.assertEqual(
-            creds.secret_key, "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG"
-        )
+        self.assertEqual(creds.secret_key, "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
         self.assertEqual(creds.session_token, None)
 
 
@@ -230,9 +228,7 @@ class MinioClientConfigProviderTest(TestCase):
         provider = MinioClientConfigProvider(filename=CONFIG_JSON_SAMPLE)
         creds = provider.retrieve()
         self.assertEqual(creds.access_key, "Q3AM3UQ867SPQQA43P2F")
-        self.assertEqual(
-            creds.secret_key, "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG"
-        )
+        self.assertEqual(creds.secret_key, "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
         self.assertEqual(creds.session_token, None)
 
     def test_file_minio_arg_alias(self):
@@ -243,9 +239,7 @@ class MinioClientConfigProviderTest(TestCase):
         )
         creds = provider.retrieve()
         self.assertEqual(creds.access_key, "Q3AM3UQ867SPQQA43P2F")
-        self.assertEqual(
-            creds.secret_key, "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG"
-        )
+        self.assertEqual(creds.secret_key, "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
         self.assertEqual(creds.session_token, None)
 
 

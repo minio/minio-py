@@ -622,8 +622,7 @@ class BaseURLTests(TestCase):
             ),
             Case(
                 (
-                    "https://s3-accesspoint.dualstack.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint.dualstack.us-gov-east-1." "amazonaws.com",
                     None,
                 ),
                 {
@@ -635,8 +634,7 @@ class BaseURLTests(TestCase):
             ),
             Case(
                 (
-                    "https://s3-accesspoint.dualstack.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint.dualstack.us-gov-east-1." "amazonaws.com",
                     "cn-northwest-1",
                 ),
                 {
@@ -667,8 +665,7 @@ class BaseURLTests(TestCase):
             ),
             Case(
                 (
-                    "https://s3-accesspoint-fips.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint-fips.us-gov-east-1." "amazonaws.com",
                     None,
                 ),
                 {
@@ -680,8 +677,7 @@ class BaseURLTests(TestCase):
             ),
             Case(
                 (
-                    "https://s3-accesspoint-fips.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint-fips.us-gov-east-1." "amazonaws.com",
                     "cn-northwest-1",
                 ),
                 {
@@ -896,8 +892,7 @@ class BaseURLTests(TestCase):
                     "vpce.amazonaws.com",
                     None,
                 ),
-                "https://bucket.vpce-1a2b3c4d-5e6f.s3.us-east-1."
-                "vpce.amazonaws.com/",
+                "https://bucket.vpce-1a2b3c4d-5e6f.s3.us-east-1." "vpce.amazonaws.com/",
             ),
             Case(
                 (
@@ -955,8 +950,7 @@ class BaseURLTests(TestCase):
                     "amazonaws.com",
                     None,
                 ),
-                "https://012345678901.s3-control.us-gov-east-1."
-                "amazonaws.com/",
+                "https://012345678901.s3-control.us-gov-east-1." "amazonaws.com/",
             ),
             Case(
                 (
@@ -964,8 +958,7 @@ class BaseURLTests(TestCase):
                     "amazonaws.com",
                     "cn-northwest-1",
                 ),
-                "https://012345678901.s3-control.cn-northwest-1."
-                "amazonaws.com/",
+                "https://012345678901.s3-control.cn-northwest-1." "amazonaws.com/",
             ),
             ###
             Case(
@@ -977,8 +970,7 @@ class BaseURLTests(TestCase):
                     "https://012345678901.s3-control-fips.amazonaws.com",
                     "ap-south-1a",
                 ),
-                "https://012345678901.s3-control-fips.ap-south-1a."
-                "amazonaws.com/",
+                "https://012345678901.s3-control-fips.ap-south-1a." "amazonaws.com/",
             ),
             Case(
                 (
@@ -986,8 +978,7 @@ class BaseURLTests(TestCase):
                     "amazonaws.com",
                     None,
                 ),
-                "https://012345678901.s3-control-fips.us-gov-east-1."
-                "amazonaws.com/",
+                "https://012345678901.s3-control-fips.us-gov-east-1." "amazonaws.com/",
             ),
             Case(
                 (
@@ -995,8 +986,7 @@ class BaseURLTests(TestCase):
                     "amazonaws.com",
                     "cn-northwest-1",
                 ),
-                "https://012345678901.s3-control-fips.cn-northwest-1."
-                "amazonaws.com/",
+                "https://012345678901.s3-control-fips.cn-northwest-1." "amazonaws.com/",
             ),
             ###
             Case(
@@ -1004,16 +994,14 @@ class BaseURLTests(TestCase):
                     "https://012345678901.s3-control-fips.dualstack.amazonaws.com",
                     None,
                 ),
-                "https://012345678901.s3-control-fips.us-east-1."
-                "amazonaws.com/",
+                "https://012345678901.s3-control-fips.us-east-1." "amazonaws.com/",
             ),
             Case(
                 (
                     "https://012345678901.s3-control-fips.dualstack.amazonaws.com",
                     "ap-south-1a",
                 ),
-                "https://012345678901.s3-control-fips.ap-south-1a."
-                "amazonaws.com/",
+                "https://012345678901.s3-control-fips.ap-south-1a." "amazonaws.com/",
             ),
             Case(
                 (
@@ -1021,8 +1009,7 @@ class BaseURLTests(TestCase):
                     "amazonaws.com",
                     None,
                 ),
-                "https://012345678901.s3-control-fips.us-gov-east-1."
-                "amazonaws.com/",
+                "https://012345678901.s3-control-fips.us-gov-east-1." "amazonaws.com/",
             ),
             Case(
                 (
@@ -1030,8 +1017,7 @@ class BaseURLTests(TestCase):
                     "amazonaws.com",
                     "cn-northwest-1",
                 ),
-                "https://012345678901.s3-control-fips.cn-northwest-1."
-                "amazonaws.com/",
+                "https://012345678901.s3-control-fips.cn-northwest-1." "amazonaws.com/",
             ),
             ###
             Case(
@@ -1067,16 +1053,14 @@ class BaseURLTests(TestCase):
             ),
             Case(
                 (
-                    "https://s3-accesspoint.dualstack.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint.dualstack.us-gov-east-1." "amazonaws.com",
                     None,
                 ),
                 "https://s3.us-gov-east-1.amazonaws.com/",
             ),
             Case(
                 (
-                    "https://s3-accesspoint.dualstack.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint.dualstack.us-gov-east-1." "amazonaws.com",
                     "cn-northwest-1",
                 ),
                 "https://s3.cn-northwest-1.amazonaws.com/",
@@ -1092,16 +1076,14 @@ class BaseURLTests(TestCase):
             ),
             Case(
                 (
-                    "https://s3-accesspoint-fips.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint-fips.us-gov-east-1." "amazonaws.com",
                     None,
                 ),
                 "https://s3.us-gov-east-1.amazonaws.com/",
             ),
             Case(
                 (
-                    "https://s3-accesspoint-fips.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint-fips.us-gov-east-1." "amazonaws.com",
                     "cn-northwest-1",
                 ),
                 "https://s3.cn-northwest-1.amazonaws.com/",
@@ -1141,16 +1123,13 @@ class BaseURLTests(TestCase):
                     "amazonaws.com",
                     "us-west-2",
                 ),
-                "https://my-load-balancer-1234567890.us-west-2.elb."
-                "amazonaws.com/",
+                "https://my-load-balancer-1234567890.us-west-2.elb." "amazonaws.com/",
             ),
         ]
 
         for case in cases:
             base_url = BaseURL(*case.args)
-            url = urlunsplit(
-                base_url.build("GET", base_url.region or "us-east-1")
-            )
+            url = urlunsplit(base_url.build("GET", base_url.region or "us-east-1"))
             self.assertEqual(str(url), case.result)
 
     def test_aws_bucket_build(self):
@@ -1262,21 +1241,18 @@ class BaseURLTests(TestCase):
             ),
             Case(
                 ("https://s3-fips.dualstack.amazonaws.com", "ap-south-1a"),
-                "https://my-bucket.s3-fips.dualstack.ap-south-1a."
-                "amazonaws.com/",
+                "https://my-bucket.s3-fips.dualstack.ap-south-1a." "amazonaws.com/",
             ),
             Case(
                 ("https://s3-fips.dualstack.us-gov-east-1.amazonaws.com", None),
-                "https://my-bucket.s3-fips.dualstack.us-gov-east-1."
-                "amazonaws.com/",
+                "https://my-bucket.s3-fips.dualstack.us-gov-east-1." "amazonaws.com/",
             ),
             Case(
                 (
                     "https://s3-fips.dualstack.me-south-1.amazonaws.com",
                     "cn-northwest-1",
                 ),
-                "https://my-bucket.s3-fips.dualstack.cn-northwest-1."
-                "amazonaws.com/",
+                "https://my-bucket.s3-fips.dualstack.cn-northwest-1." "amazonaws.com/",
             ),
             ###
             Case(
@@ -1313,8 +1289,7 @@ class BaseURLTests(TestCase):
             ###
             Case(
                 ("https://012345678901.s3-control.amazonaws.com", None),
-                "https://my-bucket.012345678901.s3-control.us-east-1."
-                "amazonaws.com/",
+                "https://my-bucket.012345678901.s3-control.us-east-1." "amazonaws.com/",
             ),
             Case(
                 (
@@ -1460,8 +1435,7 @@ class BaseURLTests(TestCase):
                     "https://s3-accesspoint.us-gov-east-1.amazonaws.com",
                     "cn-northwest-1",
                 ),
-                "https://my-bucket.s3-accesspoint.cn-northwest-1."
-                "amazonaws.com/",
+                "https://my-bucket.s3-accesspoint.cn-northwest-1." "amazonaws.com/",
             ),
             ###
             Case(
@@ -1479,8 +1453,7 @@ class BaseURLTests(TestCase):
             ),
             Case(
                 (
-                    "https://s3-accesspoint.dualstack.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint.dualstack.us-gov-east-1." "amazonaws.com",
                     None,
                 ),
                 "https://my-bucket.s3-accesspoint.dualstack.us-gov-east-1."
@@ -1488,8 +1461,7 @@ class BaseURLTests(TestCase):
             ),
             Case(
                 (
-                    "https://s3-accesspoint.dualstack.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint.dualstack.us-gov-east-1." "amazonaws.com",
                     "cn-northwest-1",
                 ),
                 "https://my-bucket.s3-accesspoint.dualstack.cn-northwest-1."
@@ -1498,27 +1470,22 @@ class BaseURLTests(TestCase):
             ###
             Case(
                 ("https://s3-accesspoint-fips.amazonaws.com", None),
-                "https://my-bucket.s3-accesspoint-fips.us-east-1."
-                "amazonaws.com/",
+                "https://my-bucket.s3-accesspoint-fips.us-east-1." "amazonaws.com/",
             ),
             Case(
                 ("https://s3-accesspoint-fips.amazonaws.com", "ap-south-1a"),
-                "https://my-bucket.s3-accesspoint-fips.ap-south-1a."
-                "amazonaws.com/",
+                "https://my-bucket.s3-accesspoint-fips.ap-south-1a." "amazonaws.com/",
             ),
             Case(
                 (
-                    "https://s3-accesspoint-fips.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint-fips.us-gov-east-1." "amazonaws.com",
                     None,
                 ),
-                "https://my-bucket.s3-accesspoint-fips.us-gov-east-1."
-                "amazonaws.com/",
+                "https://my-bucket.s3-accesspoint-fips.us-gov-east-1." "amazonaws.com/",
             ),
             Case(
                 (
-                    "https://s3-accesspoint-fips.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint-fips.us-gov-east-1." "amazonaws.com",
                     "cn-northwest-1",
                 ),
                 "https://my-bucket.s3-accesspoint-fips.cn-northwest-1."
@@ -1584,18 +1551,15 @@ class BaseURLTests(TestCase):
         cases = [
             Case(
                 ("https://s3.amazonaws.com", None),
-                "https://my-bucket.s3.us-east-1.amazonaws.com/"
-                "path/to/my/object",
+                "https://my-bucket.s3.us-east-1.amazonaws.com/" "path/to/my/object",
             ),
             Case(
                 ("https://s3.amazonaws.com", "ap-south-1a"),
-                "https://my-bucket.s3.ap-south-1a.amazonaws.com/"
-                "path/to/my/object",
+                "https://my-bucket.s3.ap-south-1a.amazonaws.com/" "path/to/my/object",
             ),
             Case(
                 ("https://s3.us-gov-east-1.amazonaws.com", None),
-                "https://my-bucket.s3.us-gov-east-1.amazonaws.com/"
-                "path/to/my/object",
+                "https://my-bucket.s3.us-gov-east-1.amazonaws.com/" "path/to/my/object",
             ),
             Case(
                 ("https://s3.me-south-1.amazonaws.com", "cn-northwest-1"),
@@ -1629,26 +1593,22 @@ class BaseURLTests(TestCase):
             ###
             Case(
                 ("https://s3-accelerate.amazonaws.com", None),
-                "https://my-bucket.s3-accelerate.amazonaws.com/"
-                "path/to/my/object",
+                "https://my-bucket.s3-accelerate.amazonaws.com/" "path/to/my/object",
             ),
             Case(
                 ("https://s3-accelerate.amazonaws.com", "ap-south-1a"),
-                "https://my-bucket.s3-accelerate.amazonaws.com/"
-                "path/to/my/object",
+                "https://my-bucket.s3-accelerate.amazonaws.com/" "path/to/my/object",
             ),
             Case(
                 ("https://s3-accelerate.us-gov-east-1.amazonaws.com", None),
-                "https://my-bucket.s3-accelerate.amazonaws.com/"
-                "path/to/my/object",
+                "https://my-bucket.s3-accelerate.amazonaws.com/" "path/to/my/object",
             ),
             Case(
                 (
                     "https://s3-accelerate.me-south-1.amazonaws.com",
                     "cn-northwest-1",
                 ),
-                "https://my-bucket.s3-accelerate.amazonaws.com/"
-                "path/to/my/object",
+                "https://my-bucket.s3-accelerate.amazonaws.com/" "path/to/my/object",
             ),
             ###
             Case(
@@ -1728,13 +1688,11 @@ class BaseURLTests(TestCase):
             ###
             Case(
                 ("https://s3-external-1.amazonaws.com", None),
-                "https://my-bucket.s3-external-1.amazonaws.com/"
-                "path/to/my/object",
+                "https://my-bucket.s3-external-1.amazonaws.com/" "path/to/my/object",
             ),
             Case(
                 ("https://s3-us-gov-west-1.amazonaws.com", None),
-                "https://my-bucket.s3-us-gov-west-1.amazonaws.com/"
-                "path/to/my/object",
+                "https://my-bucket.s3-us-gov-west-1.amazonaws.com/" "path/to/my/object",
             ),
             Case(
                 ("https://s3-fips-us-gov-west-1.amazonaws.com", None),
@@ -1932,8 +1890,7 @@ class BaseURLTests(TestCase):
             ),
             Case(
                 (
-                    "https://s3-accesspoint.dualstack.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint.dualstack.us-gov-east-1." "amazonaws.com",
                     None,
                 ),
                 "https://my-bucket.s3-accesspoint.dualstack.us-gov-east-1."
@@ -1941,8 +1898,7 @@ class BaseURLTests(TestCase):
             ),
             Case(
                 (
-                    "https://s3-accesspoint.dualstack.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint.dualstack.us-gov-east-1." "amazonaws.com",
                     "cn-northwest-1",
                 ),
                 "https://my-bucket.s3-accesspoint.dualstack.cn-northwest-1."
@@ -1961,8 +1917,7 @@ class BaseURLTests(TestCase):
             ),
             Case(
                 (
-                    "https://s3-accesspoint-fips.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint-fips.us-gov-east-1." "amazonaws.com",
                     None,
                 ),
                 "https://my-bucket.s3-accesspoint-fips.us-gov-east-1."
@@ -1970,8 +1925,7 @@ class BaseURLTests(TestCase):
             ),
             Case(
                 (
-                    "https://s3-accesspoint-fips.us-gov-east-1."
-                    "amazonaws.com",
+                    "https://s3-accesspoint-fips.us-gov-east-1." "amazonaws.com",
                     "cn-northwest-1",
                 ),
                 "https://my-bucket.s3-accesspoint-fips.cn-northwest-1."

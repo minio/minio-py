@@ -166,11 +166,7 @@ class Filter:
     """Lifecycle rule filter."""
 
     def __init__(self, and_operator=None, prefix=None, tag=None):
-        valid = (
-            (and_operator is not None)
-            ^ (prefix is not None)
-            ^ (tag is not None)
-        )
+        valid = (and_operator is not None) ^ (prefix is not None) ^ (tag is not None)
         if not valid:
             raise ValueError("only one of and, prefix or tag must be provided")
         self._and_operator = and_operator
@@ -197,9 +193,7 @@ class Filter:
         """Create new object with values from XML element."""
         element = find(element, "Filter")
         and_operator = (
-            None
-            if find(element, "And") is None
-            else AndOperator.fromxml(element)
+            None if find(element, "And") is None else AndOperator.fromxml(element)
         )
         prefix = findtext(element, "Prefix")
         tag = None if find(element, "Tag") is None else Tag.fromxml(element)
@@ -479,8 +473,7 @@ class ComposeSource(ObjectConditionalReadArgs):
         """Get object size."""
         if self._object_size is None:
             raise MinioException(
-                "build_headers() must be called prior to "
-                "this method invocation",
+                "build_headers() must be called prior to " "this method invocation",
             )
         return self._object_size
 
@@ -489,8 +482,7 @@ class ComposeSource(ObjectConditionalReadArgs):
         """Get headers."""
         if self._headers is None:
             raise MinioException(
-                "build_headers() must be called prior to "
-                "this method invocation",
+                "build_headers() must be called prior to " "this method invocation",
             )
         return self._headers.copy()
 

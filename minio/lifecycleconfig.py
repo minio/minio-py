@@ -186,8 +186,7 @@ class Expiration(DateDays):
         if expired_object_delete_marker is not None:
             if expired_object_delete_marker.title() not in ["False", "True"]:
                 raise ValueError(
-                    "value of ExpiredObjectDeleteMarker must be "
-                    "'True' or 'False'",
+                    "value of ExpiredObjectDeleteMarker must be " "'True' or 'False'",
                 )
             expired_object_delete_marker = (
                 expired_object_delete_marker.title() == "True"
@@ -274,9 +273,7 @@ class Rule(BaseRule):
         super().__init__(rule_filter, rule_id)
 
         self._status = status
-        self._abort_incomplete_multipart_upload = (
-            abort_incomplete_multipart_upload
-        )
+        self._abort_incomplete_multipart_upload = abort_incomplete_multipart_upload
         self._expiration = expiration
         self._noncurrent_version_expiration = noncurrent_version_expiration
         self._noncurrent_version_transition = noncurrent_version_transition
@@ -322,9 +319,7 @@ class Rule(BaseRule):
             else AbortIncompleteMultipartUpload.fromxml(element)
         )
         expiration = (
-            None
-            if find(element, "Expiration") is None
-            else Expiration.fromxml(element)
+            None if find(element, "Expiration") is None else Expiration.fromxml(element)
         )
         rule_filter, rule_id = cls.parsexml(element)
         noncurrent_version_expiration = (
@@ -338,16 +333,12 @@ class Rule(BaseRule):
             else NoncurrentVersionTransition.fromxml(element)
         )
         transition = (
-            None
-            if find(element, "Transition") is None
-            else Transition.fromxml(element)
+            None if find(element, "Transition") is None else Transition.fromxml(element)
         )
 
         return cls(
             status,
-            abort_incomplete_multipart_upload=(
-                abort_incomplete_multipart_upload
-            ),
+            abort_incomplete_multipart_upload=(abort_incomplete_multipart_upload),
             expiration=expiration,
             rule_filter=rule_filter,
             rule_id=rule_id,

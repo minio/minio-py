@@ -89,9 +89,9 @@ class SseKMS(Sse):
         }
         if context:
             data = bytes(json.dumps(context), "utf-8")
-            self._headers[
-                "X-Amz-Server-Side-Encryption-Context"
-            ] = base64.b64encode(data).decode()
+            self._headers["X-Amz-Server-Side-Encryption-Context"] = base64.b64encode(
+                data
+            ).decode()
 
     def headers(self):
         return self._headers.copy()

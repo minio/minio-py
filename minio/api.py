@@ -91,8 +91,7 @@ from .versioningconfig import VersioningConfig
 from .xml import Element, SubElement, findtext, getbytes, marshal, unmarshal
 
 _DEFAULT_USER_AGENT = (
-    f"MinIO ({platform.system()}; {platform.machine()}) "
-    f"{__title__}/{__version__}"
+    f"MinIO ({platform.system()}; {platform.machine()}) " f"{__title__}/{__version__}"
 )
 
 
@@ -150,12 +149,9 @@ class Minio:  # pylint: disable=too-many-public-methods
         cert_check=True,
     ):
         # Validate http client has correct base class.
-        if http_client and not isinstance(
-            http_client, urllib3.poolmanager.PoolManager
-        ):
+        if http_client and not isinstance(http_client, urllib3.poolmanager.PoolManager):
             raise ValueError(
-                "HTTP client should be instance of "
-                "`urllib3.poolmanager.PoolManager`"
+                "HTTP client should be instance of " "`urllib3.poolmanager.PoolManager`"
             )
 
         self._region_map = {}
@@ -633,23 +629,16 @@ class Minio:  # pylint: disable=too-many-public-methods
             # Create bucket with object-lock feature on specific region.
             client.make_bucket("my-bucket", "eu-west-2", object_lock=True)
         """
-        check_bucket_name(
-            bucket_name, True, s3_check=self._base_url.is_aws_host
-        )
+        check_bucket_name(bucket_name, True, s3_check=self._base_url.is_aws_host)
         if self._base_url.region:
             # Error out if region does not match with region passed via
             # constructor.
             if location and self._base_url.region != location:
                 raise ValueError(
-                    f"region must be {self._base_url.region}, "
-                    f"but passed {location}"
+                    f"region must be {self._base_url.region}, " f"but passed {location}"
                 )
         location = self._base_url.region or location or "us-east-1"
-        headers = (
-            {"x-amz-bucket-object-lock-enabled": "true"}
-            if object_lock
-            else None
-        )
+        headers = {"x-amz-bucket-object-lock-enabled": "true"} if object_lock else None
 
         body = None
         if location != "us-east-1":
@@ -1541,11 +1530,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             raise ValueError("retention must be Retention type")
 
         part_count = self._calc_part_count(sources)
-        if (
-            part_count == 1
-            and sources[0].offset is None
-            and sources[0].length is None
-        ):
+        if part_count == 1 and sources[0].offset is None and sources[0].length is None:
             return self.copy_object(
                 bucket_name,
                 object_name,
@@ -1690,9 +1675,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         element = ET.fromstring(response.data.decode())
         return findtext(element, "UploadId")
 
-    def _put_object(
-        self, bucket_name, object_name, data, headers, query_params=None
-    ):
+    def _put_object(self, bucket_name, object_name, data, headers, query_params=None):
         """Execute PutObject S3 API."""
         response = self._execute(
             "PUT",
@@ -2309,9 +2292,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             extra_query_params=extra_query_params,
         )
 
-    def presigned_put_object(
-        self, bucket_name, object_name, expires=timedelta(days=7)
-    ):
+    def presigned_put_object(self, bucket_name, object_name, expires=timedelta(days=7)):
         """
         Get presigned URL of an object to upload data with expiry time and
         custom request parameters.
@@ -2365,9 +2346,7 @@ class Minio:  # pylint: disable=too-many-public-methods
             raise ValueError(
                 "anonymous access does not require presigned post form-data",
             )
-        check_bucket_name(
-            policy.bucket_name, s3_check=self._base_url.is_aws_host
-        )
+        check_bucket_name(policy.bucket_name, s3_check=self._base_url.is_aws_host)
         return policy.form_data(
             self._provider.retrieve(),
             self._get_region(policy.bucket_name),
@@ -2777,9 +2756,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         Example::
             client.delete_object_lock_config("my-bucket")
         """
-        self.set_object_lock_config(
-            bucket_name, ObjectLockConfig(None, None, None)
-        )
+        self.set_object_lock_config(bucket_name, ObjectLockConfig(None, None, None))
 
     def get_object_lock_config(self, bucket_name):
         """

@@ -144,9 +144,7 @@ def _call_test(func, *args, **kwargs):
         # pylint: disable=deprecated-method
         args_string = ", ".join(getfullargspec(log_entry["method"]).args[1:])
         log_entry["function"] = f"{log_entry['method'].__name__}({args_string})"
-    log_entry["args"] = {
-        k: v for k, v in log_entry.get("args", {}).items() if v
-    }
+    log_entry["args"] = {k: v for k, v in log_entry.get("args", {}).items() if v}
     log_entry["duration"] = int(round((time.time() - start_time) * 1000))
     log_entry["name"] = "minio-py:" + log_entry["name"]
     log_entry["method"] = None
@@ -272,9 +270,7 @@ def test_select_object_content(log_entry):
     try:
         _CLIENT.make_bucket(bucket_name)
         content = io.BytesIO(b"col1,col2,col3\none,two,three\nX,Y,Z\n")
-        _CLIENT.put_object(
-            bucket_name, csvfile, content, len(content.getvalue())
-        )
+        _CLIENT.put_object(bucket_name, csvfile, content, len(content.getvalue()))
 
         request = SelectRequest(
             "select * from s3object",
@@ -292,8 +288,7 @@ def test_select_object_content(log_entry):
         generated_crc = crc32(records.getvalue()) & 0xFFFFFFFF
         if expected_crc != generated_crc:
             raise ValueError(
-                "Data mismatch Expected : "
-                '"col1,col2,col3\none,two,three\nX,Y,Z\n"',
+                "Data mismatch Expected : " '"col1,col2,col3\none,two,three\nX,Y,Z\n"',
                 f"Received {records.getvalue().decode()}",
             )
     finally:
@@ -386,9 +381,7 @@ def test_fput_object_with_content_type(  # pylint: disable=invalid-name
 def _validate_stat(st_obj, expected_size, expected_meta, version_id=None):
     """Validate stat information."""
 
-    expected_meta = {
-        key.lower(): value for key, value in (expected_meta or {}).items()
-    }
+    expected_meta = {key.lower(): value for key, value in (expected_meta or {}).items()}
     received_etag = st_obj.etag
     received_metadata = {
         key.lower(): value for key, value in (st_obj.metadata or {}).items()
@@ -402,8 +395,7 @@ def _validate_stat(st_obj, expected_size, expected_meta, version_id=None):
 
     if st_obj.version_id != version_id:
         raise ValueError(
-            f"version-id mismatch. expected={version_id}, "
-            f"got={st_obj.version_id}"
+            f"version-id mismatch. expected={version_id}, " f"got={st_obj.version_id}"
         )
 
     # content_type by default can be either application/octet-stream or
@@ -414,8 +406,7 @@ def _validate_stat(st_obj, expected_size, expected_meta, version_id=None):
     ]:
         raise ValueError(
             "Incorrect content type. Expected: ",
-            "'application/octet-stream' or 'binary/octet-stream',"
-            " received: ",
+            "'application/octet-stream' or 'binary/octet-stream'," " received: ",
             received_content_type,
         )
 
@@ -731,9 +722,7 @@ def test_put_object(log_entry, sse=None):
             "x-amz-meta-testing": "value",
             "test-key": "value2",
         }
-        log_entry["args"][
-            "content_type"
-        ] = content_type = "application/octet-stream"
+        log_entry["args"]["content_type"] = content_type = "application/octet-stream"
         log_entry["args"]["object_name"] = object_name + "-metadata"
         _CLIENT.put_object(
             bucket_name,
@@ -747,9 +736,7 @@ def test_put_object(log_entry, sse=None):
         # Stat on the uploaded object to check if it exists
         # Fetch saved stat metadata on a previously uploaded object with
         # metadata.
-        st_obj = _CLIENT.stat_object(
-            bucket_name, object_name + "-metadata", ssec=sse
-        )
+        st_obj = _CLIENT.stat_object(bucket_name, object_name + "-metadata", ssec=sse)
         normalized_meta = {
             key.lower(): value for key, value in (st_obj.metadata or {}).items()
         }
@@ -843,12 +830,8 @@ def _test_stat_object(log_entry, sse=None, version_check=False):
         log_entry["args"]["length"] = length = 11 * MB
         reader = LimitedRandomReader(length)
         log_entry["args"]["data"] = "LimitedRandomReader(11 * MB)"
-        log_entry["args"]["metadata"] = metadata = {
-            "X-Amz-Meta-Testing": "value"
-        }
-        log_entry["args"][
-            "content_type"
-        ] = content_type = "application/octet-stream"
+        log_entry["args"]["metadata"] = metadata = {"X-Amz-Meta-Testing": "value"}
+        log_entry["args"]["content_type"] = content_type = "application/octet-stream"
         log_entry["args"]["object_name"] = object_name + "-metadata"
         result = _CLIENT.put_object(
             bucket_name,
@@ -1335,12 +1318,8 @@ def test_list_objects_with_prefix(log_entry):
             path_prefix = f"{path_prefix}{i}/"
         _CLIENT.remove_bucket(bucket_name)
     # Test passes
-    log_entry["args"][
-        "prefix"
-    ] = "Several prefix/recursive combinations are tested"
-    log_entry["args"][
-        "recursive"
-    ] = "Several prefix/recursive combinations are tested"
+    log_entry["args"]["prefix"] = "Several prefix/recursive combinations are tested"
+    log_entry["args"]["recursive"] = "Several prefix/recursive combinations are tested"
 
 
 def test_list_objects_with_1001_files(  # pylint: disable=invalid-name
@@ -1405,9 +1384,7 @@ def test_presigned_get_object_default_expiry(  # pylint: disable=invalid-name
     _CLIENT.make_bucket(bucket_name)
     try:
         size = 1 * KB
-        _CLIENT.put_object(
-            bucket_name, object_name, LimitedRandomReader(size), size
-        )
+        _CLIENT.put_object(bucket_name, object_name, LimitedRandomReader(size), size)
         presigned_get_object_url = _CLIENT.presigned_get_object(
             bucket_name, object_name
         )
@@ -1437,9 +1414,7 @@ def test_presigned_get_object_expiry(log_entry):  # pylint: disable=invalid-name
     _CLIENT.make_bucket(bucket_name)
     try:
         size = 1 * KB
-        _CLIENT.put_object(
-            bucket_name, object_name, LimitedRandomReader(size), size
-        )
+        _CLIENT.put_object(bucket_name, object_name, LimitedRandomReader(size), size)
         presigned_get_object_url = _CLIENT.presigned_get_object(
             bucket_name, object_name, timedelta(seconds=120)
         )
@@ -1456,9 +1431,7 @@ def test_presigned_get_object_expiry(log_entry):  # pylint: disable=invalid-name
 
         log_entry["args"]["response.status"] = response.status
         log_entry["args"]["response.reason"] = response.reason
-        log_entry["args"]["response.headers"] = json.dumps(
-            response.headers.__dict__
-        )
+        log_entry["args"]["response.headers"] = json.dumps(response.headers.__dict__)
         # pylint: disable=protected-access
         log_entry["args"]["response._body"] = response._body.decode("utf-8")
 
@@ -1478,9 +1451,7 @@ def test_presigned_get_object_expiry(log_entry):  # pylint: disable=invalid-name
 
         log_entry["args"]["response.status-2"] = response.status
         log_entry["args"]["response.reason-2"] = response.reason
-        log_entry["args"]["response.headers-2"] = json.dumps(
-            response.headers.__dict__
-        )
+        log_entry["args"]["response.headers-2"] = json.dumps(response.headers.__dict__)
         log_entry["args"]["response._body-2"] = response._body.decode("utf-8")
 
         # Success with an expired url is considered to be a failure
@@ -1512,9 +1483,7 @@ def test_presigned_get_object_response_headers(  # pylint: disable=invalid-name
     _CLIENT.make_bucket(bucket_name)
     try:
         size = 1 * KB
-        _CLIENT.put_object(
-            bucket_name, object_name, LimitedRandomReader(size), size
-        )
+        _CLIENT.put_object(bucket_name, object_name, LimitedRandomReader(size), size)
         presigned_get_object_url = _CLIENT.presigned_get_object(
             bucket_name, object_name, timedelta(seconds=120)
         )
@@ -1535,15 +1504,11 @@ def test_presigned_get_object_response_headers(  # pylint: disable=invalid-name
 
         log_entry["args"]["response.status"] = response.status
         log_entry["args"]["response.reason"] = response.reason
-        log_entry["args"]["response.headers"] = json.dumps(
-            response.headers.__dict__
-        )
+        log_entry["args"]["response.headers"] = json.dumps(response.headers.__dict__)
         # pylint: disable=protected-access
         log_entry["args"]["response._body"] = response._body.decode("utf-8")
         log_entry["args"]["returned_content_type"] = returned_content_type
-        log_entry["args"][
-            "returned_content_language"
-        ] = returned_content_language
+        log_entry["args"]["returned_content_language"] = returned_content_language
 
         if (
             response.status != 200
@@ -1967,9 +1932,7 @@ def _test_remove_objects(log_entry, version_check=False):
                 size,
             )
             object_names.append(
-                (object_name, result.version_id)
-                if version_check
-                else object_name,
+                (object_name, result.version_id) if version_check else object_name,
             )
         log_entry["args"]["delete_object_list"] = object_names
 
@@ -2226,9 +2189,7 @@ def main():
         if arg_list:
             args = ()
             kwargs = arg_list
-            _call_test(
-                test_name, *args, **kwargs
-            )  # pylint: disable=not-a-mapping
+            _call_test(test_name, *args, **kwargs)  # pylint: disable=not-a-mapping
 
     # Remove temporary files.
     if not is_mint_env:

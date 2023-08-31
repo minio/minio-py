@@ -204,9 +204,7 @@ class Object:
         return self._content_type
 
     @classmethod
-    def fromxml(
-        cls, element, bucket_name, is_delete_marker=False, encoding_type=None
-    ):
+    def fromxml(cls, element, bucket_name, is_delete_marker=False, encoding_type=None):
         """Create new object with values from XML element."""
         tag = findtext(element, "LastModified")
         last_modified = None if tag is None else from_iso8601utc(tag)
@@ -401,9 +399,7 @@ class ListPartsResult:
         self._object_name = findtext(element, "Key")
         tag = find(element, "Initiator")
         self._initiator_id = None if tag is None else findtext(tag, "ID")
-        self._initiator_name = (
-            None if tag is None else findtext(tag, "DisplayName")
-        )
+        self._initiator_name = None if tag is None else findtext(tag, "DisplayName")
         tag = find(element, "Owner")
         self._owner_id = None if tag is None else findtext(tag, "ID")
         self._owner_name = None if tag is None else findtext(tag, "DisplayName")
@@ -420,8 +416,7 @@ class ListPartsResult:
             self._max_parts = int(self._max_parts)
         self._is_truncated = findtext(element, "IsTruncated")
         self._is_truncated = (
-            self._is_truncated is not None
-            and self._is_truncated.lower() == "true"
+            self._is_truncated is not None and self._is_truncated.lower() == "true"
         )
         self._parts = [Part.fromxml(tag) for tag in findall(element, "Part")]
 
@@ -500,9 +495,7 @@ class Upload:
         self._upload_id = findtext(element, "UploadId")
         tag = find(element, "Initiator")
         self._initiator_id = None if tag is None else findtext(tag, "ID")
-        self._initiator_name = (
-            None if tag is None else findtext(tag, "DisplayName")
-        )
+        self._initiator_name = None if tag is None else findtext(tag, "DisplayName")
         tag = find(element, "Owner")
         self._owner_id = None if tag is None else findtext(tag, "ID")
         self._owner_name = None if tag is None else findtext(tag, "DisplayName")
@@ -580,12 +573,10 @@ class ListMultipartUploadsResult:
             self._max_uploads = int(self._max_uploads)
         self._is_truncated = findtext(element, "IsTruncated")
         self._is_truncated = (
-            self._is_truncated is not None
-            and self._is_truncated.lower() == "true"
+            self._is_truncated is not None and self._is_truncated.lower() == "true"
         )
         self._uploads = [
-            Upload(tag, self._encoding_type)
-            for tag in findall(element, "Upload")
+            Upload(tag, self._encoding_type) for tag in findall(element, "Upload")
         ]
 
     @property
@@ -702,8 +693,7 @@ class PostPolicy:
             raise ValueError("condition element cannot be empty")
         element = _trim_dollar(element)
         if element in ["success_action_status", "content-length-range"] or (
-            element.startswith("x-amz-")
-            and not element.startswith("x-amz-meta-")
+            element.startswith("x-amz-") and not element.startswith("x-amz-meta-")
         ):
             raise ValueError(
                 f"{element} is unsupported for starts-with condition",

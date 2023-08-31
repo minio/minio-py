@@ -30,9 +30,7 @@ class StatObject(TestCase):
 
     def test_object_is_not_empty_string(self):
         client = Minio("localhost:9000")
-        self.assertRaises(
-            ValueError, client.remove_object, "hello", "  \t \n  "
-        )
+        self.assertRaises(ValueError, client.remove_object, "hello", "  \t \n  ")
 
     def test_remove_bucket_invalid_name(self):
         client = Minio("localhost:9000")

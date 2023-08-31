@@ -29,13 +29,10 @@ class MockResponse(object):
     ):
         self.method = method
         self.url = url
-        self.request_headers = {
-            key.lower(): value for key, value in headers.items()
-        }
+        self.request_headers = {key.lower(): value for key, value in headers.items()}
         self.status = status_code
         self.headers = {
-            key.lower(): value
-            for key, value in (response_headers or {}).items()
+            key.lower(): value for key, value in (response_headers or {}).items()
         }
         self.data = content
         if content is None:

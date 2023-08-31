@@ -68,11 +68,7 @@ def _urlopen(http_client, method, url, body=None, headers=None):
 
 def _user_home_dir():
     """Return current user home folder."""
-    return (
-        os.environ.get("HOME")
-        or os.environ.get("UserProfile")
-        or str(Path.home())
-    )
+    return os.environ.get("HOME") or os.environ.get("UserProfile") or str(Path.home())
 
 
 class Provider:  # pylint: disable=too-few-public-methods
@@ -219,8 +215,7 @@ class EnvAWSProvider(Provider):
         """Retrieve credentials."""
         return Credentials(
             access_key=(
-                os.environ.get("AWS_ACCESS_KEY_ID")
-                or os.environ.get("AWS_ACCESS_KEY")
+                os.environ.get("AWS_ACCESS_KEY_ID") or os.environ.get("AWS_ACCESS_KEY")
             ),
             secret_key=(
                 os.environ.get("AWS_SECRET_ACCESS_KEY")
@@ -544,9 +539,7 @@ class WebIdentityClientGrantsProvider(Provider):
         if expiry <= 0:
             return expiry
 
-        return (
-            _MIN_DURATION_SECONDS if expiry < _MIN_DURATION_SECONDS else expiry
-        )
+        return _MIN_DURATION_SECONDS if expiry < _MIN_DURATION_SECONDS else expiry
 
     def retrieve(self):
         """Retrieve credentials."""

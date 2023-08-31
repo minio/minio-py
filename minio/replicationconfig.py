@@ -329,11 +329,7 @@ class Destination:
             if find(element, "EncryptionConfiguration") is None
             else EncryptionConfig.fromxml(element)
         )
-        metrics = (
-            None
-            if find(element, "Metrics") is None
-            else Metrics.fromxml(element)
-        )
+        metrics = None if find(element, "Metrics") is None else Metrics.fromxml(element)
         replication_time = (
             None
             if find(element, "ReplicationTime") is None
