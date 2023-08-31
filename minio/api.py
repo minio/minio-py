@@ -151,7 +151,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         # Validate http client has correct base class.
         if http_client and not isinstance(http_client, urllib3.poolmanager.PoolManager):
             raise ValueError(
-                "HTTP client should be instance of " "`urllib3.poolmanager.PoolManager`"
+                "HTTP client should be instance of `urllib3.poolmanager.PoolManager`"
             )
 
         self._region_map = {}

@@ -473,7 +473,7 @@ class ComposeSource(ObjectConditionalReadArgs):
         """Get object size."""
         if self._object_size is None:
             raise MinioException(
-                "build_headers() must be called prior to " "this method invocation",
+                "build_headers() must be called prior to this method invocation",
             )
         return self._object_size
 
@@ -482,7 +482,7 @@ class ComposeSource(ObjectConditionalReadArgs):
         """Get headers."""
         if self._headers is None:
             raise MinioException(
-                "build_headers() must be called prior to " "this method invocation",
+                "build_headers() must be called prior to this method invocation",
             )
         return self._headers.copy()
 

@@ -213,13 +213,13 @@ def check_bucket_name(bucket_name, strict=False, s3_check=False):
 
     if _IPV4_REGEX.match(bucket_name):
         raise ValueError(
-            "bucket name {bucket_name} must not be formatted " "as an IP address"
+            "bucket name {bucket_name} must not be formatted as an IP address"
         )
 
     unallowed_successive_chars = ["..", ".-", "-."]
     if any(x in bucket_name for x in unallowed_successive_chars):
         raise ValueError(
-            "bucket name {bucket_name} contains invalid " "successive characters"
+            "bucket name {bucket_name} contains invalid successive characters"
         )
 
     if (

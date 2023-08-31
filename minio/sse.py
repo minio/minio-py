@@ -56,9 +56,7 @@ class SseCustomerKey(Sse):
                 "SSE-C keys need to be 256 bit base64 encoded",
             )
         b64key = base64.b64encode(key).decode()
-        from .helpers import (
-            md5sum_hash,
-        )  # pylint: disable=import-outside-toplevel
+        from .helpers import md5sum_hash  # pylint: disable=import-outside-toplevel
 
         md5key = md5sum_hash(key)
         self._headers = {

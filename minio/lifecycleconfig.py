@@ -186,7 +186,7 @@ class Expiration(DateDays):
         if expired_object_delete_marker is not None:
             if expired_object_delete_marker.title() not in ["False", "True"]:
                 raise ValueError(
-                    "value of ExpiredObjectDeleteMarker must be " "'True' or 'False'",
+                    "value of ExpiredObjectDeleteMarker must be 'True' or 'False'",
                 )
             expired_object_delete_marker = (
                 expired_object_delete_marker.title() == "True"
