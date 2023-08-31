@@ -36,7 +36,7 @@ from .xml import find, findall, findtext
 try:
     from json.decoder import JSONDecodeError
 except ImportError:
-    JSONDecodeError = ValueError
+    JSONDecodeError = ValueError  # type: ignore
 
 
 class Bucket:
@@ -411,8 +411,8 @@ class ListPartsResult:
             self._max_parts = int(self._max_parts)
         self._is_truncated = findtext(element, "IsTruncated")
         self._is_truncated = (
-            self._is_truncated is not None and
-            self._is_truncated.lower() == "true"
+                self._is_truncated is not None and
+                self._is_truncated.lower() == "true"
         )
         self._parts = [Part.fromxml(tag) for tag in findall(element, "Part")]
 
@@ -574,8 +574,8 @@ class ListMultipartUploadsResult:
             self._max_uploads = int(self._max_uploads)
         self._is_truncated = findtext(element, "IsTruncated")
         self._is_truncated = (
-            self._is_truncated is not None and
-            self._is_truncated.lower() == "true"
+                self._is_truncated is not None and
+                self._is_truncated.lower() == "true"
         )
         self._uploads = [
             Upload(tag, self._encoding_type)
@@ -673,10 +673,10 @@ class PostPolicy:
         element = _trim_dollar(element)
         if (
                 element in [
-                    "success_action_redirect",
-                    "redirect",
-                    "content-length-range",
-                ]
+            "success_action_redirect",
+            "redirect",
+            "content-length-range",
+        ]
         ):
             raise ValueError(element + " is unsupported for equals condition")
         if element in _RESERVED_ELEMENTS:
@@ -700,8 +700,8 @@ class PostPolicy:
         if (
                 element in ["success_action_status", "content-length-range"] or
                 (
-                    element.startswith("x-amz-") and
-                    not element.startswith("x-amz-meta-")
+                        element.startswith("x-amz-") and
+                        not element.startswith("x-amz-meta-")
                 )
         ):
             raise ValueError(
@@ -756,7 +756,7 @@ class PostPolicy:
         policy["conditions"] = [[_EQ, "$bucket", self._bucket_name]]
         for cond_key, conditions in self._conditions.items():
             for key, value in conditions.items():
-                policy["conditions"].append([cond_key, "$"+key, value])
+                policy["conditions"].append([cond_key, "$" + key, value])
         if self._lower_limit is not None and self._upper_limit is not None:
             policy["conditions"].append(
                 ["content-length-range", self._lower_limit, self._upper_limit],

@@ -3,7 +3,7 @@ default: tests
 
 getdeps:
 	@echo "Installing required dependencies"
-	@pip install --user --upgrade autopep8 certifi pytest pylint urllib3
+	@pip install --user --upgrade autopep8 certifi pytest pylint urllib3 mypy
 
 check: getdeps
 	@echo "Running checks"
@@ -11,6 +11,7 @@ check: getdeps
 	@pylint --reports=no --score=no minio/credentials tests/functional
 	@isort --diff .
 	@find . -name "*.py" -exec autopep8 --diff --exit-code {} +
+	@mypy minio
 
 apply: getdeps
 	@isort .
