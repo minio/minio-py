@@ -19,7 +19,8 @@ from minio import Minio
 from minio.credentials import MinioClientConfigProvider
 
 client = Minio(
-    "MINIO-HOST:MINIO-PORT", credentials=MinioClientConfigProvider(),
+    "MINIO-HOST:MINIO-PORT",
+    credentials=MinioClientConfigProvider(),
 )
 
 # Get information of an object.

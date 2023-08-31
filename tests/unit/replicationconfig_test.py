@@ -18,8 +18,12 @@ from unittest import TestCase
 
 from minio import xml
 from minio.commonconfig import DISABLED, ENABLED, AndOperator, Filter, Tags
-from minio.replicationconfig import (DeleteMarkerReplication, Destination,
-                                     ReplicationConfig, Rule)
+from minio.replicationconfig import (
+    DeleteMarkerReplication,
+    Destination,
+    ReplicationConfig,
+    Rule,
+)
 
 
 class ReplicationConfigTest(TestCase):

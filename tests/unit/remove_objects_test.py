@@ -26,54 +26,69 @@ from .minio_mocks import MockConnection, MockResponse
 
 
 class RemoveObjectsTest(TestCase):
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_object_is_list(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
-            MockResponse('POST',
-                         'https://localhost:9000/hello?delete=',
-                         {'User-Agent': _DEFAULT_USER_AGENT,
-                          'Content-Md5': u'Te1kmIjQRNNz70DJjsrD8A=='}, 200,
-                         content=b'<Delete/>')
+            MockResponse(
+                "POST",
+                "https://localhost:9000/hello?delete=",
+                {
+                    "User-Agent": _DEFAULT_USER_AGENT,
+                    "Content-Md5": "Te1kmIjQRNNz70DJjsrD8A==",
+                },
+                200,
+                content=b"<Delete/>",
+            )
         )
-        client = Minio('localhost:9000')
+        client = Minio("localhost:9000")
         for err in client.remove_objects(
-                "hello",
-                [DeleteObject("Ab"), DeleteObject("c")],
+            "hello",
+            [DeleteObject("Ab"), DeleteObject("c")],
         ):
             print(err)
 
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_object_is_tuple(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
-            MockResponse('POST',
-                         'https://localhost:9000/hello?delete=',
-                         {'User-Agent': _DEFAULT_USER_AGENT,
-                          'Content-Md5': u'Te1kmIjQRNNz70DJjsrD8A=='}, 200,
-                         content=b'<Delete/>')
+            MockResponse(
+                "POST",
+                "https://localhost:9000/hello?delete=",
+                {
+                    "User-Agent": _DEFAULT_USER_AGENT,
+                    "Content-Md5": "Te1kmIjQRNNz70DJjsrD8A==",
+                },
+                200,
+                content=b"<Delete/>",
+            )
         )
-        client = Minio('localhost:9000')
+        client = Minio("localhost:9000")
         for err in client.remove_objects(
-                "hello",
-                (DeleteObject("Ab"), DeleteObject("c")),
+            "hello",
+            (DeleteObject("Ab"), DeleteObject("c")),
         ):
             print(err)
 
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_object_is_iterator(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
-            MockResponse('POST',
-                         'https://localhost:9000/hello?delete=',
-                         {'User-Agent': _DEFAULT_USER_AGENT,
-                          'Content-Md5': u'Te1kmIjQRNNz70DJjsrD8A=='}, 200,
-                         content=b'<Delete/>')
+            MockResponse(
+                "POST",
+                "https://localhost:9000/hello?delete=",
+                {
+                    "User-Agent": _DEFAULT_USER_AGENT,
+                    "Content-Md5": "Te1kmIjQRNNz70DJjsrD8A==",
+                },
+                200,
+                content=b"<Delete/>",
+            )
         )
-        client = Minio('localhost:9000')
+        client = Minio("localhost:9000")
         it = itertools.chain((DeleteObject("Ab"), DeleteObject("c")))
-        for err in client.remove_objects('hello', it):
+        for err in client.remove_objects("hello", it):
             print(err)

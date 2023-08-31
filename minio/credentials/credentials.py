@@ -25,7 +25,11 @@ class Credentials:
     """
 
     def __init__(
-            self, access_key, secret_key, session_token=None, expiration=None,
+        self,
+        access_key,
+        secret_key,
+        session_token=None,
+        expiration=None,
     ):
         if not access_key:
             raise ValueError("Access key must not be empty")
@@ -37,8 +41,8 @@ class Credentials:
         self._secret_key = secret_key
         self._session_token = session_token
         if expiration and expiration.tzinfo:
-            expiration = (
-                expiration.astimezone(timezone.utc).replace(tzinfo=None)
+            expiration = expiration.astimezone(timezone.utc).replace(
+                tzinfo=None
             )
         self._expiration = expiration
 
@@ -61,5 +65,6 @@ class Credentials:
         """Check whether this credentials expired or not."""
         return (
             self._expiration < (datetime.utcnow() + timedelta(seconds=10))
-            if self._expiration else False
+            if self._expiration
+            else False
         )

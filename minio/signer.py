@@ -35,7 +35,7 @@ from urllib.parse import SplitResult
 from . import time
 from .helpers import queryencode, sha256_hash
 
-SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'
+SIGN_V4_ALGORITHM = "AWS4-HMAC-SHA256"
 _MULTI_SPACE_REGEX = re.compile(r"( +)")
 
 
@@ -58,13 +58,13 @@ def _get_canonical_headers(headers):
     for key, values in headers.items():
         key = key.lower()
         if key not in (
-                "authorization",
-                "user-agent",
+            "authorization",
+            "user-agent",
         ):
             values = values if isinstance(values, (list, tuple)) else [values]
-            canonical_headers[key] = ",".join([
-                _MULTI_SPACE_REGEX.sub(" ", value) for value in values
-            ])
+            canonical_headers[key] = ",".join(
+                [_MULTI_SPACE_REGEX.sub(" ", value) for value in values]
+            )
 
     canonical_headers = OrderedDict(sorted(canonical_headers.items()))
     signed_headers = ";".join(canonical_headers.keys())
@@ -80,7 +80,8 @@ def _get_canonical_query_string(query):
     query = query or ""
     return "&".join(
         [
-            "=".join(pair) for pair in sorted(
+            "=".join(pair)
+            for pair in sorted(
                 [params.split("=") for params in query.split("&")],
             )
         ],
@@ -127,7 +128,8 @@ def _get_signing_key(secret_key, date, region, service_name):
     )
     date_region_key = _hmac_hash(date_key, region.encode())
     date_region_service_key = _hmac_hash(
-        date_region_key, service_name.encode(),
+        date_region_key,
+        service_name.encode(),
     )
     return _hmac_hash(date_region_service_key, b"aws4_request")
 
@@ -147,41 +149,50 @@ def _get_authorization(access_key, scope, signed_headers, signature):
 
 
 def _sign_v4(
-        service_name,
-        method,
-        url,
-        region,
-        headers,
-        credentials,
-        content_sha256,
-        date,
+    service_name,
+    method,
+    url,
+    region,
+    headers,
+    credentials,
+    content_sha256,
+    date,
 ):
     """Do signature V4 of given request for given service name."""
 
     scope = _get_scope(date, region, service_name)
     canonical_request_hash, signed_headers = _get_canonical_request_hash(
-        method, url, headers, content_sha256,
+        method,
+        url,
+        headers,
+        content_sha256,
     )
     string_to_sign = _get_string_to_sign(date, scope, canonical_request_hash)
     signing_key = _get_signing_key(
-        credentials.secret_key, date, region, service_name,
+        credentials.secret_key,
+        date,
+        region,
+        service_name,
     )
     signature = _get_signature(signing_key, string_to_sign)
     authorization = _get_authorization(
-        credentials.access_key, scope, signed_headers, signature,
+        credentials.access_key,
+        scope,
+        signed_headers,
+        signature,
     )
     headers["Authorization"] = authorization
     return headers
 
 
 def sign_v4_s3(
-        method,
-        url,
-        region,
-        headers,
-        credentials,
-        content_sha256,
-        date,
+    method,
+    url,
+    region,
+    headers,
+    credentials,
+    content_sha256,
+    date,
 ):
     """Do signature V4 of given request for S3 service."""
     return _sign_v4(
@@ -197,13 +208,13 @@ def sign_v4_s3(
 
 
 def sign_v4_sts(
-        method,
-        url,
-        region,
-        headers,
-        credentials,
-        content_sha256,
-        date,
+    method,
+    url,
+    region,
+    headers,
+    credentials,
+    content_sha256,
+    date,
 ):
     """Do signature V4 of given request for STS service."""
     return _sign_v4(
@@ -219,13 +230,18 @@ def sign_v4_sts(
 
 
 def _get_presign_canonical_request_hash(  # pylint: disable=invalid-name
-        method, url, access_key, scope, date, expires,
+    method,
+    url,
+    access_key,
+    scope,
+    date,
+    expires,
 ):
     """Get canonical request hash for presign request."""
     x_amz_credential = queryencode(access_key + "/" + scope)
     canonical_headers, signed_headers = "host:" + url.netloc, "host"
 
-    query = url.query+"&" if url.query else ""
+    query = url.query + "&" if url.query else ""
     query += (
         f"X-Amz-Algorithm=AWS4-HMAC-SHA256"
         f"&X-Amz-Credential={x_amz_credential}"
@@ -258,18 +274,23 @@ def _get_presign_canonical_request_hash(  # pylint: disable=invalid-name
 
 
 def presign_v4(
-        method,
-        url,
-        region,
-        credentials,
-        date,
-        expires,
+    method,
+    url,
+    region,
+    credentials,
+    date,
+    expires,
 ):
     """Do signature V4 of given presign request."""
 
     scope = _get_scope(date, region, "s3")
     canonical_request_hash, url = _get_presign_canonical_request_hash(
-        method, url, credentials.access_key, scope, date, expires,
+        method,
+        url,
+        credentials.access_key,
+        scope,
+        date,
+        expires,
     )
     string_to_sign = _get_string_to_sign(date, scope, canonical_request_hash)
     signing_key = _get_signing_key(credentials.secret_key, date, region, "s3")

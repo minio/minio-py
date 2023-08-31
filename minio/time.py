@@ -22,15 +22,28 @@ import time as ctime
 from datetime import datetime, timezone
 
 _WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct",
-           "Nov", "Dec"]
+_MONTHS = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+]
 
 
 def _to_utc(value):
     """Convert to UTC time if value is not naive."""
     return (
         value.astimezone(timezone.utc).replace(tzinfo=None)
-        if value.tzinfo else value
+        if value.tzinfo
+        else value
     )
 
 
@@ -52,35 +65,29 @@ def to_iso8601utc(value):
         return None
 
     value = _to_utc(value)
-    return (
-        value.strftime("%Y-%m-%dT%H:%M:%S.") + value.strftime("%f")[:3] + "Z"
-    )
+    return value.strftime("%Y-%m-%dT%H:%M:%S.") + value.strftime("%f")[:3] + "Z"
 
 
 def from_http_header(value):
     """Parse HTTP header date formatted string to datetime."""
     if len(value) != 29:
-        raise ValueError(
-            f"time data {value} does not match HTTP header format")
+        raise ValueError(f"time data {value} does not match HTTP header format")
 
     if value[0:3] not in _WEEK_DAYS or value[3] != ",":
-        raise ValueError(
-            f"time data {value} does not match HTTP header format")
+        raise ValueError(f"time data {value} does not match HTTP header format")
     weekday = _WEEK_DAYS.index(value[0:3])
 
     day = datetime.strptime(value[4:8], " %d ").day
 
     if value[8:11] not in _MONTHS:
-        raise ValueError(
-            f"time data {value} does not match HTTP header format")
+        raise ValueError(f"time data {value} does not match HTTP header format")
     month = _MONTHS.index(value[8:11])
 
     time = datetime.strptime(value[11:], " %Y %H:%M:%S GMT")
-    time = time.replace(day=day, month=month+1, tzinfo=timezone.utc)
+    time = time.replace(day=day, month=month + 1, tzinfo=timezone.utc)
 
     if weekday != time.weekday():
-        raise ValueError(
-            f"time data {value} does not match HTTP header format")
+        raise ValueError(f"time data {value} does not match HTTP header format")
 
     return time
 

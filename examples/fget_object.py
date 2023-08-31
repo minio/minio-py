@@ -28,12 +28,16 @@ client.fget_object("my-bucket", "my-object", "my-filename")
 
 # Download data of an object of version-ID.
 client.fget_object(
-    "my-bucket", "my-object", "my-filename",
+    "my-bucket",
+    "my-object",
+    "my-filename",
     version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
 )
 
 # Download data of an SSE-C encrypted object.
 client.fget_object(
-    "my-bucket", "my-object", "my-filename",
+    "my-bucket",
+    "my-object",
+    "my-filename",
     ssec=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
 )

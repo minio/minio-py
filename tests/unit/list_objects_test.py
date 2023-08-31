@@ -25,9 +25,9 @@ from .minio_mocks import MockConnection, MockResponse
 
 
 class ListObjectsTest(TestCase):
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_empty_list_objects_works(self, mock_connection):
-        mock_data = '''<?xml version="1.0" encoding="UTF-8"?>
+        mock_data = """<?xml version="1.0" encoding="UTF-8"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
   <Prefix></Prefix>
@@ -35,7 +35,7 @@ class ListObjectsTest(TestCase):
   <MaxKeys>1000</MaxKeys>
   <Delimiter></Delimiter>
   <IsTruncated>false</IsTruncated>
-</ListBucketResult>'''
+</ListBucketResult>"""
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
@@ -48,17 +48,17 @@ class ListObjectsTest(TestCase):
                 content=mock_data.encode(),
             ),
         )
-        client = Minio('localhost:9000')
-        object_iter = client.list_objects('bucket', recursive=True)
+        client = Minio("localhost:9000")
+        object_iter = client.list_objects("bucket", recursive=True)
         objects = []
         for obj in object_iter:
             objects.append(obj)
         self.assertEqual(0, len(objects))
 
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_list_objects_works(self, mock_connection):
         start_time = time.time()
-        mock_data = '''<?xml version="1.0" encoding="UTF-8"?>
+        mock_data = """<?xml version="1.0" encoding="UTF-8"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
   <Prefix></Prefix>
@@ -79,7 +79,7 @@ class ListObjectsTest(TestCase):
     <Size>493</Size>
     <StorageClass>REDUCED_REDUNDANCY</StorageClass>
   </Contents>
-</ListBucketResult>'''
+</ListBucketResult>"""
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
@@ -92,12 +92,12 @@ class ListObjectsTest(TestCase):
                 content=mock_data.encode(),
             ),
         )
-        client = Minio('localhost:9000')
-        objects_iter = client.list_objects('bucket')
+        client = Minio("localhost:9000")
+        objects_iter = client.list_objects("bucket")
         objects = []
         for obj in objects_iter:
             objects.append(obj)
 
         self.assertEqual(2, len(objects))
         end_time = time.time()
-        self.assertLess(end_time-start_time, 1)
+        self.assertLess(end_time - start_time, 1)

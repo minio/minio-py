@@ -32,6 +32,8 @@ print(url)
 # Get presigned URL string to upload data to 'my-object' in
 # 'my-bucket' with two hours expiry.
 url = client.presigned_put_object(
-    "my-bucket", "my-object", expires=timedelta(hours=2),
+    "my-bucket",
+    "my-object",
+    expires=timedelta(hours=2),
 )
 print(url)

@@ -37,10 +37,7 @@ class Tagging:
     def fromxml(cls, element):
         """Create new object with values from XML element."""
         element = find(element, "TagSet")
-        tags = (
-            None if find(element, "Tag") is None
-            else Tags.fromxml(element)
-        )
+        tags = None if find(element, "Tag") is None else Tags.fromxml(element)
         return cls(tags)
 
     def toxml(self, element):

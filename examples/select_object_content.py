@@ -16,8 +16,11 @@
 
 
 from minio import Minio
-from minio.select import (CSVInputSerialization, CSVOutputSerialization,
-                          SelectRequest)
+from minio.select import (
+    CSVInputSerialization,
+    CSVOutputSerialization,
+    SelectRequest,
+)
 
 client = Minio(
     "play.min.io",
@@ -26,14 +29,14 @@ client = Minio(
 )
 
 with client.select_object_content(
-        "my-bucket",
-        "my-object.csv",
-        SelectRequest(
-            "select * from S3Object",
-            CSVInputSerialization(),
-            CSVOutputSerialization(),
-            request_progress=True,
-        ),
+    "my-bucket",
+    "my-object.csv",
+    SelectRequest(
+        "select * from S3Object",
+        CSVInputSerialization(),
+        CSVOutputSerialization(),
+        request_progress=True,
+    ),
 ) as result:
     for data in result.stream():
         print(data.decode())

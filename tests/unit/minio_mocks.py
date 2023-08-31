@@ -18,8 +18,15 @@ from http import client as httplib
 
 
 class MockResponse(object):
-    def __init__(self, method, url, headers, status_code,
-                 response_headers=None, content=None):
+    def __init__(
+        self,
+        method,
+        url,
+        headers,
+        status_code,
+        response_headers=None,
+        content=None,
+    ):
         self.method = method
         self.url = url
         self.request_headers = {
@@ -27,8 +34,8 @@ class MockResponse(object):
         }
         self.status = status_code
         self.headers = {
-            key.lower(): value for key, value in (
-                response_headers or {}).items()
+            key.lower(): value
+            for key, value in (response_headers or {}).items()
         }
         self.data = content
         if content is None:
@@ -41,16 +48,14 @@ class MockResponse(object):
     def mock_verify(self, method, url, headers):
         assert self.method == method
         assert self.url == url
-        headers = {
-            key.lower(): value for key, value in headers.items()
-        }
+        headers = {key.lower(): value for key, value in headers.items()}
         for header in self.request_headers:
             assert self.request_headers[header] == headers[header]
 
     # noinspection PyUnusedLocal
     def stream(self, chunk_size=1, decode_unicode=False):
         if self.data is not None:
-            return iter(bytearray(self.data, 'utf-8'))
+            return iter(bytearray(self.data, "utf-8"))
         return iter([])
 
     # dummy release connection call.
@@ -81,6 +86,13 @@ class MockConnection(object):
 
     # noinspection PyRedeclaration,PyUnusedLocal,PyUnusedLocal
 
-    def urlopen(self, method, url, headers={}, preload_content=False,
-                body=None, redirect=False):
+    def urlopen(
+        self,
+        method,
+        url,
+        headers={},
+        preload_content=False,
+        body=None,
+        redirect=False,
+    ):
         return self.request(method, url, headers)

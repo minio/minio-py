@@ -27,7 +27,8 @@ AWS_KMS = "aws:kms"
 
 
 class Rule:
-    """Server-side encryption rule. """
+    """Server-side encryption rule."""
+
     __metaclass__ = ABCMeta
 
     def __init__(self, sse_algorithm, kms_master_key_id=None):

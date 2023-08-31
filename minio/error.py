@@ -72,8 +72,17 @@ class S3Error(MinioException):
     when executing S3 operation.
     """
 
-    def __init__(self, code, message, resource, request_id, host_id,
-                 response, bucket_name=None, object_name=None):
+    def __init__(
+        self,
+        code,
+        message,
+        resource,
+        request_id,
+        host_id,
+        response,
+        bucket_name=None,
+        object_name=None,
+    ):
         self._code = code
         self._message = message
         self._resource = resource
@@ -84,12 +93,10 @@ class S3Error(MinioException):
         self._object_name = object_name
 
         bucket_message = (
-            (", bucket_name: " + self._bucket_name)
-            if self._bucket_name else ""
+            (", bucket_name: " + self._bucket_name) if self._bucket_name else ""
         )
         object_message = (
-            (", object_name: " + self._object_name)
-            if self._object_name else ""
+            (", object_name: " + self._object_name) if self._object_name else ""
         )
         super().__init__(
             f"S3 operation failed; code: {code}, message: {message}, "
@@ -98,9 +105,16 @@ class S3Error(MinioException):
         )
 
     def __reduce__(self):
-        return type(self), (self._code, self._message, self._resource,
-                            self._request_id, self._host_id, self._response,
-                            self._bucket_name, self._object_name)
+        return type(self), (
+            self._code,
+            self._message,
+            self._resource,
+            self._request_id,
+            self._host_id,
+            self._response,
+            self._bucket_name,
+            self._object_name,
+        )
 
     @property
     def code(self):

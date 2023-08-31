@@ -37,39 +37,46 @@ MAX_MULTIPART_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
 MAX_PART_SIZE = 5 * 1024 * 1024 * 1024  # 5GiB
 MIN_PART_SIZE = 5 * 1024 * 1024  # 5MiB
 
-_AWS_S3_PREFIX = (r'^(((bucket\.|accesspoint\.)'
-                  r'vpce(-(?!_)[a-z_\d]+(?<!-)(?<!_))+\.s3\.)|'
-                  r'((?!s3)(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.)'
-                  r's3-control(-(?!_)[a-z_\d]+(?<!-)(?<!_))*\.|'
-                  r'(s3(-(?!_)[a-z_\d]+(?<!-)(?<!_))*\.))')
+_AWS_S3_PREFIX = (
+    r"^(((bucket\.|accesspoint\.)"
+    r"vpce(-(?!_)[a-z_\d]+(?<!-)(?<!_))+\.s3\.)|"
+    r"((?!s3)(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.)"
+    r"s3-control(-(?!_)[a-z_\d]+(?<!-)(?<!_))*\.|"
+    r"(s3(-(?!_)[a-z_\d]+(?<!-)(?<!_))*\.))"
+)
 
-_BUCKET_NAME_REGEX = re.compile(r'^[a-z0-9][a-z0-9\.\-]{1,61}[a-z0-9]$')
-_OLD_BUCKET_NAME_REGEX = re.compile(r'^[a-z0-9][a-z0-9_\.\-\:]{1,61}[a-z0-9]$',
-                                    re.IGNORECASE)
+_BUCKET_NAME_REGEX = re.compile(r"^[a-z0-9][a-z0-9\.\-]{1,61}[a-z0-9]$")
+_OLD_BUCKET_NAME_REGEX = re.compile(
+    r"^[a-z0-9][a-z0-9_\.\-\:]{1,61}[a-z0-9]$", re.IGNORECASE
+)
 _IPV4_REGEX = re.compile(
-    r'^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}'
-    r'(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$')
+    r"^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}"
+    r"(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$"
+)
 _HOSTNAME_REGEX = re.compile(
-    r'^((?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.)*'
-    r'((?!_)(?!-)[a-z_\d-]{1,63}(?<!-)(?<!_))$',
-    re.IGNORECASE)
-_AWS_ENDPOINT_REGEX = re.compile(r'.*\.amazonaws\.com(|\.cn)$', re.IGNORECASE)
+    r"^((?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.)*"
+    r"((?!_)(?!-)[a-z_\d-]{1,63}(?<!-)(?<!_))$",
+    re.IGNORECASE,
+)
+_AWS_ENDPOINT_REGEX = re.compile(r".*\.amazonaws\.com(|\.cn)$", re.IGNORECASE)
 _AWS_S3_ENDPOINT_REGEX = re.compile(
-    _AWS_S3_PREFIX +
-    r'((?!s3)(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.)*'
-    r'amazonaws\.com(|\.cn)$',
-    re.IGNORECASE)
+    _AWS_S3_PREFIX + r"((?!s3)(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.)*"
+    r"amazonaws\.com(|\.cn)$",
+    re.IGNORECASE,
+)
 _AWS_ELB_ENDPOINT_REGEX = re.compile(
-    r'^(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.'
-    r'(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.'
-    r'elb\.amazonaws\.com$',
-    re.IGNORECASE)
+    r"^(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\."
+    r"(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\."
+    r"elb\.amazonaws\.com$",
+    re.IGNORECASE,
+)
 _AWS_S3_PREFIX_REGEX = re.compile(_AWS_S3_PREFIX, re.IGNORECASE)
-_REGION_REGEX = re.compile(r'^((?!_)(?!-)[a-z_\d-]{1,63}(?<!-)(?<!_))$',
-                           re.IGNORECASE)
+_REGION_REGEX = re.compile(
+    r"^((?!_)(?!-)[a-z_\d-]{1,63}(?<!-)(?<!_))$", re.IGNORECASE
+)
 
 
-def quote(resource, safe='/', encoding=None, errors=None):
+def quote(resource, safe="/", encoding=None, errors=None):
     """
     Wrapper to urllib.parse.quote() replacing back to '~' for older python
     versions.
@@ -82,26 +89,31 @@ def quote(resource, safe='/', encoding=None, errors=None):
     ).replace("%7E", "~")
 
 
-def queryencode(query, safe='', encoding=None, errors=None):
+def queryencode(query, safe="", encoding=None, errors=None):
     """Encode query parameter value."""
     return quote(query, safe, encoding, errors)
 
 
 def headers_to_strings(headers, titled_key=False):
     """Convert HTTP headers to multi-line string."""
+
     def _get_key(key):
         return key.title() if titled_key else key
 
     def _get_value(value):
-        return re.sub(
-            r"Credential=([^/]+)",
-            "Credential=*REDACTED*",
+        return (
             re.sub(
-                r"Signature=([0-9a-f]+)",
-                "Signature=*REDACTED*",
-                value if isinstance(value, str) else str(value),
-            ),
-        ) if titled_key else value
+                r"Credential=([^/]+)",
+                "Credential=*REDACTED*",
+                re.sub(
+                    r"Signature=([0-9a-f]+)",
+                    "Signature=*REDACTED*",
+                    value if isinstance(value, str) else str(value),
+                ),
+            )
+            if titled_key
+            else value
+        )
 
     return "\n".join(
         [
@@ -146,9 +158,12 @@ def _get_part_info(object_size, part_size):
         part_size = min(part_size, object_size)
         return part_size, math.ceil(object_size / part_size) if part_size else 1
 
-    part_size = math.ceil(
-        math.ceil(object_size / MAX_MULTIPART_COUNT) / MIN_PART_SIZE,
-    ) * MIN_PART_SIZE
+    part_size = (
+        math.ceil(
+            math.ceil(object_size / MAX_MULTIPART_COUNT) / MIN_PART_SIZE,
+        )
+        * MIN_PART_SIZE
+    )
     return part_size, math.ceil(object_size / part_size) if part_size else 1
 
 
@@ -163,7 +178,7 @@ def get_part_info(object_size, part_size):
     return part_size, part_count
 
 
-def read_part_data(stream, size, part_data=b'', progress=None):
+def read_part_data(stream, size, part_data=b"", progress=None):
     """Read part data of given size from stream."""
     size -= len(part_data)
     while size:
@@ -197,29 +212,35 @@ def check_bucket_name(bucket_name, strict=False, s3_check=False):
 
     if strict:
         if not _BUCKET_NAME_REGEX.match(bucket_name):
-            raise ValueError('invalid bucket name {bucket_name}')
+            raise ValueError("invalid bucket name {bucket_name}")
     else:
         if not _OLD_BUCKET_NAME_REGEX.match(bucket_name):
-            raise ValueError('invalid bucket name {bucket_name}')
+            raise ValueError("invalid bucket name {bucket_name}")
 
     if _IPV4_REGEX.match(bucket_name):
-        raise ValueError('bucket name {bucket_name} must not be formatted '
-                         'as an IP address')
+        raise ValueError(
+            "bucket name {bucket_name} must not be formatted "
+            "as an IP address"
+        )
 
-    unallowed_successive_chars = ['..', '.-', '-.']
+    unallowed_successive_chars = ["..", ".-", "-."]
     if any(x in bucket_name for x in unallowed_successive_chars):
-        raise ValueError('bucket name {bucket_name} contains invalid '
-                         'successive characters')
+        raise ValueError(
+            "bucket name {bucket_name} contains invalid "
+            "successive characters"
+        )
 
     if (
-            s3_check and
-            bucket_name.startswith("xn--") or
-            bucket_name.endswith("-s3alias") or
-            bucket_name.endswith("--ol-s3")
+        s3_check
+        and bucket_name.startswith("xn--")
+        or bucket_name.endswith("-s3alias")
+        or bucket_name.endswith("--ol-s3")
     ):
-        raise ValueError("bucket name {bucket_name} must not start with "
-                         "'xn--' and must not end with '--s3alias' or "
-                         "'--ol-s3'")
+        raise ValueError(
+            "bucket name {bucket_name} must not start with "
+            "'xn--' and must not end with '--s3alias' or "
+            "'--ol-s3'"
+        )
 
 
 def check_non_empty_string(string):
@@ -282,7 +303,7 @@ def sha256_hash(data):
 
 
 def url_replace(
-        url, scheme=None, netloc=None, path=None, query=None, fragment=None
+    url, scheme=None, netloc=None, path=None, query=None, fragment=None
 ):
     """Return new URL with replaced properties in given URL."""
     return urllib.parse.SplitResult(
@@ -296,6 +317,7 @@ def url_replace(
 
 def _metadata_to_headers(metadata):
     """Convert user metadata to headers."""
+
     def normalize_key(key):
         if not key.lower().startswith("x-amz-meta-"):
             key = "X-Amz-Meta-" + key
@@ -330,8 +352,9 @@ def normalize_headers(headers):
     def guess_user_metadata(key):
         key = key.lower()
         return not (
-            key.startswith("x-amz-") or
-            key in [
+            key.startswith("x-amz-")
+            or key
+            in [
                 "cache-control",
                 "content-encoding",
                 "content-type",
@@ -341,8 +364,7 @@ def normalize_headers(headers):
         )
 
     user_metadata = {
-        key: value for key, value in headers.items()
-        if guess_user_metadata(key)
+        key: value for key, value in headers.items() if guess_user_metadata(key)
     }
 
     # Remove guessed user metadata.
@@ -366,8 +388,8 @@ def genheaders(headers, sse, tags, retention, legal_hold):
         headers["x-amz-tagging"] = tagging
     if retention and retention.mode:
         headers["x-amz-object-lock-mode"] = retention.mode
-        headers["x-amz-object-lock-retain-until-date"] = (
-            to_iso8601utc(retention.retain_until_date)
+        headers["x-amz-object-lock-retain-until-date"] = to_iso8601utc(
+            retention.retain_until_date
         )
     if legal_hold:
         headers["x-amz-object-lock-legal-hold"] = "ON"
@@ -375,7 +397,7 @@ def genheaders(headers, sse, tags, retention, legal_hold):
 
 
 def _get_aws_info(host, https, region):
-    """Extract AWS domain information. """
+    """Extract AWS domain information."""
 
     if not _HOSTNAME_REGEX.match(host):
         return (None, None)
@@ -409,22 +431,31 @@ def _get_aws_info(host, https, region):
     if host in "s3-external-1.amazonaws.com":
         region_in_host = "us-east-1"
 
-    if host in ["s3-us-gov-west-1.amazonaws.com",
-                "s3-fips-us-gov-west-1.amazonaws.com"]:
+    if host in [
+        "s3-us-gov-west-1.amazonaws.com",
+        "s3-fips-us-gov-west-1.amazonaws.com",
+    ]:
         region_in_host = "us-gov-west-1"
 
-    if (aws_domain_suffix.endswith(".cn") and
-        not aws_s3_prefix.endswith("s3-accelerate.") and
-        not region_in_host and
-            not region):
+    if (
+        aws_domain_suffix.endswith(".cn")
+        and not aws_s3_prefix.endswith("s3-accelerate.")
+        and not region_in_host
+        and not region
+    ):
         raise ValueError(
             f"region missing in Amazon S3 China endpoint {host}",
         )
 
-    return ({"s3_prefix": aws_s3_prefix,
-             "domain_suffix": aws_domain_suffix,
-             "region": region or region_in_host,
-             "dualstack": dualstack}, None)
+    return (
+        {
+            "s3_prefix": aws_s3_prefix,
+            "domain_suffix": aws_domain_suffix,
+            "region": region or region_in_host,
+            "dualstack": dualstack,
+        },
+        None,
+    )
 
 
 class BaseURL:
@@ -461,9 +492,8 @@ class BaseURL:
         if url.password:
             raise ValueError("password in endpoint is not allowed")
 
-        if (
-                (url.scheme == "http" and url.port == 80) or
-                (url.scheme == "https" and url.port == 443)
+        if (url.scheme == "http" and url.port == 80) or (
+            url.scheme == "https" and url.port == 443
         ):
             url = url_replace(url, netloc=host)
 
@@ -471,17 +501,18 @@ class BaseURL:
             raise ValueError(f"invalid region {region}")
 
         self._aws_info, region_in_host = _get_aws_info(
-            host, url.scheme == "https", region)
-        self._virtual_style_flag = (
-            self._aws_info or host.endswith("aliyuncs.com")
+            host, url.scheme == "https", region
+        )
+        self._virtual_style_flag = self._aws_info or host.endswith(
+            "aliyuncs.com"
         )
         self._url = url
         self._region = region or region_in_host
         self._accelerate_host_flag = False
         if self._aws_info:
             self._region = self._aws_info["region"]
-            self._accelerate_host_flag = (
-                self._aws_info["s3_prefix"].endswith("s3-accelerate.")
+            self._accelerate_host_flag = self._aws_info["s3_prefix"].endswith(
+                "s3-accelerate."
             )
 
     @property
@@ -554,9 +585,11 @@ class BaseURL:
         domain_suffix = self._aws_info["domain_suffix"]
 
         host = f"{s3_prefix}{domain_suffix}"
-        if host in ["s3-external-1.amazonaws.com",
-                    "s3-us-gov-west-1.amazonaws.com",
-                    "s3-fips-us-gov-west-1.amazonaws.com"]:
+        if host in [
+            "s3-external-1.amazonaws.com",
+            "s3-us-gov-west-1.amazonaws.com",
+            "s3-fips-us-gov-west-1.amazonaws.com",
+        ]:
             return url_replace(url, netloc=host)
 
         netloc = s3_prefix
@@ -586,9 +619,11 @@ class BaseURL:
         domain_suffix = self._aws_info["domain_suffix"]
 
         host = f"{s3_prefix}{domain_suffix}"
-        if host in ["s3-external-1.amazonaws.com",
-                    "s3-us-gov-west-1.amazonaws.com",
-                    "s3-fips-us-gov-west-1.amazonaws.com"]:
+        if host in [
+            "s3-external-1.amazonaws.com",
+            "s3-us-gov-west-1.amazonaws.com",
+            "s3-fips-us-gov-west-1.amazonaws.com",
+        ]:
             return url_replace(url, netloc=host)
 
         if s3_prefix.startswith("s3.") or s3_prefix.startswith("s3-"):
@@ -598,8 +633,12 @@ class BaseURL:
         return url_replace(url, netloc=f"{s3_prefix}{region}.{domain_suffix}")
 
     def build(
-            self, method, region,
-            bucket_name=None, object_name=None, query_params=None,
+        self,
+        method,
+        region,
+        bucket_name=None,
+        object_name=None,
+        query_params=None,
     ):
         """Build URL for given information."""
         if not bucket_name and object_name:
@@ -623,11 +662,11 @@ class BaseURL:
 
         enforce_path_style = (
             # CreateBucket API requires path style in Amazon AWS S3.
-            (method == "PUT" and not object_name and not query_params) or
-
+            (method == "PUT" and not object_name and not query_params)
+            or
             # GetBucketLocation API requires path style in Amazon AWS S3.
-            (query_params and "location" in query_params) or
-
+            (query_params and "location" in query_params)
+            or
             # Use path style for bucket name containing '.' which causes
             # SSL certificate validation error.
             ("." in bucket_name and self._url.scheme == "https")
@@ -635,7 +674,8 @@ class BaseURL:
 
         if self._aws_info:
             url = self._build_aws_url(
-                url, bucket_name, enforce_path_style, region)
+                url, bucket_name, enforce_path_style, region
+            )
 
         netloc = url.netloc
         path = "/"
@@ -654,8 +694,14 @@ class ObjectWriteResult:
     """Result class of any APIs doing object creation."""
 
     def __init__(
-            self, bucket_name, object_name, version_id, etag, http_headers,
-            last_modified=None, location=None,
+        self,
+        bucket_name,
+        object_name,
+        version_id,
+        etag,
+        http_headers,
+        last_modified=None,
+        location=None,
     ):
         self._bucket_name = bucket_name
         self._object_name = object_name
@@ -702,7 +748,7 @@ class ObjectWriteResult:
 
 
 class Worker(Thread):
-    """ Thread executing tasks from a given tasks queue """
+    """Thread executing tasks from a given tasks queue"""
 
     def __init__(self, tasks_queue, results_queue, exceptions_queue):
         Thread.__init__(self, daemon=True)
@@ -712,7 +758,7 @@ class Worker(Thread):
         self.start()
 
     def run(self):
-        """ Continuously receive tasks and execute them """
+        """Continuously receive tasks and execute them"""
         while True:
             task = self._tasks_queue.get()
             if not task:
@@ -735,7 +781,7 @@ class Worker(Thread):
 
 
 class ThreadPool:
-    """ Pool of threads consuming tasks from a queue """
+    """Pool of threads consuming tasks from a queue"""
 
     def __init__(self, num_threads):
         self._results_queue = Queue()
@@ -756,14 +802,16 @@ class ThreadPool:
         self._tasks_queue.put((func, args, kargs, cleanup_func))
 
     def start_parallel(self):
-        """ Prepare threads to run tasks"""
+        """Prepare threads to run tasks"""
         for _ in range(self._num_threads):
             Worker(
-                self._tasks_queue, self._results_queue, self._exceptions_queue,
+                self._tasks_queue,
+                self._results_queue,
+                self._exceptions_queue,
             )
 
     def result(self):
-        """ Stop threads and return the result of all called tasks """
+        """Stop threads and return the result of all called tasks"""
         # Send None to all threads to cleanly stop them
         for _ in range(self._num_threads):
             self._tasks_queue.put(None)

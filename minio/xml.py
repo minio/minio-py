@@ -26,7 +26,7 @@ _S3_NAMESPACE = "http://s3.amazonaws.com/doc/2006-03-01/"
 
 def Element(tag, namespace=_S3_NAMESPACE):  # pylint: disable=invalid-name
     """Create ElementTree.Element with tag and namespace."""
-    return ET.Element(tag, {'xmlns': namespace} if namespace else {})
+    return ET.Element(tag, {"xmlns": namespace} if namespace else {})
 
 
 def SubElement(parent, tag, text=None):  # pylint: disable=invalid-name
@@ -89,7 +89,9 @@ def getbytes(element):
     """Convert ElementTree.Element to bytes."""
     data = io.BytesIO()
     ET.ElementTree(element).write(
-        data, encoding=None, xml_declaration=False,
+        data,
+        encoding=None,
+        xml_declaration=False,
     )
     return data.getvalue()
 

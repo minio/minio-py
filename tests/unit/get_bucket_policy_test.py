@@ -26,71 +26,75 @@ from tests.unit.minio_mocks import MockConnection, MockResponse
 
 
 class GetBucketPolicyTest(TestCase):
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_get_policy_for_non_existent_bucket(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        bucket_name = 'non-existent-bucket'
-        error = ("<ErrorResponse>"
-                 "<Code>NoSuchBucket</Code>"
-                 "<Message>No such bucket</Message><RequestId>1234</RequestId>"
-                 "<Resource>/non-existent-bucket</Resource>"
-                 "<HostId>abcd</HostId>"
-                 "<BucketName>non-existent-bucket</BucketName>"
-                 "</ErrorResponse>")
+        bucket_name = "non-existent-bucket"
+        error = (
+            "<ErrorResponse>"
+            "<Code>NoSuchBucket</Code>"
+            "<Message>No such bucket</Message><RequestId>1234</RequestId>"
+            "<Resource>/non-existent-bucket</Resource>"
+            "<HostId>abcd</HostId>"
+            "<BucketName>non-existent-bucket</BucketName>"
+            "</ErrorResponse>"
+        )
         mock_server.mock_add_request(
             MockResponse(
-                'GET',
-                'https://localhost:9000/' + bucket_name + '?policy=',
-                {'User-Agent': _DEFAULT_USER_AGENT},
+                "GET",
+                "https://localhost:9000/" + bucket_name + "?policy=",
+                {"User-Agent": _DEFAULT_USER_AGENT},
                 404,
                 response_headers={"Content-Type": "application/xml"},
-                content=error.encode()
+                content=error.encode(),
             )
         )
-        client = Minio('localhost:9000')
+        client = Minio("localhost:9000")
         self.assertRaises(S3Error, client.get_bucket_policy, bucket_name)
 
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_get_policy_for_existent_bucket(self, mock_connection):
-        mock_data = json.dumps({
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "",
-                    "Effect": "Allow",
-                    "Principal": {"AWS": "*"},
-                    "Action": "s3:GetBucketLocation",
-                    "Resource": "arn:aws:s3:::test-bucket"
-                },
-                {
-                    "Sid": "",
-                    "Effect": "Allow",
-                    "Principal": {"AWS": "*"},
-                    "Action": "s3:ListBucket",
-                    "Resource": "arn:aws:s3:::test-bucket"
-                },
-                {
-                    "Sid": "",
-                    "Effect": "Allow",
-                    "Principal": {"AWS": "*"},
-                    "Action": "s3:GetObject",
-                    "Resource": "arn:aws:s3:::test-bucket/*"
-                }
-            ]
-        }).encode()
+        mock_data = json.dumps(
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "",
+                        "Effect": "Allow",
+                        "Principal": {"AWS": "*"},
+                        "Action": "s3:GetBucketLocation",
+                        "Resource": "arn:aws:s3:::test-bucket",
+                    },
+                    {
+                        "Sid": "",
+                        "Effect": "Allow",
+                        "Principal": {"AWS": "*"},
+                        "Action": "s3:ListBucket",
+                        "Resource": "arn:aws:s3:::test-bucket",
+                    },
+                    {
+                        "Sid": "",
+                        "Effect": "Allow",
+                        "Principal": {"AWS": "*"},
+                        "Action": "s3:GetObject",
+                        "Resource": "arn:aws:s3:::test-bucket/*",
+                    },
+                ],
+            }
+        ).encode()
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
-        bucket_name = 'test-bucket'
+        bucket_name = "test-bucket"
         mock_server.mock_add_request(
             MockResponse(
-                'GET',
-                'https://localhost:9000/' + bucket_name + '?policy=',
-                {'User-Agent': _DEFAULT_USER_AGENT},
+                "GET",
+                "https://localhost:9000/" + bucket_name + "?policy=",
+                {"User-Agent": _DEFAULT_USER_AGENT},
                 200,
-                content=mock_data
+                content=mock_data,
             )
         )
-        client = Minio('localhost:9000')
+        client = Minio("localhost:9000")
         response = client.get_bucket_policy(bucket_name)
         self.assertEqual(response, mock_data.decode())

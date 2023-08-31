@@ -16,8 +16,12 @@
 
 from minio import Minio
 from minio.commonconfig import DISABLED, ENABLED, AndOperator, Filter
-from minio.replicationconfig import (DeleteMarkerReplication, Destination,
-                                     ReplicationConfig, Rule)
+from minio.replicationconfig import (
+    DeleteMarkerReplication,
+    Destination,
+    ReplicationConfig,
+    Rule,
+)
 
 client = Minio(
     "play.min.io",

@@ -25,9 +25,9 @@ from .minio_mocks import MockConnection, MockResponse
 
 
 class ListObjectsV1Test(TestCase):
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_empty_list_objects_works(self, mock_connection):
-        mock_data = '''<?xml version="1.0"?>
+        mock_data = """<?xml version="1.0"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
   <Prefix/>
@@ -35,7 +35,7 @@ class ListObjectsV1Test(TestCase):
   <IsTruncated>false</IsTruncated>
   <MaxKeys>1000</MaxKeys>
   <Delimiter/>
-</ListBucketResult>'''
+</ListBucketResult>"""
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
@@ -48,19 +48,21 @@ class ListObjectsV1Test(TestCase):
                 content=mock_data.encode(),
             ),
         )
-        client = Minio('localhost:9000')
+        client = Minio("localhost:9000")
         bucket_iter = client.list_objects(
-            'bucket', recursive=True, use_api_v1=True,
+            "bucket",
+            recursive=True,
+            use_api_v1=True,
         )
         buckets = []
         for bucket in bucket_iter:
             buckets.append(bucket)
         self.assertEqual(0, len(buckets))
 
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_list_objects_works(self, mock_connection):
         start_time = time.time()
-        mock_data = '''<?xml version="1.0"?>
+        mock_data = """<?xml version="1.0"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
   <Prefix/>
@@ -90,7 +92,7 @@ class ListObjectsV1Test(TestCase):
       <DisplayName>minio</DisplayName>
     </Owner>
   </Contents>
-</ListBucketResult>'''
+</ListBucketResult>"""
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
@@ -103,8 +105,8 @@ class ListObjectsV1Test(TestCase):
                 content=mock_data.encode(),
             ),
         )
-        client = Minio('localhost:9000')
-        bucket_iter = client.list_objects('bucket', use_api_v1=True)
+        client = Minio("localhost:9000")
+        bucket_iter = client.list_objects("bucket", use_api_v1=True)
         buckets = []
         for bucket in bucket_iter:
             # cause an xml exception and fail if we try retrieving again
@@ -122,12 +124,12 @@ class ListObjectsV1Test(TestCase):
 
         self.assertEqual(2, len(buckets))
         end_time = time.time()
-        self.assertLess(end_time-start_time, 1)
+        self.assertLess(end_time - start_time, 1)
 
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_list_objects_works_well(self, mock_connection):
         start_time = time.time()
-        mock_data1 = '''<?xml version="1.0"?>
+        mock_data1 = """<?xml version="1.0"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
   <Prefix/>
@@ -158,8 +160,8 @@ class ListObjectsV1Test(TestCase):
       <DisplayName>minio</DisplayName>
     </Owner>
   </Contents>
-</ListBucketResult>'''
-        mock_data2 = '''<?xml version="1.0"?>
+</ListBucketResult>"""
+        mock_data2 = """<?xml version="1.0"?>
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>bucket</Name>
   <Prefix/>
@@ -189,7 +191,7 @@ class ListObjectsV1Test(TestCase):
       <DisplayName>minio</DisplayName>
     </Owner>
   </Contents>
-</ListBucketResult>'''
+</ListBucketResult>"""
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
@@ -202,9 +204,11 @@ class ListObjectsV1Test(TestCase):
                 content=mock_data1.encode(),
             ),
         )
-        client = Minio('localhost:9000')
+        client = Minio("localhost:9000")
         bucket_iter = client.list_objects(
-            'bucket', recursive=True, use_api_v1=True,
+            "bucket",
+            recursive=True,
+            use_api_v1=True,
         )
         buckets = []
         for bucket in bucket_iter:
@@ -222,4 +226,4 @@ class ListObjectsV1Test(TestCase):
 
         self.assertEqual(4, len(buckets))
         end_time = time.time()
-        self.assertLess(end_time-start_time, 1)
+        self.assertLess(end_time - start_time, 1)

@@ -26,6 +26,7 @@ from .xml import Element, SubElement, find, findall, findtext
 
 class Status:
     """Status."""
+
     __metaclass__ = ABCMeta
 
     def __init__(self, status):
@@ -70,7 +71,8 @@ class SourceSelectionCriteria:
         """Create new object with values from XML element."""
         element = find(element, "SourceSelectionCriteria")
         return cls(
-            None if find(element, "SseKmsEncryptedObjects") is None
+            None
+            if find(element, "SseKmsEncryptedObjects") is None
             else SseKmsEncryptedObjects.fromxml(element)
         )
 
@@ -95,6 +97,7 @@ class DeleteMarkerReplication(Status):
 
 class ReplicationTimeValue:
     """Replication time value."""
+
     __metaclass__ = ABCMeta
 
     def __init__(self, minutes=15):
@@ -255,10 +258,16 @@ class AccessControlTranslation:
 class Destination:
     """Replication destination."""
 
-    def __init__(self, bucket_arn,
-                 access_control_translation=None, account=None,
-                 encryption_config=None, metrics=None,
-                 replication_time=None, storage_class=None):
+    def __init__(
+        self,
+        bucket_arn,
+        access_control_translation=None,
+        account=None,
+        encryption_config=None,
+        metrics=None,
+        replication_time=None,
+        storage_class=None,
+    ):
         if not bucket_arn:
             raise ValueError("bucket ARN must be provided")
         self._bucket_arn = bucket_arn
@@ -276,7 +285,7 @@ class Destination:
 
     @property
     def access_control_translation(self):
-        """Get access control translation. """
+        """Get access control translation."""
         return self._access_control_translation
 
     @property
@@ -309,26 +318,37 @@ class Destination:
         """Create new object with values from XML element."""
         element = find(element, "Destination")
         access_control_translation = (
-            None if find(element, "AccessControlTranslation") is None
+            None
+            if find(element, "AccessControlTranslation") is None
             else AccessControlTranslation.fromxml(element)
         )
         account = findtext(element, "Account")
         bucket_arn = findtext(element, "Bucket", True)
         encryption_config = (
-            None if find(element, "EncryptionConfiguration") is None
+            None
+            if find(element, "EncryptionConfiguration") is None
             else EncryptionConfig.fromxml(element)
         )
         metrics = (
-            None if find(element, "Metrics") is None
+            None
+            if find(element, "Metrics") is None
             else Metrics.fromxml(element)
         )
         replication_time = (
-            None if find(element, "ReplicationTime") is None
+            None
+            if find(element, "ReplicationTime") is None
             else ReplicationTime.fromxml(element)
         )
         storage_class = findtext(element, "StorageClass")
-        return cls(bucket_arn, access_control_translation, account,
-                   encryption_config, metrics, replication_time, storage_class)
+        return cls(
+            bucket_arn,
+            access_control_translation,
+            account,
+            encryption_config,
+            metrics,
+            replication_time,
+            storage_class,
+        )
 
     def toxml(self, element):
         """Convert to XML."""
@@ -350,13 +370,20 @@ class Destination:
 
 
 class Rule(BaseRule):
-    """Replication rule. """
+    """Replication rule."""
 
-    def __init__(self, destination, status,
-                 delete_marker_replication=None,
-                 existing_object_replication=None,
-                 rule_filter=None, rule_id=None, prefix=None,
-                 priority=None, source_selection_criteria=None):
+    def __init__(
+        self,
+        destination,
+        status,
+        delete_marker_replication=None,
+        existing_object_replication=None,
+        rule_filter=None,
+        rule_id=None,
+        prefix=None,
+        priority=None,
+        source_selection_criteria=None,
+    ):
         if not destination:
             raise ValueError("destination must be provided")
 
@@ -413,12 +440,14 @@ class Rule(BaseRule):
     def fromxml(cls, element):
         """Create new object with values from XML element."""
         delete_marker_replication = (
-            None if find(element, "DeleteMarkerReplication") is None
+            None
+            if find(element, "DeleteMarkerReplication") is None
             else DeleteMarkerReplication.fromxml(element)
         )
         destination = Destination.fromxml(element)
         existing_object_replication = (
-            None if find(element, "ExistingObjectReplication") is None
+            None
+            if find(element, "ExistingObjectReplication") is None
             else ExistingObjectReplication.fromxml(element)
         )
         rule_filter, rule_id = cls.parsexml(element)
@@ -427,14 +456,23 @@ class Rule(BaseRule):
         if priority:
             priority = int(priority)
         source_selection_criteria = (
-            None if find(element, "SourceSelectionCriteria") is None
+            None
+            if find(element, "SourceSelectionCriteria") is None
             else SourceSelectionCriteria.fromxml(element)
         )
         status = findtext(element, "Status", True)
 
-        return cls(destination, status, delete_marker_replication,
-                   existing_object_replication, rule_filter,
-                   rule_id, prefix, priority, source_selection_criteria)
+        return cls(
+            destination,
+            status,
+            delete_marker_replication,
+            existing_object_replication,
+            rule_filter,
+            rule_id,
+            prefix,
+            priority,
+            source_selection_criteria,
+        )
 
     def toxml(self, element):
         """Convert to XML."""

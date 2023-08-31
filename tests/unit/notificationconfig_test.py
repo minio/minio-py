@@ -17,8 +17,11 @@
 from unittest import TestCase
 
 from minio import xml
-from minio.notificationconfig import (NotificationConfig, PrefixFilterRule,
-                                      QueueConfig)
+from minio.notificationconfig import (
+    NotificationConfig,
+    PrefixFilterRule,
+    QueueConfig,
+)
 
 
 class NotificationConfigTest(TestCase):
@@ -27,7 +30,7 @@ class NotificationConfigTest(TestCase):
             queue_config_list=[
                 QueueConfig(
                     "QUEUE-ARN-OF-THIS-BUCKET",
-                    ['s3:ObjectCreated:*'],
+                    ["s3:ObjectCreated:*"],
                     config_id="1",
                     prefix_filter_rule=PrefixFilterRule("abc"),
                 ),

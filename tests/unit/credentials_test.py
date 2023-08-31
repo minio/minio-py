@@ -21,11 +21,15 @@ from datetime import datetime, timedelta
 from unittest import TestCase
 
 from minio.credentials.credentials import Credentials
-from minio.credentials.providers import (AWSConfigProvider, ChainedProvider,
-                                         EnvAWSProvider, EnvMinioProvider,
-                                         IamAwsProvider,
-                                         MinioClientConfigProvider,
-                                         StaticProvider)
+from minio.credentials.providers import (
+    AWSConfigProvider,
+    ChainedProvider,
+    EnvAWSProvider,
+    EnvMinioProvider,
+    IamAwsProvider,
+    MinioClientConfigProvider,
+    StaticProvider,
+)
 
 CONFIG_JSON_SAMPLE = "tests/unit/config.json.sample"
 CREDENTIALS_SAMPLE = "tests/unit/credentials.sample"
@@ -40,8 +44,9 @@ class CredentialsTest(TestCase):
         )
         creds = provider.retrieve()
         self.assertEqual(creds.access_key, "Q3AM3UQ867SPQQA43P2F")
-        self.assertEqual(creds.secret_key,
-                         "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
+        self.assertEqual(
+            creds.secret_key, "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG"
+        )
         self.assertEqual(creds.session_token, None)
 
 
@@ -52,15 +57,17 @@ class CredListResponse(object):
 
 class CredsResponse(object):
     status = 200
-    data = json.dumps({
-        "Code": "Success",
-        "Type": "AWS-HMAC",
-        "AccessKeyId": "accessKey",
-        "SecretAccessKey": "secret",
-        "Token": "token",
-        "Expiration": "2014-12-16T01:51:37Z",
-        "LastUpdated": "2009-11-23T0:00:00Z"
-    })
+    data = json.dumps(
+        {
+            "Code": "Success",
+            "Type": "AWS-HMAC",
+            "AccessKeyId": "accessKey",
+            "SecretAccessKey": "secret",
+            "Token": "token",
+            "Expiration": "2014-12-16T01:51:37Z",
+            "LastUpdated": "2009-11-23T0:00:00Z",
+        }
+    )
 
 
 class IamAwsProviderTest(TestCase):
@@ -90,7 +97,8 @@ class ChainedProviderTest(TestCase):
 
         provider = ChainedProvider(
             [
-                EnvAWSProvider(), EnvMinioProvider(),
+                EnvAWSProvider(),
+                EnvMinioProvider(),
             ]
         )
         # retrieve provider (env_aws) has priority
@@ -110,7 +118,8 @@ class ChainedProviderTest(TestCase):
 
         provider = ChainedProvider(
             [
-                EnvAWSProvider(), EnvMinioProvider(),
+                EnvAWSProvider(),
+                EnvMinioProvider(),
             ]
         )
         # retrieve provider: (env_minio) will be retrieved
@@ -147,7 +156,7 @@ class EnvAWSProviderTest(TestCase):
 class EnvMinioTest(TestCase):
     def test_env_minio_retrieve(self):
         os.environ.clear()
-        os.environ['MINIO_ACCESS_KEY'] = "access"
+        os.environ["MINIO_ACCESS_KEY"] = "access"
         os.environ["MINIO_SECRET_KEY"] = "secret"
         provider = EnvMinioProvider()
         creds = provider.retrieve()
@@ -167,9 +176,7 @@ class AWSConfigProviderTest(TestCase):
 
     def test_file_aws_from_env(self):
         os.environ.clear()
-        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = (
-            CREDENTIALS_SAMPLE
-        )
+        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = CREDENTIALS_SAMPLE
         provider = AWSConfigProvider()
         creds = provider.retrieve()
         self.assertEqual(creds.access_key, "accessKey")
@@ -223,8 +230,9 @@ class MinioClientConfigProviderTest(TestCase):
         provider = MinioClientConfigProvider(filename=CONFIG_JSON_SAMPLE)
         creds = provider.retrieve()
         self.assertEqual(creds.access_key, "Q3AM3UQ867SPQQA43P2F")
-        self.assertEqual(creds.secret_key,
-                         "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
+        self.assertEqual(
+            creds.secret_key, "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG"
+        )
         self.assertEqual(creds.session_token, None)
 
     def test_file_minio_arg_alias(self):
@@ -235,8 +243,9 @@ class MinioClientConfigProviderTest(TestCase):
         )
         creds = provider.retrieve()
         self.assertEqual(creds.access_key, "Q3AM3UQ867SPQQA43P2F")
-        self.assertEqual(creds.secret_key,
-                         "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
+        self.assertEqual(
+            creds.secret_key, "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG"
+        )
         self.assertEqual(creds.session_token, None)
 
 

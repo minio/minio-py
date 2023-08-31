@@ -25,45 +25,57 @@ from .minio_mocks import MockConnection, MockResponse
 
 
 class ListBucketsTest(TestCase):
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_empty_list_buckets_works(self, mock_connection):
-        mock_data = ('<ListAllMyBucketsResult '
-                     'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
-                     '<Buckets></Buckets><Owner><ID>minio</ID><DisplayName>'
-                     'minio</DisplayName></Owner></ListAllMyBucketsResult>')
+        mock_data = (
+            "<ListAllMyBucketsResult "
+            'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+            "<Buckets></Buckets><Owner><ID>minio</ID><DisplayName>"
+            "minio</DisplayName></Owner></ListAllMyBucketsResult>"
+        )
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
-            MockResponse('GET', 'https://localhost:9000/',
-                         {'User-Agent': _DEFAULT_USER_AGENT},
-                         200, content=mock_data.encode())
+            MockResponse(
+                "GET",
+                "https://localhost:9000/",
+                {"User-Agent": _DEFAULT_USER_AGENT},
+                200,
+                content=mock_data.encode(),
+            )
         )
-        client = Minio('localhost:9000')
+        client = Minio("localhost:9000")
         buckets = client.list_buckets()
         count = 0
         for bucket in buckets:
             count += 1
         self.assertEqual(0, count)
 
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_list_buckets_works(self, mock_connection):
-        mock_data = ('<ListAllMyBucketsResult '
-                     'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
-                     '<Buckets><Bucket><Name>hello</Name>'
-                     '<CreationDate>2015-06-22T23:07:43.240Z</CreationDate>'
-                     '</Bucket><Bucket><Name>world</Name>'
-                     '<CreationDate>2015-06-22T23:07:56.766Z</CreationDate>'
-                     '</Bucket></Buckets><Owner><ID>minio</ID>'
-                     '<DisplayName>minio</DisplayName></Owner>'
-                     '</ListAllMyBucketsResult>')
+        mock_data = (
+            "<ListAllMyBucketsResult "
+            'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+            "<Buckets><Bucket><Name>hello</Name>"
+            "<CreationDate>2015-06-22T23:07:43.240Z</CreationDate>"
+            "</Bucket><Bucket><Name>world</Name>"
+            "<CreationDate>2015-06-22T23:07:56.766Z</CreationDate>"
+            "</Bucket></Buckets><Owner><ID>minio</ID>"
+            "<DisplayName>minio</DisplayName></Owner>"
+            "</ListAllMyBucketsResult>"
+        )
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
-            MockResponse('GET', 'https://localhost:9000/',
-                         {'User-Agent': _DEFAULT_USER_AGENT},
-                         200, content=mock_data.encode())
+            MockResponse(
+                "GET",
+                "https://localhost:9000/",
+                {"User-Agent": _DEFAULT_USER_AGENT},
+                200,
+                content=mock_data.encode(),
+            )
         )
-        client = Minio('localhost:9000')
+        client = Minio("localhost:9000")
         buckets = client.list_buckets()
         buckets_list = []
         count = 0
@@ -71,12 +83,12 @@ class ListBucketsTest(TestCase):
             count += 1
             buckets_list.append(bucket)
         self.assertEqual(2, count)
-        self.assertEqual('hello', buckets_list[0].name)
+        self.assertEqual("hello", buckets_list[0].name)
         self.assertEqual(
             datetime(2015, 6, 22, 23, 7, 43, 240000, timezone.utc),
             buckets_list[0].creation_date,
         )
-        self.assertEqual('world', buckets_list[1].name)
+        self.assertEqual("world", buckets_list[1].name)
         self.assertEqual(
             datetime(2015, 6, 22, 23, 7, 56, 766000, timezone.utc),
             buckets_list[1].creation_date,

@@ -57,8 +57,9 @@ class DeleteRequest:
 class DeletedObject:
     """Deleted object information."""
 
-    def __init__(self, name, version_id, delete_marker,
-                 delete_marker_version_id):
+    def __init__(
+        self, name, version_id, delete_marker, delete_marker_version_id
+    ):
         self._name = name
         self._version_id = version_id
         self._delete_marker = delete_marker

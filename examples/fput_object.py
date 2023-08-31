@@ -30,94 +30,129 @@ client = Minio(
 
 # Upload data.
 result = client.fput_object(
-    "my-bucket", "my-object", "my-filename",
+    "my-bucket",
+    "my-object",
+    "my-filename",
 )
 print(
     "created {0} object; etag: {1}, version-id: {2}".format(
-        result.object_name, result.etag, result.version_id,
+        result.object_name,
+        result.etag,
+        result.version_id,
     ),
 )
 
 # Upload data with content-type.
 result = client.fput_object(
-    "my-bucket", "my-object", "my-filename",
+    "my-bucket",
+    "my-object",
+    "my-filename",
     content_type="application/csv",
 )
 print(
     "created {0} object; etag: {1}, version-id: {2}".format(
-        result.object_name, result.etag, result.version_id,
+        result.object_name,
+        result.etag,
+        result.version_id,
     ),
 )
 
 # Upload data with metadata.
 result = client.fput_object(
-    "my-bucket", "my-object", "my-filename",
+    "my-bucket",
+    "my-object",
+    "my-filename",
     metadata={"My-Project": "one"},
 )
 print(
     "created {0} object; etag: {1}, version-id: {2}".format(
-        result.object_name, result.etag, result.version_id,
+        result.object_name,
+        result.etag,
+        result.version_id,
     ),
 )
 
 # Upload data with customer key type of server-side encryption.
 result = client.fput_object(
-    "my-bucket", "my-object", "my-filename",
+    "my-bucket",
+    "my-object",
+    "my-filename",
     sse=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
 )
 print(
     "created {0} object; etag: {1}, version-id: {2}".format(
-        result.object_name, result.etag, result.version_id,
+        result.object_name,
+        result.etag,
+        result.version_id,
     ),
 )
 
 # Upload data with KMS type of server-side encryption.
 result = client.fput_object(
-    "my-bucket", "my-object", "my-filename",
+    "my-bucket",
+    "my-object",
+    "my-filename",
     sse=SseKMS("KMS-KEY-ID", {"Key1": "Value1", "Key2": "Value2"}),
 )
 print(
     "created {0} object; etag: {1}, version-id: {2}".format(
-        result.object_name, result.etag, result.version_id,
+        result.object_name,
+        result.etag,
+        result.version_id,
     ),
 )
 
 # Upload data with S3 type of server-side encryption.
 result = client.fput_object(
-    "my-bucket", "my-object", "my-filename",
+    "my-bucket",
+    "my-object",
+    "my-filename",
     sse=SseS3(),
 )
 print(
     "created {0} object; etag: {1}, version-id: {2}".format(
-        result.object_name, result.etag, result.version_id,
+        result.object_name,
+        result.etag,
+        result.version_id,
     ),
 )
 
 # Upload data with tags, retention and legal-hold.
 date = datetime.utcnow().replace(
-    hour=0, minute=0, second=0, microsecond=0,
+    hour=0,
+    minute=0,
+    second=0,
+    microsecond=0,
 ) + timedelta(days=30)
 tags = Tags(for_object=True)
 tags["User"] = "jsmith"
 result = client.fput_object(
-    "my-bucket", "my-object", "my-filename",
+    "my-bucket",
+    "my-object",
+    "my-filename",
     tags=tags,
     retention=Retention(GOVERNANCE, date),
     legal_hold=True,
 )
 print(
     "created {0} object; etag: {1}, version-id: {2}".format(
-        result.object_name, result.etag, result.version_id,
+        result.object_name,
+        result.etag,
+        result.version_id,
     ),
 )
 
 # Upload data with progress bar.
 result = client.fput_object(
-    "my-bucket", "my-object", "my-filename",
+    "my-bucket",
+    "my-object",
+    "my-filename",
     progress=Progress(),
 )
 print(
     "created {0} object; etag: {1}, version-id: {2}".format(
-        result.object_name, result.etag, result.version_id,
+        result.object_name,
+        result.etag,
+        result.version_id,
     ),
 )

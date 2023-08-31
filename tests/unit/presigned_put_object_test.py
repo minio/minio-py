@@ -22,19 +22,21 @@ from minio import Minio
 
 class PresignedPutObjectTest(TestCase):
     def test_object_is_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(
-            TypeError, client.presigned_put_object, 'hello', 1234)
+        client = Minio("localhost:9000")
+        self.assertRaises(TypeError, client.presigned_put_object, "hello", 1234)
 
     def test_object_is_not_empty_string(self):
-        client = Minio('localhost:9000')
+        client = Minio("localhost:9000")
         self.assertRaises(
-            ValueError, client.presigned_put_object, 'hello', ' \t \n ')
+            ValueError, client.presigned_put_object, "hello", " \t \n "
+        )
 
     def test_expiry_limit(self):
-        client = Minio('localhost:9000')
+        client = Minio("localhost:9000")
         self.assertRaises(
             ValueError,
-            client.presigned_put_object, 'hello', 'key',
-            expires=timedelta(days=8)
+            client.presigned_put_object,
+            "hello",
+            "key",
+            expires=timedelta(days=8),
         )

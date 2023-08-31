@@ -24,5 +24,6 @@ client = Minio(
 )
 
 client.set_bucket_encryption(
-    "my-bucket", SSEConfig(Rule.new_sse_s3_rule()),
+    "my-bucket",
+    SSEConfig(Rule.new_sse_s3_rule()),
 )

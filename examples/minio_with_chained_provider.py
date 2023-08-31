@@ -19,8 +19,12 @@
 # 'providers' list
 
 from minio import Minio
-from minio.credentials import (AWSConfigProvider, ChainedProvider,
-                               EnvAWSProvider, IamAwsProvider)
+from minio.credentials import (
+    AWSConfigProvider,
+    ChainedProvider,
+    EnvAWSProvider,
+    IamAwsProvider,
+)
 
 client = Minio(
     "s3.amazonaws.com",
@@ -30,7 +34,7 @@ client = Minio(
             AWSConfigProvider(),
             EnvAWSProvider(),
         ]
-    )
+    ),
 )
 
 # Get information of an object.

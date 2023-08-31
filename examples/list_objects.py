@@ -40,7 +40,9 @@ for obj in objects:
 # List objects information recursively whose names starts with
 # "my/prefix/".
 objects = client.list_objects(
-    "my-bucket", prefix="my/prefix/", recursive=True,
+    "my-bucket",
+    prefix="my/prefix/",
+    recursive=True,
 )
 for obj in objects:
     print(obj)
@@ -48,7 +50,9 @@ for obj in objects:
 # List objects information recursively after object name
 # "my/prefix/world/1".
 objects = client.list_objects(
-    "my-bucket", recursive=True, start_after="my/prefix/world/1",
+    "my-bucket",
+    recursive=True,
+    start_after="my/prefix/world/1",
 )
 for obj in objects:
     print(obj)

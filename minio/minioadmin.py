@@ -28,9 +28,13 @@ class MinioAdmin:
     """MinIO Admin wrapper using MinIO Client (mc) tool."""
 
     def __init__(
-            self, target,
-            binary_path=None, config_dir=None, ignore_cert_check=False,
-            timeout=None, env=None,
+        self,
+        target,
+        binary_path=None,
+        config_dir=None,
+        ignore_cert_check=False,
+        timeout=None,
+        env=None,
     ):
         self._target = target
         self._timeout = timeout
@@ -147,8 +151,12 @@ class MinioAdmin:
         if (user is not None) ^ (group is not None):
             return self._run(
                 [
-                    "policy", "attach", self._target, policy_name,
-                    "--user" if user else "--group", user or group,
+                    "policy",
+                    "attach",
+                    self._target,
+                    policy_name,
+                    "--user" if user else "--group",
+                    user or group,
                 ],
             )
         raise ValueError("either user or group must be set")
@@ -158,8 +166,12 @@ class MinioAdmin:
         if (user is not None) ^ (group is not None):
             return self._run(
                 [
-                    "policy", "detach", self._target, policy_name,
-                    "--user" if user else "--group", user or group,
+                    "policy",
+                    "detach",
+                    self._target,
+                    policy_name,
+                    "--user" if user else "--group",
+                    user or group,
                 ],
             )
         raise ValueError("either user or group must be set")
@@ -217,27 +229,35 @@ class MinioAdmin:
     def kms_key_create(self, key=None):
         """Create a new KMS master key."""
         return self._run(
-            [
-                "kms", "key", "create", self._target, key
-            ] + ([key] if key else []),
+            ["kms", "key", "create", self._target, key]
+            + ([key] if key else []),
         )
 
     def kms_key_status(self, key=None):
         """Get status information of a KMS master key."""
         return self._run(
-            [
-                "kms", "key", "status", self._target, key
-            ] + ([key] if key else []),
+            ["kms", "key", "status", self._target, key]
+            + ([key] if key else []),
         )
 
     def bucket_remote_add(
-            self, src_bucket, dest_url,
-            path=None, region=None, bandwidth=None, service=None,
+        self,
+        src_bucket,
+        dest_url,
+        path=None,
+        region=None,
+        bandwidth=None,
+        service=None,
     ):
         """Add a new remote target."""
         args = [
-            "bucket", "remote", "add", self._target + "/" + src_bucket,
-            dest_url, "--service", service or "replication",
+            "bucket",
+            "remote",
+            "add",
+            self._target + "/" + src_bucket,
+            dest_url,
+            "--service",
+            service or "replication",
         ]
         if path:
             args += ["--path", path]
@@ -251,8 +271,13 @@ class MinioAdmin:
         """Edit credentials of remote target."""
         return self._run(
             [
-                "bucket", "remote", "edit", self._target + "/" + src_bucket,
-                dest_url, "--arn", arn,
+                "bucket",
+                "remote",
+                "edit",
+                self._target + "/" + src_bucket,
+                dest_url,
+                "--arn",
+                arn,
             ],
         )
 
@@ -260,9 +285,12 @@ class MinioAdmin:
         """List remote targets."""
         return self._run(
             [
-                "bucket", "remote", "ls",
+                "bucket",
+                "remote",
+                "ls",
                 self._target + ("/" + src_bucket if src_bucket else ""),
-                "--service", service or "replication",
+                "--service",
+                service or "replication",
             ],
         )
 
@@ -270,8 +298,12 @@ class MinioAdmin:
         """Remove configured remote target."""
         return self._run(
             [
-                "bucket", "remote", "rm", self._target + "/" + src_bucket,
-                "--arn", arn,
+                "bucket",
+                "remote",
+                "rm",
+                self._target + "/" + src_bucket,
+                "--arn",
+                arn,
             ],
         )
 

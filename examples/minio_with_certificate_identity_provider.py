@@ -28,7 +28,9 @@ cert_file = "/path/to/client.pem"
 key_file = "/path/to/client.key"
 
 provider = CertificateIdentityProvider(
-    sts_endpoint, cert_file=cert_file, key_file=key_file,
+    sts_endpoint,
+    cert_file=cert_file,
+    key_file=key_file,
 )
 
 client = Minio("MINIO-HOST:MINIO-PORT", credentials=provider)

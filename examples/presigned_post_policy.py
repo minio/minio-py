@@ -26,10 +26,11 @@ client = Minio(
 )
 
 policy = PostPolicy(
-    "my-bucket", datetime.utcnow() + timedelta(days=10),
+    "my-bucket",
+    datetime.utcnow() + timedelta(days=10),
 )
 policy.add_starts_with_condition("key", "my/object/prefix/")
-policy.add_content_length_range_condition(1*1024*1024, 10*1024*1024)
+policy.add_content_length_range_condition(1 * 1024 * 1024, 10 * 1024 * 1024)
 
 form_data = client.presigned_post_policy(policy)
 

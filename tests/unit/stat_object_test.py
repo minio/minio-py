@@ -25,32 +25,35 @@ from .minio_mocks import MockConnection, MockResponse
 
 class StatObject(TestCase):
     def test_object_is_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(TypeError, client.stat_object, 'hello', 1234)
+        client = Minio("localhost:9000")
+        self.assertRaises(TypeError, client.stat_object, "hello", 1234)
 
     def test_object_is_not_empty_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(ValueError, client.stat_object, 'hello', '  \t \n  ')
+        client = Minio("localhost:9000")
+        self.assertRaises(ValueError, client.stat_object, "hello", "  \t \n  ")
 
     def test_stat_object_invalid_name(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(ValueError, client.stat_object, 'AB#CD', 'world')
+        client = Minio("localhost:9000")
+        self.assertRaises(ValueError, client.stat_object, "AB#CD", "world")
 
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_stat_object_works(self, mock_connection):
         mock_headers = {
-            'content-type': 'application/octet-stream',
-            'last-modified': 'Fri, 26 Jun 2015 19:05:37 GMT',
-            'content-length': 11,
-            'etag': '5eb63bbbe01eeed093cb22bb8f5acdc3'
+            "content-type": "application/octet-stream",
+            "last-modified": "Fri, 26 Jun 2015 19:05:37 GMT",
+            "content-length": 11,
+            "etag": "5eb63bbbe01eeed093cb22bb8f5acdc3",
         }
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
-            MockResponse('HEAD',
-                         'https://localhost:9000/hello/world',
-                         {'User-Agent': _DEFAULT_USER_AGENT}, 200,
-                         response_headers=mock_headers)
+            MockResponse(
+                "HEAD",
+                "https://localhost:9000/hello/world",
+                {"User-Agent": _DEFAULT_USER_AGENT},
+                200,
+                response_headers=mock_headers,
+            )
         )
-        client = Minio('localhost:9000')
-        client.stat_object('hello', 'world')
+        client = Minio("localhost:9000")
+        client.stat_object("hello", "world")

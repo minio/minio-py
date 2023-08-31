@@ -31,6 +31,7 @@ from abc import ABCMeta, abstractmethod
 
 class Sse:
     """Server-side encryption base class."""
+
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -47,7 +48,7 @@ class Sse:
 
 
 class SseCustomerKey(Sse):
-    """ Server-side encryption - customer key type."""
+    """Server-side encryption - customer key type."""
 
     def __init__(self, key):
         if len(key) != 32:
@@ -55,8 +56,10 @@ class SseCustomerKey(Sse):
                 "SSE-C keys need to be 256 bit base64 encoded",
             )
         b64key = base64.b64encode(key).decode()
-        from .helpers import \
-            md5sum_hash  # pylint: disable=import-outside-toplevel
+        from .helpers import (
+            md5sum_hash,
+        )  # pylint: disable=import-outside-toplevel
+
         md5key = md5sum_hash(key)
         self._headers = {
             "X-Amz-Server-Side-Encryption-Customer-Algorithm": "AES256",
@@ -64,11 +67,9 @@ class SseCustomerKey(Sse):
             "X-Amz-Server-Side-Encryption-Customer-Key-MD5": md5key,
         }
         self._copy_headers = {
-            "X-Amz-Copy-Source-Server-Side-Encryption-Customer-Algorithm":
-            "AES256",
+            "X-Amz-Copy-Source-Server-Side-Encryption-Customer-Algorithm": "AES256",
             "X-Amz-Copy-Source-Server-Side-Encryption-Customer-Key": b64key,
-            "X-Amz-Copy-Source-Server-Side-Encryption-Customer-Key-MD5":
-            md5key,
+            "X-Amz-Copy-Source-Server-Side-Encryption-Customer-Key-MD5": md5key,
         }
 
     def headers(self):
@@ -84,13 +85,13 @@ class SseKMS(Sse):
     def __init__(self, key, context):
         self._headers = {
             "X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id": key,
-            "X-Amz-Server-Side-Encryption": "aws:kms"
+            "X-Amz-Server-Side-Encryption": "aws:kms",
         }
         if context:
             data = bytes(json.dumps(context), "utf-8")
-            self._headers["X-Amz-Server-Side-Encryption-Context"] = (
-                base64.b64encode(data).decode()
-            )
+            self._headers[
+                "X-Amz-Server-Side-Encryption-Context"
+            ] = base64.b64encode(data).decode()
 
     def headers(self):
         return self._headers.copy()
@@ -100,9 +101,7 @@ class SseS3(Sse):
     """Server-side encryption - S3 type."""
 
     def headers(self):
-        return {
-            "X-Amz-Server-Side-Encryption": "AES256"
-        }
+        return {"X-Amz-Server-Side-Encryption": "AES256"}
 
     def tls_required(self):
         return False

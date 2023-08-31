@@ -22,30 +22,39 @@ from minio.commonconfig import CopySource
 
 class CopyObjectTest(TestCase):
     def test_valid_copy_source(self):
-        client = Minio('localhost:9000')
+        client = Minio("localhost:9000")
         self.assertRaises(
-            ValueError,
-            client.copy_object, 'hello', '1', '/testbucket/object'
+            ValueError, client.copy_object, "hello", "1", "/testbucket/object"
         )
 
     def test_valid_match_etag(self):
         self.assertRaises(
-            ValueError, CopySource, "src-bucket", "src-object", match_etag='')
+            ValueError, CopySource, "src-bucket", "src-object", match_etag=""
+        )
 
     def test_not_match_etag(self):
         self.assertRaises(
             ValueError,
-            CopySource, "src-bucket", "src-object", not_match_etag=''
+            CopySource,
+            "src-bucket",
+            "src-object",
+            not_match_etag="",
         )
 
     def test_valid_modified_since(self):
         self.assertRaises(
             ValueError,
-            CopySource, "src-bucket", "src-object", modified_since=''
+            CopySource,
+            "src-bucket",
+            "src-object",
+            modified_since="",
         )
 
     def test_valid_unmodified_since(self):
         self.assertRaises(
             ValueError,
-            CopySource, "src-bucket", "src-object", unmodified_since=''
+            CopySource,
+            "src-bucket",
+            "src-object",
+            unmodified_since="",
         )

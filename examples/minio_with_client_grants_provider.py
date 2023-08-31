@@ -52,7 +52,8 @@ client_secret = "PASSWORD"
 sts_endpoint = "http://STS-HOST:STS-PORT/"
 
 provider = ClientGrantsProvider(
-    lambda: get_jwt(client_id, client_secret, idp_endpoint), sts_endpoint,
+    lambda: get_jwt(client_id, client_secret, idp_endpoint),
+    sts_endpoint,
 )
 
 client = Minio("MINIO-HOST:MINIO-PORT", credentials=provider)

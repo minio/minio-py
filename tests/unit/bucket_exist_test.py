@@ -26,48 +26,54 @@ from .minio_mocks import MockConnection, MockResponse
 
 class BucketExists(TestCase):
     def test_bucket_is_string(self):
-        client = Minio('localhost:9000')
+        client = Minio("localhost:9000")
         self.assertRaises(TypeError, client.bucket_exists, 1234)
 
     def test_bucket_is_not_empty_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(ValueError, client.bucket_exists, '  \t \n  ')
+        client = Minio("localhost:9000")
+        self.assertRaises(ValueError, client.bucket_exists, "  \t \n  ")
 
     def test_bucket_exists_invalid_name(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(ValueError, client.bucket_exists, 'AB*CD')
+        client = Minio("localhost:9000")
+        self.assertRaises(ValueError, client.bucket_exists, "AB*CD")
 
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_bucket_exists_bad_request(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
-            MockResponse('HEAD',
-                         'https://localhost:9000/hello',
-                         {'User-Agent': _DEFAULT_USER_AGENT},
-                         400)
+            MockResponse(
+                "HEAD",
+                "https://localhost:9000/hello",
+                {"User-Agent": _DEFAULT_USER_AGENT},
+                400,
+            )
         )
-        client = Minio('localhost:9000')
-        self.assertRaises(S3Error, client.bucket_exists, 'hello')
+        client = Minio("localhost:9000")
+        self.assertRaises(S3Error, client.bucket_exists, "hello")
 
-    @mock.patch('urllib3.PoolManager')
+    @mock.patch("urllib3.PoolManager")
     def test_bucket_exists_works(self, mock_connection):
         mock_server = MockConnection()
         mock_connection.return_value = mock_server
         mock_server.mock_add_request(
-            MockResponse('HEAD',
-                         'https://localhost:9000/hello',
-                         {'User-Agent': _DEFAULT_USER_AGENT},
-                         200)
+            MockResponse(
+                "HEAD",
+                "https://localhost:9000/hello",
+                {"User-Agent": _DEFAULT_USER_AGENT},
+                200,
+            )
         )
-        client = Minio('localhost:9000')
-        result = client.bucket_exists('hello')
+        client = Minio("localhost:9000")
+        result = client.bucket_exists("hello")
         self.assertTrue(result)
         mock_server.mock_add_request(
-            MockResponse('HEAD',
-                         'https://localhost:9000/goodbye',
-                         {'User-Agent': _DEFAULT_USER_AGENT},
-                         404)
+            MockResponse(
+                "HEAD",
+                "https://localhost:9000/goodbye",
+                {"User-Agent": _DEFAULT_USER_AGENT},
+                404,
+            )
         )
-        false_result = client.bucket_exists('goodbye')
+        false_result = client.bucket_exists("goodbye")
         self.assertFalse(false_result)

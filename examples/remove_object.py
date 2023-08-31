@@ -27,6 +27,7 @@ client.remove_object("my-bucket", "my-object")
 
 # Remove version of an object.
 client.remove_object(
-    "my-bucket", "my-object",
+    "my-bucket",
+    "my-object",
     version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
 )

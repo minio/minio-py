@@ -27,28 +27,33 @@ client = Minio(
 result = client.stat_object("my-bucket", "my-object")
 print(
     "last-modified: {0}, size: {1}".format(
-        result.last_modified, result.size,
+        result.last_modified,
+        result.size,
     ),
 )
 
 # Get object information of version-ID.
 result = client.stat_object(
-    "my-bucket", "my-object",
+    "my-bucket",
+    "my-object",
     version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
 )
 print(
     "last-modified: {0}, size: {1}".format(
-        result.last_modified, result.size,
+        result.last_modified,
+        result.size,
     ),
 )
 
 # Get SSE-C encrypted object information.
 result = client.stat_object(
-    "my-bucket", "my-object",
+    "my-bucket",
+    "my-object",
     ssec=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
 )
 print(
     "last-modified: {0}, size: {1}".format(
-        result.last_modified, result.size,
+        result.last_modified,
+        result.size,
     ),
 )
