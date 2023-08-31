@@ -118,7 +118,7 @@ class Minio:  # pylint: disable=too-many-public-methods
     _base_url: BaseURL
     _user_agent: str
     _trace_stream: TextIO | None
-    _provider: StaticProvider | Provider | None
+    _provider: Provider | None
     _http: PoolManager
 
     # pylint: disable=too-many-function-args
