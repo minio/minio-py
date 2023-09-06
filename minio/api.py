@@ -1005,7 +1005,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param version_id: Version-ID of the object.
         :param extra_query_params: Extra query parameters for advanced usage.
         :param tmp_file_path: Path to a temporary file.
-        :param progress: A progress object
+        :param progress: A Progress or tqdm.tqdm object
         :return: Object information.
 
         Example::
@@ -1057,9 +1057,17 @@ class Minio:  # pylint: disable=too-many-public-methods
             )
 
             if progress:
-                # Set progress bar length and object name before upload
+                # Set progress bar length and object name before download
                 length = int(response.headers.get('content-length', 0))
-                progress.set_meta(object_name=object_name, total_length=length)
+                if not isinstance(progress, Thread):
+                    # Set progress bar length and object name before upload
+                    progress.set_meta(object_name=object_name, total_length=length)
+                elif hasattr(progress, "set_description") and hasattr(progress, "reset"):
+                    # This matches spec of tqdm.tqdm
+                    progress.set_description(object_name)
+                    progress.reset(length)
+                else:
+                    raise TypeError("progress object must be instance of Thread or tqdm.tqdm")
 
             with open(tmp_file_path, "wb") as tmp_file:
                 for data in response.stream(amt=1024*1024):
@@ -1618,7 +1626,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param metadata: Any additional metadata to be uploaded along
             with your PUT request.
         :param sse: Server-side encryption.
-        :param progress: A progress object;
+        :param progress: A Progress or tqdm.tqdm object;
         :param part_size: Multipart part size.
         :param num_parallel_uploads: Number of parallel uploads.
         :param tags: :class:`Tags` for the object.
@@ -1663,9 +1671,14 @@ class Minio:  # pylint: disable=too-many-public-methods
         part_size, part_count = get_part_info(length, part_size)
         if progress:
             if not isinstance(progress, Thread):
-                raise TypeError("progress object must be instance of Thread")
-            # Set progress bar length and object name before upload
-            progress.set_meta(object_name=object_name, total_length=length)
+                # Set progress bar length and object name before upload
+                progress.set_meta(object_name=object_name, total_length=length)
+            elif hasattr(progress, "set_description") and hasattr(progress, "reset"):
+                # This matches spec of tqdm.tqdm
+                progress.set_description(object_name)
+                progress.reset(length)
+            else:
+                raise TypeError("progress object must be instance of Thread or tqdm.tqdm")
 
         headers = genheaders(metadata, sse, tags, retention, legal_hold)
         headers["Content-Type"] = content_type or "application/octet-stream"
