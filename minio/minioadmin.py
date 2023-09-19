@@ -555,7 +555,7 @@ class MinioAdmin:
         """Get status information of a KMS master key."""
         response = self._url_open(
             "GET",
-            _COMMAND.GET_KMS_STATUS,
+            _COMMAND.GET_KMS_KEY_STATUS,
             query_params={"key-id": key or ""}
         )
         return response.data.decode()
