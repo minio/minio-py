@@ -21,7 +21,7 @@
 Simple Storage Service (aka S3) client to perform bucket and object operations.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
 
 import itertools
 import os
@@ -31,6 +31,7 @@ from datetime import timedelta
 from io import BytesIO
 from random import random
 from threading import Thread
+from typing import BinaryIO
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
@@ -61,7 +62,7 @@ from .replicationconfig import ReplicationConfig
 from .retention import Retention
 from .select import SelectObjectReader, SelectRequest
 from .signer import presign_v4, sign_v4_s3
-from .sse import SseCustomerKey
+from .sse import Sse, SseCustomerKey
 from .sseconfig import SSEConfig
 from .tagging import Tagging
 from .versioningconfig import VersioningConfig
@@ -1077,9 +1078,17 @@ class Minio:  # pylint: disable=too-many-public-methods
                 response.close()
                 response.release_conn()
 
-    def get_object(self, bucket_name, object_name, offset=0, length=0,
-                   request_headers=None, ssec=None, version_id=None,
-                   extra_query_params=None):
+    def get_object(
+        self,
+        bucket_name: str,
+        object_name: str,
+        offset: int = 0,
+        length: int = 0,
+        request_headers: dict[str, str] | None = None,
+        ssec: SseCustomerKey | None = None,
+        version_id: str | None = None,
+        extra_query_params: dict[str, str] | None = None
+    ) -> urllib3.BaseHTTPResponse:
         """
         Get data of an object. Returned response should be closed after use to
         release network resources. To reuse the connection, it's required to
@@ -1604,11 +1613,22 @@ class Minio:  # pylint: disable=too-many-public-methods
         """Upload_part task for ThreadPool."""
         return args[5], self._upload_part(*args)
 
-    def put_object(self, bucket_name, object_name, data, length,
-                   content_type="application/octet-stream",
-                   metadata=None, sse=None, progress=None,
-                   part_size=0, num_parallel_uploads=3,
-                   tags=None, retention=None, legal_hold=False):
+    def put_object(
+        self,
+        bucket_name: str,
+        object_name: str,
+        data: BinaryIO,
+        length: int,
+        content_type: str = "application/octet-stream",
+        metadata: dict[str, str] | None = None,
+        sse: Sse | None = None,
+        progress: Thread | None = None,
+        part_size: int = 0,
+        num_parallel_uploads: int = 3,
+        tags: Tags | None = None,
+        retention: Retention | None = None,
+        legal_hold: bool = False
+    ) -> ObjectWriteResult:
         """
         Uploads data from a stream to an object in a bucket.
 
