@@ -53,7 +53,7 @@ from .helpers import (MAX_MULTIPART_COUNT, MAX_MULTIPART_OBJECT_SIZE,
                       ThreadPool, check_bucket_name, check_non_empty_string,
                       check_sse, check_ssec, genheaders, get_part_info,
                       headers_to_strings, is_valid_policy_type, makedirs,
-                      md5sum_hash, read_part_data, sha256_hash)
+                      md5sum_hash, read_part_data, sha256_hash, queryencode)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
@@ -1044,7 +1044,9 @@ class Minio:  # pylint: disable=too-many-public-methods
         )
 
         # Write to a temporary file "file_path.part.minio" before saving.
-        tmp_file_path = tmp_file_path or f"{file_path}.{stat.etag}.part.minio"
+        tmp_file_path = (
+            tmp_file_path or f"{file_path}.{queryencode(stat.etag)}.part.minio"
+        )
 
         response = None
         try:
