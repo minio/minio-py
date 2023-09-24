@@ -1078,9 +1078,17 @@ class Minio:  # pylint: disable=too-many-public-methods
                 response.close()
                 response.release_conn()
 
-    def get_object(self, bucket_name, object_name, offset=0, length=0,
-                   request_headers=None, ssec=None, version_id=None,
-                   extra_query_params=None):
+    def get_object(
+        self,
+        bucket_name: str,
+        object_name: str,
+        offset: int = 0,
+        length: int = 0,
+        request_headers: dict[str, str] | None = None,
+        ssec: SseCustomerKey | None = None,
+        version_id: str | None = None,
+        extra_query_params: dict[str, str] | None = None
+    ) -> urllib3.BaseHTTPResponse:
         """
         Get data of an object. Returned response should be closed after use to
         release network resources. To reuse the connection, it's required to
