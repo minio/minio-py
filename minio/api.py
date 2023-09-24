@@ -42,7 +42,8 @@ from urllib3._collections import HTTPHeaderDict
 
 from . import __title__, __version__, time
 from .commonconfig import COPY, REPLACE, ComposeSource, CopySource, Tags
-from .credentials import Provider, StaticProvider
+from .credentials import StaticProvider
+from .credentials.providers import Provider
 from .datatypes import (CompleteMultipartUploadResult, EventIterable,
                         ListAllMyBucketsResult, ListMultipartUploadsResult,
                         ListPartsResult, Object, Part, PostPolicy,
