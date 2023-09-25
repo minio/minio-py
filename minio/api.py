@@ -21,7 +21,7 @@
 Simple Storage Service (aka S3) client to perform bucket and object operations.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
 
 import itertools
 import os
@@ -30,16 +30,19 @@ from datetime import timedelta
 from io import BytesIO
 from random import random
 from threading import Thread
+from typing import BinaryIO, TextIO
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
 import certifi
 import urllib3
+from urllib3 import PoolManager
 from urllib3._collections import HTTPHeaderDict
 
 from . import __title__, __version__, time
 from .commonconfig import COPY, REPLACE, ComposeSource, CopySource, Tags
 from .credentials import StaticProvider
+from .credentials.providers import Provider
 from .datatypes import (CompleteMultipartUploadResult, EventIterable,
                         ListAllMyBucketsResult, ListMultipartUploadsResult,
                         ListPartsResult, Object, Part, PostPolicy,
@@ -52,7 +55,7 @@ from .helpers import (_DEFAULT_USER_AGENT, MAX_MULTIPART_COUNT,
                       check_bucket_name, check_non_empty_string, check_sse,
                       check_ssec, genheaders, get_part_info,
                       headers_to_strings, is_valid_policy_type, makedirs,
-                      md5sum_hash, read_part_data, sha256_hash)
+                      md5sum_hash, read_part_data, sha256_hash, queryencode)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
@@ -61,7 +64,7 @@ from .replicationconfig import ReplicationConfig
 from .retention import Retention
 from .select import SelectObjectReader, SelectRequest
 from .signer import presign_v4, sign_v4_s3
-from .sse import SseCustomerKey
+from .sse import Sse, SseCustomerKey
 from .sseconfig import SSEConfig
 from .tagging import Tagging
 from .versioningconfig import VersioningConfig
@@ -107,16 +110,26 @@ class Minio:  # pylint: disable=too-many-public-methods
     object in each process, and not share it between processes.
 
     """
+    _region_map: dict[str, str]
+    _base_url: BaseURL
+    _user_agent: str
+    _trace_stream: TextIO | None
+    _provider: Provider | None
+    _http: PoolManager
 
     # pylint: disable=too-many-function-args
-    def __init__(self, endpoint, access_key=None,
-                 secret_key=None,
-                 session_token=None,
-                 secure=True,
-                 region=None,
-                 http_client=None,
-                 credentials=None,
-                 cert_check=True):
+    def __init__(
+        self,
+        endpoint: str,
+        access_key: str | None = None,
+        secret_key: str | None = None,
+        session_token: str | None = None,
+        secure: bool = True,
+        region: str | None = None,
+        http_client: urllib3.PoolManager | None = None,
+        credentials: Provider | None = None,
+        cert_check: bool = True
+    ):
         # Validate http client has correct base class.
         if http_client and not isinstance(
                 http_client,
@@ -1038,7 +1051,9 @@ class Minio:  # pylint: disable=too-many-public-methods
         )
 
         # Write to a temporary file "file_path.part.minio" before saving.
-        tmp_file_path = tmp_file_path or f"{file_path}.{stat.etag}.part.minio"
+        tmp_file_path = (
+            tmp_file_path or f"{file_path}.{queryencode(stat.etag)}.part.minio"
+        )
 
         response = None
         try:
@@ -1070,9 +1085,17 @@ class Minio:  # pylint: disable=too-many-public-methods
                 response.close()
                 response.release_conn()
 
-    def get_object(self, bucket_name, object_name, offset=0, length=0,
-                   request_headers=None, ssec=None, version_id=None,
-                   extra_query_params=None):
+    def get_object(
+        self,
+        bucket_name: str,
+        object_name: str,
+        offset: int = 0,
+        length: int = 0,
+        request_headers: dict[str, str] | None = None,
+        ssec: SseCustomerKey | None = None,
+        version_id: str | None = None,
+        extra_query_params: dict[str, str] | None = None
+    ) -> urllib3.BaseHTTPResponse:
         """
         Get data of an object. Returned response should be closed after use to
         release network resources. To reuse the connection, it's required to
@@ -1597,11 +1620,22 @@ class Minio:  # pylint: disable=too-many-public-methods
         """Upload_part task for ThreadPool."""
         return args[5], self._upload_part(*args)
 
-    def put_object(self, bucket_name, object_name, data, length,
-                   content_type="application/octet-stream",
-                   metadata=None, sse=None, progress=None,
-                   part_size=0, num_parallel_uploads=3,
-                   tags=None, retention=None, legal_hold=False):
+    def put_object(
+        self,
+        bucket_name: str,
+        object_name: str,
+        data: BinaryIO,
+        length: int,
+        content_type: str = "application/octet-stream",
+        metadata: dict[str, str] | None = None,
+        sse: Sse | None = None,
+        progress: Thread | None = None,
+        part_size: int = 0,
+        num_parallel_uploads: int = 3,
+        tags: Tags | None = None,
+        retention: Retention | None = None,
+        legal_hold: bool = False
+    ) -> ObjectWriteResult:
         """
         Uploads data from a stream to an object in a bucket.
 

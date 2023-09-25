@@ -204,18 +204,18 @@ def check_bucket_name(bucket_name, strict=False, s3_check=False):
 
     if strict:
         if not _BUCKET_NAME_REGEX.match(bucket_name):
-            raise ValueError('invalid bucket name {bucket_name}')
+            raise ValueError(f'invalid bucket name {bucket_name}')
     else:
         if not _OLD_BUCKET_NAME_REGEX.match(bucket_name):
-            raise ValueError('invalid bucket name {bucket_name}')
+            raise ValueError(f'invalid bucket name {bucket_name}')
 
     if _IPV4_REGEX.match(bucket_name):
-        raise ValueError('bucket name {bucket_name} must not be formatted '
+        raise ValueError(f'bucket name {bucket_name} must not be formatted '
                          'as an IP address')
 
     unallowed_successive_chars = ['..', '.-', '-.']
     if any(x in bucket_name for x in unallowed_successive_chars):
-        raise ValueError('bucket name {bucket_name} contains invalid '
+        raise ValueError(f'bucket name {bucket_name} contains invalid '
                          'successive characters')
 
     if (
@@ -224,7 +224,7 @@ def check_bucket_name(bucket_name, strict=False, s3_check=False):
             bucket_name.endswith("-s3alias") or
             bucket_name.endswith("--ol-s3")
     ):
-        raise ValueError("bucket name {bucket_name} must not start with "
+        raise ValueError(f"bucket name {bucket_name} must not start with "
                          "'xn--' and must not end with '--s3alias' or "
                          "'--ol-s3'")
 
