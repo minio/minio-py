@@ -31,17 +31,19 @@ from datetime import timedelta
 from io import BytesIO
 from random import random
 from threading import Thread
-from typing import BinaryIO
+from typing import BinaryIO, TextIO
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
 import certifi
 import urllib3
+from urllib3 import PoolManager
 from urllib3._collections import HTTPHeaderDict
 
 from . import __title__, __version__, time
 from .commonconfig import COPY, REPLACE, ComposeSource, CopySource, Tags
 from .credentials import StaticProvider
+from .credentials.providers import Provider
 from .datatypes import (CompleteMultipartUploadResult, EventIterable,
                         ListAllMyBucketsResult, ListMultipartUploadsResult,
                         ListPartsResult, Object, Part, PostPolicy,
@@ -113,16 +115,26 @@ class Minio:  # pylint: disable=too-many-public-methods
     object in each process, and not share it between processes.
 
     """
+    _region_map: dict[str, str]
+    _base_url: BaseURL
+    _user_agent: str
+    _trace_stream: TextIO | None
+    _provider: Provider | None
+    _http: PoolManager
 
     # pylint: disable=too-many-function-args
-    def __init__(self, endpoint, access_key=None,
-                 secret_key=None,
-                 session_token=None,
-                 secure=True,
-                 region=None,
-                 http_client=None,
-                 credentials=None,
-                 cert_check=True):
+    def __init__(
+        self,
+        endpoint: str,
+        access_key: str | None = None,
+        secret_key: str | None = None,
+        session_token: str | None = None,
+        secure: bool = True,
+        region: str | None = None,
+        http_client: urllib3.PoolManager | None = None,
+        credentials: Provider | None = None,
+        cert_check: bool = True
+    ):
         # Validate http client has correct base class.
         if http_client and not isinstance(
                 http_client,
