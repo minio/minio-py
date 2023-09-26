@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-lines
+
 """
 Response of ListBuckets, ListObjects, ListObjectsV2 and ListObjectVersions API.
 """
@@ -24,6 +26,7 @@ import base64
 import datetime
 import json
 from collections import OrderedDict
+from enum import Enum
 from urllib.parse import unquote_plus
 from xml.etree import ElementTree as ET
 
@@ -850,3 +853,244 @@ class EventIterable:
 
     def __exit__(self, exc_type, value, traceback):
         self._close_response()
+
+
+class PeerSite:
+    """Represents a cluster/site to be added to the set of replicated sites."""
+
+    def __init__(self, name, endpoint, access_key, secret_key):
+        self._name = name
+        self._endpoint = endpoint
+        self._access_key = access_key
+        self._secret_key = secret_key
+
+    def to_dict(self):
+        """Convert to dictionary."""
+        return {
+            "name": self._name,
+            "endpoints": self._endpoint,
+            "accessKey": self._access_key,
+            "secretKey": self._secret_key,
+        }
+
+
+class SiteReplicationStatusOptions:
+    """Represents site replication status options."""
+    ENTITY_TYPE = Enum(
+        "ENTITY_TYPE",
+        {
+            "BUCKET": "bucket",
+            "POLICY": "policy",
+            "USER": "user",
+            "GROUP": "group",
+        },
+    )
+
+    def __init__(self):
+        self._buckets = False
+        self._policies = False
+        self._users = False
+        self._groups = False
+        self._metrics = False
+        self._entity = None
+        self._entity_value = None
+        self._show_deleted = False
+
+    @property
+    def buckets(self):
+        """Get buckets."""
+        return self._buckets
+
+    @buckets.setter
+    def buckets(self, value):
+        """Set buckets."""
+        self._buckets = value
+
+    @property
+    def policies(self):
+        """Get policies."""
+        return self._policies
+
+    @policies.setter
+    def policies(self, value):
+        """Set policies."""
+        self._policies = value
+
+    @property
+    def users(self):
+        """Get users."""
+        return self._users
+
+    @users.setter
+    def users(self, value):
+        """Set users."""
+        self._users = value
+
+    @property
+    def groups(self):
+        """Get groups."""
+        return self._groups
+
+    @groups.setter
+    def groups(self, value):
+        """Set groups."""
+        self._groups = value
+
+    @property
+    def metrics(self):
+        """Get metrics."""
+        return self._metrics
+
+    @metrics.setter
+    def metrics(self, value):
+        """Set metrics."""
+        self._metrics = value
+
+    @property
+    def entity(self):
+        """Get entity."""
+        return self._entity
+
+    @entity.setter
+    def entity(self, value):
+        """Set entity."""
+        self._entity = value
+
+    @property
+    def entity_value(self):
+        """Get entity vaue."""
+        return self._entity_value
+
+    @entity_value.setter
+    def entity_value(self, value):
+        """Set entity vaue."""
+        self._entity_value = value
+
+    @property
+    def show_deleted(self):
+        """Get show deleted."""
+        return self._show_deleted
+
+    @show_deleted.setter
+    def show_deleted(self, value):
+        """Set show deleted."""
+        self._show_deleted = value
+
+    def to_query_params(self):
+        """Convert this options to query parameters."""
+        params = {
+            "buckets": str(self._buckets).lower(),
+            "policies": str(self._policies).lower(),
+            "users": str(self._users).lower(),
+            "groups": str(self._groups).lower(),
+            "metrics": str(self._metrics).lower(),
+            "showDeleted": str(self._show_deleted).lower(),
+        }
+        if self._entity and self._entity_value:
+            params["entityvalue"] = self._entity_value
+            params["entity"] = self._entity.value
+        return params
+
+
+class PeerInfo:
+    """Site replication peer information."""
+
+    def __init__(self, deployment_id, endpoint, bucket_bandwidth_limit,
+                 bucket_bandwidth_set):
+        self._deployment_id = deployment_id
+        self._endpoint = endpoint
+        self._name = None
+        self._sync_status = None
+        self._bucket_bandwidth_limit = bucket_bandwidth_limit
+        self._bucket_bandwidth_set = bucket_bandwidth_set
+        self._bucket_bandwidth_updated_at = None
+
+    @property
+    def deployment_id(self):
+        """Get deployment ID."""
+        return self._deployment_id
+
+    @deployment_id.setter
+    def deployment_id(self, value):
+        """Set deployment ID."""
+        self._deployment_id = value
+
+    @property
+    def endpoint(self):
+        """Get endpoint."""
+        return self._endpoint
+
+    @endpoint.setter
+    def endpoint(self, value):
+        """Set endpoint."""
+        self._endpoint = value
+
+    @property
+    def name(self):
+        """Get name."""
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        """Set name."""
+        self._name = value
+
+    @property
+    def sync_status(self):
+        """Get sync status."""
+        return self._sync_status
+
+    @sync_status.setter
+    def sync_status(self, value):
+        """Set sync status."""
+        self._sync_status = value
+
+    @property
+    def bucket_bandwidth_limit(self):
+        """Get bucket bandwidth limit."""
+        return self._bucket_bandwidth_limit
+
+    @bucket_bandwidth_limit.setter
+    def bucket_bandwidth_limit(self, value):
+        """Set bucket bandwidth limit."""
+        self._bucket_bandwidth_limit = value
+
+    @property
+    def bucket_bandwidth_set(self):
+        """Get bucket bandwidth set."""
+        return self._bucket_bandwidth_set
+
+    @bucket_bandwidth_set.setter
+    def bucket_bandwidth_set(self, value):
+        """Set bucket bandwidth set."""
+        self._bucket_bandwidth_set = value
+
+    @property
+    def bucket_bandwidth_updated_at(self):
+        """Get bucket bandwidth updated at."""
+        return self._bucket_bandwidth_updated_at
+
+    @bucket_bandwidth_updated_at.setter
+    def bucket_bandwidth_updated_at(self, value):
+        """Set bucket bandwidth updated at."""
+        self._bucket_bandwidth_updated_at = value
+
+    def to_dict(self):
+        """Converts peer information to dictionary."""
+        data = {
+            "endpoint": self._endpoint,
+            "deploymentID": self._deployment_id,
+            "defaultbandwidth": {
+                "bandwidthLimitPerBucket": self._bucket_bandwidth_limit,
+                "set": self._bucket_bandwidth_set,
+            },
+        }
+        if self._name:
+            data["name"] = self._name
+        if self._sync_status is not None:
+            data["sync"] = "enable" if self._sync_status else "disable"
+        if self._bucket_bandwidth_updated_at:
+            data["defaultbandwidth"]["updatedAt"] = to_iso8601utc(
+                self._bucket_bandwidth_updated_at,
+            )
+        return data

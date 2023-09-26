@@ -55,7 +55,7 @@ from .helpers import (_DEFAULT_USER_AGENT, MAX_MULTIPART_COUNT,
                       check_bucket_name, check_non_empty_string, check_sse,
                       check_ssec, genheaders, get_part_info,
                       headers_to_strings, is_valid_policy_type, makedirs,
-                      md5sum_hash, read_part_data, sha256_hash, queryencode)
+                      md5sum_hash, queryencode, read_part_data, sha256_hash)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig

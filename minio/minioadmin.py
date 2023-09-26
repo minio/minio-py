@@ -73,7 +73,12 @@ _COMMAND = Enum(
         "RESOTRE_CONFIG_HISTORY": "restore-config-history-kv",
         "START_PROFILE": "profile",
         "CREATE_KMS_KEY": "kms/key/create",
-        "GET_KMS_KEY_STATUS": "kms/key/status"
+        "GET_KMS_KEY_STATUS": "kms/key/status",
+        "SITE_REPLICATION_ADD": "site-replication/add",
+        "SITE_REPLICATION_INFO": "site-replication/info",
+        "SITE_REPLICATION_STATUS": "site-replication/status",
+        "SITE_REPLICATION_EDIT": "site-replication/edit",
+        "SITE_REPLICATION_REMOVE": "site-replication/remove",
     },
 )
 
@@ -538,10 +543,6 @@ class MinioAdmin:
         )
         return response.data.decode()
 
-    # def prometheus_generate(self):
-    #     """Generate prometheus configuration."""
-    #     return self._run(["prometheus", "generate", self._target])
-
     def kms_key_create(self, key=None):
         """Create a new KMS master key."""
         response = self._url_open(
@@ -560,50 +561,60 @@ class MinioAdmin:
         )
         return response.data.decode()
 
-    # def bucket_remote_add(
-    #         self, src_bucket, dest_url,
-    #         path=None, region=None, bandwidth=None, service=None,
-    # ):
-    #     """Add a new remote target."""
-    #     args = [
-    #         "bucket", "remote", "add", self._target + "/" + src_bucket,
-    #         dest_url, "--service", service or "replication",
-    #     ]
-    #     if path:
-    #         args += ["--path", path]
-    #     if region:
-    #         args += ["--region", region]
-    #     if bandwidth:
-    #         args += ["--bandwidth", bandwidth]
-    #     return self._run(args)
+    def add_site_replication(self, peer_sites):
+        """Add peer sites to site replication."""
+        body = json.dumps(
+            [peer_site.to_dict() for peer_site in peer_sites]).encode()
+        response = self._url_open(
+            "PUT",
+            _COMMAND.SITE_REPLICATION_ADD,
+            query_params={"api-version": "1"},
+            body=encrypt(body, self._provider.retrieve().secret_key),
+        )
+        return response.data.decode()
 
-    # def bucket_remote_edit(self, src_bucket, dest_url, arn):
-    #     """Edit credentials of remote target."""
-    #     return self._run(
-    #         [
-    #             "bucket", "remote", "edit", self._target + "/" + src_bucket,
-    #             dest_url, "--arn", arn,
-    #         ],
-    #     )
+    def get_site_replication_info(self):
+        """Get site replication information."""
+        response = self._url_open("GET", _COMMAND.SITE_REPLICATION_INFO)
+        return response.data.decode()
 
-    # def bucket_remote_list(self, src_bucket=None, service=None):
-    #     """List remote targets."""
-    #     return self._run(
-    #         [
-    #             "bucket", "remote", "ls",
-    #             self._target + ("/" + src_bucket if src_bucket else ""),
-    #             "--service", service or "replication",
-    #         ],
-    #     )
+    def get_site_replication_status(self, options):
+        """Get site replication information."""
+        response = self._url_open(
+            "GET",
+            _COMMAND.SITE_REPLICATION_STATUS,
+            query_params=options.to_query_params(),
+        )
+        return response.data.decode()
 
-    # def bucket_remote_remove(self, src_bucket, arn):
-    #     """Remove configured remote target."""
-    #     return self._run(
-    #         [
-    #             "bucket", "remote", "rm", self._target + "/" + src_bucket,
-    #             "--arn", arn,
-    #         ],
-    #     )
+    def edit_site_replication(self, peer_info):
+        """Edit site replication with given peer information."""
+        body = json.dumps(peer_info.to_dict()).encode()
+        response = self._url_open(
+            "PUT",
+            _COMMAND.SITE_REPLICATION_EDIT,
+            query_params={"api-version": "1"},
+            body=encrypt(body, self._provider.retrieve().secret_key),
+        )
+        return response.data.decode()
+
+    def remove_site_replication(self, sites=None, all_sites=False):
+        """Remove given sites or all sites from site replication."""
+        data = {}
+        if all_sites:
+            data.update({"all": True})
+        elif sites:
+            data.update({"sites": sites})
+        else:
+            raise ValueError("either sites or all flag must be given")
+        body = json.dumps(data).encode()
+        response = self._url_open(
+            "PUT",
+            _COMMAND.SITE_REPLICATION_REMOVE,
+            query_params={"api-version": "1"},
+            body=encrypt(body, self._provider.retrieve().secret_key),
+        )
+        return response.data.decode()
 
     def bucket_quota_set(self, bucket, size):
         """Set bucket quota configuration."""
