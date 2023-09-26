@@ -45,7 +45,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools
-        pip install certifi urllib3 mock pytest argon2-cffi pycryptodome pyjwt
+        pip install certifi urllib3 mock pytest argon2-cffi pycryptodome
     - name: Run check if Ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: |

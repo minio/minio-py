@@ -43,7 +43,7 @@ setup(
     long_description_content_type="text/markdown",
     package_dir={"minio": "minio"},
     packages=["minio", "minio.credentials"],
-    install_requires=["certifi", "urllib3", "argon2-cffi", "pycryptodome", "pyjwt"],
+    install_requires=["certifi", "urllib3", "argon2-cffi", "pycryptodome"],
     tests_require=[],
     license="Apache-2.0",
     classifiers=[

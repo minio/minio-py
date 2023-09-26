@@ -22,12 +22,11 @@ from __future__ import absolute_import
 
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
 from urllib.parse import urlunsplit
 
 import certifi
-import jwt
 import urllib3
 from urllib3._collections import HTTPHeaderDict
 
@@ -539,33 +538,9 @@ class MinioAdmin:
         )
         return response.data.decode()
 
-    def prometheus_generate(self):
-        """Generate prometheus configuration."""
-        default_expire_time = 100 * 365
-        default_job_name = "minio-job"
-        default_metrics_path = "/minio/v2/metrics/cluster"
-        expire_time = datetime.utcnow() + timedelta(days=default_expire_time)
-        token = jwt.encode({
-            "iss": "prometheus",
-            "sub": self._provider.retrieve().access_key,
-            "exp": expire_time
-        }, self._provider.retrieve().secret_key, algorithm="HS512")
-
-        return {
-            "scrape_configs": [
-                {
-                    "job_name": default_job_name,
-                    "bearer_token": token,
-                    "metrics_path": default_metrics_path,
-                    "scheme": "https" if self._secure else "http",
-                    "static_configs": [
-                        {
-                            "targets": [self._url.netloc]
-                        }
-                    ]
-                }
-            ]
-        }
+    # def prometheus_generate(self):
+    #     """Generate prometheus configuration."""
+    #     return self._run(["prometheus", "generate", self._target])
 
     def kms_key_create(self, key=None):
         """Create a new KMS master key."""

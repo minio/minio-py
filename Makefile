@@ -3,7 +3,7 @@ default: tests
 
 getdeps:
 	@echo "Installing required dependencies"
-	@pip install --user --upgrade autopep8 certifi pytest pylint urllib3 argon2-cffi pycryptodome pyjwt
+	@pip install --user --upgrade autopep8 certifi pytest pylint urllib3 argon2-cffi pycryptodome
 
 check: getdeps
 	@echo "Running checks"
