@@ -958,12 +958,12 @@ class SiteReplicationStatusOptions:
 
     @property
     def entity_value(self):
-        """Get entity vaue."""
+        """Get entity value."""
         return self._entity_value
 
     @entity_value.setter
     def entity_value(self, value):
-        """Set entity vaue."""
+        """Set entity value."""
         self._entity_value = value
 
     @property
