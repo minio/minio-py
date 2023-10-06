@@ -2005,7 +2005,11 @@ class Minio:  # pylint: disable=too-many-public-methods
             delete_object_list = list(
                 map(
                     lambda x: DeleteObject(x.object_name),
-                    client.list_objects("my-bucket", "my/prefix/", recursive=True),
+                    client.list_objects(
+                        "my-bucket",
+                        "my/prefix/",
+                        recursive=True,
+                    ),
                 )
             )
             errors = client.remove_objects("my-bucket", delete_object_list)
