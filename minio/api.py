@@ -1763,6 +1763,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                     upload_id, part_number,
                 )
                 if num_parallel_uploads > 1:
+                    assert pool is not None
                     pool.add_task(self._upload_part_task, args)
                 else:
                     etag = self._upload_part(*args)

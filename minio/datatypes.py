@@ -33,6 +33,7 @@ from .signer import get_credential_string, post_presign_v4
 from .time import from_iso8601utc, to_amz_date, to_iso8601utc
 from .xml import find, findall, findtext
 
+JSONDecodeError: type[ValueError]
 try:
     from json.decoder import JSONDecodeError
 except ImportError:
