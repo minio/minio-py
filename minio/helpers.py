@@ -27,6 +27,7 @@ import re
 import urllib.parse
 from queue import Queue
 from threading import BoundedSemaphore, Thread
+from typing import Protocol, runtime_checkable
 
 from .sse import Sse, SseCustomerKey
 from .time import to_iso8601utc
@@ -774,3 +775,12 @@ class ThreadPool:
         if not self._exceptions_queue.empty():
             raise self._exceptions_queue.get()
         return self._results_queue
+
+
+@runtime_checkable
+class Progress(Protocol):
+    def set_meta(self, total_length: int, object_name: str) -> None:
+        ...
+
+    def update(self, size: int) -> None:
+        ...

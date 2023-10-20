@@ -30,7 +30,6 @@ import tarfile
 from datetime import timedelta
 from io import BytesIO
 from random import random
-from threading import Thread
 from typing import BinaryIO, TextIO
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
@@ -52,10 +51,11 @@ from .deleteobjects import DeleteError, DeleteRequest, DeleteResult
 from .error import InvalidResponseError, S3Error, ServerError
 from .helpers import (MAX_MULTIPART_COUNT, MAX_MULTIPART_OBJECT_SIZE,
                       MAX_PART_SIZE, MIN_PART_SIZE, BaseURL, ObjectWriteResult,
-                      ThreadPool, check_bucket_name, check_non_empty_string,
-                      check_sse, check_ssec, genheaders, get_part_info,
-                      headers_to_strings, is_valid_policy_type, makedirs,
-                      md5sum_hash, read_part_data, sha256_hash, queryencode)
+                      Progress, ThreadPool, check_bucket_name,
+                      check_non_empty_string, check_sse, check_ssec,
+                      genheaders, get_part_info, headers_to_strings,
+                      is_valid_policy_type, makedirs, md5sum_hash, queryencode,
+                      read_part_data, sha256_hash)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
@@ -1039,8 +1039,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         check_non_empty_string(object_name)
-        if progress and not isinstance(progress, Thread):
-            raise TypeError("progress object must be instance of Thread")
+        if progress and not isinstance(progress, Progress):
+            raise TypeError("progress object must provide set_meta and update methods")
 
         if os.path.isdir(file_path):
             raise ValueError(f"file {file_path} is a directory")
@@ -1634,7 +1634,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         content_type: str = "application/octet-stream",
         metadata: dict[str, str] | None = None,
         sse: Sse | None = None,
-        progress: Thread | None = None,
+        progress: Progress | None = None,
         part_size: int = 0,
         num_parallel_uploads: int = 3,
         tags: Tags | None = None,
@@ -1696,8 +1696,8 @@ class Minio:  # pylint: disable=too-many-public-methods
             raise ValueError("input data must have callable read()")
         part_size, part_count = get_part_info(length, part_size)
         if progress:
-            if not isinstance(progress, Thread):
-                raise TypeError("progress object must be instance of Thread")
+            if not isinstance(progress, Progress):
+                raise TypeError("progress object must provide set_meta and update methods")
             # Set progress bar length and object name before upload
             progress.set_meta(object_name=object_name, total_length=length)
 

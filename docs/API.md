@@ -1125,7 +1125,7 @@ __Parameters__
 | `content_type` | _str_       | Content type of the object.                                         |
 | `metadata`     | _dict_      | Any additional metadata to be uploaded along with your PUT request. |
 | `sse`          | _Sse_       | Server-side encryption.                                             |
-| `progress`     | _threading_ | A progress object.                                                  |
+| `progress`     | _Progress_  | A progress object.                                                  |
 | `part_size`    | _int_       | Multipart part size.                                                |
 | `tags`         | _Tags_      | Tags for the object.                                                |
 | `retention`    | _Retention_ | Retention configuration.                                            |
@@ -1261,7 +1261,7 @@ Uploads data from a file to an object in a bucket.
 | `content_type` | _str_       | Content type of the object.                                         |
 | `metadata`     | _dict_      | Any additional metadata to be uploaded along with your PUT request. |
 | `sse`          | _Sse_       | Server-side encryption.                                             |
-| `progress`     | _threading_ | A progress object.                                                  |
+| `progress`     | _Progress_  | A progress object.                                                  |
 | `part_size`    | _int_       | Multipart part size.                                                |
 | `tags`         | _Tags_      | Tags for the object.                                                |
 | `retention`    | _Retention_ | Retention configuration.                                            |
