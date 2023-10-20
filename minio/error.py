@@ -30,6 +30,8 @@ and API specific errors.
 
 from xml.etree import ElementTree as ET
 
+from urllib3 import HTTPResponse
+
 from .xml import findtext
 
 
@@ -103,17 +105,17 @@ class S3Error(MinioException):
                             self._bucket_name, self._object_name)
 
     @property
-    def code(self):
+    def code(self) -> str:
         """Get S3 error code."""
         return self._code
 
     @property
-    def message(self):
+    def message(self) -> str:
         """Get S3 error message."""
         return self._message
 
     @property
-    def response(self):
+    def response(self) -> HTTPResponse:
         """Get HTTP response."""
         return self._response
 

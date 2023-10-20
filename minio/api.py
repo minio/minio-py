@@ -27,7 +27,8 @@ import itertools
 import os
 import platform
 import tarfile
-from datetime import timedelta
+from collections.abc import Mapping, MutableMapping
+from datetime import datetime, timedelta
 from io import BytesIO
 from random import random
 from threading import Thread
@@ -1096,10 +1097,10 @@ class Minio:  # pylint: disable=too-many-public-methods
         object_name: str,
         offset: int = 0,
         length: int = 0,
-        request_headers: dict[str, str] | None = None,
+        request_headers: Mapping[str, str] | None = None,
         ssec: SseCustomerKey | None = None,
         version_id: str | None = None,
-        extra_query_params: dict[str, str] | None = None
+        extra_query_params: MutableMapping[str, str] | None = None
     ) -> urllib3.BaseHTTPResponse:
         """
         Get data of an object. Returned response should be closed after use to
@@ -1543,7 +1544,7 @@ class Minio:  # pylint: disable=too-many-public-methods
                 )
             raise exc
 
-    def _abort_multipart_upload(self, bucket_name, object_name, upload_id):
+    def _abort_multipart_upload(self, bucket_name: str, object_name: str, upload_id: str):
         """Execute AbortMultipartUpload S3 API."""
         self._execute(
             "DELETE",
@@ -1575,7 +1576,11 @@ class Minio:  # pylint: disable=too-many-public-methods
         )
         return CompleteMultipartUploadResult(response)
 
-    def _create_multipart_upload(self, bucket_name, object_name, headers):
+    def _create_multipart_upload(
+        self, bucket_name: str,
+        object_name: str,
+        headers: MutableMapping[str, str]
+    ):
         """Execute CreateMultipartUpload S3 API."""
         if not headers.get("Content-Type"):
             headers["Content-Type"] = "application/octet-stream"
@@ -1632,7 +1637,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         data: BinaryIO,
         length: int,
         content_type: str = "application/octet-stream",
-        metadata: dict[str, str] | None = None,
+        metadata: Mapping[str, str] | None = None,
         sse: Sse | None = None,
         progress: Thread | None = None,
         part_size: int = 0,
@@ -1857,8 +1862,14 @@ class Minio:  # pylint: disable=too-many-public-methods
             fetch_owner=fetch_owner,
         )
 
-    def stat_object(self, bucket_name, object_name, ssec=None, version_id=None,
-                    extra_query_params=None):
+    def stat_object(
+        self,
+        bucket_name: str,
+        object_name: str,
+        ssec: SseCustomerKey | None = None,
+        version_id: str | None = None,
+        extra_query_params: MutableMapping[str, str] | None = None
+    ):
         """
         Get object information and metadata of an object.
 
@@ -2040,10 +2051,17 @@ class Minio:  # pylint: disable=too-many-public-methods
                 if error.code != "NoSuchVersion":
                     yield error
 
-    def get_presigned_url(self, method, bucket_name, object_name,
-                          expires=timedelta(days=7), response_headers=None,
-                          request_date=None, version_id=None,
-                          extra_query_params=None):
+    def get_presigned_url(
+        self,
+        method: str,
+        bucket_name: str,
+        object_name: str,
+        expires: timedelta = timedelta(days=7),
+        response_headers: Mapping[str, str] | None = None,
+        request_date: datetime | None = None,
+        version_id: str | None = None,
+        extra_query_params: MutableMapping[str, str] | None = None
+    ):
         """
         Get presigned URL of an object for HTTP method, expiry time and custom
         request parameters.

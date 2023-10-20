@@ -24,6 +24,7 @@ import base64
 import datetime
 import json
 from collections import OrderedDict
+from collections.abc import Mapping
 from urllib.parse import unquote_plus
 from xml.etree import ElementTree as ET
 
@@ -126,72 +127,72 @@ class Object:
         self._is_delete_marker = is_delete_marker
 
     @property
-    def bucket_name(self):
+    def bucket_name(self) -> str:
         """Get bucket name."""
         return self._bucket_name
 
     @property
-    def object_name(self):
+    def object_name(self) -> str:
         """Get object name."""
         return self._object_name
 
     @property
-    def is_dir(self):
+    def is_dir(self) -> bool:
         """Get whether this key is a directory."""
         return self._object_name.endswith("/")
 
     @property
-    def last_modified(self):
+    def last_modified(self) -> datetime.datetime | None:
         """Get last modified time."""
         return self._last_modified
 
     @property
-    def etag(self):
+    def etag(self) -> str | None:
         """Get etag."""
         return self._etag
 
     @property
-    def size(self):
+    def size(self) -> int | None:
         """Get size."""
         return self._size
 
     @property
-    def metadata(self):
+    def metadata(self) -> Mapping[str, str] | None:
         """Get metadata."""
         return self._metadata
 
     @property
-    def version_id(self):
+    def version_id(self) -> str | None:
         """Get version ID."""
         return self._version_id
 
     @property
-    def is_latest(self):
+    def is_latest(self) -> bool | None:
         """Get is-latest flag."""
         return self._is_latest
 
     @property
-    def storage_class(self):
+    def storage_class(self) -> str | None:
         """Get storage class."""
         return self._storage_class
 
     @property
-    def owner_id(self):
+    def owner_id(self) -> str | None:
         """Get owner ID."""
         return self._owner_id
 
     @property
-    def owner_name(self):
+    def owner_name(self) -> str | None:
         """Get owner name."""
         return self._owner_name
 
     @property
-    def is_delete_marker(self):
+    def is_delete_marker(self) -> bool:
         """Get whether this key is a delete marker."""
         return self._is_delete_marker
 
     @property
-    def content_type(self):
+    def content_type(self) -> str | None:
         """Get content type."""
         return self._content_type
 
