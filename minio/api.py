@@ -1771,10 +1771,11 @@ class Minio:  # pylint: disable=too-many-public-methods
 
             if pool:
                 result = pool.result()
-                parts = [None] * part_count
+                parts = []
                 while not result.empty():
                     part_number, etag = result.get()
-                    parts[part_number-1] = Part(part_number, etag)
+                    parts.append(Part(part_number, etag))
+                parts.sort(key=lambda part: part.part_number)
 
             result = self._complete_multipart_upload(
                 bucket_name, object_name, upload_id, parts,
