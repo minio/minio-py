@@ -1,19 +1,21 @@
-# MinIO Python SDK for Amazon S3 Compatible Cloud Storage [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
+# MinIO Python Client SDK for Amazon S3 Compatible Cloud Storage [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io) [![Sourcegraph](https://sourcegraph.com/github.com/minio/minio-py/-/badge.svg)](https://sourcegraph.com/github.com/minio/minio-py?badge) [![Apache V2 License](https://img.shields.io/badge/license-Apache%20V2-blue.svg)](https://github.com/minio/minio-py/blob/master/LICENSE)
 
-MinIO Python SDK is Simple Storage Service (aka S3) client to perform bucket and object operations to any Amazon S3 compatible object storage service.
+The MinIO Python Client SDK provides straightforward APIs to access any Amazon S3 compatible object storage.
 
-For a complete list of APIs and examples, please take a look at the [Python Client API Reference](https://min.io/docs/minio/linux/developers/python/API.html)
+This Quickstart Guide covers how to install the MinIO client SDK, connect to MinIO, and create a sample file uploader.
+For a complete list of APIs and examples, see the [Python Client API Reference](https://min.io/docs/minio/linux/developers/python/API.html)
 
-## Minimum Requirements
-Python 3.7 or higher.
+These examples presume a working [3.7+ Python development environment](https://www.python.org/downloads/) and the [MinIO `mc` command line tool](https://min.io/docs/minio/linux/reference/minio-mc.html).
 
-## Download using pip
+## Install the Minio Python SDK
+
+### Using pip
 
 ```sh
 pip3 install minio
 ```
 
-## Download source
+### From GitHub
 
 ```sh
 git clone https://github.com/minio/minio-py
@@ -21,49 +23,93 @@ cd minio-py
 python setup.py install
 ```
 
-## Quick Start Example - File Uploader
-This example program connects to an S3-compatible object storage server, make a bucket on that server, and upload a file to the bucket.
+## Initialize a MinIO Client Object
 
-You need the following items to connect to an S3-compatible object storage server:
+The MinIO client requires the following parameters to connect to an Amazon S3 compatible object storage:
 
-| Parameters | Description                                                |
-|------------|------------------------------------------------------------|
-| Endpoint   | URL to S3 service.                                         |
-| Access Key | Access key (aka user ID) of an account in the S3 service.  |
-| Secret Key | Secret key (aka password) of an account in the S3 service. |
+| Parameter  | Description                                            |
+|------------|--------------------------------------------------------|
+| Endpoint   | URL to S3 service.                                     |
+| Access Key | Access key (user ID) of an account in the S3 service.  |
+| Secret Key | Secret key (password) of an account in the S3 service. |
 
-This example uses MinIO server playground [https://play.min.io](https://play.min.io). Feel free to use this service for test and development.
-
-### file_uploader.py
 ```py
 from minio import Minio
 from minio.error import S3Error
 
 
 def main():
-    # Create a client with the MinIO server playground, its access key
-    # and secret key.
+    # Create a client with the MinIO server playground, its access key          
+    # and secret key.                                                           
     client = Minio(
-        "play.min.io",
+        endpoint="play.min.io",
         access_key="Q3AM3UQ867SPQQA43P2F",
         secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
     )
 
-    # Make 'asiatrip' bucket if not exist.
-    found = client.bucket_exists("asiatrip")
-    if not found:
-        client.make_bucket("asiatrip")
-    else:
-        print("Bucket 'asiatrip' already exists")
+    print("MinIO Python SDK client initialized", client)
 
-    # Upload '/home/user/Photos/asiaphotos.zip' as object name
-    # 'asiaphotos-2015.zip' to bucket 'asiatrip'.
+if __name__ == "__main__":
+    try:
+        main()
+    except S3Error as exc:
+        print("error occurred.", exc)
+```
+
+## Example - File Uploader
+
+This sample code connects to an object storage server, creates a bucket, and uploads a file to the bucket.
+It uses the MinIO `play` server, a public MinIO cluster located at [https://play.min.io](https://play.min.io).
+
+The `play` server runs the latest stable version of MinIO and may be used for testing and development.
+The access credentials shown in this example are open to the public and all data uploaded to `play` should be considered public and non-protected.
+
+### `file_uploader.py`
+
+This example does the following:
+
+- Connects to the MinIO `play` server using the provided credentials.
+- Creates a bucket named `minio-python-sdk-test-bucket`.
+- Uploads a file named `minio-python-sdk-test-file.bin` from `/tmp`.
+- Verifies the file was created using `mc ls`.
+
+```py
+# file_uploader.py MinIO Python SDK example
+
+import os
+from minio import Minio
+from minio.error import S3Error
+
+def main():
+    # Create a client with the MinIO server playground, its access key
+    # and secret key.
+    client = Minio(
+        endpoint="play.min.io",
+        access_key="Q3AM3UQ867SPQQA43P2F",
+        secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
+    )
+
+    bucket_name = "minio-python-sdk-test-bucket"
+    original_filename = "minio-python-sdk-test-file.bin"
+    path = "/tmp"
+    destination_filename = "my-test-file.bin"
+    
+    # Make the bucket if it doesn't exist.
+    found = client.bucket_exists(bucket_name)
+    if not found:
+        client.make_bucket(bucket_name)
+    else:
+        print("Bucket", bucket_name, "already exists")
+
+    # Upload the file, renaming it in the process
+
+    original_full_path = os.path.join(path, original_filename)
     client.fput_object(
-        "asiatrip", "asiaphotos-2015.zip", "/home/user/Photos/asiaphotos.zip",
+        bucket_name, destination_filename, original_full_path,
     )
     print(
-        "'/home/user/Photos/asiaphotos.zip' is successfully uploaded as "
-        "object 'asiaphotos-2015.zip' to bucket 'asiatrip'."
+        original_full_path, "successfully uploaded as object",
+        destination_filename, "to bucket", bucket_name,
     )
 
 
@@ -74,23 +120,55 @@ if __name__ == "__main__":
         print("error occurred.", exc)
 ```
 
-#### Run File Uploader
-```sh
-$ python file_uploader.py
-'/home/user/Photos/asiaphotos.zip' is successfully uploaded as object 'asiaphotos-2015.zip' to bucket 'asiatrip'.
+**1. Create a test file containing data:**
 
-$ mc ls play/asiatrip/
-[2016-06-02 18:10:29 PDT]  82KiB asiaphotos-2015.zip
+You can do this with `dd` on Linux or macOS systems:
+
+```sh
+dd if=/dev/urandom of=/tmp/minio-python-sdk-test-file.bin bs=2048 count=10
+```
+
+or `fsutil` on Windows:
+
+```sh
+fsutil file createnew "C:\Users\<username>\Desktop\minio-python-sdk-test-file.bin" 20480
+```
+
+**2. Run `file_uploader.py` with the following command:**
+
+```sh
+python file_uploader.py
+```
+
+The output resembles the following:
+
+```sh
+/tmp/minio-python-sdk-test-file.bin successfully uploaded as object my-test-file.bin to bucket minio-python-sdk-test-bucket
+```
+
+**3. Verify the Uploaded File With `mc ls`:**
+
+```sh
+mc ls play/minio-python-sdk-test-bucket
+[2023-11-03 22:18:54 UTC]  20KiB STANDARD my-test-file.bin
 ```
 
 ## More References
+
 * [Python Client API Reference](https://min.io/docs/minio/linux/developers/python/API.html)
 * [Examples](https://github.com/minio/minio-py/tree/master/examples)
 
 ## Explore Further
+
 * [Complete Documentation](https://min.io/docs/minio/kubernetes/upstream/index.html)
 
 ## Contribute
-Please refer [Contributors Guide](https://github.com/minio/minio-py/blob/master/CONTRIBUTING.md)
+
+[Contributors Guide](https://github.com/minio/minio-py/blob/master/CONTRIBUTING.md)
+
+## License
+
+This SDK is distributed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0), see [LICENSE](https://github.com/minio/minio-py/blob/master/LICENSE) for more information.
 
 [![PYPI](https://img.shields.io/pypi/v/minio.svg)](https://pypi.python.org/pypi/minio)
+
