@@ -16,17 +16,17 @@
 
 """XML utility module."""
 
-from __future__ import absolute_import
-
+from __future__ import absolute_import, annotations
+from typing import Type, TypeVar, Protocol
 import io
 from xml.etree import ElementTree as ET
 
 _S3_NAMESPACE = "http://s3.amazonaws.com/doc/2006-03-01/"
 
 
-def Element(tag, namespace=_S3_NAMESPACE):  # pylint: disable=invalid-name
+def Element(tag: str, namespace=_S3_NAMESPACE):  # pylint: disable=invalid-name
     """Create ElementTree.Element with tag and namespace."""
-    return ET.Element(tag, {'xmlns': namespace} if namespace else {})
+    return ET.Element(tag, {"xmlns": namespace} if namespace else {})
 
 
 def SubElement(parent, tag, text=None):  # pylint: disable=invalid-name
@@ -37,7 +37,7 @@ def SubElement(parent, tag, text=None):  # pylint: disable=invalid-name
     return element
 
 
-def _get_namespace(element):
+def _get_namespace(element: ET.Element):
     """Exact namespace if found."""
     start = element.tag.find("{")
     if start < 0:
@@ -49,7 +49,7 @@ def _get_namespace(element):
     return element.tag[start:end]
 
 
-def findall(element, name):
+def findall(element: ET.Element, name: str) -> list[ET.Element]:
     """Namespace aware ElementTree.Element.findall()."""
     namespace = _get_namespace(element)
     return element.findall(
@@ -58,7 +58,7 @@ def findall(element, name):
     )
 
 
-def find(element, name):
+def find(element: ET.Element, name: str):
     """Namespace aware ElementTree.Element.find()."""
     namespace = _get_namespace(element)
     return element.find(
@@ -67,7 +67,7 @@ def find(element, name):
     )
 
 
-def findtext(element, name, strict=False):
+def findtext(element: ET.Element, name: str, strict: bool = False) -> str | None:
     """
     Namespace aware ElementTree.Element.findtext() with strict flag
     raises ValueError if element name not exist.
@@ -80,20 +80,34 @@ def findtext(element, name, strict=False):
     return element.text or ""
 
 
-def unmarshal(cls, xmlstring):
+K = TypeVar("K")
+
+
+class IFromXML(Protocol):
+    @classmethod
+    def fromxml(cls: Type[K], s: ET.Element) -> K:
+        ...
+
+
+T = TypeVar("T", bound=IFromXML)
+
+
+def unmarshal(cls: Type[T], xmlstring: str) -> T:
     """Unmarshal given XML string to an object of passed class."""
     return cls.fromxml(ET.fromstring(xmlstring))
 
 
-def getbytes(element):
+def getbytes(element) -> bytes:
     """Convert ElementTree.Element to bytes."""
-    data = io.BytesIO()
-    ET.ElementTree(element).write(
-        data, encoding=None, xml_declaration=False,
-    )
-    return data.getvalue()
+    with io.BytesIO() as data:
+        ET.ElementTree(element).write(
+            data,
+            encoding=None,
+            xml_declaration=False,
+        )
+        return data.getvalue()
 
 
-def marshal(obj):
+def marshal(obj) -> bytes:
     """Get XML data as bytes of ElementTree.Element."""
     return getbytes(obj.toxml(None))
