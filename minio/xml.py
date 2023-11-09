@@ -97,7 +97,7 @@ def unmarshal(cls: Type[T], xmlstring: str) -> T:
     return cls.fromxml(ET.fromstring(xmlstring))
 
 
-def getbytes(element) -> bytes:
+def getbytes(element: ET.Element) -> bytes:
     """Convert ElementTree.Element to bytes."""
     with io.BytesIO() as data:
         ET.ElementTree(element).write(
@@ -108,6 +108,12 @@ def getbytes(element) -> bytes:
         return data.getvalue()
 
 
-def marshal(obj) -> bytes:
+class IToXML(Protocol):
+    @classmethod
+    def toxml(cls, s: ET.Element | None) -> ET.Element:
+        ...
+
+
+def marshal(obj: IToXML) -> bytes:
     """Get XML data as bytes of ElementTree.Element."""
     return getbytes(obj.toxml(None))
