@@ -92,7 +92,7 @@ class MinioAdmin:
                  region: str = "",
                  secure: bool = True,
                  cert_check: bool = True,
-                 http_client: str = None):
+                 http_client: urllib3.poolmanager.PoolManager = None):
         url = _parse_url(("https://" if secure else "http://") + endpoint)
         if not isinstance(credentials, Provider):
             raise ValueError("valid credentials must be provided")
