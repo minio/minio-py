@@ -1385,6 +1385,7 @@ __Parameters__
 | `object_name`        | _str_            | Object name in the bucket.                 |
 | `ssec`               | _SseCustomerKey_ | Server-side encryption customer key.       |
 | `version_id`         | _str_            | Version ID of the object.                  |
+| `request_headers`    | _dict_           | Any additional headers to be added with GET request. |
 | `extra_query_params` | _dict_           | Extra query parameters for advanced usage. |
 
 __Return Value__
