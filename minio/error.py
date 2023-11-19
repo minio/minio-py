@@ -144,3 +144,17 @@ class S3Error(MinioException):
             self._bucket_name,
             self._object_name,
         )
+
+
+class MinioAdminException(Exception):
+    """Raised to indicate admin API execution error."""
+
+    def __init__(self, code, body):
+        self._code = code
+        self._body = body
+        super().__init__(
+            f"admin request failed; Status: {code}, Body: {body}",
+        )
+
+    def __reduce__(self):
+        return type(self), (self._code, self._body)
