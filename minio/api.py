@@ -1911,7 +1911,12 @@ class Minio:  # pylint: disable=too-many-public-methods
             version_id=response.headers.get("x-amz-version-id"),
         )
 
-    def remove_object(self, bucket_name, object_name, version_id=None):
+    def remove_object(
+        self,
+        bucket_name: str,
+        object_name: str,
+        version_id: str | None = None
+    ) -> None:
         """
         Remove an object.
 
