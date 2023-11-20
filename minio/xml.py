@@ -27,12 +27,18 @@ from typing_extensions import Protocol
 _S3_NAMESPACE = "http://s3.amazonaws.com/doc/2006-03-01/"
 
 
-def Element(tag: str, namespace=_S3_NAMESPACE):  # pylint: disable=invalid-name
+def Element(  # pylint: disable=invalid-name
+        tag: str,
+        namespace: str = _S3_NAMESPACE
+) -> ET.Element:
     """Create ElementTree.Element with tag and namespace."""
     return ET.Element(tag, {"xmlns": namespace} if namespace else {})
 
 
-def SubElement(parent, tag, text=None):  # pylint: disable=invalid-name
+def SubElement(  # pylint: disable=invalid-name
+        parent: ET.Element, tag: str,
+        text: str | None = None
+) -> ET.Element:
     """Create ElementTree.SubElement on parent with tag and text."""
     element = ET.SubElement(parent, tag)
     if text is not None:
