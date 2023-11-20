@@ -69,7 +69,11 @@ def find(element: ET.Element, name: str):
     )
 
 
-def findtext(element: ET.Element, name: str, strict: bool = False) -> str | None:
+def findtext(
+        element: ET.Element,
+        name: str,
+        strict: bool = False,
+) -> str | None:
     """
     Namespace aware ElementTree.Element.findtext() with strict flag
     raises ValueError if element name not exist.
@@ -86,9 +90,11 @@ K = TypeVar("K")
 
 
 class IFromXML(Protocol):
+    """typing stub for class with `fromxml` method"""
+
     @classmethod
-    def fromxml(cls: Type[K], s: ET.Element) -> K:
-        ...
+    def fromxml(cls: Type[K], element: ET.Element) -> K:
+        """Create python object with values from XML element."""
 
 
 T = TypeVar("T", bound=IFromXML)
@@ -111,9 +117,10 @@ def getbytes(element: ET.Element) -> bytes:
 
 
 class IToXML(Protocol):
-    @classmethod
-    def toxml(cls, s: ET.Element | None) -> ET.Element:
-        ...
+    """typing stub for class with `toxml` method"""
+
+    def toxml(self, element: ET.Element | None) -> ET.Element:
+        """Convert python object to ElementTree.Element."""
 
 
 def marshal(obj: IToXML) -> bytes:
