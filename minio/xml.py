@@ -28,16 +28,15 @@ _S3_NAMESPACE = "http://s3.amazonaws.com/doc/2006-03-01/"
 
 
 def Element(  # pylint: disable=invalid-name
-        tag: str,
-        namespace: str = _S3_NAMESPACE
+    tag: str,
+    namespace: str = _S3_NAMESPACE,
 ) -> ET.Element:
     """Create ElementTree.Element with tag and namespace."""
     return ET.Element(tag, {"xmlns": namespace} if namespace else {})
 
 
 def SubElement(  # pylint: disable=invalid-name
-        parent: ET.Element, tag: str,
-        text: str | None = None
+    parent: ET.Element, tag: str, text: str | None = None
 ) -> ET.Element:
     """Create ElementTree.SubElement on parent with tag and text."""
     element = ET.SubElement(parent, tag)
@@ -46,7 +45,7 @@ def SubElement(  # pylint: disable=invalid-name
     return element
 
 
-def _get_namespace(element: ET.Element):
+def _get_namespace(element: ET.Element) -> str:
     """Exact namespace if found."""
     start = element.tag.find("{")
     if start < 0:
@@ -67,7 +66,7 @@ def findall(element: ET.Element, name: str) -> list[ET.Element]:
     )
 
 
-def find(element: ET.Element, name: str):
+def find(element: ET.Element, name: str) -> ET.Element | None:
     """Namespace aware ElementTree.Element.find()."""
     namespace = _get_namespace(element)
     return element.find(
@@ -77,9 +76,9 @@ def find(element: ET.Element, name: str):
 
 
 def findtext(
-        element: ET.Element,
-        name: str,
-        strict: bool = False,
+    element: ET.Element,
+    name: str,
+    strict: bool = False,
 ) -> str | None:
     """
     Namespace aware ElementTree.Element.findtext() with strict flag
