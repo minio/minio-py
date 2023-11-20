@@ -86,12 +86,13 @@ _COMMAND = Enum(
 class MinioAdmin:
     """Client to perform MinIO administration operations."""
 
-    def __init__(self, endpoint,
-                 credentials,
-                 region="",
-                 secure=True,
-                 cert_check=True,
-                 http_client=None):
+    def __init__(self,
+                 endpoint: str,
+                 credentials: Provider,
+                 region: str = "",
+                 secure: bool = True,
+                 cert_check: bool = True,
+                 http_client: urllib3.poolmanager.PoolManager = None):
         url = _parse_url(("https://" if secure else "http://") + endpoint)
         if not isinstance(credentials, Provider):
             raise ValueError("valid credentials must be provided")
