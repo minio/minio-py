@@ -95,7 +95,7 @@ def findtext(
 K = TypeVar("K")
 
 
-class IFromXML(Protocol):
+class InterfaceFromXML(Protocol):
     """typing stub for class with `fromxml` method"""
 
     @classmethod
@@ -103,7 +103,7 @@ class IFromXML(Protocol):
         """Create python object with values from XML element."""
 
 
-T = TypeVar("T", bound=IFromXML)
+T = TypeVar("T", bound=InterfaceFromXML)
 
 
 def unmarshal(cls: Type[T], xmlstring: str) -> T:
@@ -122,13 +122,13 @@ def getbytes(element: ET.Element) -> bytes:
         return data.getvalue()
 
 
-class IToXML(Protocol):
+class InterfaceToXML(Protocol):
     """typing stub for class with `toxml` method"""
 
     def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert python object to ElementTree.Element."""
 
 
-def marshal(obj: IToXML) -> bytes:
+def marshal(obj: InterfaceToXML) -> bytes:
     """Get XML data as bytes of ElementTree.Element."""
     return getbytes(obj.toxml(None))
