@@ -2775,15 +2775,17 @@ class Minio:  # pylint: disable=too-many-public-methods
         else:
             length = os.stat(name).st_size
 
+        part_size = 0 if length < MIN_PART_SIZE else length
+
         if name:
             return self.fput_object(bucket_name, object_name, staging_filename,
                                     metadata=metadata, sse=sse,
                                     tags=tags, retention=retention,
-                                    legal_hold=legal_hold, part_size=length)
+                                    legal_hold=legal_hold, part_size=part_size)
         return self.put_object(bucket_name, object_name, fileobj,
                                length, metadata=metadata, sse=sse,
                                tags=tags, retention=retention,
-                               legal_hold=legal_hold, part_size=length)
+                               legal_hold=legal_hold, part_size=part_size)
 
     def _list_objects(  # pylint: disable=too-many-arguments,too-many-branches
             self,
