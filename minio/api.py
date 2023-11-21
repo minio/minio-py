@@ -2769,7 +2769,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         else:
             length = os.stat(name).st_size
 
-        part_size = max(length, 5 * (1024) ** 2)
+        part_size = 0 if length < MIN_PART_SIZE else length
 
         if name:
             return self.fput_object(bucket_name, object_name, staging_filename,
