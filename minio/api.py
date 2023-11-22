@@ -1853,7 +1853,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         )
 
     def stat_object(self, bucket_name, object_name, ssec=None, version_id=None,
-                    request_headers=None, extra_query_params=None):
+                    extra_headers=None, extra_query_params=None):
         """
         Get object information and metadata of an object.
 
@@ -1887,8 +1887,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         check_ssec(ssec)
 
         headers = ssec.headers() if ssec else {}
-        if request_headers:
-            headers.update(request_headers)
+        if extra_headers:
+            headers.update(extra_headers)
 
         query_params = extra_query_params or {}
         query_params.update({"versionId": version_id} if version_id else {})
