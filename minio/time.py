@@ -21,6 +21,12 @@ from __future__ import absolute_import
 import time as ctime
 from datetime import datetime, timezone
 
+try:
+    from datetime import UTC
+    _UTC_IMPORTED = True
+except ImportError:
+    _UTC_IMPORTED = False
+
 _WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 _MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct",
            "Nov", "Dec"]
@@ -102,6 +108,8 @@ def to_amz_date(value):
 
 def utcnow():
     """Timezone-aware wrapper to datetime.utcnow()."""
+    if _UTC_IMPORTED:
+        return datetime.now(UTC).replace(tzinfo=timezone.utc)
     return datetime.utcnow().replace(tzinfo=timezone.utc)
 
 

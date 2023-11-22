@@ -45,8 +45,8 @@ class InvalidResponseError(MinioException):
         self._content_type = content_type
         self._body = body
         super().__init__(
-            f"non-XML response from server; "
-            f"Response code: {code}, Content-Type: {content_type}, Body: {body}"
+            f"non-XML response from server; Response code: {code}, "
+            f"Content-Type: {content_type}, Body: {body}"
         )
 
     def __reduce__(self):
