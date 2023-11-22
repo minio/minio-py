@@ -25,7 +25,10 @@ class CryptoTest(TestCase):
         plaintext = "Hello MinIO!"
         encrypted = encrypt(plaintext.encode(), secret)
         decrypted = decrypt(encrypted, secret).decode()
-        self.assertEquals(plaintext, decrypted)
+        if hasattr(self, "assertEquals"):
+            self.assertEquals(plaintext, decrypted)
+        else:
+            self.assertEqual(plaintext, decrypted)
 
     def test_wrong(self):
         secret = "topsecret"

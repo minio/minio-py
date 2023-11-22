@@ -391,7 +391,8 @@ class SelectObjectReader:
 
         if headers.get(":message-type") == "error":
             raise MinioException(
-                f"{headers.get(':error-code')}: {headers.get(':error-message')}"
+                f"{headers.get(':error-code')}: "
+                f"{headers.get(':error-message')}"
             )
 
         if headers.get(":event-type") == "End":

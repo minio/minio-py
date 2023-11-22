@@ -20,11 +20,12 @@ from unittest import TestCase
 from minio import xml
 from minio.commonconfig import COMPLIANCE, GOVERNANCE
 from minio.retention import Retention
+from minio.time import utcnow
 
 
 class RetentionTest(TestCase):
     def test_config(self):
-        config = Retention(GOVERNANCE, datetime.utcnow() + timedelta(days=10))
+        config = Retention(GOVERNANCE, utcnow() + timedelta(days=10))
         xml.marshal(config)
 
         config = xml.unmarshal(
