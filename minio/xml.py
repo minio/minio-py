@@ -37,7 +37,7 @@ def Element(  # pylint: disable=invalid-name
 
 def SubElement(  # pylint: disable=invalid-name
     parent: ET.Element, tag: str, text: str | None = None
-) -> ET.Element:
+) -> ET.SubElement:
     """Create ElementTree.SubElement on parent with tag and text."""
     element = ET.SubElement(parent, tag)
     if text is not None:
