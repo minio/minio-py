@@ -16,7 +16,7 @@
 
 """Time formatter for S3 APIs."""
 
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
 
 import time as ctime
 from datetime import datetime, timezone
@@ -32,7 +32,7 @@ _MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct",
            "Nov", "Dec"]
 
 
-def _to_utc(value):
+def _to_utc(value: datetime) -> datetime:
     """Convert to UTC time if value is not naive."""
     return (
         value.astimezone(timezone.utc).replace(tzinfo=None)
@@ -40,7 +40,7 @@ def _to_utc(value):
     )
 
 
-def from_iso8601utc(value):
+def from_iso8601utc(value: str | None) -> datetime | None:
     """Parse UTC ISO-8601 formatted string to datetime."""
     if value is None:
         return None
@@ -52,7 +52,7 @@ def from_iso8601utc(value):
     return time.replace(tzinfo=timezone.utc)
 
 
-def to_iso8601utc(value):
+def to_iso8601utc(value: datetime | None) -> str | None:
     """Format datetime into UTC ISO-8601 formatted string."""
     if value is None:
         return None
@@ -63,7 +63,7 @@ def to_iso8601utc(value):
     )
 
 
-def from_http_header(value):
+def from_http_header(value: str) -> datetime:
     """Parse HTTP header date formatted string to datetime."""
     if len(value) != 29:
         raise ValueError(
@@ -91,7 +91,7 @@ def from_http_header(value):
     return time
 
 
-def to_http_header(value):
+def to_http_header(value: datetime) -> str:
     """Format datatime into HTTP header date formatted string."""
     value = _to_utc(value)
     weekday = _WEEK_DAYS[value.weekday()]
@@ -101,23 +101,23 @@ def to_http_header(value):
     return f"{weekday},{day}{month}{suffix}"
 
 
-def to_amz_date(value):
+def to_amz_date(value: datetime) -> str:
     """Format datetime into AMZ date formatted string."""
     return _to_utc(value).strftime("%Y%m%dT%H%M%SZ")
 
 
-def utcnow():
+def utcnow() -> datetime:
     """Timezone-aware wrapper to datetime.utcnow()."""
     if _UTC_IMPORTED:
         return datetime.now(UTC).replace(tzinfo=timezone.utc)
     return datetime.utcnow().replace(tzinfo=timezone.utc)
 
 
-def to_signer_date(value):
+def to_signer_date(value: datetime) -> str:
     """Format datetime into SignatureV4 date formatted string."""
     return _to_utc(value).strftime("%Y%m%d")
 
 
-def to_float(value):
+def to_float(value: datetime) -> float:
     """Convert datetime into float value."""
     return ctime.mktime(value.timetuple()) + value.microsecond * 1e-6
