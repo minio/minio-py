@@ -1862,7 +1862,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param object_name: Object name in the bucket.
         :param ssec: Server-side encryption customer key.
         :param version_id: Version ID of the object.
-        :param request_headers: Any additional headers to be added with GET request.
+        :param extra_headers: Additional headers to be added with GET request.
         :param extra_query_params: Extra query parameters for advanced usage.
         :return: :class:`Object <Object>`.
 
