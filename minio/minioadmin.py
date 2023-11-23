@@ -150,7 +150,8 @@ class MinioAdmin:
             "User-Agent": self._user_agent,
             "x-amz-date": time.to_amz_date(date),
             "x-amz-content-sha256": sha256_hash(body),
-            "Content-Type": "application/octet-stream"
+            "Content-Type": "application/octet-stream",
+            "Accept-Encoding": "zstd,gzip"
         }
         if creds.session_token:
             headers["X-Amz-Security-Token"] = creds.session_token
@@ -196,6 +197,7 @@ class MinioAdmin:
             body=body,
             headers=http_headers,
             preload_content=True,
+            decode_content=True
         )
 
         if self._trace_stream:
