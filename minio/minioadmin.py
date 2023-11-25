@@ -130,7 +130,14 @@ class MinioAdmin:
     def __del__(self):
         self._http.clear()
 
-    def _url_open(self, method, command, query_params=None, body=None):
+    def _url_open(
+            self,
+            method,
+            command,
+            query_params=None,
+            body=None,
+            preload_content=True,
+    ):
         """Execute HTTP request."""
         creds = self._provider.retrieve()
 
@@ -195,7 +202,7 @@ class MinioAdmin:
             urlunsplit(url),
             body=body,
             headers=http_headers,
-            preload_content=True,
+            preload_content=preload_content,
         )
 
         if self._trace_stream:
@@ -330,9 +337,11 @@ class MinioAdmin:
 
     def user_list(self):
         """List all users"""
-        response = self._url_open("GET", _COMMAND.LIST_USERS)
+        response = self._url_open(
+            "GET", _COMMAND.LIST_USERS, preload_content=False,
+        )
         plain_data = decrypt(
-            response.data, self._provider.retrieve().secret_key
+            response, self._provider.retrieve().secret_key,
         )
         return plain_data.decode()
 
@@ -455,9 +464,10 @@ class MinioAdmin:
                 "POST",
                 _COMMAND.UNSET_USER_OR_GROUP_POLICY,
                 body=encrypt(body, self._provider.retrieve().secret_key),
+                preload_content=False,
             )
             plain_data = decrypt(
-                response.data, self._provider.retrieve().secret_key
+                response, self._provider.retrieve().secret_key,
             )
             return plain_data.decode()
         raise ValueError("either user or group must be set")
@@ -476,9 +486,10 @@ class MinioAdmin:
             "GET",
             _COMMAND.GET_CONFIG,
             query_params={"key": key, "subSys": ""},
+            preload_content=False,
         )
         plain_text = decrypt(
-            response.data, self._provider.retrieve().secret_key
+            response, self._provider.retrieve().secret_key,
         )
         return plain_text.decode()
 
@@ -511,10 +522,11 @@ class MinioAdmin:
         response = self._url_open(
             "GET",
             _COMMAND.LIST_CONFIG_HISTORY,
-            query_params={"count": "10"}
+            query_params={"count": "10"},
+            preload_content=False,
         )
         plain_text = decrypt(
-            response.data, self._provider.retrieve().secret_key
+            response, self._provider.retrieve().secret_key,
         )
         return plain_text.decode()
 

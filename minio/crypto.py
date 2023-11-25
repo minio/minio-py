@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines,disable=too-many-branches,too-many-statements
-# pylint: disable=too-many-arguments
-
 """Cryptography to read and write encrypted MinIO Admin payload"""
 
 import os
@@ -24,123 +21,215 @@ import os
 from argon2.low_level import Type, hash_secret_raw
 from Crypto.Cipher import AES, ChaCha20_Poly1305
 
-_NONCE_LEN = 8
+#
+# Encrypted Message Format:
+#
+# |    41 bytes HEADER      |
+# |-------------------------|
+# | 16 KiB encrypted chunk  |
+# |     + 16 bytes TAG      |
+# |-------------------------|
+# |          ....           |
+# |-------------------------|
+# | ~16 KiB encrypted chunk |
+# |     + 16 bytes TAG      |
+# |-------------------------|
+#
+# HEADER:
+#
+# | 32 bytes salt  |
+# |----------------|
+# | 1 byte AEAD ID |
+# |----------------|
+# | 8 bytes NONCE  |
+# |----------------|
+#
+
+
+_TAG_LEN = 16
+_CHUNK_SIZE = 16 * 1024
+_MAX_CHUNK_SIZE = _TAG_LEN + _CHUNK_SIZE
 _SALT_LEN = 32
+_NONCE_LEN = 8
 
 
-class AesGcmCipherProvider:
-    """AES-GCM cipher provider"""
-    @staticmethod
-    def get_cipher(key: bytes, nonce: bytes):
-        """Get cipher"""
+def _get_cipher(aead_id: int, key: bytes, nonce: bytes):
+    """Get cipher for AEAD ID."""
+    if aead_id == 0:
         return AES.new(key, AES.MODE_GCM, nonce)
-
-
-class ChaCha20Poly1305CipherProvider:
-    """ChaCha20Poly1305 cipher provider"""
-    @staticmethod
-    def get_cipher(key: bytes, nonce: bytes):
-        """Get cipher"""
+    if aead_id == 1:
         return ChaCha20_Poly1305.new(key=key, nonce=nonce)
+    raise ValueError("Unknown AEAD ID {aead_id}")
 
 
-def encrypt(payload: bytes, password: str) -> bytes:
-    """
-    Encrypts data using AES-GCM using a 256-bit Argon2ID key.
-    To see the original implementation in Go, check out the madmin-go library
-    (https://github.com/minio/madmin-go/blob/main/encrypt.go#L38)
-    """
-    cipher_provider = AesGcmCipherProvider()
-    nonce = os.urandom(_NONCE_LEN)
-    salt = os.urandom(_SALT_LEN)
-
-    padded_nonce = [0] * (_NONCE_LEN + 4)
-    padded_nonce[:_NONCE_LEN] = nonce
-
-    key = _generate_key(password.encode(), salt)
-    additional_data = _generate_additional_data(
-        cipher_provider, key, bytes(padded_nonce))
-
-    padded_nonce[8] = 0x01
-    padded_nonce = bytes(padded_nonce)
-
-    cipher = cipher_provider.get_cipher(key, padded_nonce)
-    cipher.update(additional_data)
-    encrypted_data, mac = cipher.encrypt_and_digest(payload)
-
-    payload = salt
-    payload += bytes([0x00])
-    payload += nonce
-    payload += encrypted_data
-    payload += mac
-
-    return bytes(payload)
-
-
-def decrypt(payload: bytes, password: str) -> bytes:
-    """
-    Decrypts data using AES-GCM or ChaCha20Poly1305 using a
-    256-bit Argon2ID key. To see the original implementation in Go,
-    check out the madmin-go library
-    (https://github.com/minio/madmin-go/blob/main/encrypt.go#L38)
-    """
-    pos = 0
-    salt = payload[pos:pos+_SALT_LEN]
-    pos += _SALT_LEN
-
-    cipher_id = payload[pos]
-    if cipher_id == 0:
-        cipher_provider = AesGcmCipherProvider()
-    elif cipher_id == 1:
-        cipher_provider = ChaCha20Poly1305CipherProvider()
-    else:
-        return None
-
-    pos += 1
-
-    nonce = payload[pos:pos+_NONCE_LEN]
-    pos += _NONCE_LEN
-
-    encrypted_data = payload[pos:-16]
-    hmac_tag = payload[-16:]
-
-    key = _generate_key(password.encode(), salt)
-
-    padded_nonce = [0] * 12
-    padded_nonce[:_NONCE_LEN] = nonce
-
-    additional_data = _generate_additional_data(
-        cipher_provider, key, bytes(padded_nonce))
-    padded_nonce[8] = 1
-
-    cipher = cipher_provider.get_cipher(key, bytes(padded_nonce))
-
-    cipher.update(additional_data)
-    decrypted_data = cipher.decrypt_and_verify(encrypted_data, hmac_tag)
-
-    return decrypted_data
-
-
-def _generate_additional_data(cipher_provider, key: bytes,
-                              padded_nonce: bytes) -> bytes:
-    """Generate additional data"""
-    cipher = cipher_provider.get_cipher(key, padded_nonce)
-    tag = cipher.digest()
-    new_tag = [0] * 17
-    new_tag[1:] = tag
-    new_tag[0] = 0x80
-    return bytes(new_tag)
-
-
-def _generate_key(password: bytes, salt: bytes) -> bytes:
+def _generate_key(secret: bytes, salt: bytes) -> bytes:
     """Generate 256-bit Argon2ID key"""
     return hash_secret_raw(
-        secret=password,
+        secret=secret,
         salt=salt,
         time_cost=1,
         memory_cost=65536,
         parallelism=4,
         hash_len=32,
         type=Type.ID,
-        version=19
+        version=19,
     )
+
+
+def _generate_additional_data(
+    aead_id: int, key: bytes, padded_nonce: bytes
+) -> bytes:
+    """Generate additional data"""
+    cipher = _get_cipher(aead_id, key, padded_nonce)
+    return b"\x00" + cipher.digest()
+
+
+def _mark_as_last(additional_data: bytes) -> bytes:
+    """Mark additional data as the last in the sequence"""
+    return b'\x80' + additional_data[1:]
+
+
+def _update_nonce_id(nonce: bytes, idx: int) -> bytes:
+    """Set nonce id (4 last bytes)"""
+    return nonce + idx.to_bytes(4, byteorder="little")
+
+
+def encrypt(payload: bytes, password: str) -> bytes:
+    """Encrypt given payload."""
+    nonce = os.urandom(_NONCE_LEN)
+    salt = os.urandom(_SALT_LEN)
+    key = _generate_key(password.encode(), salt)
+    aead_id = b"\x00"
+    padded_nonce = nonce + b"\x00\x00\x00\x00"
+    additional_data = _generate_additional_data(aead_id[0], key, padded_nonce)
+
+    indices = range(0, len(payload), _CHUNK_SIZE)
+    nonce_id = 0
+    result = salt + aead_id + nonce
+    for i in indices:
+        nonce_id += 1
+        if i == indices[-1]:
+            additional_data = _mark_as_last(additional_data)
+        padded_nonce = _update_nonce_id(nonce, nonce_id)
+        cipher = _get_cipher(aead_id[0], key, padded_nonce)
+        cipher.update(additional_data)
+        encrypted_data, hmac_tag = cipher.encrypt_and_digest(
+            payload[i:i+_CHUNK_SIZE],
+        )
+
+        result += encrypted_data
+        result += hmac_tag
+
+    return result
+
+
+class DecryptReader:
+    """
+    BufferedIOBase compatible reader represents decrypted data of MinioAdmin
+    APIs.
+    """
+
+    def __init__(self, response, secret):
+        self._response = response
+        self._secret = secret
+        self._payload = None
+
+        header = self._response.read(41)
+        if len(header) != 41:
+            raise IOError("insufficient data")
+        self._salt = header[:32]
+        self._aead_id = header[32]
+        self._nonce = header[33:]
+        self._key = _generate_key(self._secret, self._salt)
+        padded_nonce = self._nonce + b"\x00\x00\x00\x00"
+        self._additional_data = _generate_additional_data(
+            self._aead_id, self._key, padded_nonce
+        )
+        self._chunk = b""
+        self._count = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        return self.close()
+
+    def readable(self):  # pylint: disable=no-self-use
+        """Return this is readable."""
+        return True
+
+    def writeable(self):  # pylint: disable=no-self-use
+        """Return this is not writeable."""
+        return False
+
+    def close(self):
+        """Close response and release network resources."""
+        self._response.close()
+        self._response.release_conn()
+
+    def _decrypt(self, payload, last_chunk=False):
+        """Decrypt given payload."""
+        self._count += 1
+        if last_chunk:
+            self._additional_data = _mark_as_last(self._additional_data)
+
+        padded_nonce = _update_nonce_id(self._nonce, self._count)
+        cipher = _get_cipher(self._aead_id, self._key, padded_nonce)
+        cipher.update(self._additional_data)
+
+        hmac_tag = payload[-_TAG_LEN:]
+        encrypted_data = payload[:-_TAG_LEN]
+        decrypted_data = cipher.decrypt_and_verify(encrypted_data, hmac_tag)
+        return decrypted_data
+
+    def _read_chunk(self) -> bool:
+        """Read a chunk at least one byte more than chunk size."""
+        if self._response.isclosed():
+            return True
+
+        while len(self._chunk) != (1 + _MAX_CHUNK_SIZE):
+            chunk = self._response.read(1 + _MAX_CHUNK_SIZE - len(self._chunk))
+            self._chunk += chunk
+            if len(chunk) == 0:
+                return True
+
+        return False
+
+    def _read(self) -> bytes:
+        """Read and decrypt response."""
+        stop = self._read_chunk()
+
+        if len(self._chunk) == 0:
+            return self._chunk
+
+        if len(self._chunk) < _MAX_CHUNK_SIZE:
+            return self._decrypt(self._chunk, True)
+
+        payload = self._chunk[:_MAX_CHUNK_SIZE]
+        self._chunk = self._chunk[_MAX_CHUNK_SIZE:]
+        return self._decrypt(payload, stop)
+
+    def stream(self, num_bytes=32*1024):
+        """
+        Stream extracted payload from response data. Upon completion, caller
+        should call self.close() to release network resources.
+        """
+        while True:
+            data = self._read()
+            while data:
+                result = data
+                if num_bytes < len(data):
+                    result = data[:num_bytes]
+                data = data[len(result):]
+                yield result
+            else:
+                break
+
+
+def decrypt(response, secret_key):
+    """Decrypt response data."""
+    result = b""
+    with DecryptReader(response, secret_key.encode()) as reader:
+        for data in reader.stream():
+            result += data
+    return result

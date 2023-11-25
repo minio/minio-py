@@ -19,7 +19,7 @@ from http import client as httplib
 
 class MockResponse(object):
     def __init__(self, method, url, headers, status_code,
-                 response_headers=None, content=None):
+                 response_headers=None, content=None, chunked=False):
         self.method = method
         self.url = url
         self.request_headers = {
@@ -33,10 +33,17 @@ class MockResponse(object):
         self.data = content
         if content is None:
             self.reason = httplib.responses[status_code]
+        self.chunked = chunked
 
     # noinspection PyUnusedLocal
-    def read(self, *args, **kwargs):
-        return self.data
+    def read(self, size=-1, *args, **kwargs):
+        if not self.chunked:
+            return self.data
+        if size < 0:
+            size = len(self.data)
+        result = self.data[:size]
+        self.data = self.data[size:]
+        return result
 
     def mock_verify(self, method, url, headers):
         assert self.method == method
@@ -55,6 +62,14 @@ class MockResponse(object):
 
     # dummy release connection call.
     def release_conn(self):
+        return
+
+    # dummy release connection call.
+    def isclosed(self):
+        return len(self.data) == 0
+
+    # dummy release connection call.
+    def close(self):
         return
 
     def getheader(self, key, value=None):
