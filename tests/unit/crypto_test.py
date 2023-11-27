@@ -18,13 +18,21 @@ from unittest import TestCase
 
 from minio.crypto import decrypt, encrypt
 
+from .minio_mocks import MockResponse
+
 
 class CryptoTest(TestCase):
     def test_correct(self):
         secret = "topsecret"
         plaintext = "Hello MinIO!"
         encrypted = encrypt(plaintext.encode(), secret)
-        decrypted = decrypt(encrypted, secret).decode()
+        decrypted = decrypt(
+            MockResponse(
+                "GET", "https://localhost:9000/", {}, 200, content=encrypted,
+                chunked=True,
+            ),
+            secret,
+        ).decode()
         if hasattr(self, "assertEquals"):
             self.assertEquals(plaintext, decrypted)
         else:
@@ -35,4 +43,12 @@ class CryptoTest(TestCase):
         secret2 = "othersecret"
         plaintext = "Hello MinIO!"
         encrypted = encrypt(plaintext.encode(), secret)
-        self.assertRaises(ValueError, decrypt, encrypted, secret2)
+        self.assertRaises(
+            ValueError,
+            decrypt,
+            MockResponse(
+                "GET", "https://localhost:9000/", {}, 200, content=encrypted,
+                chunked=True,
+            ),
+            secret2,
+        )
