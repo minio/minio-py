@@ -14,7 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from io import BytesIO
 from unittest import TestCase
+
+from urllib3.response import HTTPResponse
 
 from minio.crypto import decrypt, encrypt
 
@@ -24,7 +27,10 @@ class CryptoTest(TestCase):
         secret = "topsecret"
         plaintext = "Hello MinIO!"
         encrypted = encrypt(plaintext.encode(), secret)
-        decrypted = decrypt(encrypted, secret).decode()
+        decrypted = decrypt(
+            HTTPResponse(body=BytesIO(encrypted), preload_content=False),
+            secret,
+        ).decode()
         if hasattr(self, "assertEquals"):
             self.assertEquals(plaintext, decrypted)
         else:
@@ -35,4 +41,9 @@ class CryptoTest(TestCase):
         secret2 = "othersecret"
         plaintext = "Hello MinIO!"
         encrypted = encrypt(plaintext.encode(), secret)
-        self.assertRaises(ValueError, decrypt, encrypted, secret2)
+        self.assertRaises(
+            ValueError,
+            decrypt,
+            HTTPResponse(body=BytesIO(encrypted), preload_content=False),
+            secret2,
+        )
