@@ -14,11 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from io import BytesIO
 from unittest import TestCase
 
-from minio.crypto import decrypt, encrypt
+from urllib3.response import HTTPResponse
 
-from .minio_mocks import MockResponse
+from minio.crypto import decrypt, encrypt
 
 
 class CryptoTest(TestCase):
@@ -27,10 +28,7 @@ class CryptoTest(TestCase):
         plaintext = "Hello MinIO!"
         encrypted = encrypt(plaintext.encode(), secret)
         decrypted = decrypt(
-            MockResponse(
-                "GET", "https://localhost:9000/", {}, 200, content=encrypted,
-                chunked=True,
-            ),
+            HTTPResponse(body=BytesIO(encrypted), preload_content=False),
             secret,
         ).decode()
         if hasattr(self, "assertEquals"):
@@ -46,9 +44,6 @@ class CryptoTest(TestCase):
         self.assertRaises(
             ValueError,
             decrypt,
-            MockResponse(
-                "GET", "https://localhost:9000/", {}, 200, content=encrypted,
-                chunked=True,
-            ),
+            HTTPResponse(body=BytesIO(encrypted), preload_content=False),
             secret2,
         )

@@ -16,10 +16,15 @@
 
 """Cryptography to read and write encrypted MinIO Admin payload"""
 
+from __future__ import absolute_import, annotations
+
 import os
 
 from argon2.low_level import Type, hash_secret_raw
 from Crypto.Cipher import AES, ChaCha20_Poly1305
+from Crypto.Cipher._mode_gcm import GcmMode
+from Crypto.Cipher.ChaCha20_Poly1305 import ChaCha20Poly1305Cipher
+from urllib3 import HTTPResponse
 
 #
 # Encrypted Message Format:
@@ -53,7 +58,11 @@ _SALT_LEN = 32
 _NONCE_LEN = 8
 
 
-def _get_cipher(aead_id: int, key: bytes, nonce: bytes):
+def _get_cipher(
+        aead_id: int,
+        key: bytes,
+        nonce: bytes,
+) -> GcmMode | ChaCha20Poly1305Cipher:
     """Get cipher for AEAD ID."""
     if aead_id == 0:
         return AES.new(key, AES.MODE_GCM, nonce)
@@ -129,7 +138,7 @@ class DecryptReader:
     APIs.
     """
 
-    def __init__(self, response, secret):
+    def __init__(self, response: HTTPResponse, secret: bytes):
         self._response = response
         self._secret = secret
         self._payload = None
@@ -167,7 +176,7 @@ class DecryptReader:
         self._response.close()
         self._response.release_conn()
 
-    def _decrypt(self, payload, last_chunk=False):
+    def _decrypt(self, payload: bytes, last_chunk: bool = False) -> bytes:
         """Decrypt given payload."""
         self._count += 1
         if last_chunk:
@@ -226,7 +235,7 @@ class DecryptReader:
                 break
 
 
-def decrypt(response, secret_key):
+def decrypt(response: HTTPResponse, secret_key: str) -> bytes:
     """Decrypt response data."""
     result = b""
     with DecryptReader(response, secret_key.encode()) as reader:
