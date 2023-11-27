@@ -16,34 +16,41 @@
 
 """Tagging for bucket and object."""
 
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
+
+from typing import Type, TypeVar
+from xml.etree import ElementTree as ET
 
 from .commonconfig import Tags
 from .xml import Element, SubElement, find
+
+K = TypeVar("K", bound="Tagging")
 
 
 class Tagging:
     """Tagging for buckets and objects."""
 
-    def __init__(self, tags):
+    def __init__(self, tags: Tags | None):
         self._tags = tags
 
     @property
-    def tags(self):
+    def tags(self) -> Tags | None:
         """Get tags."""
         return self._tags
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[K], element: ET.Element) -> K:
         """Create new object with values from XML element."""
-        element = find(element, "TagSet")
+        tag_set = find(element, "TagSet")
+        if tag_set is None:
+            raise ValueError("missing XML tag 'TagSet'")
         tags = (
-            None if find(element, "Tag") is None
-            else Tags.fromxml(element)
+            None if find(tag_set, "Tag") is None
+            else Tags.fromxml(tag_set)
         )
         return cls(tags)
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element) -> ET.Element:
         """Convert to XML."""
         element = Element("Tagging")
         if self._tags:
