@@ -141,7 +141,7 @@ class GetRegionTests(TestCase):
 
     def test_region_us_west(self):
         region = BaseURL('https://s3-us-west-1.amazonaws.com', None).region
-        self.assertIsNone(region)
+        self.assertEqual(region, "")
 
     def test_region_with_dot(self):
         region = BaseURL('https://s3.us-west-1.amazonaws.com', None).region
@@ -155,7 +155,7 @@ class GetRegionTests(TestCase):
 
     def test_region_us_east(self):
         region = BaseURL('http://s3.amazonaws.com', None).region
-        self.assertIsNone(region)
+        self.assertEqual(region, "")
 
     def test_invalid_value(self):
         self.assertRaises(ValueError, BaseURL, None, None)
