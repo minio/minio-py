@@ -19,7 +19,10 @@ Request/response of PutObjectLockConfiguration and GetObjectLockConfiguration
 APIs.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
+
+from typing import Type, TypeVar, cast
+from xml.etree import ElementTree as ET
 
 from .commonconfig import COMPLIANCE, ENABLED, GOVERNANCE
 from .xml import Element, SubElement, find, findtext
@@ -27,11 +30,18 @@ from .xml import Element, SubElement, find, findtext
 DAYS = "Days"
 YEARS = "Years"
 
+A = TypeVar("A", bound="ObjectLockConfig")
+
 
 class ObjectLockConfig:
     """Object lock configuration."""
 
-    def __init__(self, mode, duration, duration_unit):
+    def __init__(
+            self,
+            mode: str | None,
+            duration: int | None,
+            duration_unit: str | None,
+    ):
         if (mode is not None) ^ (duration is not None):
             if mode is None:
                 raise ValueError("mode must be provided")
@@ -47,32 +57,33 @@ class ObjectLockConfig:
         self._duration_unit = duration_unit
 
     @property
-    def mode(self):
+    def mode(self) -> str | None:
         """Get mode."""
         return self._mode
 
     @property
-    def duration(self):
+    def duration(self) -> tuple[int | None, str | None]:
         """Get duration and it's unit."""
         return self._duration, self._duration_unit
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[A], element: ET.Element) -> A:
         """Create new object with values from XML element."""
-        element = find(element, "Rule")
-        if element is None:
+        elem = find(element, "Rule")
+        if elem is None:
             return cls(None, None, None)
-        element = find(element, "DefaultRetention")
-        mode = findtext(element, "Mode")
+        elem = cast(ET.Element, find(elem, "DefaultRetention", True))
+        mode = findtext(elem, "Mode")
         duration_unit = DAYS
-        duration = findtext(element, duration_unit)
+        duration = findtext(elem, duration_unit)
         if not duration:
             duration_unit = YEARS
-            duration = findtext(element, duration_unit)
-        duration = int(duration)
-        return cls(mode, duration, duration_unit)
+            duration = findtext(elem, duration_unit)
+        if not duration:
+            raise ValueError(f"XML element <{DAYS}> or <{YEARS}> not found")
+        return cls(mode, int(duration), duration_unit)
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
         element = Element("ObjectLockConfiguration")
         SubElement(element, "ObjectLockEnabled", ENABLED)
@@ -80,5 +91,7 @@ class ObjectLockConfig:
             rule = SubElement(element, "Rule")
             retention = SubElement(rule, "DefaultRetention")
             SubElement(retention, "Mode", self._mode)
+            if not self._duration_unit:
+                raise ValueError("duration unit must be provided")
             SubElement(retention, self._duration_unit, str(self._duration))
         return element
