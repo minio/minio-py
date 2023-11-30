@@ -16,35 +16,42 @@
 
 """Request/response of PutBucketReplication and GetBucketReplication APIs."""
 
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
 
 from abc import ABCMeta
+from typing import Type, TypeVar, cast
+from xml.etree import ElementTree as ET
 
-from .commonconfig import DISABLED, BaseRule, check_status
+from .commonconfig import DISABLED, BaseRule, Filter, check_status
 from .xml import Element, SubElement, find, findall, findtext
+
+A = TypeVar("A", bound="Status")
 
 
 class Status:
     """Status."""
     __metaclass__ = ABCMeta
 
-    def __init__(self, status):
+    def __init__(self, status: str):
         check_status(status)
         self._status = status
 
     @property
-    def status(self):
+    def status(self) -> str:
         """Get status."""
         return self._status
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[A], element: ET.Element) -> A:
         """Create new object with values from XML element."""
-        element = find(element, cls.__name__)
-        return cls(findtext(element, "Status", True))
+        element = cast(ET.Element, find(element, cls.__name__, True))
+        status = cast(str, findtext(element, "Status", True))
+        return cls(status)
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
+        if element is None:
+            raise ValueError("element must be provided")
         element = SubElement(element, self.__class__.__name__)
         SubElement(element, "Status", self._status)
         return element
@@ -54,28 +61,39 @@ class SseKmsEncryptedObjects(Status):
     """SSE KMS encrypted objects."""
 
 
+B = TypeVar("B", bound="SourceSelectionCriteria")
+
+
 class SourceSelectionCriteria:
     """Source selection criteria."""
 
-    def __init__(self, sse_kms_encrypted_objects=None):
+    def __init__(
+            self,
+            sse_kms_encrypted_objects: SseKmsEncryptedObjects | None = None,
+    ):
         self._sse_kms_encrypted_objects = sse_kms_encrypted_objects
 
     @property
-    def sse_kms_encrypted_objects(self):
+    def sse_kms_encrypted_objects(self) -> SseKmsEncryptedObjects | None:
         """Get SSE KMS encrypted objects."""
         return self._sse_kms_encrypted_objects
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[B], element: ET.Element) -> B:
         """Create new object with values from XML element."""
-        element = find(element, "SourceSelectionCriteria")
+        element = cast(
+            ET.Element,
+            find(element, "SourceSelectionCriteria", True),
+        )
         return cls(
             None if find(element, "SseKmsEncryptedObjects") is None
             else SseKmsEncryptedObjects.fromxml(element)
         )
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
+        if element is None:
+            raise ValueError("element must be provided")
         element = SubElement(element, "SourceSelectionCriteria")
         if self._sse_kms_encrypted_objects:
             self._sse_kms_encrypted_objects.toxml(element)
@@ -93,29 +111,32 @@ class DeleteMarkerReplication(Status):
         super().__init__(status)
 
 
+C = TypeVar("C", bound="ReplicationTimeValue")
+
+
 class ReplicationTimeValue:
     """Replication time value."""
     __metaclass__ = ABCMeta
 
-    def __init__(self, minutes=15):
+    def __init__(self, minutes: None | int = 15):
         self._minutes = minutes
 
     @property
-    def minutes(self):
+    def minutes(self) -> int | None:
         """Get minutes."""
         return self._minutes
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[C], element: ET.Element) -> C:
         """Create new object with values from XML element."""
-        element = find(element, cls.__name__)
+        element = cast(ET.Element, find(element, cls.__name__, True))
         minutes = findtext(element, "Minutes")
-        if minutes is not None:
-            minutes = int(minutes)
-        return cls(minutes)
+        return cls(int(minutes) if minutes else None)
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
+        if element is None:
+            raise ValueError("element must be provided")
         element = SubElement(element, self.__class__.__name__)
         if self._minutes is not None:
             SubElement(element, "Minutes", str(self._minutes))
@@ -126,10 +147,13 @@ class Time(ReplicationTimeValue):
     """Time."""
 
 
+D = TypeVar("D", bound="ReplicationTime")
+
+
 class ReplicationTime:
     """Replication time."""
 
-    def __init__(self, time, status):
+    def __init__(self, time: Time, status: str):
         if not time:
             raise ValueError("time must be provided")
         check_status(status)
@@ -137,25 +161,27 @@ class ReplicationTime:
         self._status = status
 
     @property
-    def time(self):
+    def time(self) -> Time:
         """Get time value."""
         return self._time
 
     @property
-    def status(self):
+    def status(self) -> str:
         """Get status."""
         return self._status
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[D], element: ET.Element) -> D:
         """Create new object with values from XML element."""
-        element = find(element, "ReplicationTime")
+        element = cast(ET.Element, find(element, "ReplicationTime", True))
         time = Time.fromxml(element)
-        status = findtext(element, "Status", True)
+        status = cast(str, findtext(element, "Status", True))
         return cls(time, status)
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
+        if element is None:
+            raise ValueError("element must be provided")
         element = SubElement(element, "ReplicationTime")
         self._time.toxml(element)
         SubElement(element, "Status", self._status)
@@ -166,10 +192,13 @@ class EventThreshold(ReplicationTimeValue):
     """Event threshold."""
 
 
+E = TypeVar("E", bound="Metrics")
+
+
 class Metrics:
     """Metrics."""
 
-    def __init__(self, event_threshold, status):
+    def __init__(self, event_threshold: EventThreshold, status: str):
         if not event_threshold:
             raise ValueError("event threshold must be provided")
         check_status(status)
@@ -177,88 +206,115 @@ class Metrics:
         self._status = status
 
     @property
-    def event_threshold(self):
+    def event_threshold(self) -> EventThreshold:
         """Get event threshold."""
         return self._event_threshold
 
     @property
-    def status(self):
+    def status(self) -> str:
         """Get status."""
         return self._status
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[E], element: ET.Element) -> E:
         """Create new object with values from XML element."""
-        element = find(element, "Metrics")
+        element = cast(ET.Element, find(element, "Metrics", True))
         event_threshold = EventThreshold.fromxml(element)
-        status = findtext(element, "Status", True)
+        status = cast(str, findtext(element, "Status", True))
         return cls(event_threshold, status)
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
+        if element is None:
+            raise ValueError("element must be provided")
         element = SubElement(element, "Metrics")
         self._event_threshold.toxml(element)
         SubElement(element, "Status", self._status)
         return element
 
 
+F = TypeVar("F", bound="EncryptionConfig")
+
+
 class EncryptionConfig:
     """Encryption configuration."""
 
-    def __init__(self, replica_kms_key_id=None):
+    def __init__(self, replica_kms_key_id: str | None = None):
         self._replica_kms_key_id = replica_kms_key_id
 
     @property
-    def replica_kms_key_id(self):
+    def replica_kms_key_id(self) -> str | None:
         """Get replica KMS key ID."""
         return self._replica_kms_key_id
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[F], element: ET.Element) -> F:
         """Create new object with values from XML element."""
-        element = find(element, "EncryptionConfiguration")
+        element = cast(
+            ET.Element,
+            find(element, "EncryptionConfiguration", True),
+        )
         return cls(findtext(element, "ReplicaKmsKeyID"))
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
+        if element is None:
+            raise ValueError("element must be provided")
         element = SubElement(element, "EncryptionConfiguration")
         SubElement(element, "ReplicaKmsKeyID", self._replica_kms_key_id)
         return element
 
 
+G = TypeVar("G", bound="AccessControlTranslation")
+
+
 class AccessControlTranslation:
     """Access control translation."""
 
-    def __init__(self, owner="Destination"):
+    def __init__(self, owner: str = "Destination"):
         if not owner:
             raise ValueError("owner must be provided")
         self._owner = owner
 
     @property
-    def owner(self):
+    def owner(self) -> str:
         """Get owner."""
         return self._owner
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[G], element: ET.Element) -> G:
         """Create new object with values from XML element."""
-        element = find(element, "AccessControlTranslation")
-        return cls(findtext(element, "Owner"))
+        element = cast(
+            ET.Element, find(element, "AccessControlTranslation", True),
+        )
+        owner = cast(str, findtext(element, "Owner", True))
+        return cls(owner)
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
+        if element is None:
+            raise ValueError("element must be provided")
         element = SubElement(element, "AccessControlTranslation")
         SubElement(element, "Owner", self._owner)
         return element
 
 
+H = TypeVar("H", bound="Destination")
+
+
 class Destination:
     """Replication destination."""
 
-    def __init__(self, bucket_arn,
-                 access_control_translation=None, account=None,
-                 encryption_config=None, metrics=None,
-                 replication_time=None, storage_class=None):
+    def __init__(
+            self,
+            bucket_arn: str,
+            access_control_translation: AccessControlTranslation | None = None,
+            account: str | None = None,
+            encryption_config: EncryptionConfig | None = None,
+            metrics: Metrics | None = None,
+            replication_time: ReplicationTime | None = None,
+            storage_class: str | None = None,
+    ):
         if not bucket_arn:
             raise ValueError("bucket ARN must be provided")
         self._bucket_arn = bucket_arn
@@ -270,50 +326,50 @@ class Destination:
         self._storage_class = storage_class
 
     @property
-    def bucket_arn(self):
+    def bucket_arn(self) -> str:
         """Get bucket ARN."""
         return self._bucket_arn
 
     @property
-    def access_control_translation(self):
+    def access_control_translation(self) -> AccessControlTranslation | None:
         """Get access control translation. """
         return self._access_control_translation
 
     @property
-    def account(self):
+    def account(self) -> str | None:
         """Get account."""
         return self._account
 
     @property
-    def encryption_config(self):
+    def encryption_config(self) -> EncryptionConfig | None:
         """Get encryption configuration."""
         return self._encryption_config
 
     @property
-    def metrics(self):
+    def metrics(self) -> Metrics | None:
         """Get metrics."""
         return self._metrics
 
     @property
-    def replication_time(self):
+    def replication_time(self) -> ReplicationTime | None:
         """Get replication time."""
         return self._replication_time
 
     @property
-    def storage_class(self):
+    def storage_class(self) -> str | None:
         """Get storage class."""
         return self._storage_class
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[H], element: ET.Element) -> H:
         """Create new object with values from XML element."""
-        element = find(element, "Destination")
+        element = cast(ET.Element, find(element, "Destination", True))
         access_control_translation = (
             None if find(element, "AccessControlTranslation") is None
             else AccessControlTranslation.fromxml(element)
         )
         account = findtext(element, "Account")
-        bucket_arn = findtext(element, "Bucket", True)
+        bucket_arn = cast(str, findtext(element, "Bucket", True))
         encryption_config = (
             None if find(element, "EncryptionConfiguration") is None
             else EncryptionConfig.fromxml(element)
@@ -330,8 +386,10 @@ class Destination:
         return cls(bucket_arn, access_control_translation, account,
                    encryption_config, metrics, replication_time, storage_class)
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
+        if element is None:
+            raise ValueError("element must be provided")
         element = SubElement(element, "Destination")
         if self._access_control_translation:
             self._access_control_translation.toxml(element)
@@ -349,14 +407,25 @@ class Destination:
         return element
 
 
+I = TypeVar("I", bound="Rule")
+
+
 class Rule(BaseRule):
     """Replication rule. """
 
-    def __init__(self, destination, status,
-                 delete_marker_replication=None,
-                 existing_object_replication=None,
-                 rule_filter=None, rule_id=None, prefix=None,
-                 priority=None, source_selection_criteria=None):
+    def __init__(
+            self,
+            destination: Destination,
+            status: str,
+            delete_marker_replication: DeleteMarkerReplication | None = None,
+            existing_object_replication:
+                ExistingObjectReplication | None = None,
+            rule_filter: Filter | None = None,
+            rule_id: str | None = None,
+            prefix: str | None = None,
+            priority: int | None = None,
+            source_selection_criteria: SourceSelectionCriteria | None = None,
+    ):
         if not destination:
             raise ValueError("destination must be provided")
 
@@ -375,42 +444,42 @@ class Rule(BaseRule):
         self._source_selection_criteria = source_selection_criteria
 
     @property
-    def destination(self):
+    def destination(self) -> Destination:
         """Get destination."""
         return self._destination
 
     @property
-    def status(self):
+    def status(self) -> str:
         """Get status."""
         return self._status
 
     @property
-    def delete_marker_replication(self):
+    def delete_marker_replication(self) -> DeleteMarkerReplication | None:
         """Get delete marker replication."""
         return self._delete_marker_replication
 
     @property
-    def existing_object_replication(self):
+    def existing_object_replication(self) -> ExistingObjectReplication | None:
         """Get existing object replication."""
         return self._existing_object_replication
 
     @property
-    def prefix(self):
+    def prefix(self) -> str | None:
         """Get prefix."""
         return self._prefix
 
     @property
-    def priority(self):
+    def priority(self) -> int | None:
         """Get priority."""
         return self._priority
 
     @property
-    def source_selection_criteria(self):
+    def source_selection_criteria(self) -> SourceSelectionCriteria | None:
         """Get source selection criteria."""
         return self._source_selection_criteria
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[I], element: ET.Element) -> I:
         """Create new object with values from XML element."""
         delete_marker_replication = (
             None if find(element, "DeleteMarkerReplication") is None
@@ -424,20 +493,28 @@ class Rule(BaseRule):
         rule_filter, rule_id = cls.parsexml(element)
         prefix = findtext(element, "Prefix")
         priority = findtext(element, "Priority")
-        if priority:
-            priority = int(priority)
         source_selection_criteria = (
             None if find(element, "SourceSelectionCriteria") is None
             else SourceSelectionCriteria.fromxml(element)
         )
-        status = findtext(element, "Status", True)
+        status = cast(str, findtext(element, "Status", True))
 
-        return cls(destination, status, delete_marker_replication,
-                   existing_object_replication, rule_filter,
-                   rule_id, prefix, priority, source_selection_criteria)
+        return cls(
+            destination,
+            status,
+            delete_marker_replication,
+            existing_object_replication,
+            rule_filter,
+            rule_id,
+            prefix,
+            int(priority) if priority else None,
+            source_selection_criteria,
+        )
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
+        if element is None:
+            raise ValueError("element must be provided")
         element = SubElement(element, "Rule")
         if self._delete_marker_replication:
             self._delete_marker_replication.toxml(element)
@@ -455,10 +532,13 @@ class Rule(BaseRule):
         return element
 
 
+J = TypeVar("J", bound="ReplicationConfig")
+
+
 class ReplicationConfig:
     """Replication configuration."""
 
-    def __init__(self, role, rules):
+    def __init__(self, role: str, rules: list[Rule]):
         if not rules:
             raise ValueError("rules must be provided")
         if len(rules) > 1000:
@@ -467,26 +547,26 @@ class ReplicationConfig:
         self._rules = rules
 
     @property
-    def role(self):
+    def role(self) -> str:
         """Get role."""
         return self._role
 
     @property
-    def rules(self):
+    def rules(self) -> list[Rule]:
         """Get rules."""
         return self._rules
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[J], element: ET.Element) -> J:
         """Create new object with values from XML element."""
-        role = findtext(element, "Role", True)
+        role = cast(str, findtext(element, "Role", True))
         elements = findall(element, "Rule")
         rules = []
         for tag in elements:
             rules.append(Rule.fromxml(tag))
         return cls(role, rules)
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
         element = Element("ReplicationConfiguration")
         SubElement(element, "Role", self._role)
