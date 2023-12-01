@@ -24,7 +24,7 @@ from argon2.low_level import Type, hash_secret_raw
 from Crypto.Cipher import AES, ChaCha20_Poly1305
 from Crypto.Cipher._mode_gcm import GcmMode
 from Crypto.Cipher.ChaCha20_Poly1305 import ChaCha20Poly1305Cipher
-from urllib3 import HTTPResponse
+from urllib3.response import BaseHTTPResponse
 
 #
 # Encrypted Message Format:
@@ -138,7 +138,7 @@ class DecryptReader:
     APIs.
     """
 
-    def __init__(self, response: HTTPResponse, secret: bytes):
+    def __init__(self, response: BaseHTTPResponse, secret: bytes):
         self._response = response
         self._secret = secret
         self._payload = None
@@ -156,6 +156,7 @@ class DecryptReader:
         )
         self._chunk = b""
         self._count = 0
+        self._is_closed = False
 
     def __enter__(self):
         return self
@@ -193,13 +194,14 @@ class DecryptReader:
 
     def _read_chunk(self) -> bool:
         """Read a chunk at least one byte more than chunk size."""
-        if self._response.isclosed():
+        if self._is_closed:
             return True
 
         while len(self._chunk) != (1 + _MAX_CHUNK_SIZE):
             chunk = self._response.read(1 + _MAX_CHUNK_SIZE - len(self._chunk))
             self._chunk += chunk
             if len(chunk) == 0:
+                self._is_closed = True
                 return True
 
         return False
@@ -235,7 +237,7 @@ class DecryptReader:
                 break
 
 
-def decrypt(response: HTTPResponse, secret_key: str) -> bytes:
+def decrypt(response: BaseHTTPResponse, secret_key: str) -> bytes:
     """Decrypt response data."""
     result = b""
     with DecryptReader(response, secret_key.encode()) as reader:
