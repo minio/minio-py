@@ -29,7 +29,7 @@ import urllib.parse
 from datetime import datetime
 from queue import Queue
 from threading import BoundedSemaphore, Thread
-from typing import BinaryIO, Mapping
+from typing import BinaryIO, Dict, List, Mapping, Tuple, Union
 
 from typing_extensions import Protocol
 from urllib3._collections import HTTPHeaderDict
@@ -78,6 +78,8 @@ _AWS_ELB_ENDPOINT_REGEX = re.compile(
 _AWS_S3_PREFIX_REGEX = re.compile(_AWS_S3_PREFIX, re.IGNORECASE)
 _REGION_REGEX = re.compile(r'^((?!_)(?!-)[a-z_\d-]{1,63}(?<!-)(?<!_))$',
                            re.IGNORECASE)
+
+DictType = Dict[str, Union[str, List[str], Tuple[str]]]
 
 
 def quote(
@@ -335,9 +337,7 @@ def url_replace(
     )
 
 
-def _metadata_to_headers(
-        metadata: dict[str, str | list[str] | tuple[str]],
-) -> dict[str, list[str]]:
+def _metadata_to_headers(metadata: DictType) -> dict[str, list[str]]:
     """Convert user metadata to headers."""
     def normalize_key(key: str) -> str:
         if not key.lower().startswith("x-amz-meta-"):
@@ -366,9 +366,7 @@ def _metadata_to_headers(
     }
 
 
-def normalize_headers(
-        headers: dict[str, str | list[str] | tuple[str]] | None,
-) -> dict[str, str | list[str] | tuple[str]]:
+def normalize_headers(headers: DictType | None) -> DictType:
     """Normalize headers by prefixing 'X-Amz-Meta-' for user metadata."""
     headers = {str(key): value for key, value in (headers or {}).items()}
 
@@ -398,12 +396,12 @@ def normalize_headers(
 
 
 def genheaders(
-        headers: dict[str, str | list[str] | tuple[str]] | None,
+        headers: DictType | None,
         sse: Sse | None,
         tags: dict[str, str] | None,
         retention,
         legal_hold: bool,
-) -> dict[str, str | list[str] | tuple[str]]:
+) -> DictType:
     """Generate headers for given parameters."""
     headers = normalize_headers(headers)
     headers.update(sse.headers() if sse else {})
@@ -685,7 +683,7 @@ class BaseURL:
             region: str,
             bucket_name: str | None = None,
             object_name: str | None = None,
-            query_params: dict[str, str | list | tuple] | None = None,
+            query_params: DictType | None = None,
     ) -> urllib.parse.SplitResult:
         """Build URL for given information."""
         if not bucket_name and object_name:

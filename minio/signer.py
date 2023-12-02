@@ -38,7 +38,7 @@ from urllib.parse import SplitResult
 
 from . import time
 from .credentials import Credentials
-from .helpers import queryencode, sha256_hash
+from .helpers import DictType, queryencode, sha256_hash
 
 SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'
 _MULTI_SPACE_REGEX = re.compile(r"( +)")
@@ -191,11 +191,11 @@ def _sign_v4(
         method: str,
         url: SplitResult,
         region: str,
-        headers: dict[str, str | list[str] | tuple[str]],
+        headers: DictType,
         credentials: Credentials,
         content_sha256: str,
         date: datetime,
-) -> dict[str, str | list[str] | tuple[str]]:
+) -> DictType:
     """Do signature V4 of given request for given service name."""
 
     scope = _get_scope(date, region, service_name)
@@ -218,11 +218,11 @@ def sign_v4_s3(
         method: str,
         url: SplitResult,
         region: str,
-        headers: dict[str, str | list[str] | tuple[str]],
+        headers: DictType,
         credentials: Credentials,
         content_sha256: str,
         date: datetime,
-) -> dict[str, str | list[str] | tuple[str]]:
+) -> DictType:
     """Do signature V4 of given request for S3 service."""
     return _sign_v4(
         "s3",
@@ -240,11 +240,11 @@ def sign_v4_sts(
         method: str,
         url: SplitResult,
         region: str,
-        headers: dict[str, str | list[str] | tuple[str]],
+        headers: DictType,
         credentials: Credentials,
         content_sha256: str,
         date: datetime,
-) -> dict[str, str | list[str] | tuple[str]]:
+) -> DictType:
     """Do signature V4 of given request for STS service."""
     return _sign_v4(
         "sts",
