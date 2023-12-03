@@ -27,7 +27,7 @@ from .xml import Element, SubElement, findtext
 OFF = "Off"
 SUSPENDED = "Suspended"
 
-K = TypeVar("K", bound="VersioningConfig")
+A = TypeVar("A", bound="VersioningConfig")
 
 
 class VersioningConfig:
@@ -56,13 +56,13 @@ class VersioningConfig:
         return self._mfa_delete
 
     @classmethod
-    def fromxml(cls: Type[K], element: ET.Element) -> K:
+    def fromxml(cls: Type[A], element: ET.Element) -> A:
         """Create new object with values from XML element."""
         status = findtext(element, "Status")
         mfa_delete = findtext(element, "MFADelete")
         return cls(status, mfa_delete)
 
-    def toxml(self, element: ET.Element) -> ET.Element:
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
         element = Element("VersioningConfiguration")
         if self._status:
