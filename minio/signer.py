@@ -33,6 +33,7 @@ import hmac
 import re
 from collections import OrderedDict
 from datetime import datetime
+from typing import Mapping, cast
 from urllib.parse import SplitResult
 
 from . import time
@@ -44,7 +45,7 @@ _MULTI_SPACE_REGEX = re.compile(r"( +)")
 
 
 def _hmac_hash(
-        key: bytes | bytearray,
+        key: bytes,
         data: bytes,
         hexdigest: bool = False,
 ) -> bytes | str:
@@ -60,11 +61,11 @@ def _get_scope(date: datetime, region: str, service_name: str) -> str:
 
 
 def _get_canonical_headers(
-        headers: dict[str, str | list[str] | tuple[str]],
-) -> tuple[dict[str, str], str]:
+        headers: Mapping[str, str | list[str] | tuple[str]],
+) -> tuple[str, str]:
     """Get canonical headers."""
 
-    canonical_headers = {}
+    ordered_headers = {}
     for key, values in headers.items():
         key = key.lower()
         if key not in (
@@ -72,14 +73,14 @@ def _get_canonical_headers(
                 "user-agent",
         ):
             values = values if isinstance(values, (list, tuple)) else [values]
-            canonical_headers[key] = ",".join([
+            ordered_headers[key] = ",".join([
                 _MULTI_SPACE_REGEX.sub(" ", value) for value in values
             ])
 
-    canonical_headers = OrderedDict(sorted(canonical_headers.items()))
-    signed_headers = ";".join(canonical_headers.keys())
+    ordered_headers = OrderedDict(sorted(ordered_headers.items()))
+    signed_headers = ";".join(ordered_headers.keys())
     canonical_headers = "\n".join(
-        [f"{key}:{value}" for key, value in canonical_headers.items()],
+        [f"{key}:{value}" for key, value in ordered_headers.items()],
     )
     return canonical_headers, signed_headers
 
@@ -100,7 +101,7 @@ def _get_canonical_query_string(query: str) -> str:
 def _get_canonical_request_hash(
         method: str,
         url: SplitResult,
-        headers: dict[str, str | list[str] | tuple[str]],
+        headers: Mapping[str, str | list[str] | tuple[str]],
         content_sha256: str,
 ) -> tuple[str, str]:
     """Get canonical request hash."""
@@ -145,34 +146,29 @@ def _get_signing_key(
 ) -> bytes:
     """Get signing key."""
 
-    date_key = _hmac_hash(
-        ("AWS4" + secret_key).encode(),
-        time.to_signer_date(date).encode(),
+    date_key = cast(
+        bytes,
+        _hmac_hash(
+            ("AWS4" + secret_key).encode(),
+            time.to_signer_date(date).encode(),
+        ),
     )
-    if isinstance(date_key, str):
-        date_key = date_key.encode()
-
-    date_region_key = _hmac_hash(date_key, region.encode())
-    if isinstance(date_region_key, str):
-        date_region_key = date_region_key.encode()
-
-    date_region_service_key = _hmac_hash(
-        date_region_key, service_name.encode(),
+    date_region_key = cast(bytes, _hmac_hash(date_key, region.encode()))
+    date_region_service_key = cast(
+        bytes,
+        _hmac_hash(date_region_key, service_name.encode()),
     )
-    if isinstance(date_region_service_key, str):
-        date_region_service_key = date_region_service_key.encode()
-
-    signing_key = _hmac_hash(date_region_service_key, b"aws4_request")
-    if isinstance(signing_key, str):
-        signing_key = signing_key.encode()
-
-    return signing_key
+    return cast(
+        bytes,
+        _hmac_hash(date_region_service_key, b"aws4_request"),
+    )
 
 
 def _get_signature(signing_key: bytes, string_to_sign: str) -> str:
     """Get signature."""
 
-    return str(
+    return cast(
+        str,
         _hmac_hash(signing_key, string_to_sign.encode(), hexdigest=True),
     )
 
