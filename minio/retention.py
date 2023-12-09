@@ -16,48 +16,55 @@
 
 """Request/response of PutObjectRetention and GetObjectRetention APIs."""
 
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
 
-import datetime
+from datetime import datetime
+from typing import Type, TypeVar, cast
+from xml.etree import ElementTree as ET
 
 from .commonconfig import COMPLIANCE, GOVERNANCE
 from .time import from_iso8601utc, to_iso8601utc
 from .xml import Element, SubElement, findtext
 
+A = TypeVar("A", bound="Retention")
+
 
 class Retention:
     """Retention configuration."""
 
-    def __init__(self, mode, retain_until_date):
+    def __init__(self, mode: str, retain_until_date: datetime):
         if mode not in [GOVERNANCE, COMPLIANCE]:
             raise ValueError(f"mode must be {GOVERNANCE} or {COMPLIANCE}")
-        if not isinstance(retain_until_date, datetime.datetime):
+        if not isinstance(retain_until_date, datetime):
             raise ValueError(
-                "retain until date must be datetime.datetime type",
+                "retain until date must be datetime type",
             )
         self._mode = mode
         self._retain_until_date = retain_until_date
 
     @property
-    def mode(self):
+    def mode(self) -> str:
         """Get mode."""
         return self._mode
 
     @property
-    def retain_until_date(self):
+    def retain_until_date(self) -> datetime:
         """Get retain util date."""
         return self._retain_until_date
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[A], element: ET.Element) -> A:
         """Create new object with values from XML element."""
-        mode = findtext(element, "Mode", True)
-        retain_until_date = from_iso8601utc(
-            findtext(element, "RetainUntilDate", True),
+        mode = cast(str, findtext(element, "Mode", True))
+        retain_until_date = cast(
+            datetime,
+            from_iso8601utc(
+                cast(str, findtext(element, "RetainUntilDate", True)),
+            ),
         )
         return cls(mode, retain_until_date)
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
         element = Element("Retention")
         SubElement(element, "Mode", self._mode)

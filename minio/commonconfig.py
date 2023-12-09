@@ -17,10 +17,12 @@
 """Common request/response configuration of S3 APIs."""
 # pylint: disable=invalid-name
 
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
 
-import datetime
 from abc import ABCMeta
+from datetime import datetime
+from typing import Type, TypeVar, cast
+from xml.etree import ElementTree as ET
 
 from .error import MinioException
 from .helpers import quote
@@ -39,15 +41,17 @@ _MAX_VALUE_LENGTH = 256
 _MAX_OBJECT_TAG_COUNT = 10
 _MAX_TAG_COUNT = 50
 
+A = TypeVar("A", bound="Tags")
+
 
 class Tags(dict):
     """dict extended to bucket/object tags."""
 
-    def __init__(self, for_object=False):
+    def __init__(self, for_object: bool = False):
         self._for_object = for_object
         super().__init__()
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: str):
         limit = _MAX_OBJECT_TAG_COUNT if self._for_object else _MAX_TAG_COUNT
         if len(self) == limit:
             tag_type = "object" if self._for_object else "bucket"
@@ -59,28 +63,30 @@ class Tags(dict):
         super().__setitem__(key, value)
 
     @classmethod
-    def new_bucket_tags(cls):
+    def new_bucket_tags(cls: Type[A]) -> A:
         """Create new bucket tags."""
         return cls()
 
     @classmethod
-    def new_object_tags(cls):
+    def new_object_tags(cls: Type[A]) -> A:
         """Create new object tags."""
         return cls(True)
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[A], element: ET.Element) -> A:
         """Create new object with values from XML element."""
         elements = findall(element, "Tag")
         obj = cls()
         for tag in elements:
-            key = findtext(tag, "Key", True)
-            value = findtext(tag, "Value", True)
+            key = cast(str, findtext(tag, "Key", True))
+            value = cast(str, findtext(tag, "Value", True))
             obj[key] = value
         return obj
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
+        if element is None:
+            raise ValueError("element must be provided")
         for key, value in self.items():
             tag = SubElement(element, "Tag")
             SubElement(tag, "Key", key)
@@ -88,10 +94,13 @@ class Tags(dict):
         return element
 
 
+B = TypeVar("B", bound="Tag")
+
+
 class Tag:
     """Tag."""
 
-    def __init__(self, key, value):
+    def __init__(self, key: str, value: str):
         if not key:
             raise ValueError("key must be provided")
         if value is None:
@@ -100,54 +109,59 @@ class Tag:
         self._value = value
 
     @property
-    def key(self):
+    def key(self) -> str:
         """Get key."""
         return self._key
 
     @property
-    def value(self):
+    def value(self) -> str:
         """Get value."""
         return self._value
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[B], element: ET.Element) -> B:
         """Create new object with values from XML element."""
-        element = find(element, "Tag")
-        key = findtext(element, "Key", True)
-        value = findtext(element, "Value", True)
+        element = cast(ET.Element, find(element, "Tag", True))
+        key = cast(str, findtext(element, "Key", True))
+        value = cast(str, findtext(element, "Value", True))
         return cls(key, value)
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
+        if element is None:
+            raise ValueError("element must be provided")
         element = SubElement(element, "Tag")
         SubElement(element, "Key", self._key)
         SubElement(element, "Value", self._value)
         return element
 
 
+C = TypeVar("C", bound="AndOperator")
+
+
 class AndOperator:
     """AND operator."""
 
-    def __init__(self, prefix=None, tags=None):
+    def __init__(self, prefix: str | None = None, tags: Tags | None = None):
         if prefix is None and not tags:
             raise ValueError("at least prefix or tags must be provided")
         self._prefix = prefix
         self._tags = tags
 
     @property
-    def prefix(self):
+    def prefix(self) -> str | None:
         """Get prefix."""
         return self._prefix
 
     @property
-    def tags(self):
+    def tags(self) -> Tags | None:
         """Get tags."""
         return self._tags
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[C], element: ET.Element) -> C:
         """Create new object with values from XML element."""
-        element = find(element, "And")
+        element = cast(ET.Element, find(element, "And", True))
         prefix = findtext(element, "Prefix")
         tags = (
             None if find(element, "Tag") is None
@@ -155,8 +169,10 @@ class AndOperator:
         )
         return cls(prefix, tags)
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
+        if element is None:
+            raise ValueError("element must be provided")
         element = SubElement(element, "And")
         if self._prefix is not None:
             SubElement(element, "Prefix", self._prefix)
@@ -165,10 +181,18 @@ class AndOperator:
         return element
 
 
+D = TypeVar("D", bound="Filter")
+
+
 class Filter:
     """Lifecycle rule filter."""
 
-    def __init__(self, and_operator=None, prefix=None, tag=None):
+    def __init__(
+            self,
+            and_operator: AndOperator | None = None,
+            prefix: str | None = None,
+            tag: Tag | None = None,
+    ):
         valid = (
             (and_operator is not None) ^
             (prefix is not None) ^
@@ -181,24 +205,24 @@ class Filter:
         self._tag = tag
 
     @property
-    def and_operator(self):
+    def and_operator(self) -> AndOperator | None:
         """Get AND operator."""
         return self._and_operator
 
     @property
-    def prefix(self):
+    def prefix(self) -> str | None:
         """Get prefix."""
         return self._prefix
 
     @property
-    def tag(self):
+    def tag(self) -> Tag | None:
         """Get tag."""
         return self._tag
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[D], element: ET.Element) -> D:
         """Create new object with values from XML element."""
-        element = find(element, "Filter")
+        element = cast(ET.Element, find(element, "Filter", True))
         and_operator = (
             None if find(element, "And") is None
             else AndOperator.fromxml(element)
@@ -207,8 +231,10 @@ class Filter:
         tag = None if find(element, "Tag") is None else Tag.fromxml(element)
         return cls(and_operator, prefix, tag)
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
+        if element is None:
+            raise ValueError("element must be provided")
         element = SubElement(element, "Filter")
         if self._and_operator:
             self._and_operator.toxml(element)
@@ -223,7 +249,11 @@ class BaseRule:
     """Base rule class for Replication and Lifecycle."""
     __metaclass__ = ABCMeta
 
-    def __init__(self, rule_filter=None, rule_id=None):
+    def __init__(
+            self,
+            rule_filter: Filter | None = None,
+            rule_id: str | None = None,
+    ):
         if rule_id is not None:
             rule_id = rule_id.strip()
             if not rule_id:
@@ -234,25 +264,27 @@ class BaseRule:
         self._rule_id = rule_id
 
     @property
-    def rule_filter(self):
+    def rule_filter(self) -> Filter | None:
         """Get replication rule filter."""
         return self._rule_filter
 
     @property
-    def rule_id(self):
+    def rule_id(self) -> str | None:
         """Get rule ID."""
         return self._rule_id
 
     @staticmethod
-    def parsexml(element):
+    def parsexml(element: ET.Element) -> tuple[Filter | None, str | None]:
         """Parse XML and return filter and ID."""
         return (
             None if find(element, "Filter") is None
             else Filter.fromxml(element)
         ), findtext(element, "ID")
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
+        if element is None:
+            raise ValueError("element must be provided")
         if self._rule_filter:
             self._rule_filter.toxml(element)
         if self._rule_id is not None:
@@ -260,7 +292,7 @@ class BaseRule:
         return element
 
 
-def check_status(status):
+def check_status(status: str):
     """Validate status."""
     if status not in [ENABLED, DISABLED]:
         raise ValueError("status must be 'Enabled' or 'Disabled'")
@@ -270,10 +302,20 @@ class ObjectConditionalReadArgs:
     """Base argument class holds condition properties for reading object."""
     __metaclass__ = ABCMeta
 
-    def __init__(self, bucket_name, object_name, region=None, version_id=None,
-                 ssec=None, offset=None, length=None, match_etag=None,
-                 not_match_etag=None, modified_since=None,
-                 unmodified_since=None):
+    def __init__(
+            self,
+            bucket_name: str,
+            object_name: str,
+            region: str | None = None,
+            version_id: str | None = None,
+            ssec: SseCustomerKey | None = None,
+            offset: int | None = None,
+            length: int | None = None,
+            match_etag: str | None = None,
+            not_match_etag: str | None = None,
+            modified_since: str | None = None,
+            unmodified_since: str | None = None,
+    ):
         if ssec is not None and not isinstance(ssec, SseCustomerKey):
             raise ValueError("ssec must be SseCustomerKey type")
         if offset is not None and offset < 0:
@@ -286,14 +328,14 @@ class ObjectConditionalReadArgs:
             raise ValueError("not_match_etag must not be empty")
         if (
                 modified_since is not None and
-                not isinstance(modified_since, datetime.datetime)
+                not isinstance(modified_since, datetime)
         ):
-            raise ValueError("modified_since must be datetime.datetime type")
+            raise ValueError("modified_since must be datetime type")
         if (
                 unmodified_since is not None and
-                not isinstance(unmodified_since, datetime.datetime)
+                not isinstance(unmodified_since, datetime)
         ):
-            raise ValueError("unmodified_since must be datetime.datetime type")
+            raise ValueError("unmodified_since must be datetime type")
 
         self._bucket_name = bucket_name
         self._object_name = object_name
@@ -308,61 +350,61 @@ class ObjectConditionalReadArgs:
         self._unmodified_since = unmodified_since
 
     @property
-    def bucket_name(self):
+    def bucket_name(self) -> str:
         """Get bucket name."""
         return self._bucket_name
 
     @property
-    def object_name(self):
+    def object_name(self) -> str:
         """Get object name."""
         return self._object_name
 
     @property
-    def region(self):
+    def region(self) -> str | None:
         """Get region."""
         return self._region
 
     @property
-    def version_id(self):
+    def version_id(self) -> str | None:
         """Get version ID."""
         return self._version_id
 
     @property
-    def ssec(self):
+    def ssec(self) -> SseCustomerKey | None:
         """Get SSE-C."""
         return self._ssec
 
     @property
-    def offset(self):
+    def offset(self) -> int | None:
         """Get offset."""
         return self._offset
 
     @property
-    def length(self):
+    def length(self) -> int | None:
         """Get length."""
         return self._length
 
     @property
-    def match_etag(self):
+    def match_etag(self) -> str | None:
         """Get match ETag condition."""
         return self._match_etag
 
     @property
-    def not_match_etag(self):
+    def not_match_etag(self) -> str | None:
         """Get not-match ETag condition."""
         return self._not_match_etag
 
     @property
-    def modified_since(self):
+    def modified_since(self) -> str | None:
         """Get modified since condition."""
         return self._modified_since
 
     @property
-    def unmodified_since(self):
+    def unmodified_since(self) -> str | None:
         """Get unmodified since condition."""
         return self._unmodified_since
 
-    def gen_copy_headers(self):
+    def gen_copy_headers(self) -> dict[str, str]:
         """Generate copy source headers."""
         copy_source = quote("/" + self._bucket_name + "/" + self._object_name)
         if self._version_id:
@@ -386,10 +428,13 @@ class ObjectConditionalReadArgs:
         return headers
 
 
+E = TypeVar("E", bound="CopySource")
+
+
 class CopySource(ObjectConditionalReadArgs):
     """A source object definition for copy_object method."""
     @classmethod
-    def of(cls, src):
+    def of(cls: Type[E], src: ObjectConditionalReadArgs) -> E:
         """Create CopySource from another source."""
         return cls(
             src.bucket_name, src.object_name, src.region, src.version_id,
@@ -398,21 +443,34 @@ class CopySource(ObjectConditionalReadArgs):
         )
 
 
+F = TypeVar("F", bound="ComposeSource")
+
+
 class ComposeSource(ObjectConditionalReadArgs):
     """A source object definition for compose_object method."""
 
-    def __init__(self, bucket_name, object_name, region=None, version_id=None,
-                 ssec=None, offset=None, length=None, match_etag=None,
-                 not_match_etag=None, modified_since=None,
-                 unmodified_since=None):
+    def __init__(
+            self,
+            bucket_name: str,
+            object_name: str,
+            region: str | None = None,
+            version_id: str | None = None,
+            ssec: SseCustomerKey | None = None,
+            offset: int | None = None,
+            length: int | None = None,
+            match_etag: str | None = None,
+            not_match_etag: str | None = None,
+            modified_since: str | None = None,
+            unmodified_since: str | None = None,
+    ):
         super().__init__(
             bucket_name, object_name, region, version_id, ssec, offset, length,
             match_etag, not_match_etag, modified_since, unmodified_since,
         )
-        self._object_size = None
-        self._headers = None
+        self._object_size: int | None = None
+        self._headers: dict[str, str] | None = None
 
-    def _validate_size(self, object_size):
+    def _validate_size(self, object_size: int):
         """Validate object size with offset and length."""
         def make_error(name, value):
             ver = ("?versionId="+self._version_id) if self._version_id else ""
@@ -427,10 +485,10 @@ class ComposeSource(ObjectConditionalReadArgs):
             if self._length > object_size:
                 raise make_error("length", self._length)
             offset = self._offset or 0
-            if offset+self.length > object_size:
+            if offset+self._length > object_size:
                 raise make_error("compose size", offset+self._length)
 
-    def build_headers(self, object_size, etag):
+    def build_headers(self, object_size: int, etag: str):
         """Build headers."""
         self._validate_size(object_size)
         self._object_size = object_size
@@ -439,7 +497,7 @@ class ComposeSource(ObjectConditionalReadArgs):
         self._headers = headers
 
     @property
-    def object_size(self):
+    def object_size(self) -> int | None:
         """Get object size."""
         if self._object_size is None:
             raise MinioException(
@@ -449,7 +507,7 @@ class ComposeSource(ObjectConditionalReadArgs):
         return self._object_size
 
     @property
-    def headers(self):
+    def headers(self) -> dict[str, str]:
         """Get headers."""
         if self._headers is None:
             raise MinioException(
@@ -459,7 +517,7 @@ class ComposeSource(ObjectConditionalReadArgs):
         return self._headers.copy()
 
     @classmethod
-    def of(cls, src):
+    def of(cls: Type[F], src: ObjectConditionalReadArgs) -> F:
         """Create ComposeSource from another source."""
         return cls(
             src.bucket_name, src.object_name, src.region, src.version_id,
@@ -471,8 +529,14 @@ class ComposeSource(ObjectConditionalReadArgs):
 class SnowballObject:
     """A source object definition for upload_snowball_objects method."""
 
-    def __init__(self, object_name, filename=None, data=None, length=None,
-                 mod_time=None):
+    def __init__(
+            self,
+            object_name: str,
+            filename: str | None = None,
+            data: bytes | None = None,
+            length: int | None = None,
+            mod_time: datetime | None = None,
+    ):
         self._object_name = object_name
         if (filename is not None) ^ (data is not None):
             self._filename = filename
@@ -480,34 +544,31 @@ class SnowballObject:
             self._length = length
         else:
             raise ValueError("only one of filename or data must be provided")
-        if (
-                mod_time is not None and
-                not isinstance(mod_time, datetime.datetime)
-        ):
-            raise ValueError("mod_time must be datetime.datetime type")
+        if mod_time is not None and not isinstance(mod_time, datetime):
+            raise ValueError("mod_time must be datetime type")
         self._mod_time = mod_time
 
     @property
-    def object_name(self):
+    def object_name(self) -> str:
         """Get object name."""
         return self._object_name
 
     @property
-    def filename(self):
+    def filename(self) -> str | None:
         """Get filename."""
         return self._filename
 
     @property
-    def data(self):
+    def data(self) -> bytes | None:
         """Get data."""
         return self._data
 
     @property
-    def length(self):
+    def length(self) -> int | None:
         """Get length."""
         return self._length
 
     @property
-    def mod_time(self):
+    def mod_time(self) -> datetime | None:
         """Get modification time."""
         return self._mod_time
