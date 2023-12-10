@@ -69,6 +69,9 @@ class MockConnection(object):
     def __init__(self):
         self.requests = []
 
+    def clear(self):
+        pass
+
     def mock_add_request(self, request):
         self.requests.append(request)
 

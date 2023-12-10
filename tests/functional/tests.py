@@ -140,7 +140,9 @@ def _call_test(func, *args, **kwargs):
     if log_entry.get("method"):
         # pylint: disable=deprecated-method
         args_string = ', '.join(getfullargspec(log_entry["method"]).args[1:])
-        log_entry["function"] = f"{log_entry['method'].__name__}({args_string})"
+        log_entry["function"] = (
+            f"{log_entry['method'].__name__}({args_string})"
+        )
     log_entry["args"] = {
         k: v for k, v in log_entry.get("args", {}).items() if v
     }

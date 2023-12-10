@@ -16,20 +16,28 @@
 
 """XML utility module."""
 
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
 
 import io
+from typing import Type, TypeVar
 from xml.etree import ElementTree as ET
+
+from typing_extensions import Protocol
 
 _S3_NAMESPACE = "http://s3.amazonaws.com/doc/2006-03-01/"
 
 
-def Element(tag, namespace=_S3_NAMESPACE):  # pylint: disable=invalid-name
+def Element(  # pylint: disable=invalid-name
+    tag: str,
+    namespace: str = _S3_NAMESPACE,
+) -> ET.Element:
     """Create ElementTree.Element with tag and namespace."""
-    return ET.Element(tag, {'xmlns': namespace} if namespace else {})
+    return ET.Element(tag, {"xmlns": namespace} if namespace else {})
 
 
-def SubElement(parent, tag, text=None):  # pylint: disable=invalid-name
+def SubElement(  # pylint: disable=invalid-name
+    parent: ET.Element, tag: str, text: str | None = None
+) -> ET.Element:
     """Create ElementTree.SubElement on parent with tag and text."""
     element = ET.SubElement(parent, tag)
     if text is not None:
@@ -37,7 +45,7 @@ def SubElement(parent, tag, text=None):  # pylint: disable=invalid-name
     return element
 
 
-def _get_namespace(element):
+def _get_namespace(element: ET.Element) -> str:
     """Exact namespace if found."""
     start = element.tag.find("{")
     if start < 0:
@@ -49,7 +57,7 @@ def _get_namespace(element):
     return element.tag[start:end]
 
 
-def findall(element, name):
+def findall(element: ET.Element, name: str) -> list[ET.Element]:
     """Namespace aware ElementTree.Element.findall()."""
     namespace = _get_namespace(element)
     return element.findall(
@@ -58,42 +66,72 @@ def findall(element, name):
     )
 
 
-def find(element, name):
+def find(
+        element: ET.Element,
+        name: str,
+        strict: bool = False,
+) -> ET.Element | None:
     """Namespace aware ElementTree.Element.find()."""
     namespace = _get_namespace(element)
-    return element.find(
+    elem = element.find(
         "ns:" + name if namespace else name,
         {"ns": namespace} if namespace else {},
     )
+    if strict and elem is None:
+        raise ValueError(f"XML element <{name}> not found")
+    return elem
 
 
-def findtext(element, name, strict=False):
+def findtext(
+    element: ET.Element,
+    name: str,
+    strict: bool = False,
+) -> str | None:
     """
     Namespace aware ElementTree.Element.findtext() with strict flag
     raises ValueError if element name not exist.
     """
-    element = find(element, name)
-    if element is None:
-        if strict:
-            raise ValueError(f"XML element <{name}> not found")
-        return None
-    return element.text or ""
+    elem = find(element, name, strict=strict)
+    return None if elem is None else (elem.text or "")
 
 
-def unmarshal(cls, xmlstring):
+A = TypeVar("A")
+
+
+class FromXmlType(Protocol):
+    """typing stub for class with `fromxml` method"""
+
+    @classmethod
+    def fromxml(cls: Type[A], element: ET.Element) -> A:
+        """Create python object with values from XML element."""
+
+
+B = TypeVar("B", bound=FromXmlType)
+
+
+def unmarshal(cls: Type[B], xmlstring: str) -> B:
     """Unmarshal given XML string to an object of passed class."""
     return cls.fromxml(ET.fromstring(xmlstring))
 
 
-def getbytes(element):
+def getbytes(element: ET.Element) -> bytes:
     """Convert ElementTree.Element to bytes."""
-    data = io.BytesIO()
-    ET.ElementTree(element).write(
-        data, encoding=None, xml_declaration=False,
-    )
-    return data.getvalue()
+    with io.BytesIO() as data:
+        ET.ElementTree(element).write(
+            data,
+            encoding=None,
+            xml_declaration=False,
+        )
+        return data.getvalue()
 
 
-def marshal(obj):
+class ToXmlType(Protocol):
+    """typing stub for class with `toxml` method"""
+
+    def toxml(self, element: ET.Element | None) -> ET.Element:
+        """Convert python object to ElementTree.Element."""
+
+
+def marshal(obj: ToXmlType) -> bytes:
     """Get XML data as bytes of ElementTree.Element."""
     return getbytes(obj.toxml(None))
