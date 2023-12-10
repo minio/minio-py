@@ -37,7 +37,7 @@ def Element(  # pylint: disable=invalid-name
 
 def SubElement(  # pylint: disable=invalid-name
     parent: ET.Element, tag: str, text: str | None = None
-) -> ET.SubElement:
+) -> ET.Element:
     """Create ElementTree.SubElement on parent with tag and text."""
     element = ET.SubElement(parent, tag)
     if text is not None:
@@ -66,13 +66,20 @@ def findall(element: ET.Element, name: str) -> list[ET.Element]:
     )
 
 
-def find(element: ET.Element, name: str) -> ET.Element | None:
+def find(
+        element: ET.Element,
+        name: str,
+        strict: bool = False,
+) -> ET.Element | None:
     """Namespace aware ElementTree.Element.find()."""
     namespace = _get_namespace(element)
-    return element.find(
+    elem = element.find(
         "ns:" + name if namespace else name,
         {"ns": namespace} if namespace else {},
     )
+    if strict and elem is None:
+        raise ValueError(f"XML element <{name}> not found")
+    return elem
 
 
 def findtext(
@@ -84,29 +91,25 @@ def findtext(
     Namespace aware ElementTree.Element.findtext() with strict flag
     raises ValueError if element name not exist.
     """
-    element = find(element, name)
-    if element is None:
-        if strict:
-            raise ValueError(f"XML element <{name}> not found")
-        return None
-    return element.text or ""
+    elem = find(element, name, strict=strict)
+    return None if elem is None else (elem.text or "")
 
 
-K = TypeVar("K")
+A = TypeVar("A")
 
 
 class FromXmlType(Protocol):
     """typing stub for class with `fromxml` method"""
 
     @classmethod
-    def fromxml(cls: Type[K], element: ET.Element) -> K:
+    def fromxml(cls: Type[A], element: ET.Element) -> A:
         """Create python object with values from XML element."""
 
 
-T = TypeVar("T", bound=FromXmlType)
+B = TypeVar("B", bound=FromXmlType)
 
 
-def unmarshal(cls: Type[T], xmlstring: str) -> T:
+def unmarshal(cls: Type[B], xmlstring: str) -> B:
     """Unmarshal given XML string to an object of passed class."""
     return cls.fromxml(ET.fromstring(xmlstring))
 
