@@ -165,7 +165,8 @@ class Minio:  # pylint: disable=too-many-public-methods
         )
 
     def __del__(self):
-        self._http.clear()
+        if hasattr(self, "_http"):  # Only required for unit test run
+            self._http.clear()
 
     def _handle_redirect_response(
             self, method, bucket_name, response, retry=False,
@@ -1853,7 +1854,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         )
 
     def stat_object(self, bucket_name, object_name, ssec=None, version_id=None,
-                    extra_query_params=None):
+                    extra_headers=None, extra_query_params=None):
         """
         Get object information and metadata of an object.
 
@@ -1861,6 +1862,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         :param object_name: Object name in the bucket.
         :param ssec: Server-side encryption customer key.
         :param version_id: Version ID of the object.
+        :param extra_headers: Extra HTTP headers for advanced usage.
         :param extra_query_params: Extra query parameters for advanced usage.
         :return: :class:`Object <Object>`.
 
@@ -1886,6 +1888,9 @@ class Minio:  # pylint: disable=too-many-public-methods
         check_ssec(ssec)
 
         headers = ssec.headers() if ssec else {}
+        if extra_headers:
+            headers.update(extra_headers)
+
         query_params = extra_query_params or {}
         query_params.update({"versionId": version_id} if version_id else {})
         response = self._execute(
@@ -1911,7 +1916,12 @@ class Minio:  # pylint: disable=too-many-public-methods
             version_id=response.headers.get("x-amz-version-id"),
         )
 
-    def remove_object(self, bucket_name, object_name, version_id=None):
+    def remove_object(
+        self,
+        bucket_name: str,
+        object_name: str,
+        version_id: str | None = None
+    ) -> None:
         """
         Remove an object.
 
@@ -1997,9 +2007,15 @@ class Minio:  # pylint: disable=too-many-public-methods
                 print("error occurred when deleting object", error)
 
             # Remove a prefix recursively.
-            delete_object_list = map(
-                lambda x: DeleteObject(x.object_name),
-                client.list_objects("my-bucket", "my/prefix/", recursive=True),
+            delete_object_list = list(
+                map(
+                    lambda x: DeleteObject(x.object_name),
+                    client.list_objects(
+                        "my-bucket",
+                        "my/prefix/",
+                        recursive=True,
+                    ),
+                )
             )
             errors = client.remove_objects("my-bucket", delete_object_list)
             for error in errors:
@@ -2769,15 +2785,17 @@ class Minio:  # pylint: disable=too-many-public-methods
         else:
             length = os.stat(name).st_size
 
+        part_size = 0 if length < MIN_PART_SIZE else length
+
         if name:
             return self.fput_object(bucket_name, object_name, staging_filename,
                                     metadata=metadata, sse=sse,
                                     tags=tags, retention=retention,
-                                    legal_hold=legal_hold, part_size=length)
+                                    legal_hold=legal_hold, part_size=part_size)
         return self.put_object(bucket_name, object_name, fileobj,
                                length, metadata=metadata, sse=sse,
                                tags=tags, retention=retention,
-                               legal_hold=legal_hold, part_size=length)
+                               legal_hold=legal_hold, part_size=part_size)
 
     def _list_objects(  # pylint: disable=too-many-arguments,too-many-branches
             self,

@@ -16,29 +16,34 @@
 
 """Request/response of PutObjectLegalHold and GetObjectLegalHold S3 APIs."""
 
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
+
+from typing import Type, TypeVar
+from xml.etree import ElementTree as ET
 
 from .xml import Element, SubElement, findtext
+
+A = TypeVar("A", bound="LegalHold")
 
 
 class LegalHold:
     """Legal hold configuration."""
 
-    def __init__(self, status=False):
+    def __init__(self, status: bool = False):
         self._status = status
 
     @property
-    def status(self):
+    def status(self) -> bool:
         """Get status."""
         return self._status
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[A], element: ET.Element) -> A:
         """Create new object with values from XML element."""
         status = findtext(element, "Status")
         return cls(status == "ON")
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
         element = Element("LegalHold")
         SubElement(element, "Status", "ON" if self._status is True else "OFF")

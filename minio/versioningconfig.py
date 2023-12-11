@@ -16,7 +16,10 @@
 
 """Request/response of PutBucketVersioning and GetBucketVersioning APIs."""
 
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
+
+from typing import Type, TypeVar
+from xml.etree import ElementTree as ET
 
 from .commonconfig import DISABLED, ENABLED
 from .xml import Element, SubElement, findtext
@@ -24,11 +27,17 @@ from .xml import Element, SubElement, findtext
 OFF = "Off"
 SUSPENDED = "Suspended"
 
+A = TypeVar("A", bound="VersioningConfig")
+
 
 class VersioningConfig:
     """Versioning configuration."""
 
-    def __init__(self, status=None, mfa_delete=None):
+    def __init__(
+            self,
+            status: str | None = None,
+            mfa_delete: str | None = None,
+    ):
         if status is not None and status not in [ENABLED, SUSPENDED]:
             raise ValueError(f"status must be {ENABLED} or {SUSPENDED}")
         if mfa_delete is not None and mfa_delete not in [ENABLED, DISABLED]:
@@ -37,23 +46,23 @@ class VersioningConfig:
         self._mfa_delete = mfa_delete
 
     @property
-    def status(self):
+    def status(self) -> str:
         """Get status."""
         return self._status or OFF
 
     @property
-    def mfa_delete(self):
+    def mfa_delete(self) -> str | None:
         """Get MFA delete."""
         return self._mfa_delete
 
     @classmethod
-    def fromxml(cls, element):
+    def fromxml(cls: Type[A], element: ET.Element) -> A:
         """Create new object with values from XML element."""
         status = findtext(element, "Status")
         mfa_delete = findtext(element, "MFADelete")
         return cls(status, mfa_delete)
 
-    def toxml(self, element):
+    def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
         element = Element("VersioningConfiguration")
         if self._status:
