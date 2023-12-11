@@ -22,5 +22,5 @@ from .providers import (AssumeRoleProvider, AWSConfigProvider,
                         CertificateIdentityProvider, ChainedProvider,
                         ClientGrantsProvider, EnvAWSProvider, EnvMinioProvider,
                         IamAwsProvider, LdapIdentityProvider,
-                        MinioClientConfigProvider, StaticProvider,
+                        MinioClientConfigProvider, Provider, StaticProvider,
                         WebIdentityProvider)

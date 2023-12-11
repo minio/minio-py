@@ -16,6 +16,8 @@
 
 """Credential providers."""
 
+from __future__ import annotations
+
 import configparser
 import ipaddress
 import json
@@ -26,11 +28,14 @@ import time
 from abc import ABCMeta, abstractmethod
 from datetime import timedelta
 from pathlib import Path
+from typing import Callable, cast
 from urllib.parse import urlencode, urlsplit
-from xml.etree import ElementTree
+from xml.etree import ElementTree as ET
 
 import certifi
-import urllib3
+from urllib3.poolmanager import PoolManager
+from urllib3.response import BaseHTTPResponse
+from urllib3.util import Retry, parse_url
 
 from minio.helpers import sha256_hash
 from minio.signer import sign_v4_sts
@@ -44,21 +49,27 @@ _MAX_DURATION_SECONDS = int(timedelta(days=7).total_seconds())
 _DEFAULT_DURATION_SECONDS = int(timedelta(hours=1).total_seconds())
 
 
-def _parse_credentials(data, name):
+def _parse_credentials(data: str, name: str) -> Credentials:
     """Parse data containing credentials XML."""
-    element = ElementTree.fromstring(data)
-    element = find(element, name)
-    element = find(element, "Credentials")
+    element = ET.fromstring(data)
+    element = cast(ET.Element, find(element, name, True))
+    element = cast(ET.Element, find(element, "Credentials", True))
     expiration = from_iso8601utc(findtext(element, "Expiration", True))
     return Credentials(
-        findtext(element, "AccessKeyId", True),
-        findtext(element, "SecretAccessKey", True),
+        cast(str, findtext(element, "AccessKeyId", True)),
+        cast(str, findtext(element, "SecretAccessKey", True)),
         findtext(element, "SessionToken", True),
         expiration,
     )
 
 
-def _urlopen(http_client, method, url, body=None, headers=None):
+def _urlopen(
+        http_client: PoolManager,
+        method: str,
+        url: str,
+        body: str | bytes | None = None,
+        headers: dict[str, str | list[str] | tuple[str]] | None = None,
+) -> BaseHTTPResponse:
     """Wrapper of urlopen() handles HTTP status code."""
     res = http_client.urlopen(method, url, body=body, headers=headers)
     if res.status not in [200, 204, 206]:
@@ -66,7 +77,7 @@ def _urlopen(http_client, method, url, body=None, headers=None):
     return res
 
 
-def _user_home_dir():
+def _user_home_dir() -> str:
     """Return current user home folder."""
     return (
         os.environ.get("HOME") or
@@ -80,7 +91,7 @@ class Provider:  # pylint: disable=too-few-public-methods
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def retrieve(self):
+    def retrieve(self) -> Credentials:
         """Retrieve credentials and its expiry if available."""
 
 
@@ -88,16 +99,24 @@ class AssumeRoleProvider(Provider):
     """Assume-role credential provider."""
 
     def __init__(
-            self, sts_endpoint, access_key, secret_key, duration_seconds=0,
-            policy=None, region=None, role_arn=None, role_session_name=None,
-            external_id=None, http_client=None,
+            self,
+            sts_endpoint: str,
+            access_key: str,
+            secret_key: str,
+            duration_seconds: int = 0,
+            policy: str | None = None,
+            region: str | None = None,
+            role_arn: str | None = None,
+            role_session_name: str | None = None,
+            external_id: str | None = None,
+            http_client: PoolManager | None = None,
     ):
         self._sts_endpoint = sts_endpoint
         self._access_key = access_key
         self._secret_key = secret_key
         self._region = region or ""
-        self._http_client = http_client or urllib3.PoolManager(
-            retries=urllib3.Retry(
+        self._http_client = http_client or PoolManager(
+            retries=Retry(
                 total=5,
                 backoff_factor=0.2,
                 status_forcelist=[500, 502, 503, 504],
@@ -132,10 +151,10 @@ class AssumeRoleProvider(Provider):
                 (url.scheme == "http" and url.port == 80) or
                 (url.scheme == "https" and url.port == 443)
         ):
-            self._host = url.hostname
-        self._credentials = None
+            self._host = cast(str, url.hostname)
+        self._credentials: Credentials | None = None
 
-    def retrieve(self):
+    def retrieve(self) -> Credentials:
         """Retrieve credentials."""
         if self._credentials and not self._credentials.is_expired():
             return self._credentials
@@ -173,12 +192,12 @@ class AssumeRoleProvider(Provider):
 class ChainedProvider(Provider):
     """Chained credential provider."""
 
-    def __init__(self, providers):
+    def __init__(self, providers: list[Provider]):
         self._providers = providers
-        self._provider = None
-        self._credentials = None
+        self._provider: Provider | None = None
+        self._credentials: Credentials | None = None
 
-    def retrieve(self):
+    def retrieve(self) -> Credentials:
         """Retrieve credentials from one of available provider."""
         if self._credentials and not self._credentials.is_expired():
             return self._credentials
@@ -206,16 +225,22 @@ class ChainedProvider(Provider):
 class EnvAWSProvider(Provider):
     """Credential provider from AWS environment variables."""
 
-    def retrieve(self):
+    def retrieve(self) -> Credentials:
         """Retrieve credentials."""
         return Credentials(
             access_key=(
-                os.environ.get("AWS_ACCESS_KEY_ID") or
-                os.environ.get("AWS_ACCESS_KEY")
+                cast(
+                    str,
+                    os.environ.get("AWS_ACCESS_KEY_ID") or
+                    os.environ.get("AWS_ACCESS_KEY"),
+                )
             ),
             secret_key=(
-                os.environ.get("AWS_SECRET_ACCESS_KEY") or
-                os.environ.get("AWS_SECRET_KEY")
+                cast(
+                    str,
+                    os.environ.get("AWS_SECRET_ACCESS_KEY") or
+                    os.environ.get("AWS_SECRET_KEY"),
+                )
             ),
             session_token=os.environ.get("AWS_SESSION_TOKEN"),
         )
@@ -224,18 +249,22 @@ class EnvAWSProvider(Provider):
 class EnvMinioProvider(Provider):
     """Credential provider from MinIO environment variables."""
 
-    def retrieve(self):
+    def retrieve(self) -> Credentials:
         """Retrieve credentials."""
         return Credentials(
-            access_key=os.environ.get("MINIO_ACCESS_KEY"),
-            secret_key=os.environ.get("MINIO_SECRET_KEY"),
+            access_key=os.environ.get("MINIO_ACCESS_KEY") or "",
+            secret_key=os.environ.get("MINIO_SECRET_KEY") or "",
         )
 
 
 class AWSConfigProvider(Provider):
     """Credential provider from AWS credential file."""
 
-    def __init__(self, filename=None, profile=None):
+    def __init__(
+            self,
+            filename: str | None = None,
+            profile: str | None = None,
+    ):
         self._filename = (
             filename or
             os.environ.get("AWS_SHARED_CREDENTIALS_FILE") or
@@ -243,7 +272,7 @@ class AWSConfigProvider(Provider):
         )
         self._profile = profile or os.environ.get("AWS_PROFILE") or "default"
 
-    def retrieve(self):
+    def retrieve(self) -> Credentials:
         """Retrieve credentials from AWS configuration file."""
         parser = configparser.ConfigParser()
         parser.read(self._filename)
@@ -285,7 +314,7 @@ class AWSConfigProvider(Provider):
 class MinioClientConfigProvider(Provider):
     """Credential provider from MinIO Client configuration file."""
 
-    def __init__(self, filename=None, alias=None):
+    def __init__(self, filename: str | None = None, alias: str | None = None):
         self._filename = (
             filename or
             os.path.join(
@@ -296,7 +325,7 @@ class MinioClientConfigProvider(Provider):
         )
         self._alias = alias or os.environ.get("MINIO_ALIAS") or "s3"
 
-    def retrieve(self):
+    def retrieve(self) -> Credentials:
         """Retrieve credential value from MinIO client configuration file."""
         try:
             with open(self._filename, encoding="utf-8") as conf_file:
@@ -319,9 +348,9 @@ class MinioClientConfigProvider(Provider):
             ) from exc
 
 
-def _check_loopback_host(url):
+def _check_loopback_host(url: str):
     """Check whether host in url points only to localhost."""
-    host = urllib3.util.parse_url(url).host
+    host = cast(str, parse_url(url).host)
     try:
         addrs = set(info[4][0] for info in socket.getaddrinfo(host, None))
         for addr in addrs:
@@ -331,7 +360,7 @@ def _check_loopback_host(url):
         raise ValueError("Host " + host + " is not loopback address") from exc
 
 
-def _get_jwt_token(token_file):
+def _get_jwt_token(token_file: str) -> dict[str, str]:
     """Read and return content of token file. """
     try:
         with open(token_file, encoding="utf-8") as file:
@@ -343,10 +372,14 @@ def _get_jwt_token(token_file):
 class IamAwsProvider(Provider):
     """Credential provider using IAM roles for Amazon EC2/ECS."""
 
-    def __init__(self, custom_endpoint=None, http_client=None):
+    def __init__(
+            self,
+            custom_endpoint: str | None = None,
+            http_client: PoolManager | None = None,
+    ):
         self._custom_endpoint = custom_endpoint
-        self._http_client = http_client or urllib3.PoolManager(
-            retries=urllib3.Retry(
+        self._http_client = http_client or PoolManager(
+            retries=Retry(
                 total=5,
                 backoff_factor=0.2,
                 status_forcelist=[500, 502, 503, 504],
@@ -362,9 +395,9 @@ class IamAwsProvider(Provider):
         if self._relative_uri and not self._relative_uri.startswith("/"):
             self._relative_uri = "/" + self._relative_uri
         self._full_uri = os.environ.get("AWS_CONTAINER_CREDENTIALS_FULL_URI")
-        self._credentials = None
+        self._credentials: Credentials | None = None
 
-    def fetch(self, url):
+    def fetch(self, url: str) -> Credentials:
         """Fetch credentials from EC2/ECS. """
 
         res = _urlopen(self._http_client, "GET", url)
@@ -383,7 +416,7 @@ class IamAwsProvider(Provider):
             data["Expiration"],
         )
 
-    def retrieve(self):
+    def retrieve(self) -> Credentials:
         """Retrieve credentials from WebIdentity/EC2/ECS."""
 
         if self._credentials and not self._credentials.is_expired():
@@ -397,14 +430,14 @@ class IamAwsProvider(Provider):
                     url = f"https://sts.{self._aws_region}.amazonaws.com"
 
             provider = WebIdentityProvider(
-                lambda: _get_jwt_token(self._token_file),
+                lambda: _get_jwt_token(cast(str, self._token_file)),
                 url,
                 role_arn=self._role_arn,
                 role_session_name=self._role_session_name,
                 http_client=self._http_client,
             )
             self._credentials = provider.retrieve()
-            return self._credentials
+            return cast(Credentials, self._credentials)
 
         if self._relative_uri:
             if not url:
@@ -434,7 +467,11 @@ class LdapIdentityProvider(Provider):
     """Credential provider using AssumeRoleWithLDAPIdentity API."""
 
     def __init__(
-            self, sts_endpoint, ldap_username, ldap_password, http_client=None,
+            self,
+            sts_endpoint: str,
+            ldap_username: str,
+            ldap_password: str,
+            http_client: PoolManager | None = None,
     ):
         self._sts_endpoint = sts_endpoint + "?" + urlencode(
             {
@@ -444,16 +481,16 @@ class LdapIdentityProvider(Provider):
                 "LDAPPassword": ldap_password,
             },
         )
-        self._http_client = http_client or urllib3.PoolManager(
-            retries=urllib3.Retry(
+        self._http_client = http_client or PoolManager(
+            retries=Retry(
                 total=5,
                 backoff_factor=0.2,
                 status_forcelist=[500, 502, 503, 504],
             ),
         )
-        self._credentials = None
+        self._credentials: Credentials | None = None
 
-    def retrieve(self):
+    def retrieve(self) -> Credentials:
         """Retrieve credentials."""
 
         if self._credentials and not self._credentials.is_expired():
@@ -475,10 +512,15 @@ class LdapIdentityProvider(Provider):
 class StaticProvider(Provider):
     """Fixed credential provider."""
 
-    def __init__(self, access_key, secret_key, session_token=None):
+    def __init__(
+            self,
+            access_key: str,
+            secret_key: str,
+            session_token: str | None = None,
+    ):
         self._credentials = Credentials(access_key, secret_key, session_token)
 
-    def retrieve(self):
+    def retrieve(self) -> Credentials:
         """Return passed credentials."""
         return self._credentials
 
@@ -488,9 +530,14 @@ class WebIdentityClientGrantsProvider(Provider):
     __metaclass__ = ABCMeta
 
     def __init__(
-            self, jwt_provider_func, sts_endpoint,
-            duration_seconds=0, policy=None, role_arn=None,
-            role_session_name=None, http_client=None,
+            self,
+            jwt_provider_func: Callable[[], dict[str, str]],
+            sts_endpoint: str,
+            duration_seconds: int = 0,
+            policy: str | None = None,
+            role_arn: str | None = None,
+            role_session_name: str | None = None,
+            http_client: PoolManager | None = None,
     ):
         self._jwt_provider_func = jwt_provider_func
         self._sts_endpoint = sts_endpoint
@@ -498,20 +545,20 @@ class WebIdentityClientGrantsProvider(Provider):
         self._policy = policy
         self._role_arn = role_arn
         self._role_session_name = role_session_name
-        self._http_client = http_client or urllib3.PoolManager(
-            retries=urllib3.Retry(
+        self._http_client = http_client or PoolManager(
+            retries=Retry(
                 total=5,
                 backoff_factor=0.2,
                 status_forcelist=[500, 502, 503, 504],
             ),
         )
-        self._credentials = None
+        self._credentials: Credentials | None = None
 
     @abstractmethod
-    def _is_web_identity(self):
+    def _is_web_identity(self) -> bool:
         """Check if derived class deal with WebIdentity."""
 
-    def _get_duration_seconds(self, expiry):
+    def _get_duration_seconds(self, expiry: int) -> int:
         """Get DurationSeconds optimal value."""
 
         if self._duration_seconds:
@@ -527,7 +574,7 @@ class WebIdentityClientGrantsProvider(Provider):
             _MIN_DURATION_SECONDS if expiry < _MIN_DURATION_SECONDS else expiry
         )
 
-    def retrieve(self):
+    def retrieve(self) -> Credentials:
         """Retrieve credentials."""
 
         if self._credentials and not self._credentials.is_expired():
@@ -546,7 +593,7 @@ class WebIdentityClientGrantsProvider(Provider):
 
         if self._is_web_identity():
             query_params["Action"] = "AssumeRoleWithWebIdentity"
-            query_params["WebIdentityToken"] = jwt.get("access_token")
+            query_params["WebIdentityToken"] = jwt.get("access_token", "")
             if self._role_arn:
                 query_params["RoleArn"] = self._role_arn
                 query_params["RoleSessionName"] = (
@@ -556,7 +603,7 @@ class WebIdentityClientGrantsProvider(Provider):
                 )
         else:
             query_params["Action"] = "AssumeRoleWithClientGrants"
-            query_params["Token"] = jwt.get("access_token")
+            query_params["Token"] = jwt.get("access_token", "")
 
         url = self._sts_endpoint + "?" + urlencode(query_params)
         res = _urlopen(self._http_client, "POST", url)
@@ -577,22 +624,26 @@ class ClientGrantsProvider(WebIdentityClientGrantsProvider):
     """Credential provider using AssumeRoleWithClientGrants API."""
 
     def __init__(
-            self, jwt_provider_func, sts_endpoint,
-            duration_seconds=0, policy=None, http_client=None,
+            self,
+            jwt_provider_func: Callable[[], dict[str, str]],
+            sts_endpoint: str,
+            duration_seconds: int = 0,
+            policy: str | None = None,
+            http_client: PoolManager | None = None,
     ):
         super().__init__(
             jwt_provider_func, sts_endpoint, duration_seconds, policy,
             http_client=http_client,
         )
 
-    def _is_web_identity(self):
+    def _is_web_identity(self) -> bool:
         return False
 
 
 class WebIdentityProvider(WebIdentityClientGrantsProvider):
     """Credential provider using AssumeRoleWithWebIdentity API."""
 
-    def _is_web_identity(self):
+    def _is_web_identity(self) -> bool:
         return True
 
 
@@ -600,9 +651,14 @@ class CertificateIdentityProvider(Provider):
     """Credential provider using AssumeRoleWithCertificate API."""
 
     def __init__(
-            self, sts_endpoint, cert_file=None, key_file=None,
-            key_password=None, ca_certs=None, duration_seconds=0,
-            http_client=None,
+            self,
+            sts_endpoint: str,
+            cert_file: str | None = None,
+            key_file: str | None = None,
+            key_password: str | None = None,
+            ca_certs: str | None = None,
+            duration_seconds: int = 0,
+            http_client: PoolManager | None = None,
     ):
         if urlsplit(sts_endpoint).scheme != "https":
             raise ValueError("STS endpoint scheme must be HTTPS")
@@ -625,22 +681,22 @@ class CertificateIdentityProvider(Provider):
                 ),
             },
         )
-        self._http_client = http_client or urllib3.PoolManager(
+        self._http_client = http_client or PoolManager(
             maxsize=10,
             cert_file=cert_file,
             cert_reqs='CERT_REQUIRED',
             key_file=key_file,
             key_password=key_password,
             ca_certs=ca_certs or certifi.where(),
-            retries=urllib3.Retry(
+            retries=Retry(
                 total=5,
                 backoff_factor=0.2,
                 status_forcelist=[500, 502, 503, 504],
             ),
         )
-        self._credentials = None
+        self._credentials: Credentials | None = None
 
-    def retrieve(self):
+    def retrieve(self) -> Credentials:
         """Retrieve credentials."""
 
         if self._credentials and not self._credentials.is_expired():
