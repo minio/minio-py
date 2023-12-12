@@ -89,6 +89,11 @@ _COMMAND = Enum(
         "SITE_REPLICATION_STATUS": "site-replication/status",
         "SITE_REPLICATION_EDIT": "site-replication/edit",
         "SITE_REPLICATION_REMOVE": "site-replication/remove",
+        "SERVICE_ACCOUNT_INFO": "info-service-account",
+        "SERVICE_ACCOUNT_LIST": "list-service-accounts",
+        "SERVICE_ACCOUNT_ADD": "add-service-accounts",
+        "SERVICE_ACCOUNT_UPDATE": "update-service-account",
+        "SERVICE_ACCOUNT_DELETE": "delete-service-account",
     },
 )
 
@@ -712,3 +717,41 @@ class MinioAdmin:
             query_params={"bucket": bucket}
         )
         return response.data.decode()
+
+    def service_account_info(self, access_key):
+        """Get information about service account"""
+        response = self._url_open(
+            "GET",
+            _COMMAND.SERVICE_ACCOUNT_INFO,
+            query_params={"accessKey": access_key},
+        )
+        return response.data.decode()
+
+    def service_account_list(self, user):
+        """List service accounts of user"""
+        response = self._url_open(
+            "GET",
+            _COMMAND.SERVICE_ACCOUNT_LIST,
+            query_params={"user": user},
+        )
+        plain_data = decrypt(
+            response, self._provider.retrieve().secret_key,
+        )
+        return response.data.decode()
+
+    def service_account_add(self, access_key, secret_key):
+        """Add a new service account with the given access key and secret key"""
+        response = self._url_open(
+            "PUT",
+            _COMMAND.SERVICE_ACCOUNT_ADD,
+            query_params={"accessKey": access_key, "secretKey": secret_key},
+        )
+        return response.data.decode()
+
+    def service_account_update(self):
+        """Update an existing service account"""
+        raise NotImplementedError
+
+    def service_account_delete(self, access_key):
+        """Delete a service account"""
+        raise NotImplementedError
