@@ -737,7 +737,7 @@ class MinioAdmin:
         plain_data = decrypt(
             response, self._provider.retrieve().secret_key,
         )
-        return response.data.decode()
+        return plain_data.decode()
 
     def service_account_add(self, access_key, secret_key):
         """Add a new service account with the given access key and secret key"""
@@ -746,7 +746,10 @@ class MinioAdmin:
             _COMMAND.SERVICE_ACCOUNT_ADD,
             query_params={"accessKey": access_key, "secretKey": secret_key},
         )
-        return response.data.decode()
+        plain_data = decrypt(
+            response, self._provider.retrieve().secret_key,
+        )
+        return plain_data.decode()
 
     def service_account_update(self):
         """Update an existing service account"""
