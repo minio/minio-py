@@ -91,7 +91,7 @@ _COMMAND = Enum(
         "SITE_REPLICATION_REMOVE": "site-replication/remove",
         "SERVICE_ACCOUNT_INFO": "info-service-account",
         "SERVICE_ACCOUNT_LIST": "list-service-accounts",
-        "SERVICE_ACCOUNT_ADD": "add-service-accounts",
+        "SERVICE_ACCOUNT_ADD": "add-service-account",
         "SERVICE_ACCOUNT_UPDATE": "update-service-account",
         "SERVICE_ACCOUNT_DELETE": "delete-service-account",
     },
@@ -725,7 +725,10 @@ class MinioAdmin:
             _COMMAND.SERVICE_ACCOUNT_INFO,
             query_params={"accessKey": access_key},
         )
-        return response.data.decode()
+        plain_data = decrypt(
+            response, self._provider.retrieve().secret_key,
+        )
+        return plain_data.decode()
 
     def service_account_list(self, user):
         """List service accounts of user"""
@@ -741,10 +744,13 @@ class MinioAdmin:
 
     def service_account_add(self, access_key, secret_key):
         """Add a new service account with the given access key and secret key"""
+        body = json.dumps(
+            {"status": "enabled", "secretKey": secret_key}).encode()
         response = self._url_open(
             "PUT",
             _COMMAND.SERVICE_ACCOUNT_ADD,
-            query_params={"accessKey": access_key, "secretKey": secret_key},
+            query_params={"accessKey": access_key},
+            body=encrypt(body, self._provider.retrieve().secret_key),
         )
         plain_data = decrypt(
             response, self._provider.retrieve().secret_key,
