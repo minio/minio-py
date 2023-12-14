@@ -22,7 +22,7 @@ import time as ctime
 from datetime import datetime, timezone
 
 try:
-    from datetime import UTC
+    from datetime import UTC  # type: ignore[attr-defined]
     _UTC_IMPORTED = True
 except ImportError:
     _UTC_IMPORTED = False
