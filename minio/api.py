@@ -1224,7 +1224,7 @@ class Minio:
         check_non_empty_string(object_name)
         check_ssec(ssec)
 
-        headers = ssec.headers() if ssec else {}
+        headers = cast(DictType, ssec.headers() if ssec else {})
         headers.update(request_headers or {})
 
         if offset or length:
@@ -3171,7 +3171,7 @@ class Minio:
             "GET",
             bucket_name,
             query_params=cast(DictType, query_params),
-            headers=cast(DictType | None, extra_headers),
+            headers=cast(Union[DictType, None], extra_headers),
         )
         return ListMultipartUploadsResult(response)
 
@@ -3214,6 +3214,6 @@ class Minio:
             bucket_name,
             object_name=object_name,
             query_params=cast(DictType, query_params),
-            headers=cast(DictType | None, extra_headers),
+            headers=cast(Union[DictType, None], extra_headers),
         )
         return ListPartsResult(response)
