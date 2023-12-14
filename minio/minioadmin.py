@@ -24,7 +24,7 @@ import json
 import os
 from datetime import timedelta
 from enum import Enum
-from typing import TextIO
+from typing import TextIO, Tuple, cast
 from urllib.parse import urlunsplit
 
 import certifi
@@ -40,7 +40,7 @@ from .credentials import Provider
 from .crypto import decrypt, encrypt
 from .datatypes import PeerInfo, PeerSite, SiteReplicationStatusOptions
 from .error import MinioAdminException
-from .helpers import (_DEFAULT_USER_AGENT, _REGION_REGEX, _parse_url,
+from .helpers import (_DEFAULT_USER_AGENT, _REGION_REGEX, DictType, _parse_url,
                       headers_to_strings, queryencode, sha256_hash,
                       url_replace)
 from .signer import sign_v4_s3
@@ -149,8 +149,7 @@ class MinioAdmin:
             self,
             method: str,
             command: CommandType,
-            query_params:
-                dict[str, str | list[str] | tuple[str]] | None = None,
+            query_params: DictType | None = None,
             body: bytes | None = None,
             preload_content: bool = True,
     ) -> BaseHTTPResponse:
@@ -169,7 +168,7 @@ class MinioAdmin:
 
         content_sha256 = sha256_hash(body)
         date = time.utcnow()
-        headers: dict[str, str | list[str] | tuple[str]] = {
+        headers: DictType = {
             "Host": url.netloc,
             "User-Agent": self._user_agent,
             "x-amz-date": time.to_amz_date(date),
@@ -239,7 +238,7 @@ class MinioAdmin:
         if response.status in [200, 204, 206]:
             return response
 
-        raise MinioAdminException(response.status, response.data.decode())
+        raise MinioAdminException(str(response.status), response.data.decode())
 
     def set_app_info(self, app_name: str, app_version: str):
         """
@@ -472,7 +471,7 @@ class MinioAdmin:
             response = self._url_open(
                 "PUT",
                 _COMMAND.SET_USER_OR_GROUP_POLICY,
-                query_params={"userOrGroup": user or group,
+                query_params={"userOrGroup": cast(str, user or group),
                               "isGroup": "true" if group else "false",
                               "policyName": policy_name},
             )
@@ -585,7 +584,10 @@ class MinioAdmin:
         )
         return response.data.decode()
 
-    def profile_start(self, profilers: tuple[str] = ()) -> str:
+    def profile_start(
+            self,
+            profilers: tuple[str] = cast(Tuple[str], ()),
+    ) -> str:
         """Runs a system profile"""
         response = self._url_open(
             "POST",
@@ -607,7 +609,7 @@ class MinioAdmin:
         response = self._url_open(
             "POST",
             _COMMAND.CREATE_KMS_KEY,
-            query_params={"key-id": key},
+            query_params={"key-id": key or ""},
         )
         return response.data.decode()
 
@@ -645,7 +647,7 @@ class MinioAdmin:
         response = self._url_open(
             "GET",
             _COMMAND.SITE_REPLICATION_STATUS,
-            query_params=options.to_query_params(),
+            query_params=cast(DictType, options.to_query_params()),
         )
         return response.data.decode()
 
@@ -668,9 +670,9 @@ class MinioAdmin:
         """Remove given sites or all sites from site replication."""
         data = {}
         if all_sites:
-            data.update({"all": True})
+            data.update({"all": "True"})
         elif sites:
-            data.update({"sites": sites})
+            data.update({"sites": sites or ""})
         else:
             raise ValueError("either sites or all flag must be given")
         body = json.dumps(data).encode()
