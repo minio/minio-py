@@ -34,6 +34,7 @@ from xml.etree import ElementTree as ET
 from urllib3._collections import HTTPHeaderDict
 from urllib3.response import BaseHTTPResponse
 
+from .commonconfig import Tags
 from .credentials import Credentials
 from .helpers import check_bucket_name
 from .signer import get_credential_string, post_presign_v4
@@ -132,6 +133,7 @@ class Object:
             owner_name: str | None = None,
             content_type: str | None = None,
             is_delete_marker: bool = False,
+            tags: Tags = Tags.new_object_tags(),
     ):
         self._bucket_name = bucket_name
         self._object_name = object_name
@@ -146,6 +148,7 @@ class Object:
         self._owner_name = owner_name
         self._content_type = content_type
         self._is_delete_marker = is_delete_marker
+        self._tags = tags
 
     @property
     def bucket_name(self) -> str:
@@ -219,6 +222,11 @@ class Object:
         """Get content type."""
         return self._content_type
 
+    @property
+    def tags(self) -> Tags:
+        """Get the tags"""
+        return self._tags
+
     @classmethod
     def fromxml(
             cls: Type[B],
@@ -252,6 +260,8 @@ class Object:
         object_name = cast(str, findtext(element, "Key", True))
         if encoding_type == "url":
             object_name = unquote_plus(object_name)
+        
+
 
         return cls(
             bucket_name,
