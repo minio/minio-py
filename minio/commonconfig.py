@@ -21,7 +21,7 @@ from __future__ import absolute_import, annotations
 
 from abc import ABCMeta
 from datetime import datetime
-from typing import Type, TypeVar, cast
+from typing import Optional, Type, TypeVar, cast
 from xml.etree import ElementTree as ET
 
 from .error import MinioException
@@ -82,6 +82,16 @@ class Tags(dict):
             value = cast(str, findtext(tag, "Value", True))
             obj[key] = value
         return obj
+
+    @classmethod
+    def from_user_tags_text(cls: Type[A], string: Optional[str]) -> A:
+        """Create new object from the text returned in the UserTags key"""
+        tags = Tags.new_object_tags()
+        if string:
+            for key_value in string.split("&"):
+                key, value = key_value.split("=")
+                tags[key] = value
+        return tags
 
     def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
