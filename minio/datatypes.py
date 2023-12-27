@@ -260,8 +260,9 @@ class Object:
         object_name = cast(str, findtext(element, "Key", True))
         if encoding_type == "url":
             object_name = unquote_plus(object_name)
-        
 
+        tags_text = findtext(element, "UserTags")
+        tags = Tags.from_user_tags_text(tags_text)
 
         return cls(
             bucket_name,
@@ -276,6 +277,7 @@ class Object:
             owner_name=owner_name,
             metadata=metadata,
             is_delete_marker=is_delete_marker,
+            tags=tags
         )
 
 
