@@ -21,7 +21,7 @@ from __future__ import absolute_import, annotations
 
 from abc import ABCMeta
 from datetime import datetime
-from typing import Optional, Type, TypeVar, cast
+from typing import Type, TypeVar, cast
 from xml.etree import ElementTree as ET
 
 from .error import MinioException
@@ -84,9 +84,9 @@ class Tags(dict):
         return obj
 
     @classmethod
-    def from_user_tags_text(cls: Type[A], string: Optional[str]) -> A:
+    def object_from_user_tags_text(cls: Type[A], string: str | None) -> A:
         """Create new object from the text returned in the UserTags key"""
-        tags = Tags.new_object_tags()
+        tags = cls(True)
         if string:
             for key_value in string.split("&"):
                 key, value = key_value.split("=")

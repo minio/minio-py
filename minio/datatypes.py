@@ -262,7 +262,7 @@ class Object:
             object_name = unquote_plus(object_name)
 
         tags_text = findtext(element, "UserTags")
-        tags = Tags.from_user_tags_text(tags_text)
+        tags = Tags.object_from_user_tags_text(tags_text)
 
         return cls(
             bucket_name,
