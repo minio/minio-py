@@ -133,7 +133,7 @@ class Object:
             owner_name: str | None = None,
             content_type: str | None = None,
             is_delete_marker: bool = False,
-            tags: Tags = Tags.new_object_tags(),
+            tags: Tags | None = None,
     ):
         self._bucket_name = bucket_name
         self._object_name = object_name
@@ -223,7 +223,7 @@ class Object:
         return self._content_type
 
     @property
-    def tags(self) -> Tags:
+    def tags(self) -> Tags | None:
         """Get the tags"""
         return self._tags
 
@@ -262,7 +262,11 @@ class Object:
             object_name = unquote_plus(object_name)
 
         tags_text = findtext(element, "UserTags")
-        tags = Tags.object_from_user_tags_text(tags_text)
+        tags = Tags.new_object_tags()
+        if tags_text:
+            for key_value in tags_text.split("&"):
+                key, value = key_value.split("=")
+                tags[key] = value
 
         return cls(
             bucket_name,

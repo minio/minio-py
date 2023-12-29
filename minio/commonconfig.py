@@ -83,16 +83,6 @@ class Tags(dict):
             obj[key] = value
         return obj
 
-    @classmethod
-    def object_from_user_tags_text(cls: Type[A], string: str | None) -> A:
-        """Create new object from the text returned in the UserTags key"""
-        tags = cls(True)
-        if string:
-            for key_value in string.split("&"):
-                key, value = key_value.split("=")
-                tags[key] = value
-        return tags
-
     def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
         if element is None:
