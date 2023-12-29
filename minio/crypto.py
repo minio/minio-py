@@ -24,7 +24,11 @@ from argon2.low_level import Type, hash_secret_raw
 from Crypto.Cipher import AES, ChaCha20_Poly1305
 from Crypto.Cipher._mode_gcm import GcmMode
 from Crypto.Cipher.ChaCha20_Poly1305 import ChaCha20Poly1305Cipher
-from urllib3.response import BaseHTTPResponse
+
+try:
+    from urllib3.response import BaseHTTPResponse  # type: ignore[attr-defined]
+except ImportError:
+    from urllib3.response import HTTPResponse as BaseHTTPResponse
 
 #
 # Encrypted Message Format:

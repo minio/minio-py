@@ -41,7 +41,12 @@ import certifi
 import urllib3
 from urllib3 import Retry
 from urllib3._collections import HTTPHeaderDict
-from urllib3.response import BaseHTTPResponse
+
+try:
+    from urllib3.response import BaseHTTPResponse  # type: ignore[attr-defined]
+except ImportError:
+    from urllib3.response import HTTPResponse as BaseHTTPResponse
+
 from urllib3.util import Timeout
 
 from . import __title__, __version__, time

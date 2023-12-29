@@ -32,7 +32,12 @@ from typing_extensions import Protocol
 from urllib3 import Retry
 from urllib3._collections import HTTPHeaderDict
 from urllib3.poolmanager import PoolManager
-from urllib3.response import BaseHTTPResponse
+
+try:
+    from urllib3.response import BaseHTTPResponse  # type: ignore[attr-defined]
+except ImportError:
+    from urllib3.response import HTTPResponse as BaseHTTPResponse
+
 from urllib3.util import Timeout
 
 from . import time
