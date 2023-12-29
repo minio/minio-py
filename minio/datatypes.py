@@ -32,7 +32,11 @@ from urllib.parse import unquote_plus
 from xml.etree import ElementTree as ET
 
 from urllib3._collections import HTTPHeaderDict
-from urllib3.response import BaseHTTPResponse
+
+try:
+    from urllib3.response import BaseHTTPResponse  # type: ignore[attr-defined]
+except ImportError:
+    from urllib3.response import HTTPResponse as BaseHTTPResponse
 
 from .commonconfig import Tags
 from .credentials import Credentials

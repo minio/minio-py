@@ -37,7 +37,9 @@ __version__ = "7.2.3"
 __license__ = "Apache 2.0"
 __copyright__ = "Copyright 2015, 2016, 2017, 2018, 2019, 2020 MinIO, Inc."
 
-# pylint: disable=unused-import
-from .api import Minio
-from .error import InvalidResponseError, S3Error, ServerError
-from .minioadmin import MinioAdmin
+# pylint: disable=unused-import,useless-import-alias
+from .api import Minio as Minio
+from .error import InvalidResponseError as InvalidResponseError
+from .error import S3Error as S3Error
+from .error import ServerError as ServerError
+from .minioadmin import MinioAdmin as MinioAdmin

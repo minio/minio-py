@@ -33,7 +33,10 @@ from __future__ import absolute_import, annotations
 from typing import Type, TypeVar
 from xml.etree import ElementTree as ET
 
-from urllib3.response import BaseHTTPResponse
+try:
+    from urllib3.response import BaseHTTPResponse  # type: ignore[attr-defined]
+except ImportError:
+    from urllib3.response import HTTPResponse as BaseHTTPResponse
 
 from .xml import findtext
 
