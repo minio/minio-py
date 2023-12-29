@@ -34,7 +34,12 @@ from xml.etree import ElementTree as ET
 
 import certifi
 from urllib3.poolmanager import PoolManager
-from urllib3.response import BaseHTTPResponse
+
+try:
+    from urllib3.response import BaseHTTPResponse  # type: ignore[attr-defined]
+except ImportError:
+    from urllib3.response import HTTPResponse as BaseHTTPResponse
+
 from urllib3.util import Retry, parse_url
 
 from minio.helpers import sha256_hash
@@ -458,6 +463,9 @@ class IamAwsProvider(Provider):
             if not role_names:
                 raise ValueError(f"no IAM roles attached to EC2 service {url}")
             url += "/" + role_names[0].strip("\r")
+
+        if not url:
+            raise ValueError("url is empty; this should not happen")
 
         self._credentials = self.fetch(url)
         return self._credentials
