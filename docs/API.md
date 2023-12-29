@@ -17,7 +17,7 @@ __Parameters__
 | `region`        | _str_                             | (Optional) Region name of buckets in S3 service.                                 |
 | `http_client`   | _urllib3.poolmanager.PoolManager_ | (Optional) Customized HTTP client.                                               |
 | `credentials`   | _minio.credentials.Provider_      | (Optional) Credentials provider of your account in S3 service.                   |
-| `cert_check`    | _bool_                            | (Optional) Flag to indicate if SSL certificate of S3 endpoint should verified.   |
+| `cert_check`    | _bool_                            | (Optional) Flag to check on server certificate for HTTPS connection.             |
 
 
 **NOTE on concurrent usage:** `Minio` object is thread safe when using the Python `threading` library. Specifically, it is **NOT** safe to share it between multiple processes, for example when using `multiprocessing.Pool`. The solution is simply to create a new `Minio` object in each process, and not share it between processes.
