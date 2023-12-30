@@ -27,7 +27,7 @@ import json
 from collections import OrderedDict
 from datetime import datetime
 from enum import Enum
-from typing import Type, TypeVar, cast
+from typing import Any, List, Tuple, Type, TypeVar, cast
 from urllib.parse import unquote_plus
 from xml.etree import ElementTree as ET
 
