@@ -269,7 +269,7 @@ class Object:
         tags: Tags | None = None
         if tag_text:
             tags = Tags.new_object_tags()
-            tags.update([tokens.split("=") for tokens in tag_text.split("&")])
+            tags.update([tokens.split("=") for tokens in tags_text.split("&")])
 
         return cls(
             bucket_name,
