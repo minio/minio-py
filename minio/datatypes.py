@@ -270,7 +270,10 @@ class Object:
         if tags_text:
             tags = Tags.new_object_tags()
             tags.update(
-                [tuple(tokens.split("=")) for tokens in tags_text.split("&")],
+                cast(
+                    List[Tuple[Any, Any]],
+                    [tokens.split("=") for tokens in tags_text.split("&")],
+                ),
             )
 
         return cls(
