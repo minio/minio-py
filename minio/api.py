@@ -30,6 +30,7 @@ from __future__ import absolute_import, annotations
 import itertools
 import os
 import tarfile
+from collections.abc import Iterable
 from datetime import datetime, timedelta
 from io import BytesIO
 from random import random
@@ -2139,7 +2140,7 @@ class Minio:
     def remove_objects(
             self,
             bucket_name: str,
-            delete_object_list: Iterator[DeleteObject],
+            delete_object_list: Iterable[DeleteObject],
             bypass_governance_mode: bool = False,
     ) -> Iterator[DeleteError]:
         """
@@ -2946,7 +2947,7 @@ class Minio:
     def upload_snowball_objects(
             self,
             bucket_name: str,
-            object_list: Iterator[SnowballObject],
+            object_list: Iterable[SnowballObject],
             metadata: DictType | None = None,
             sse: Sse | None = None,
             tags: Tags | None = None,
