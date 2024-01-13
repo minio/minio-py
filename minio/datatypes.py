@@ -27,7 +27,7 @@ import json
 from collections import OrderedDict
 from datetime import datetime
 from enum import Enum
-from typing import Type, TypeVar, cast
+from typing import Any, List, Tuple, Type, TypeVar, cast
 from urllib.parse import unquote_plus
 from xml.etree import ElementTree as ET
 
@@ -38,6 +38,7 @@ try:
 except ImportError:
     from urllib3.response import HTTPResponse as BaseHTTPResponse
 
+from .commonconfig import Tags
 from .credentials import Credentials
 from .helpers import check_bucket_name
 from .signer import get_credential_string, post_presign_v4
@@ -136,6 +137,7 @@ class Object:
             owner_name: str | None = None,
             content_type: str | None = None,
             is_delete_marker: bool = False,
+            tags: Tags | None = None,
     ):
         self._bucket_name = bucket_name
         self._object_name = object_name
@@ -150,6 +152,7 @@ class Object:
         self._owner_name = owner_name
         self._content_type = content_type
         self._is_delete_marker = is_delete_marker
+        self._tags = tags
 
     @property
     def bucket_name(self) -> str:
@@ -223,6 +226,11 @@ class Object:
         """Get content type."""
         return self._content_type
 
+    @property
+    def tags(self) -> Tags | None:
+        """Get the tags"""
+        return self._tags
+
     @classmethod
     def fromxml(
             cls: Type[B],
@@ -257,6 +265,17 @@ class Object:
         if encoding_type == "url":
             object_name = unquote_plus(object_name)
 
+        tags_text = findtext(element, "UserTags")
+        tags: Tags | None = None
+        if tags_text:
+            tags = Tags.new_object_tags()
+            tags.update(
+                cast(
+                    List[Tuple[Any, Any]],
+                    [tokens.split("=") for tokens in tags_text.split("&")],
+                ),
+            )
+
         return cls(
             bucket_name,
             object_name,
@@ -270,6 +289,7 @@ class Object:
             owner_name=owner_name,
             metadata=metadata,
             is_delete_marker=is_delete_marker,
+            tags=tags
         )
 
 
