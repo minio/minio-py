@@ -443,6 +443,9 @@ def _get_aws_info(
     if not _AWS_ENDPOINT_REGEX.match(host):
         return (None, None)
 
+    if host.startswith("ec2-"):
+        return (None, None)
+
     if not _AWS_S3_ENDPOINT_REGEX.match(host):
         raise ValueError(f"invalid Amazon AWS host {host}")
 
