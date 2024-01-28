@@ -1,42 +1,38 @@
-# MinIO Python Client SDK for Amazon S3 Compatible Cloud Storage [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io) [![Apache V2 License](https://img.shields.io/badge/license-Apache%20V2-blue.svg)](https://github.com/minio/minio-py/blob/master/LICENSE)
+# Newtera Python Client SDK for Newtera TDM
 
-The MinIO Python Client SDK provides high level APIs to access any MinIO Object Storage or other Amazon S3 compatible service.
+The Newtera Python Client SDK provides high level APIs to access any Newtera TDM service.
 
-This Quickstart Guide covers how to install the MinIO client SDK, connect to the object storage service, and create a sample file uploader.
+This Quickstart Guide covers how to install the Newtera client SDK, connect to the Newtera TDM, and access the test data files.
 
 The example below uses:
 - [Python version 3.7+](https://www.python.org/downloads/) 
-- The [MinIO `mc` command line tool](https://min.io/docs/minio/linux/reference/minio-mc.html)
-- The MinIO `play` test server
+- The [Newtera `mc` command line tool](https://min.io/docs/Newtera/linux/reference/Newtera-mc.html)
+- The Newtera TDM local server
 
-The `play` server is a public MinIO cluster located at [https://play.min.io](https://play.min.io).
-This cluster runs the latest stable version of MinIO and may be used for testing and development.
-The access credentials in the example are open to the public and all data uploaded to `play` should be considered public and world-readable.
+For a complete list of APIs and examples, see the [Python Client API Reference](https://newtera.net/docs/Newtera/developers/python/API.html)
 
-For a complete list of APIs and examples, see the [Python Client API Reference](https://min.io/docs/minio/linux/developers/python/API.html)
-
-## Install the MinIO Python SDK
+## Install the Newtera Python SDK
 
 The Python SDK requires Python version 3.7+.
-You can install the SDK with `pip` or from the [`minio/minio-py` GitHub repository](https://github.com/minio/minio-py):
+You can install the SDK with `pip` or from the [`Newtera/Newtera-py` GitHub repository](https://github.com/yong-zhang-newtera/Newtera-py):
 
 ### Using `pip`
 
 ```sh
-pip3 install minio
+pip3 install Newtera
 ```
 
 ### Using Source From GitHub
 
 ```sh
-git clone https://github.com/minio/minio-py
-cd minio-py
+git clone https://github.com/yong-zhang-newtera/Newtera-py
+cd Newtera-py
 python setup.py install
 ```
 
-## Create a MinIO Client
+## Create a Newtera Client
 
-To connect to the target service, create a MinIO client using the `Minio()` method with the following required parameters:
+To connect to the target service, create a Newtera client using the `Newtera()` method with the following required parameters:
 
 | Parameter    | Description                                            |
 |--------------|--------------------------------------------------------|
@@ -47,9 +43,9 @@ To connect to the target service, create a MinIO client using the `Minio()` meth
 For example:
 
 ```py
-from minio import Minio
+from Newtera import Newtera
 
-client = Minio("play.min.io",
+client = Newtera("play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
@@ -59,22 +55,22 @@ client = Minio("play.min.io",
 
 This example does the following:
 
-- Connects to the MinIO `play` server using the provided credentials.
+- Connects to the Newtera `play` server using the provided credentials.
 - Creates a bucket named `python-test-bucket` if it does not already exist.
 - Uploads a file named `test-file.txt` from `/tmp`, renaming it `my-test-file.txt`.
-- Verifies the file was created using [`mc ls`](https://min.io/docs/minio/linux/reference/minio-mc/mc-ls.html).
+- Verifies the file was created using [`mc ls`](https://min.io/docs/Newtera/linux/reference/Newtera-mc/mc-ls.html).
 
 ### `file_uploader.py`
 
 ```py
-# file_uploader.py MinIO Python SDK example
-from minio import Minio
-from minio.error import S3Error
+# file_uploader.py Newtera Python SDK example
+from Newtera import Newtera
+from Newtera.error import S3Error
 
 def main():
-    # Create a client with the MinIO server playground, its access key
+    # Create a client with the Newtera server playground, its access key
     # and secret key.
-    client = Minio("play.min.io",
+    client = Newtera("play.min.io",
         access_key="Q3AM3UQ867SPQQA43P2F",
         secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
     )
@@ -82,7 +78,7 @@ def main():
     # The file to upload, change this path if needed
     source_file = "/tmp/test-file.txt"
 
-    # The destination bucket and filename on the MinIO server
+    # The destination bucket and filename on the Newtera server
     bucket_name = "python-test-bucket"
     destination_file = "my-test-file.txt"
     
@@ -137,19 +133,9 @@ mc ls play/python-test-bucket
 
 ## More References
 
-* [Python Client API Reference](https://min.io/docs/minio/linux/developers/python/API.html)
-* [Examples](https://github.com/minio/minio-py/tree/master/examples)
+* [Examples](https://github.com/Newtera/Newtera-py/tree/master/examples)
 
-## Explore Further
-
-* [Complete Documentation](https://min.io/docs/minio/kubernetes/upstream/index.html)
-
-## Contribute
-
-[Contributors Guide](https://github.com/minio/minio-py/blob/master/CONTRIBUTING.md)
 
 ## License
 
-This SDK is distributed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0), see [LICENSE](https://github.com/minio/minio-py/blob/master/LICENSE) and [NOTICE](https://github.com/minio/minio-go/blob/master/NOTICE) for more information.
-
-[![PYPI](https://img.shields.io/pypi/v/minio.svg)](https://pypi.python.org/pypi/minio)
+This SDK is distributed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
