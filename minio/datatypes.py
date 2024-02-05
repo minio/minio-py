@@ -259,7 +259,8 @@ class Object:
         metadata: dict[str, str] = {}
         for child in elems:
             if child.tag == "{http://s3.amazonaws.com/doc/2006-03-01/}Items":
-                metadata[findtext(child, "Key", True)] = findtext(child, "Value", True)
+                key = findtext(child, "Key", True)
+                metadata[key] = findtext(child, "Value", True)
             else:
                 key = child.tag.split("}")[1] if "}" in child.tag else child.tag
                 metadata[key] = child.text or ""
