@@ -258,8 +258,11 @@ class Object:
         elems: ET.Element | list = find(element, "UserMetadata") or []
         metadata: dict[str, str] = {}
         for child in elems:
-            key = child.tag.split("}")[1] if "}" in child.tag else child.tag
-            metadata[key] = child.text or ""
+            if child.tag == "{http://s3.amazonaws.com/doc/2006-03-01/}Items":
+                metadata[findtext(child, "Key", True)] = findtext(child, "Value", True)
+            else:
+                key = child.tag.split("}")[1] if "}" in child.tag else child.tag
+                metadata[key] = child.text or ""
 
         object_name = cast(str, findtext(element, "Key", True))
         if encoding_type == "url":
