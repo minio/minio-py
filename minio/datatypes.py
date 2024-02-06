@@ -262,7 +262,8 @@ class Object:
                 key = findtext(child, "Key", True)
                 metadata[key] = findtext(child, "Value", True)
             else:
-                key = child.tag.split("}")[1] if "}" in child.tag else child.tag
+                key = child.tag.split(
+                    "}")[1] if "}" in child.tag else child.tag
                 metadata[key] = child.text or ""
 
         object_name = cast(str, findtext(element, "Key", True))
