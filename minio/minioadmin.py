@@ -731,7 +731,7 @@ class MinioAdmin:
         )
         return plain_data.decode()
 
-    def service_account_list(self, user):
+    def service_account_list(self, user: str):
         """List service accounts of user"""
         response = self._url_open(
             "GET",
@@ -744,15 +744,20 @@ class MinioAdmin:
         )
         return plain_data.decode()
 
-    def service_account_add(self, access_key, secret_key):
+    def service_account_add(self, access_key: str = "", secret_key: str = ""):
         """Add a new service account with the given access key and secret key"""
         body = json.dumps(
-            {"status": "enabled", "secretKey": secret_key}).encode()
+            {
+                "status": "enabled",
+                "accessKey": access_key,
+                "secretKey": secret_key
+            }).encode()
         response = self._url_open(
             "PUT",
             _COMMAND.SERVICE_ACCOUNT_ADD,
             query_params={"accessKey": access_key},
             body=encrypt(body, self._provider.retrieve().secret_key),
+            preload_content=False,
         )
         plain_data = decrypt(
             response, self._provider.retrieve().secret_key,
