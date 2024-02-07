@@ -751,22 +751,22 @@ class MinioAdmin:
                             description: str | None = None,
                             policy_file: str | None = None):
         """Add a new service account with the given access key and secret key"""
-        if secret_key and access_key == "":
-            raise ValueError("access_key must be provided if secret_key is given")
-        body_dict = {
+        if (secret_key and access_key == "") or (access_key and secret_key == ""):
+            raise ValueError("access_key must be provided if secret_key is given, and vice versa")
+        data = {
             "status": "enabled",
             "accessKey": access_key,
             "secretKey": secret_key,
         }
         if name:
-            body_dict["name"] = name
+            data["name"] = name
         if description:
-            body_dict["description"] = description
+            data["description"] = description
         if policy_file:
             with open(policy_file, encoding="utf-8") as file:
-                body_dict["policy"] = json.load(file)
+                data["policy"] = json.load(file)
 
-        body = json.dumps(body_dict).encode()
+        body = json.dumps(data).encode()
         response = self._url_open(
             "PUT",
             _COMMAND.SERVICE_ACCOUNT_ADD,
