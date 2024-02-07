@@ -724,6 +724,7 @@ class MinioAdmin:
             "GET",
             _COMMAND.SERVICE_ACCOUNT_INFO,
             query_params={"accessKey": access_key},
+            preload_content=False,
         )
         plain_data = decrypt(
             response, self._provider.retrieve().secret_key,
@@ -736,6 +737,7 @@ class MinioAdmin:
             "GET",
             _COMMAND.SERVICE_ACCOUNT_LIST,
             query_params={"user": user},
+            preload_content=False,
         )
         plain_data = decrypt(
             response, self._provider.retrieve().secret_key,
