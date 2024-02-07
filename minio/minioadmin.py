@@ -744,14 +744,29 @@ class MinioAdmin:
         )
         return plain_data.decode()
 
-    def service_account_add(self, access_key: str = "", secret_key: str = ""):
+    def service_account_add(self,
+                            access_key: str = "",
+                            secret_key: str = "",
+                            name: str | None = None,
+                            description: str | None = None,
+                            policy_file: str | None = None):
         """Add a new service account with the given access key and secret key"""
-        body = json.dumps(
-            {
-                "status": "enabled",
-                "accessKey": access_key,
-                "secretKey": secret_key
-            }).encode()
+        if secret_key and access_key == "":
+            raise ValueError("access_key must be provided if secret_key is given")
+        body_dict = {
+            "status": "enabled",
+            "accessKey": access_key,
+            "secretKey": secret_key,
+        }
+        if name:
+            body_dict["name"] = name
+        if description:
+            body_dict["description"] = description
+        if policy_file:
+            with open(policy_file, encoding="utf-8") as file:
+                body_dict["policy"] = json.load(file)
+
+        body = json.dumps(body_dict).encode()
         response = self._url_open(
             "PUT",
             _COMMAND.SERVICE_ACCOUNT_ADD,
