@@ -785,4 +785,9 @@ class MinioAdmin:
 
     def service_account_delete(self, access_key):
         """Delete a service account"""
-        raise NotImplementedError
+        response = self._url_open(
+            "DELETE",
+            _COMMAND.SERVICE_ACCOUNT_DELETE,
+            query_params={"accessKey": access_key},
+        )
+        return response.data.decode()
