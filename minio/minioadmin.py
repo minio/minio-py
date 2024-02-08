@@ -802,7 +802,7 @@ class MinioAdmin:
 
         body = json.dumps(data).encode()
         response = self._url_open(
-            "PUT",
+            "POST",
             _COMMAND.SERVICE_ACCOUNT_UPDATE,
             query_params={"accessKey": access_key},
             body=encrypt(body, self._provider.retrieve().secret_key),
