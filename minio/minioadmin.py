@@ -784,21 +784,21 @@ class MinioAdmin:
                                secret_key: str | None = None,
                                name: str | None = None,
                                description: str | None = None,
-                               policy_file: str | None = None):
+                               policy_file: str | None = None) -> str:
         """Update an existing service account"""
         if not secret_key and not name and not description and not policy_file:
             raise ValueError("at least one of secret_key, name, description or "
                              "policy_file must be specified")
-        data = {"status": "enabled"}
+        data = {}
         if secret_key:
-            data["secretKey"] = secret_key
+            data["newSecretKey"] = secret_key
         if name:
-            data["name"] = name
+            data["newName"] = name
         if description:
-            data["description"] = description
+            data["newDescription"] = description
         if policy_file:
             with open(policy_file, encoding="utf-8") as file:
-                data["policy"] = json.load(file)
+                data["newPolicy"] = json.load(file)
 
         body = json.dumps(data).encode()
         response = self._url_open(
@@ -806,12 +806,8 @@ class MinioAdmin:
             _COMMAND.SERVICE_ACCOUNT_UPDATE,
             query_params={"accessKey": access_key},
             body=encrypt(body, self._provider.retrieve().secret_key),
-            # preload_content=False,
         )
-        plain_data = decrypt(
-            response, self._provider.retrieve().secret_key,
-        )
-        return plain_data.decode()
+        return response.data.decode()
 
     def service_account_delete(self, access_key) -> str:
         """Delete a service account"""
