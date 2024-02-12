@@ -784,11 +784,13 @@ class MinioAdmin:
                                secret_key: str | None = None,
                                name: str | None = None,
                                description: str | None = None,
-                               policy_file: str | None = None) -> str:
+                               policy_file: str | None = None,
+                               expiration: str | None = None,
+                               status: str | None = None) -> str:
         """Update an existing service account"""
-        if not secret_key and not name and not description and not policy_file:
-            raise ValueError("at least one of secret_key, name, description or "
-                             "policy_file must be specified")
+        if not secret_key and not name and not description and not policy_file and not expiration and not status:
+            raise ValueError("at least one of secret_key, name, description, policy_file, expiration or status must "
+                             "be specified")
         data = {}
         if secret_key:
             data["newSecretKey"] = secret_key
@@ -799,6 +801,10 @@ class MinioAdmin:
         if policy_file:
             with open(policy_file, encoding="utf-8") as file:
                 data["newPolicy"] = json.load(file)
+        if expiration:
+            data["newExpiration"] = expiration
+        if status:
+            data["newStatus"] = status
 
         body = json.dumps(data).encode()
         response = self._url_open(
