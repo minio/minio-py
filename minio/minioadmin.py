@@ -749,10 +749,16 @@ class MinioAdmin:
                             secret_key: str = "",
                             name: str | None = None,
                             description: str | None = None,
-                            policy_file: str | None = None):
-        """Add a new service account with the given access key and secret key"""
-        if (secret_key and access_key == "") or (access_key and secret_key == ""):
-            raise ValueError("access_key must be provided if secret_key is given, and vice versa")
+                            policy_file: str | None = None,
+                            expiration: str | None = None,
+                            status: str | None = None):
+        """
+        Add a new service account with the given access key and secret key
+        """
+        if ((secret_key and access_key == "")
+                or (access_key and secret_key == "")):
+            raise ValueError("access_key must be provided if secret_key is "
+                             "given and vice versa")
         data = {
             "status": "enabled",
             "accessKey": access_key,
@@ -765,6 +771,10 @@ class MinioAdmin:
         if policy_file:
             with open(policy_file, encoding="utf-8") as file:
                 data["policy"] = json.load(file)
+        if expiration:
+            data["expiration"] = expiration
+        if status:
+            data["status"] = status
 
         body = json.dumps(data).encode()
         response = self._url_open(
@@ -788,9 +798,11 @@ class MinioAdmin:
                                expiration: str | None = None,
                                status: str | None = None) -> str:
         """Update an existing service account"""
-        if not secret_key and not name and not description and not policy_file and not expiration and not status:
-            raise ValueError("at least one of secret_key, name, description, policy_file, expiration or status must "
-                             "be specified")
+        args = [secret_key, name, description, policy_file, expiration, status]
+        if not any(arg for arg in args):
+            raise ValueError("at least one of secret_key, name, description, "
+                             "policy_file, expiration or status must be "
+                             "specified")
         data = {}
         if secret_key:
             data["newSecretKey"] = secret_key
