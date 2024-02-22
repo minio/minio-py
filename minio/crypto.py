@@ -217,11 +217,12 @@ class DecryptReader:
         if len(self._chunk) == 0:
             return self._chunk
 
-        if len(self._chunk) < _MAX_CHUNK_SIZE:
-            return self._decrypt(self._chunk, True)
-
-        payload = self._chunk[:_MAX_CHUNK_SIZE]
-        self._chunk = self._chunk[_MAX_CHUNK_SIZE:]
+        length = _MAX_CHUNK_SIZE
+        if len(self._chunk) < length:
+            length = len(self._chunk)
+            stop = True
+        payload = self._chunk[:length]
+        self._chunk = self._chunk[length:]
         return self._decrypt(payload, stop)
 
     def stream(self, num_bytes=32*1024):
@@ -231,14 +232,14 @@ class DecryptReader:
         """
         while True:
             data = self._read()
+            if not data:
+                break
             while data:
                 result = data
                 if num_bytes < len(data):
                     result = data[:num_bytes]
                 data = data[len(result):]
                 yield result
-            else:
-                break
 
 
 def decrypt(response: BaseHTTPResponse, secret_key: str) -> bytes:
