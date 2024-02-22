@@ -718,7 +718,7 @@ class MinioAdmin:
         )
         return response.data.decode()
 
-    def get_service_account_info(self, access_key: str) -> str:
+    def get_service_account(self, access_key: str) -> str:
         """Get information about service account"""
         response = self._url_open(
             "GET",
