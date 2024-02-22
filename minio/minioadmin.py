@@ -758,7 +758,7 @@ class MinioAdmin:
         if (access_key is None) ^ (secret_key is None):
             raise ValueError("both access key and secret key must be provided")
         if access_key == "" or secret_key == "":
-            raise ValueError("access key or access key must not be empty")
+            raise ValueError("access key or secret key must not be empty")
         data = {
             "status": "enabled",
             "accessKey": access_key,
@@ -780,7 +780,6 @@ class MinioAdmin:
         response = self._url_open(
             "PUT",
             _COMMAND.SERVICE_ACCOUNT_ADD,
-            query_params={"accessKey": access_key},
             body=encrypt(body, self._provider.retrieve().secret_key),
             preload_content=False,
         )
