@@ -89,6 +89,11 @@ _COMMAND = Enum(
         "SITE_REPLICATION_STATUS": "site-replication/status",
         "SITE_REPLICATION_EDIT": "site-replication/edit",
         "SITE_REPLICATION_REMOVE": "site-replication/remove",
+        "SERVICE_ACCOUNT_INFO": "info-service-account",
+        "SERVICE_ACCOUNT_LIST": "list-service-accounts",
+        "SERVICE_ACCOUNT_ADD": "add-service-account",
+        "SERVICE_ACCOUNT_UPDATE": "update-service-account",
+        "SERVICE_ACCOUNT_DELETE": "delete-service-account",
     },
 )
 
@@ -710,5 +715,122 @@ class MinioAdmin:
             "GET",
             _COMMAND.GET_BUCKET_QUOTA,
             query_params={"bucket": bucket}
+        )
+        return response.data.decode()
+
+    def get_service_account(self, access_key: str) -> str:
+        """Get information about service account"""
+        response = self._url_open(
+            "GET",
+            _COMMAND.SERVICE_ACCOUNT_INFO,
+            query_params={"accessKey": access_key},
+            preload_content=False,
+        )
+        plain_data = decrypt(
+            response, self._provider.retrieve().secret_key,
+        )
+        return plain_data.decode()
+
+    def list_service_account(self, user: str) -> str:
+        """List service accounts of user"""
+        response = self._url_open(
+            "GET",
+            _COMMAND.SERVICE_ACCOUNT_LIST,
+            query_params={"user": user},
+            preload_content=False,
+        )
+        plain_data = decrypt(
+            response, self._provider.retrieve().secret_key,
+        )
+        return plain_data.decode()
+
+    def add_service_account(self,
+                            access_key: str | None = None,
+                            secret_key: str | None = None,
+                            name: str | None = None,
+                            description: str | None = None,
+                            policy_file: str | None = None,
+                            expiration: str | None = None,
+                            status: str | None = None) -> str:
+        """
+        Add a new service account with the given access key and secret key
+        """
+        if (access_key is None) ^ (secret_key is None):
+            raise ValueError("both access key and secret key must be provided")
+        if access_key == "" or secret_key == "":
+            raise ValueError("access key or secret key must not be empty")
+        data = {
+            "status": "enabled",
+            "accessKey": access_key,
+            "secretKey": secret_key,
+        }
+        if name:
+            data["name"] = name
+        if description:
+            data["description"] = description
+        if policy_file:
+            with open(policy_file, encoding="utf-8") as file:
+                data["policy"] = json.load(file)
+        if expiration:
+            data["expiration"] = expiration
+        if status:
+            data["status"] = status
+
+        body = json.dumps(data).encode()
+        response = self._url_open(
+            "PUT",
+            _COMMAND.SERVICE_ACCOUNT_ADD,
+            body=encrypt(body, self._provider.retrieve().secret_key),
+            preload_content=False,
+        )
+        plain_data = decrypt(
+            response, self._provider.retrieve().secret_key,
+        )
+        return plain_data.decode()
+
+    def update_service_account(self,
+                               access_key: str,
+                               secret_key: str | None = None,
+                               name: str | None = None,
+                               description: str | None = None,
+                               policy_file: str | None = None,
+                               expiration: str | None = None,
+                               status: str | None = None) -> str:
+        """Update an existing service account"""
+        args = [secret_key, name, description, policy_file, expiration, status]
+        if not any(arg for arg in args):
+            raise ValueError("at least one of secret_key, name, description, "
+                             "policy_file, expiration or status must be "
+                             "specified")
+        data = {}
+        if secret_key:
+            data["newSecretKey"] = secret_key
+        if name:
+            data["newName"] = name
+        if description:
+            data["newDescription"] = description
+        if policy_file:
+            with open(policy_file, encoding="utf-8") as file:
+                data["newPolicy"] = json.load(file)
+        if expiration:
+            data["newExpiration"] = expiration
+        if status:
+            data["newStatus"] = status
+
+        body = json.dumps(data).encode()
+        response = self._url_open(
+            "POST",
+            _COMMAND.SERVICE_ACCOUNT_UPDATE,
+            query_params={"accessKey": access_key},
+            body=encrypt(body, self._provider.retrieve().secret_key),
+        )
+        return response.data.decode()
+
+    def delete_service_account(self, access_key: str) -> str:
+        """Delete a service account"""
+        response = self._url_open(
+            "DELETE",
+            _COMMAND.SERVICE_ACCOUNT_DELETE,
+            query_params={"accessKey": access_key},
         )
         return response.data.decode()
