@@ -718,7 +718,7 @@ class MinioAdmin:
         )
         return response.data.decode()
 
-    def service_account_info(self, access_key):
+    def get_service_account_info(self, access_key: str) -> str:
         """Get information about service account"""
         response = self._url_open(
             "GET",
@@ -731,7 +731,7 @@ class MinioAdmin:
         )
         return plain_data.decode()
 
-    def service_account_list(self, user: str):
+    def list_service_account(self, user: str) -> str:
         """List service accounts of user"""
         response = self._url_open(
             "GET",
@@ -744,9 +744,9 @@ class MinioAdmin:
         )
         return plain_data.decode()
 
-    def service_account_add(self,
-                            access_key: str = "",
-                            secret_key: str = "",
+    def add_service_account(self,
+                            access_key: str | None = None,
+                            secret_key: str | None = None,
                             name: str | None = None,
                             description: str | None = None,
                             policy_file: str | None = None,
@@ -755,10 +755,10 @@ class MinioAdmin:
         """
         Add a new service account with the given access key and secret key
         """
-        if ((secret_key and access_key == "")
-                or (access_key and secret_key == "")):
-            raise ValueError("access_key must be provided if secret_key is "
-                             "given and vice versa")
+        if (access_key is None) ^ (secret_key is None):
+            raise ValueError("both access key and secret key must be provided")
+        elif access_key == "" or secret_key == "":
+            raise ValueError("access key or access key must not be empty")
         data = {
             "status": "enabled",
             "accessKey": access_key,
@@ -789,7 +789,7 @@ class MinioAdmin:
         )
         return plain_data.decode()
 
-    def service_account_update(self,
+    def update_service_account(self,
                                access_key: str,
                                secret_key: str | None = None,
                                name: str | None = None,
@@ -827,7 +827,7 @@ class MinioAdmin:
         )
         return response.data.decode()
 
-    def service_account_delete(self, access_key) -> str:
+    def delete_service_account(self, access_key: str) -> str:
         """Delete a service account"""
         response = self._url_open(
             "DELETE",
