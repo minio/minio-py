@@ -751,7 +751,7 @@ class MinioAdmin:
                             description: str | None = None,
                             policy_file: str | None = None,
                             expiration: str | None = None,
-                            status: str | None = None):
+                            status: str | None = None) -> str:
         """
         Add a new service account with the given access key and secret key
         """
