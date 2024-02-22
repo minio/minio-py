@@ -757,7 +757,7 @@ class MinioAdmin:
         """
         if (access_key is None) ^ (secret_key is None):
             raise ValueError("both access key and secret key must be provided")
-        elif access_key == "" or secret_key == "":
+        if access_key == "" or secret_key == "":
             raise ValueError("access key or access key must not be empty")
         data = {
             "status": "enabled",
