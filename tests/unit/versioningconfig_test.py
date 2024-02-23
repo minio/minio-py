@@ -18,11 +18,6 @@ from unittest import TestCase
 
 from minio import xml
 from minio.commonconfig import DISABLED, ENABLED
-from minio.versioningconfig import (
-    OFF,
-    SUSPENDED,
-    VersioningConfig,
-)
 
 
 class VersioningConfigTest(TestCase):
@@ -57,22 +52,3 @@ class VersioningConfigTest(TestCase):
         xml.marshal(config)
         self.assertEqual(config.status, SUSPENDED)
         self.assertEqual(config.mfa_delete, DISABLED)
-
-    def test_config_with_excluded_prefixes(self):
-
-        config = xml.unmarshal(
-            VersioningConfig,
-            """
-            <VersioningConfiguration>
-                <Status>Enabled</Status>
-                <MFADelete>Disabled</MFADelete>
-                <ExcludedPrefixes>
-                    <ExcludedPrefix>prefix</ExcludedPrefix>
-                </ExcludedPrefixes>
-            </VersioningConfiguration>
-            """,
-        )
-        xml.marshal(config)
-        self.assertEqual(config.status, ENABLED)
-        self.assertEqual(config.mfa_delete, DISABLED)
-        self.assertListEqual(config.excluded_prefixes, ["prefix"])

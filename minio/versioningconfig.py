@@ -34,10 +34,11 @@ class VersioningConfig:
     """Versioning configuration."""
 
     def __init__(
-        self,
-        status: str | None = None,
-        mfa_delete: str | None = None,
-        excluded_prefixes: list[str] | None = None,
+            self,
+            status: str | None = None,
+            mfa_delete: str | None = None,
+            excluded_prefixes: list[str] | None = None,
+            exclude_folders: bool = False,
     ):
         if status is not None and status not in [ENABLED, SUSPENDED]:
             raise ValueError(f"status must be {ENABLED} or {SUSPENDED}")
@@ -48,6 +49,7 @@ class VersioningConfig:
         self._status = status
         self._mfa_delete = mfa_delete
         self._excluded_prefixes = excluded_prefixes
+        self._exclude_folders = exclude_folders
 
     @property
     def status(self) -> str:
@@ -60,24 +62,32 @@ class VersioningConfig:
         return self._mfa_delete
 
     @property
-    def excluded_prefixes(self) -> str | None:
-        """Get MFA delete."""
+    def excluded_prefixes(self) -> list[str] | None:
+        """Get excluded prefixes."""
         return self._excluded_prefixes
+
+    @property
+    def exclude_folders(self) -> bool:
+        """Get exclude folders."""
+        return self._exclude_folders
 
     @classmethod
     def fromxml(cls: Type[A], element: ET.Element) -> A:
         """Create new object with values from XML element."""
         status = findtext(element, "Status")
         mfa_delete = findtext(element, "MFADelete")
-
-        excluded_prefixes_tag = element.find("ExcludedPrefixes")
-        excluded_prefixes = None
-        if excluded_prefixes_tag:
-            excluded_prefixes = [
-                tag.text for tag in excluded_prefixes_tag.findall("ExcludedPrefix")
-            ]
-
-        return cls(status, mfa_delete, excluded_prefixes)
+        excluded_prefixes = [
+            prefix.text for prefix in findall(
+                element, "ExcludedPrefixes/Prefix",
+            )
+        ]
+        exclude_folders = findtext(element, "ExcludeFolders") == "true"
+        return cls(
+            status,
+            mfa_delete,
+            cast(Union[List[str], None], excluded_prefixes),
+            exclude_folders,
+        )
 
     def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
@@ -86,8 +96,10 @@ class VersioningConfig:
             SubElement(element, "Status", self._status)
         if self._mfa_delete:
             SubElement(element, "MFADelete", self._mfa_delete)
-        if self._excluded_prefixes:
-            SubElement(element, "ExcludedPrefixes")
-            for prefix in self._excluded_prefixes:
-                SubElement(element, "ExcludedPrefix", prefix)
+        for prefix in self._excluded_prefixes or []:
+            SubElement(
+                SubElement(element, "ExcludedPrefixes"), "Prefix", prefix,
+            )
+        if self._exclude_folders:
+            SubElement(element, "ExcludeFolders", "true")
         return element
