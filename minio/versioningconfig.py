@@ -44,7 +44,7 @@ class VersioningConfig:
         if mfa_delete is not None and mfa_delete not in [ENABLED, DISABLED]:
             raise ValueError(f"MFA delete must be {ENABLED} or {DISABLED}")
         if excluded_prefixes is not None and not isinstance(excluded_prefixes, list):
-            raise ValueError(f"Excluded prefixes must be a list")
+            raise ValueError("Excluded prefixes must be a list")
         self._status = status
         self._mfa_delete = mfa_delete
         self._excluded_prefixes = excluded_prefixes
