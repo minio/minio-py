@@ -18,11 +18,11 @@
 
 from __future__ import absolute_import, annotations
 
-from typing import Type, TypeVar
+from typing import List, Type, TypeVar, Union, cast
 from xml.etree import ElementTree as ET
 
 from .commonconfig import DISABLED, ENABLED
-from .xml import Element, SubElement, findtext
+from .xml import Element, SubElement, findall, findtext
 
 OFF = "Off"
 SUSPENDED = "Suspended"
@@ -77,8 +77,10 @@ class VersioningConfig:
         status = findtext(element, "Status")
         mfa_delete = findtext(element, "MFADelete")
         excluded_prefixes = [
-            prefix.text for prefix in findall(
-                element, "ExcludedPrefixes/Prefix",
+            prefix.text
+            for prefix in findall(
+                element,
+                "ExcludedPrefixes/ExcludedPrefix",
             )
         ]
         exclude_folders = findtext(element, "ExcludeFolders") == "true"
@@ -98,7 +100,9 @@ class VersioningConfig:
             SubElement(element, "MFADelete", self._mfa_delete)
         for prefix in self._excluded_prefixes or []:
             SubElement(
-                SubElement(element, "ExcludedPrefixes"), "Prefix", prefix,
+                SubElement(element, "ExcludedPrefixes"),
+                "ExcludedPrefix",
+                prefix,
             )
         if self._exclude_folders:
             SubElement(element, "ExcludeFolders", "true")

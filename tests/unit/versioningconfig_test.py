@@ -18,6 +18,7 @@ from unittest import TestCase
 
 from minio import xml
 from minio.commonconfig import DISABLED, ENABLED
+from minio.versioningconfig import OFF, SUSPENDED, VersioningConfig
 
 
 class VersioningConfigTest(TestCase):
