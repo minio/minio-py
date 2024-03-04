@@ -3123,8 +3123,7 @@ class Minio:
                 if not use_api_v1:
                     continuation_token = start_after
 
-            for obj in objects:
-                yield obj
+            yield from objects
 
     def _list_multipart_uploads(
             self,
