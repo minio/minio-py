@@ -18,11 +18,11 @@
 
 from __future__ import absolute_import, annotations
 
-from typing import Type, TypeVar
+from typing import List, Type, TypeVar, Union, cast
 from xml.etree import ElementTree as ET
 
 from .commonconfig import DISABLED, ENABLED
-from .xml import Element, SubElement, findtext
+from .xml import Element, SubElement, findall, findtext
 
 OFF = "Off"
 SUSPENDED = "Suspended"
@@ -37,6 +37,8 @@ class VersioningConfig:
             self,
             status: str | None = None,
             mfa_delete: str | None = None,
+            excluded_prefixes: list[str] | None = None,
+            exclude_folders: bool = False,
     ):
         if status is not None and status not in [ENABLED, SUSPENDED]:
             raise ValueError(f"status must be {ENABLED} or {SUSPENDED}")
@@ -44,6 +46,8 @@ class VersioningConfig:
             raise ValueError(f"MFA delete must be {ENABLED} or {DISABLED}")
         self._status = status
         self._mfa_delete = mfa_delete
+        self._excluded_prefixes = excluded_prefixes
+        self._exclude_folders = exclude_folders
 
     @property
     def status(self) -> str:
@@ -55,12 +59,35 @@ class VersioningConfig:
         """Get MFA delete."""
         return self._mfa_delete
 
+    @property
+    def excluded_prefixes(self) -> list[str] | None:
+        """Get excluded prefixes."""
+        return self._excluded_prefixes
+
+    @property
+    def exclude_folders(self) -> bool:
+        """Get exclude folders."""
+        return self._exclude_folders
+
     @classmethod
     def fromxml(cls: Type[A], element: ET.Element) -> A:
         """Create new object with values from XML element."""
         status = findtext(element, "Status")
         mfa_delete = findtext(element, "MFADelete")
-        return cls(status, mfa_delete)
+        excluded_prefixes = [
+            prefix.text
+            for prefix in findall(
+                element,
+                "ExcludedPrefixes/ExcludedPrefix",
+            )
+        ]
+        exclude_folders = findtext(element, "ExcludeFolders") == "true"
+        return cls(
+            status,
+            mfa_delete,
+            cast(Union[List[str], None], excluded_prefixes),
+            exclude_folders,
+        )
 
     def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
@@ -69,4 +96,12 @@ class VersioningConfig:
             SubElement(element, "Status", self._status)
         if self._mfa_delete:
             SubElement(element, "MFADelete", self._mfa_delete)
+        for prefix in self._excluded_prefixes or []:
+            SubElement(
+                SubElement(element, "ExcludedPrefixes"),
+                "ExcludedPrefix",
+                prefix,
+            )
+        if self._exclude_folders:
+            SubElement(element, "ExcludeFolders", "true")
         return element
