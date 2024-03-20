@@ -4,7 +4,7 @@ The MinIO Python Client SDK provides high level APIs to access any MinIO Object 
 
 This Quickstart Guide covers how to install the MinIO client SDK, connect to the object storage service, and create a sample file uploader.
 
-The example below uses:
+The example below cases:
 - [Python version 3.7+](https://www.python.org/downloads/) 
 - The [MinIO `mc` command line tool](https://min.io/docs/minio/linux/reference/minio-mc.html)
 - The MinIO `play` test server
