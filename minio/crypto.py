@@ -72,7 +72,7 @@ def _get_cipher(
         return AES.new(key, AES.MODE_GCM, nonce)
     if aead_id == 1:
         return ChaCha20_Poly1305.new(key=key, nonce=nonce)
-    raise ValueError("Unknown AEAD ID {aead_id}")
+    raise ValueError(f"Unknown AEAD ID {aead_id}")
 
 
 def _generate_key(secret: bytes, salt: bytes) -> bytes:
