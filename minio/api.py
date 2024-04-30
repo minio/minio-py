@@ -1601,13 +1601,11 @@ class Minio:
                     continue
                 while size > 0:
                     part_number += 1
-                    start_bytes = offset
-                    end_bytes = start_bytes + MAX_PART_SIZE
-                    if size < MAX_PART_SIZE:
-                        end_bytes = start_bytes + size
+                    length = size if size < MAX_PART_SIZE else MAX_PART_SIZE
+                    end_bytes = offset + length - 1
                     headers_copy = headers.copy()
                     headers_copy["x-amz-copy-source-range"] = (
-                        f"bytes={start_bytes}-{end_bytes}"
+                        f"bytes={offset}-{end_bytes}"
                     )
                     etag, _ = self._upload_part_copy(
                         bucket_name,
@@ -1617,8 +1615,8 @@ class Minio:
                         headers_copy,
                     )
                     total_parts.append(Part(part_number, etag))
-                    offset = start_bytes
-                    size -= end_bytes - start_bytes
+                    offset += length
+                    size -= length
             result = self._complete_multipart_upload(
                 bucket_name, object_name, upload_id, total_parts,
             )
