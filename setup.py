@@ -43,6 +43,7 @@ setup(
     long_description_content_type="text/markdown",
     package_dir={"minio": "minio"},
     packages=["minio", "minio.credentials"],
+    python_requires=">3.8",
     install_requires=["certifi", "urllib3", "argon2-cffi",
                       "pycryptodome", "typing-extensions"],
     tests_require=[],
