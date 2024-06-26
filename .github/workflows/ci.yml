@@ -38,6 +38,8 @@ jobs:
     - name: Run spell check on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       uses: codespell-project/actions-codespell@master
+      with:
+        ignore_words_list: assertIn
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
