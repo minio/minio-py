@@ -718,6 +718,14 @@ class MinioAdmin:
         )
         return response.data.decode()
 
+    def get_data_usage_info(self):
+        """Get data usage info"""
+        response = self._url_open(
+            "GET",
+            _COMMAND.DATA_USAGE_INFO,
+        )
+        return response.data.decode()
+
     def get_service_account(self, access_key: str) -> str:
         """Get information about service account"""
         response = self._url_open(
