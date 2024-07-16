@@ -547,7 +547,7 @@ class BaseURL:
         self._aws_info, region_in_host = _get_aws_info(
             hostname, url.scheme == "https", region)
         self._virtual_style_flag = (
-            self._aws_info is not None or hostname.endswith("aliyuncs.com")
+            self._aws_info is not None or hostname.endswith("aliyuncs.com") or hostname.endswith("myqcloud.com")
         )
         self._url = url
         self._region = region or region_in_host
@@ -710,18 +710,21 @@ class BaseURL:
 
         if not bucket_name:
             return self._build_list_buckets_url(url, region)
+        
+        if self.host.endswith("myqcloud.com"):
+            enforce_path_style = False
+        else:
+            enforce_path_style = (
+                # CreateBucket API requires path style in Amazon AWS S3.
+                (method == "PUT" and not object_name and not query_params) or
 
-        enforce_path_style = (
-            # CreateBucket API requires path style in Amazon AWS S3.
-            (method == "PUT" and not object_name and not query_params) or
+                # GetBucketLocation API requires path style in Amazon AWS S3.
+                (query_params and "location" in query_params) or
 
-            # GetBucketLocation API requires path style in Amazon AWS S3.
-            (query_params and "location" in query_params) or
-
-            # Use path style for bucket name containing '.' which causes
-            # SSL certificate validation error.
-            ("." in bucket_name and self._url.scheme == "https")
-        )
+                # Use path style for bucket name containing '.' which causes
+                # SSL certificate validation error.
+                ("." in bucket_name and self._url.scheme == "https")
+            )
 
         if self._aws_info:
             url = BaseURL._build_aws_url(
