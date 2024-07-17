@@ -715,9 +715,6 @@ class BaseURL:
             # CreateBucket API requires path style in Amazon AWS S3.
             (method == "PUT" and not object_name and not query_params) or
 
-            # GetBucketLocation API requires path style in Amazon AWS S3.
-            (query_params and "location" in query_params) or
-
             # Use path style for bucket name containing '.' which causes
             # SSL certificate validation error.
             ("." in bucket_name and self._url.scheme == "https")
