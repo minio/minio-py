@@ -267,6 +267,16 @@ def check_non_empty_string(string: str | bytes):
         raise TypeError() from exc
 
 
+def check_object_name(object_name: str):
+    """Check whether given object name is valid."""
+    check_non_empty_string(object_name)
+    tokens = object_name.split("/")
+    if "." in tokens or ".." in tokens:
+        raise ValueError(
+            "object name with '.' or '..' path segment is not supported",
+        )
+
+
 def is_valid_policy_type(policy: str | bytes):
     """
     Validate if policy is type str
