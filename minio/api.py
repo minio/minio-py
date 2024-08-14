@@ -150,7 +150,7 @@ class Minio:
 
         self._region_map = {}
         self._base_url = BaseURL(
-            ("https://" if secure else "http://") + endpoint,
+            ("https://" if secure else "http://") if not endpoint.startswith("http") else "" + endpoint,
             region,
         )
         self._user_agent = _DEFAULT_USER_AGENT
