@@ -74,7 +74,7 @@ def _get_canonical_headers(
         ):
             values = values if isinstance(values, (list, tuple)) else [values]
             ordered_headers[key] = ",".join([
-                _MULTI_SPACE_REGEX.sub(" ", value) for value in values
+                _MULTI_SPACE_REGEX.sub(" ", value).strip() for value in values
             ])
 
     ordered_headers = OrderedDict(sorted(ordered_headers.items()))

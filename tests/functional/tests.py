@@ -692,7 +692,12 @@ def test_put_object(log_entry, sse=None):
         reader = LimitedRandomReader(length)
         log_entry["args"]["data"] = "LimitedRandomReader(11 * MB)"
         log_entry["args"]["metadata"] = metadata = {
-            'x-amz-meta-testing': 'value', 'test-key': 'value2'}
+            'x-amz-meta-testing': 'value',
+            'test-key': 'value2',
+            "My-Project": "Project One",
+            "My-header1": "    a   b   c  ",
+            "My-Header2": "\"a   b   c\"",
+        }
         log_entry["args"]["content_type"] = content_type = (
             "application/octet-stream")
         log_entry["args"]["object_name"] = object_name + "-metadata"
