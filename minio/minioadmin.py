@@ -23,12 +23,11 @@ from __future__ import absolute_import, annotations
 import json
 import os
 from datetime import timedelta
-from enum import Enum
+from enum import Enum, unique
 from typing import TextIO, Tuple, cast
 from urllib.parse import urlunsplit
 
 import certifi
-from typing_extensions import Protocol
 from urllib3 import Retry
 from urllib3._collections import HTTPHeaderDict
 from urllib3.poolmanager import PoolManager
@@ -50,60 +49,51 @@ from .helpers import (_DEFAULT_USER_AGENT, _REGION_REGEX, DictType, _parse_url,
                       url_replace)
 from .signer import sign_v4_s3
 
-_COMMAND = Enum(
-    "Command",
-    {
-        "ADD_USER": "add-user",
-        "USER_INFO": "user-info",
-        "LIST_USERS": "list-users",
-        "REMOVE_USER": "remove-user",
-        "SET_USER_STATUS": "set-user-status",
-        "ADD_CANNED_POLICY": "add-canned-policy",
-        "SET_USER_OR_GROUP_POLICY": "set-user-or-group-policy",
-        "LIST_CANNED_POLICIES": "list-canned-policies",
-        "REMOVE_CANNED_POLICY": "remove-canned-policy",
-        "UNSET_USER_OR_GROUP_POLICY": "idp/builtin/policy/detach",
-        "CANNED_POLICY_INFO": "info-canned-policy",
-        "SET_BUCKET_QUOTA": "set-bucket-quota",
-        "GET_BUCKET_QUOTA": "get-bucket-quota",
-        "DATA_USAGE_INFO": "datausageinfo",
-        "ADD_UPDATE_REMOVE_GROUP": "update-group-members",
-        "SET_GROUP_STATUS": "set-group-status",
-        "GROUP_INFO": "group",
-        "LIST_GROUPS": "groups",
-        "INFO": "info",
-        "SERVICE": "service",
-        "UPDATE": "update",
-        "TOP_LOCKS": "top/locks",
-        "HELP_CONFIG": "help-config-kv",
-        "GET_CONFIG": "get-config-kv",
-        "SET_CONFIG": "set-config-kv",
-        "DELETE_CONFIG": "del-config-kv",
-        "LIST_CONFIG_HISTORY": "list-config-history-kv",
-        "RESOTRE_CONFIG_HISTORY": "restore-config-history-kv",
-        "START_PROFILE": "profile",
-        "CREATE_KMS_KEY": "kms/key/create",
-        "GET_KMS_KEY_STATUS": "kms/key/status",
-        "SITE_REPLICATION_ADD": "site-replication/add",
-        "SITE_REPLICATION_INFO": "site-replication/info",
-        "SITE_REPLICATION_STATUS": "site-replication/status",
-        "SITE_REPLICATION_EDIT": "site-replication/edit",
-        "SITE_REPLICATION_REMOVE": "site-replication/remove",
-        "SERVICE_ACCOUNT_INFO": "info-service-account",
-        "SERVICE_ACCOUNT_LIST": "list-service-accounts",
-        "SERVICE_ACCOUNT_ADD": "add-service-account",
-        "SERVICE_ACCOUNT_UPDATE": "update-service-account",
-        "SERVICE_ACCOUNT_DELETE": "delete-service-account",
-    },
-)
 
-
-class CommandType(Protocol):
-    """typing stub for enum.Command class"""
-
-    @property
-    def value(self) -> str:
-        """Get value of the command."""
+@unique
+class _COMMAND(Enum):
+    """Admin Command enumerations."""
+    ADD_USER = "add-user"
+    USER_INFO = "user-info"
+    LIST_USERS = "list-users"
+    REMOVE_USER = "remove-user"
+    SET_USER_STATUS = "set-user-status"
+    ADD_CANNED_POLICY = "add-canned-policy"
+    SET_USER_OR_GROUP_POLICY = "set-user-or-group-policy"
+    LIST_CANNED_POLICIES = "list-canned-policies"
+    REMOVE_CANNED_POLICY = "remove-canned-policy"
+    UNSET_USER_OR_GROUP_POLICY = "idp/builtin/policy/detach"
+    CANNED_POLICY_INFO = "info-canned-policy"
+    SET_BUCKET_QUOTA = "set-bucket-quota"
+    GET_BUCKET_QUOTA = "get-bucket-quota"
+    DATA_USAGE_INFO = "datausageinfo"
+    ADD_UPDATE_REMOVE_GROUP = "update-group-members"
+    SET_GROUP_STATUS = "set-group-status"
+    GROUP_INFO = "group"
+    LIST_GROUPS = "groups"
+    INFO = "info"
+    SERVICE = "service"
+    UPDATE = "update"
+    TOP_LOCKS = "top/locks"
+    HELP_CONFIG = "help-config-kv"
+    GET_CONFIG = "get-config-kv"
+    SET_CONFIG = "set-config-kv"
+    DELETE_CONFIG = "del-config-kv"
+    LIST_CONFIG_HISTORY = "list-config-history-kv"
+    RESOTRE_CONFIG_HISTORY = "restore-config-history-kv"
+    START_PROFILE = "profile"
+    CREATE_KMS_KEY = "kms/key/create"
+    GET_KMS_KEY_STATUS = "kms/key/status"
+    SITE_REPLICATION_ADD = "site-replication/add"
+    SITE_REPLICATION_INFO = "site-replication/info"
+    SITE_REPLICATION_STATUS = "site-replication/status"
+    SITE_REPLICATION_EDIT = "site-replication/edit"
+    SITE_REPLICATION_REMOVE = "site-replication/remove"
+    SERVICE_ACCOUNT_INFO = "info-service-account"
+    SERVICE_ACCOUNT_LIST = "list-service-accounts"
+    SERVICE_ACCOUNT_ADD = "add-service-account"
+    SERVICE_ACCOUNT_UPDATE = "update-service-account"
+    SERVICE_ACCOUNT_DELETE = "delete-service-account"
 
 
 class MinioAdmin:
@@ -158,7 +148,7 @@ class MinioAdmin:
     def _url_open(
             self,
             method: str,
-            command: CommandType,
+            command: _COMMAND,
             query_params: DictType | None = None,
             body: bytes | None = None,
             preload_content: bool = True,
