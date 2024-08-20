@@ -402,10 +402,9 @@ class IamAwsProvider(Provider):
         self._full_uri = os.environ.get("AWS_CONTAINER_CREDENTIALS_FULL_URI")
         self._credentials: Credentials | None = None
 
-    def fetch(self, url: str) -> Credentials:
-        """Fetch credentials from EC2/ECS. """
-
-        res = _urlopen(self._http_client, "GET", url)
+    def fetch(self, url: str, headers: dict) -> Credentials:
+        """Fetch credentials from EC2/ECS."""
+        res = _urlopen(self._http_client, "GET", url, headers=headers)
         data = json.loads(res.data)
         if data.get("Code", "Success") != "Success":
             raise ValueError(
@@ -457,17 +456,27 @@ class IamAwsProvider(Provider):
                     "http://169.254.169.254" +
                     "/latest/meta-data/iam/security-credentials/"
                 )
-
-            res = _urlopen(self._http_client, "GET", url)
+            # Step 1 of the IMDSv2 protocol: get a token from the metadata
+            # service with a 6-hour TTL.
+            response = _urlopen(
+                self._http_client, "PUT",
+                "http://169.254.169.254/latest/api/token",
+                headers={"X-aws-ec2-metadata-token-ttl-seconds": "21600"}
+            )
+            # Step 2: get the role name from the metadata service, with the
+            # token as a header.
+            token_header: dict = {
+                "X-aws-ec2-metadata-token":
+                response.data.decode("utf-8").strip()
+            }
+            res = _urlopen(self._http_client, "GET", url, headers=token_header)
             role_names = res.data.decode("utf-8").split("\n")
             if not role_names:
                 raise ValueError(f"no IAM roles attached to EC2 service {url}")
             url += "/" + role_names[0].strip("\r")
-
         if not url:
             raise ValueError("url is empty; this should not happen")
-
-        self._credentials = self.fetch(url)
+        self._credentials = self.fetch(url, headers=token_header)
         return self._credentials
 
 

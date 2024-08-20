@@ -45,9 +45,14 @@ class CredentialsTest(TestCase):
         self.assertEqual(creds.session_token, None)
 
 
-class CredListResponse(object):
+class TokenResponse(object):
     status = 200
     data = b"test-s3-full-access-for-minio-ec2"
+
+
+class CredListResponse(object):
+    status = 200
+    data = b"test-s3-token-for-minio"
 
 
 class CredsResponse(object):
@@ -66,7 +71,9 @@ class CredsResponse(object):
 class IamAwsProviderTest(TestCase):
     @mock.patch("urllib3.PoolManager.urlopen")
     def test_iam(self, mock_connection):
-        mock_connection.side_effect = [CredListResponse(), CredsResponse()]
+        mock_connection.side_effect = [
+            TokenResponse(), CredListResponse(), CredsResponse()
+        ]
         provider = IamAwsProvider()
         creds = provider.retrieve()
         self.assertEqual(creds.access_key, "accessKey")
