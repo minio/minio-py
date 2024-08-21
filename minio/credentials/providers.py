@@ -419,7 +419,7 @@ class IamAwsProvider(Provider):
             relative_uri
         )
         if self._relative_uri and not self._relative_uri.startswith("/"):
-             self._relative_uri = "/" + self._relative_uri
+            self._relative_uri = "/" + self._relative_uri
         self._full_uri = (
             os.environ.get("AWS_CONTAINER_CREDENTIALS_FULL_URI") or
             full_uri
@@ -496,7 +496,7 @@ class IamAwsProvider(Provider):
             # Get IMDS Token
             res = _urlopen(
                 self._http_client,
-                "GET",
+                "PUT",
                 url+"/latest/api/token",
                 headers={"X-aws-ec2-metadata-token-ttl-seconds": "21600"},
             )
