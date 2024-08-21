@@ -32,7 +32,6 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Callable, cast
 from urllib.parse import urlencode, urlsplit, urlunsplit
-
 from xml.etree import ElementTree as ET
 
 import certifi
