@@ -29,7 +29,8 @@ from abc import ABCMeta, abstractmethod
 from datetime import timedelta
 from pathlib import Path
 from typing import Callable, cast
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import urlencode, urlsplit, urlunsplit
+
 from xml.etree import ElementTree as ET
 
 import certifi
@@ -42,7 +43,7 @@ except ImportError:
 
 from urllib3.util import Retry, parse_url
 
-from minio.helpers import sha256_hash
+from minio.helpers import sha256_hash, url_replace
 from minio.signer import sign_v4_sts
 from minio.time import from_iso8601utc, to_amz_date, utcnow
 from minio.xml import find, findtext
@@ -381,6 +382,13 @@ class IamAwsProvider(Provider):
             self,
             custom_endpoint: str | None = None,
             http_client: PoolManager | None = None,
+            auth_token: str | None = None,
+            relative_uri: str | None = None,
+            full_uri: str | None = None,
+            token_file: str | None = None,
+            role_arn: str | None = None,
+            role_session_name: str | None = None,
+            region: str | None = None,
     ):
         self._custom_endpoint = custom_endpoint
         self._http_client = http_client or PoolManager(
@@ -390,19 +398,39 @@ class IamAwsProvider(Provider):
                 status_forcelist=[500, 502, 503, 504],
             ),
         )
-        self._token_file = os.environ.get("AWS_WEB_IDENTITY_TOKEN_FILE")
-        self._aws_region = os.environ.get("AWS_REGION")
-        self._role_arn = os.environ.get("AWS_ROLE_ARN")
-        self._role_session_name = os.environ.get("AWS_ROLE_SESSION_NAME")
-        self._relative_uri = os.environ.get(
-            "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI",
+        self._token = (
+            os.environ.get("AWS_CONTAINER_AUTHORIZATION_TOKEN") or
+            auth_token
+        )
+        self._token_file = (
+            os.environ.get("AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE") or
+            auth_token
+        )
+        self._identity_file = (
+            os.environ.get("AWS_WEB_IDENTITY_TOKEN_FILE") or token_file
+        )
+        self._aws_region = os.environ.get("AWS_REGION") or region
+        self._role_arn = os.environ.get("AWS_ROLE_ARN") or role_arn
+        self._role_session_name = (
+            os.environ.get("AWS_ROLE_SESSION_NAME") or role_session_name
+        )
+        self._relative_uri = (
+            os.environ.get("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI") or
+            relative_uri
         )
         if self._relative_uri and not self._relative_uri.startswith("/"):
-            self._relative_uri = "/" + self._relative_uri
-        self._full_uri = os.environ.get("AWS_CONTAINER_CREDENTIALS_FULL_URI")
+             self._relative_uri = "/" + self._relative_uri
+        self._full_uri = (
+            os.environ.get("AWS_CONTAINER_CREDENTIALS_FULL_URI") or
+            full_uri
+        )
         self._credentials: Credentials | None = None
 
-    def fetch(self, url: str, headers: dict) -> Credentials:
+    def fetch(
+        self,
+        url: str,
+        headers: dict[str, str | list[str] | tuple[str]] | None = None,
+    ) -> Credentials:
         """Fetch credentials from EC2/ECS."""
         res = _urlopen(self._http_client, "GET", url, headers=headers)
         data = json.loads(res.data)
@@ -427,14 +455,16 @@ class IamAwsProvider(Provider):
             return self._credentials
 
         url = self._custom_endpoint
-        if self._token_file:
+        if self._identity_file:
             if not url:
                 url = "https://sts.amazonaws.com"
                 if self._aws_region:
                     url = f"https://sts.{self._aws_region}.amazonaws.com"
+                    if self._aws_region.startswith("cn-"):
+                        url += ".cn"
 
             provider = WebIdentityProvider(
-                lambda: _get_jwt_token(cast(str, self._token_file)),
+                lambda: _get_jwt_token(cast(str, self._identity_file)),
                 url,
                 role_arn=self._role_arn,
                 role_session_name=self._role_session_name,
@@ -443,40 +473,55 @@ class IamAwsProvider(Provider):
             self._credentials = provider.retrieve()
             return cast(Credentials, self._credentials)
 
+        headers: dict[str, str | list[str] | tuple[str]] | None = None
         if self._relative_uri:
             if not url:
                 url = "http://169.254.170.2" + self._relative_uri
+            headers = {"Authorization": self._token} if self._token else None
         elif self._full_uri:
-            if not url:
+            token = self._token
+            if self._token_file:
                 url = self._full_uri
-            _check_loopback_host(url)
+                with open(self._token_file, encoding="utf-8") as file:
+                    token = file.read()
+            else:
+                if not url:
+                    url = self._full_uri
+                    _check_loopback_host(url)
+            headers = {"Authorization": token} if token else None
         else:
             if not url:
-                url = (
-                    "http://169.254.169.254" +
-                    "/latest/meta-data/iam/security-credentials/"
-                )
-            # Step 1 of the IMDSv2 protocol: get a token from the metadata
-            # service with a 6-hour TTL.
-            response = _urlopen(
-                self._http_client, "PUT",
-                "http://169.254.169.254/latest/api/token",
-                headers={"X-aws-ec2-metadata-token-ttl-seconds": "21600"}
+                url = "http://169.254.169.254"
+
+            # Get IMDS Token
+            res = _urlopen(
+                self._http_client,
+                "GET",
+                url+"/latest/api/token",
+                headers={"X-aws-ec2-metadata-token-ttl-seconds": "21600"},
             )
-            # Step 2: get the role name from the metadata service, with the
-            # token as a header.
-            token_header: dict = {
-                "X-aws-ec2-metadata-token":
-                response.data.decode("utf-8").strip()
-            }
-            res = _urlopen(self._http_client, "GET", url, headers=token_header)
+            token = res.data.decode("utf-8")
+            headers = {"X-aws-ec2-metadata-token": token} if token else None
+
+            # Get role name
+            res = _urlopen(
+                self._http_client,
+                "GET",
+                urlunsplit(
+                    url_replace(
+                        urlsplit(url),
+                        path="/latest/meta-data/iam/security-credentials/",
+                    ),
+                ),
+                headers=headers,
+            )
             role_names = res.data.decode("utf-8").split("\n")
             if not role_names:
                 raise ValueError(f"no IAM roles attached to EC2 service {url}")
             url += "/" + role_names[0].strip("\r")
         if not url:
             raise ValueError("url is empty; this should not happen")
-        self._credentials = self.fetch(url, headers=token_header)
+        self._credentials = self.fetch(url, headers=headers)
         return self._credentials
 
 
