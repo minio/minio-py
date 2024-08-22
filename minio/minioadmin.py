@@ -24,7 +24,7 @@ import json
 import os
 from datetime import timedelta
 from enum import Enum, unique
-from typing import TextIO, Tuple, cast
+from typing import Any, TextIO, Tuple, cast
 from urllib.parse import urlunsplit
 
 import certifi
@@ -94,6 +94,14 @@ class _COMMAND(Enum):
     SERVICE_ACCOUNT_ADD = "add-service-account"
     SERVICE_ACCOUNT_UPDATE = "update-service-account"
     SERVICE_ACCOUNT_DELETE = "delete-service-account"
+
+
+def _safe_str(value: Any) -> str:
+    """Convert to string safely"""
+    try:
+        return value.decode() if isinstance(value, bytes) else str(value)
+    except UnicodeDecodeError:
+        return value.hex()
 
 
 class MinioAdmin:
@@ -202,9 +210,7 @@ class MinioAdmin:
             self._trace_stream.write("\n")
             if body is not None:
                 self._trace_stream.write("\n")
-                self._trace_stream.write(
-                    body.decode() if isinstance(body, bytes) else str(body),
-                )
+                self._trace_stream.write(_safe_str(body))
                 self._trace_stream.write("\n")
             self._trace_stream.write("\n")
 
@@ -230,15 +236,19 @@ class MinioAdmin:
                 headers_to_strings(response.headers),
             )
             self._trace_stream.write("\n")
-            self._trace_stream.write("\n")
-            self._trace_stream.write(response.data.decode())
-            self._trace_stream.write("\n")
+            if preload_content:
+                self._trace_stream.write("\n")
+                self._trace_stream.write(_safe_str(response.data))
+                self._trace_stream.write("\n")
             self._trace_stream.write("----------END-HTTP----------\n")
 
         if response.status in [200, 204, 206]:
             return response
 
-        raise MinioAdminException(str(response.status), response.data.decode())
+        raise MinioAdminException(
+            str(response.status),
+            _safe_str(response.data),
+        )
 
     def set_app_info(self, app_name: str, app_version: str):
         """
