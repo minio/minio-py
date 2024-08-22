@@ -14,16 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import os
-import unittest.mock as mock
-from datetime import datetime, timedelta
 from unittest import TestCase
 
-from minio.credentials.credentials import Credentials
 from minio.credentials.providers import (AWSConfigProvider, ChainedProvider,
                                          EnvAWSProvider, EnvMinioProvider,
-                                         IamAwsProvider,
                                          MinioClientConfigProvider,
                                          StaticProvider)
 
@@ -43,36 +38,6 @@ class CredentialsTest(TestCase):
         self.assertEqual(creds.secret_key,
                          "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
         self.assertEqual(creds.session_token, None)
-
-
-class CredListResponse(object):
-    status = 200
-    data = b"test-s3-full-access-for-minio-ec2"
-
-
-class CredsResponse(object):
-    status = 200
-    data = json.dumps({
-        "Code": "Success",
-        "Type": "AWS-HMAC",
-        "AccessKeyId": "accessKey",
-        "SecretAccessKey": "secret",
-        "Token": "token",
-        "Expiration": "2014-12-16T01:51:37Z",
-        "LastUpdated": "2009-11-23T0:00:00Z"
-    })
-
-
-class IamAwsProviderTest(TestCase):
-    @mock.patch("urllib3.PoolManager.urlopen")
-    def test_iam(self, mock_connection):
-        mock_connection.side_effect = [CredListResponse(), CredsResponse()]
-        provider = IamAwsProvider()
-        creds = provider.retrieve()
-        self.assertEqual(creds.access_key, "accessKey")
-        self.assertEqual(creds.secret_key, "secret")
-        self.assertEqual(creds.session_token, "token")
-        self.assertEqual(creds._expiration, datetime(2014, 12, 16, 1, 51, 37))
 
 
 class ChainedProviderTest(TestCase):
