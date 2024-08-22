@@ -47,12 +47,12 @@ class CredentialsTest(TestCase):
 
 class TokenResponse(object):
     status = 200
-    data = b"test-s3-full-access-for-minio-ec2"
+    data = b"test-s3-token-for-minio"
 
 
 class CredListResponse(object):
     status = 200
-    data = b"test-s3-token-for-minio"
+    data = b"test-s3-full-access-for-minio-ec2"
 
 
 class CredsResponse(object):
