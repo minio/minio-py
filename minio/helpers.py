@@ -267,10 +267,10 @@ def check_non_empty_string(string: str | bytes):
         raise TypeError() from exc
 
 
-def check_object_name(object_name: str):
+def check_object_name(object_name: str | bytes):
     """Check whether given object name is valid."""
     check_non_empty_string(object_name)
-    tokens = object_name.split("/")
+    tokens = (object_name.decode() if isinstance(object_name, bytes) else object_name).split("/")
     if "." in tokens or ".." in tokens:
         raise ValueError(
             "object name with '.' or '..' path segment is not supported",
