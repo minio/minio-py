@@ -1187,14 +1187,17 @@ class Minio:
 
         Example::
             # Get data of an object.
+            response = None
             try:
                 response = client.get_object("my-bucket", "my-object")
                 # Read data from response.
             finally:
-                response.close()
-                response.release_conn()
+                if response:
+                    response.close()
+                    response.release_conn()
 
             # Get data of an object of version-ID.
+            response = None
             try:
                 response = client.get_object(
                     "my-bucket", "my-object",
@@ -1202,20 +1205,24 @@ class Minio:
                 )
                 # Read data from response.
             finally:
-                response.close()
-                response.release_conn()
+                if response:
+                    response.close()
+                    response.release_conn()
 
             # Get data of an object from offset and length.
+            response = None
             try:
                 response = client.get_object(
                     "my-bucket", "my-object", offset=512, length=1024,
                 )
                 # Read data from response.
             finally:
-                response.close()
-                response.release_conn()
+                if response:
+                    response.close()
+                    response.release_conn()
 
             # Get data of an SSE-C encrypted object.
+            response = None
             try:
                 response = client.get_object(
                     "my-bucket", "my-object",
@@ -1223,8 +1230,9 @@ class Minio:
                 )
                 # Read data from response.
             finally:
-                response.close()
-                response.release_conn()
+                if response:
+                    response.close()
+                    response.release_conn()
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         check_object_name(object_name)
