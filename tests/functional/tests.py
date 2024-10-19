@@ -1379,9 +1379,6 @@ def test_presigned_get_object_response_headers(  # pylint: disable=invalid-name
         size = 1 * KB
         _CLIENT.put_object(bucket_name, object_name, LimitedRandomReader(size),
                            size)
-        presigned_get_object_url = _CLIENT.presigned_get_object(
-            bucket_name, object_name, timedelta(seconds=120))
-
         response_headers = {
             'response-content-type': content_type,
             'response-content-language': content_language
@@ -1409,6 +1406,51 @@ def test_presigned_get_object_response_headers(  # pylint: disable=invalid-name
         if (response.status != 200 or
                 returned_content_type != content_type or
                 returned_content_language != content_language):
+            raise Exception(
+                "Presigned GET object URL {presigned_get_object_url} failed; "
+                "code: {response.code}, error: {response.data}"
+            )
+    finally:
+        _CLIENT.remove_object(bucket_name, object_name)
+        _CLIENT.remove_bucket(bucket_name)
+
+
+def test_presigned_get_object_range(  # pylint: disable=invalid-name
+        log_entry):
+    """Test presigned_get_object() with headers."""
+
+    # Get a unique bucket_name and object_name
+    bucket_name = _gen_bucket_name()
+    object_name = f"{uuid4()}"
+
+    log_entry["args"] = {
+        "bucket_name": bucket_name,
+        "object_name": object_name,
+    }
+
+    _CLIENT.make_bucket(bucket_name)
+    try:
+        size = 556433  # on purpose its unaligned
+        _CLIENT.put_object(bucket_name, object_name, LimitedRandomReader(size),
+                           size)
+
+        presigned_get_object_url = _CLIENT.presigned_get_object(
+            bucket_name, object_name, timedelta(seconds=120))
+
+        log_entry["args"]["presigned_get_object_url"] = (
+            presigned_get_object_url)
+
+        response = HTTP.urlopen('GET', presigned_get_object_url,
+                                headers={'Range': 'bytes=490897-556432'})
+
+        log_entry["args"]['response.status'] = response.status
+        log_entry["args"]['response.reason'] = response.reason
+        log_entry["args"]['response.headers'] = json.dumps(
+            response.headers.__dict__)
+        # pylint: disable=protected-access
+        log_entry["args"]['response._body'] = response._body.decode('utf-8')
+
+        if response.status != 200:
             raise Exception(
                 "Presigned GET object URL {presigned_get_object_url} failed; "
                 "code: {response.code}, error: {response.data}"
