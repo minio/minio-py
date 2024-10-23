@@ -28,6 +28,7 @@ Simple Storage Service (aka S3) client to perform bucket and object operations.
 from __future__ import absolute_import, annotations
 
 import itertools
+import json
 import os
 import tarfile
 from collections.abc import Iterable
@@ -50,7 +51,7 @@ except ImportError:
 
 from urllib3.util import Timeout
 
-from . import __title__, __version__, time
+from . import time
 from .commonconfig import (COPY, REPLACE, ComposeSource, CopySource,
                            SnowballObject, Tags)
 from .credentials import Credentials, StaticProvider
@@ -306,6 +307,7 @@ class Minio:
             headers=http_headers,
             preload_content=preload_content,
         )
+        # print(response.status, response.data.decode())
 
         if self._trace_stream:
             self._trace_stream.write(f"HTTP/1.1 {response.status}\n")
@@ -334,8 +336,8 @@ class Minio:
         if (
                 method != "HEAD" and
                 "application/xml" not in response.headers.get(
-                    "content-type", "",
-                ).split(";")
+            "content-type", "",
+        ).split(";")
         ):
             if self._trace_stream:
                 self._trace_stream.write("----------END-HTTP----------\n")
@@ -1125,7 +1127,7 @@ class Minio:
         etag = queryencode(cast(str, stat.etag))
         # Write to a temporary file "file_path.part.minio" before saving.
         tmp_file_path = (
-            tmp_file_path or f"{file_path}.{etag}.part.minio"
+                tmp_file_path or f"{file_path}.{etag}.part.minio"
         )
 
         response = None
@@ -1145,7 +1147,7 @@ class Minio:
                 progress.set_meta(object_name=object_name, total_length=length)
 
             with open(tmp_file_path, "wb") as tmp_file:
-                for data in response.stream(amt=1024*1024):
+                for data in response.stream(amt=1024 * 1024):
                     size = tmp_file.write(data)
                     if progress:
                         progress.update(size)
@@ -1255,6 +1257,34 @@ class Minio:
             object_name,
             headers=cast(DictType, headers),
             query_params=extra_query_params,
+            preload_content=False,
+        )
+
+    def prompt_object(
+            self,
+            bucket_name: str,
+            object_name: str,
+            prompt: str,
+            lambda_arn: str | None = None,
+            **kwargs: Any | None,
+    ) -> BaseHTTPResponse:
+        check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
+
+        check_object_name(object_name)
+
+        extra_query_params = {}
+        extra_query_params["lambdaArn"] = lambda_arn or ""
+
+        prompt_body = kwargs
+        prompt_body["prompt"] = prompt
+
+        body = json.dumps(kwargs)
+        return self._execute(
+            "POST",
+            bucket_name,
+            object_name,
+            query_params=extra_query_params,
+            body=body,
             preload_content=False,
         )
 
@@ -1592,11 +1622,11 @@ class Minio:
                     part_number += 1
                     if src.length is not None:
                         headers["x-amz-copy-source-range"] = (
-                            f"bytes={offset}-{offset+src.length-1}"
+                            f"bytes={offset}-{offset + src.length - 1}"
                         )
                     elif src.offset is not None:
                         headers["x-amz-copy-source-range"] = (
-                            f"bytes={offset}-{offset+size-1}"
+                            f"bytes={offset}-{offset + size - 1}"
                         )
                     etag, _ = self._upload_part_copy(
                         bucket_name,
@@ -1756,20 +1786,20 @@ class Minio:
         return args[5], self._upload_part(*args)
 
     def put_object(
-        self,
-        bucket_name: str,
-        object_name: str,
-        data: BinaryIO,
-        length: int,
-        content_type: str = "application/octet-stream",
-        metadata: DictType | None = None,
-        sse: Sse | None = None,
-        progress: ProgressType | None = None,
-        part_size: int = 0,
-        num_parallel_uploads: int = 3,
-        tags: Tags | None = None,
-        retention: Retention | None = None,
-        legal_hold: bool = False
+            self,
+            bucket_name: str,
+            object_name: str,
+            data: BinaryIO,
+            length: int,
+            content_type: str = "application/octet-stream",
+            metadata: DictType | None = None,
+            sse: Sse | None = None,
+            progress: ProgressType | None = None,
+            part_size: int = 0,
+            num_parallel_uploads: int = 3,
+            tags: Tags | None = None,
+            retention: Retention | None = None,
+            legal_hold: bool = False
     ) -> ObjectWriteResult:
         """
         Uploads data from a stream to an object in a bucket.
@@ -1909,7 +1939,7 @@ class Minio:
                 parts = [Part(0, "")] * part_count
                 while not result.empty():
                     part_number, etag = result.get()
-                    parts[part_number-1] = Part(part_number, etag)
+                    parts[part_number - 1] = Part(part_number, etag)
 
             upload_result = self._complete_multipart_upload(
                 bucket_name, object_name, cast(str, upload_id), parts,
@@ -2074,10 +2104,10 @@ class Minio:
         )
 
     def remove_object(
-        self,
-        bucket_name: str,
-        object_name: str,
-        version_id: str | None = None
+            self,
+            bucket_name: str,
+            object_name: str,
+            version_id: str | None = None
     ):
         """
         Remove an object.
@@ -3047,7 +3077,7 @@ class Minio:
             object_name,
             cast(BinaryIO, fileobj),
             length,
-            metadata=cast(Union[DictType,  None], metadata),
+            metadata=cast(Union[DictType, None], metadata),
             sse=sse,
             tags=tags,
             retention=retention,
@@ -3066,7 +3096,7 @@ class Minio:
             max_keys: int | None = None,  # all
             prefix: str | None = None,  # all
             start_after: str | None = None,
-        # all: v1:marker, versioned:key_marker
+            # all: v1:marker, versioned:key_marker
             version_id_marker: str | None = None,  # versioned
             use_api_v1: bool = False,
             include_version: bool = False,
