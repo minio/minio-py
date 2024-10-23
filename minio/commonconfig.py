@@ -21,7 +21,7 @@ from __future__ import absolute_import, annotations
 
 from abc import ABCMeta
 from datetime import datetime
-from typing import Type, TypeVar, cast
+from typing import IO, Type, TypeVar, cast
 from xml.etree import ElementTree as ET
 
 from .error import MinioException
@@ -533,7 +533,7 @@ class SnowballObject:
             self,
             object_name: str,
             filename: str | None = None,
-            data: bytes | None = None,
+            data: IO[bytes] | None = None,
             length: int | None = None,
             mod_time: datetime | None = None,
     ):
@@ -544,6 +544,8 @@ class SnowballObject:
             self._length = length
         else:
             raise ValueError("only one of filename or data must be provided")
+        if data is not None and length is None:
+            raise ValueError("length must be provided for data")
         if mod_time is not None and not isinstance(mod_time, datetime):
             raise ValueError("mod_time must be datetime type")
         self._mod_time = mod_time
@@ -559,7 +561,7 @@ class SnowballObject:
         return self._filename
 
     @property
-    def data(self) -> bytes | None:
+    def data(self) -> IO[bytes] | None:
         """Get data."""
         return self._data
 

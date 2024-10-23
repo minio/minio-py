@@ -34,7 +34,7 @@ from collections.abc import Iterable
 from datetime import datetime, timedelta
 from io import BytesIO
 from random import random
-from typing import IO, BinaryIO, Iterator, TextIO, Tuple, Union, cast
+from typing import BinaryIO, Iterator, TextIO, Tuple, Union, cast
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
@@ -3020,7 +3020,7 @@ class Minio:
                     info.mtime = int(
                         time.to_float(obj.mod_time or time.utcnow()),
                     )
-                    tar.addfile(info, cast(Union[IO[bytes], None], obj.data))
+                    tar.addfile(info, obj.data)
 
         if not name:
             length = cast(BytesIO, fileobj).tell()
