@@ -336,8 +336,8 @@ class Minio:
         if (
                 method != "HEAD" and
                 "application/xml" not in response.headers.get(
-            "content-type", "",
-        ).split(";")
+                    "content-type", "",
+                ).split(";")
         ):
             if self._trace_stream:
                 self._trace_stream.write("----------END-HTTP----------\n")
@@ -1127,7 +1127,7 @@ class Minio:
         etag = queryencode(cast(str, stat.etag))
         # Write to a temporary file "file_path.part.minio" before saving.
         tmp_file_path = (
-                tmp_file_path or f"{file_path}.{etag}.part.minio"
+            tmp_file_path or f"{file_path}.{etag}.part.minio"
         )
 
         response = None
@@ -1266,8 +1266,30 @@ class Minio:
             object_name: str,
             prompt: str,
             lambda_arn: str | None = None,
-            **kwargs: Any | None,
+            **kwargs: DictType | None,
     ) -> BaseHTTPResponse:
+        """
+        Prompt an object using natural language.
+
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param prompt: Prompt the Object to interact with the AI model.
+                                request.
+        :param lambda_arn: Lambda ARN to use for prompt.
+        :param kwargs: Extra parameters for advanced usage.
+        :return: :class:`urllib3.response.BaseHTTPResponse` object.
+
+        Example::
+            # prompt an object.
+            response = None
+            try:
+                response = client.get_object("my-bucket", "my-object", "Describe the object for me")
+                # Read data from response.
+            finally:
+                if response:
+                    response.close()
+                    response.release_conn()
+        """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
 
         check_object_name(object_name)
@@ -1284,7 +1306,7 @@ class Minio:
             bucket_name,
             object_name,
             query_params=extra_query_params,
-            body=body,
+            body=body.encode(),
             preload_content=False,
         )
 
