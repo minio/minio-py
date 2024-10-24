@@ -3,7 +3,7 @@ default: tests
 
 getdeps:
 	@echo "Installing required dependencies"
-	@pip install --user --upgrade autopep8 certifi pytest pylint urllib3 argon2-cffi pycryptodome typing-extensions mypy
+	@pip install --upgrade autopep8 certifi pytest pylint urllib3 argon2-cffi pycryptodome typing-extensions mypy
 
 check: getdeps
 	@echo "Running checks"

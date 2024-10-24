@@ -307,7 +307,6 @@ class Minio:
             headers=http_headers,
             preload_content=preload_content,
         )
-        # print(response.status, response.data.decode())
 
         if self._trace_stream:
             self._trace_stream.write(f"HTTP/1.1 {response.status}\n")
@@ -336,8 +335,8 @@ class Minio:
         if (
                 method != "HEAD" and
                 "application/xml" not in response.headers.get(
-            "content-type", "",
-        ).split(";")
+                    "content-type", "",
+                ).split(";")
         ):
             if self._trace_stream:
                 self._trace_stream.write("----------END-HTTP----------\n")
@@ -1127,7 +1126,7 @@ class Minio:
         etag = queryencode(cast(str, stat.etag))
         # Write to a temporary file "file_path.part.minio" before saving.
         tmp_file_path = (
-                tmp_file_path or f"{file_path}.{etag}.part.minio"
+            tmp_file_path or f"{file_path}.{etag}.part.minio"
         )
 
         response = None
