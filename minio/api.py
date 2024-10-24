@@ -336,8 +336,8 @@ class Minio:
         if (
                 method != "HEAD" and
                 "application/xml" not in response.headers.get(
-                    "content-type", "",
-                ).split(";")
+            "content-type", "",
+        ).split(";")
         ):
             if self._trace_stream:
                 self._trace_stream.write("----------END-HTTP----------\n")
@@ -1127,7 +1127,7 @@ class Minio:
         etag = queryencode(cast(str, stat.etag))
         # Write to a temporary file "file_path.part.minio" before saving.
         tmp_file_path = (
-            tmp_file_path or f"{file_path}.{etag}.part.minio"
+                tmp_file_path or f"{file_path}.{etag}.part.minio"
         )
 
         response = None
@@ -1283,7 +1283,9 @@ class Minio:
             # prompt an object.
             response = None
             try:
-                response = client.get_object("my-bucket", "my-object", "Describe the object for me")
+                response = client.get_object("my-bucket",
+                "my-object",
+                "Describe the object for me")
                 # Read data from response.
             finally:
                 if response:
