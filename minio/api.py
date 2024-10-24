@@ -1313,7 +1313,7 @@ class Minio:
         prompt_body = kwargs
         prompt_body["prompt"] = prompt
 
-        body = json.dumps(kwargs)
+        body = json.dumps(prompt_body)
         return self._execute(
             "POST",
             bucket_name,
