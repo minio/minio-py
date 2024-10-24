@@ -1266,6 +1266,9 @@ class Minio:
             object_name: str,
             prompt: str,
             lambda_arn: str | None = None,
+            request_headers: DictType | None = None,
+            ssec: SseCustomerKey | None = None,
+            version_id: str | None = None,
             **kwargs: DictType | None,
     ) -> BaseHTTPResponse:
         """
@@ -1276,6 +1279,9 @@ class Minio:
         :param prompt: Prompt the Object to interact with the AI model.
                                 request.
         :param lambda_arn: Lambda ARN to use for prompt.
+        :param request_headers: Any additional headers to be added with POST
+        :param ssec: Server-side encryption customer key.
+        :param version_id: Version-ID of the object.
         :param kwargs: Extra parameters for advanced usage.
         :return: :class:`urllib3.response.BaseHTTPResponse` object.
 
@@ -1283,8 +1289,8 @@ class Minio:
             # prompt an object.
             response = None
             try:
-                response = client.get_object("my-bucket",
-                "my-object",
+                response = client.get_object(
+                "my-bucket", "my-object",
                 "Describe the object for me")
                 # Read data from response.
             finally:
@@ -1293,11 +1299,16 @@ class Minio:
                     response.release_conn()
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-
         check_object_name(object_name)
+        check_ssec(ssec)
 
-        extra_query_params = {}
-        extra_query_params["lambdaArn"] = lambda_arn or ""
+        headers = cast(DictType, ssec.headers() if ssec else {})
+        headers.update(request_headers or {})
+
+        extra_query_params = {"lambdaArn": lambda_arn or ""}
+
+        if version_id:
+            extra_query_params["versionId"] = version_id
 
         prompt_body = kwargs
         prompt_body["prompt"] = prompt
@@ -1307,6 +1318,7 @@ class Minio:
             "POST",
             bucket_name,
             object_name,
+            headers=cast(DictType, headers),
             query_params=extra_query_params,
             body=body.encode(),
             preload_content=False,
