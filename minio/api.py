@@ -35,7 +35,7 @@ from collections.abc import Iterable
 from datetime import datetime, timedelta
 from io import BytesIO
 from random import random
-from typing import BinaryIO, Iterator, TextIO, Tuple, Union, cast
+from typing import Any, BinaryIO, Iterator, TextIO, Tuple, Union, cast
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
@@ -1268,7 +1268,7 @@ class Minio:
             request_headers: DictType | None = None,
             ssec: SseCustomerKey | None = None,
             version_id: str | None = None,
-            **kwargs: DictType | None,
+            **kwargs: Any | None,
     ) -> BaseHTTPResponse:
         """
         Prompt an object using natural language.
@@ -1318,7 +1318,7 @@ class Minio:
             bucket_name,
             object_name,
             headers=cast(DictType, headers),
-            query_params=extra_query_params,
+            query_params=cast(DictType, extra_query_params),
             body=body.encode(),
             preload_content=False,
         )
