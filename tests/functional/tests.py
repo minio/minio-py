@@ -1590,67 +1590,46 @@ def test_presigned_post_policy(log_entry):
 
 def test_thread_safe(log_entry):
     """Test thread safety."""
-
-    # Create sha-sum value for the user provided
-    # source file, 'test_file'
-    test_file_sha_sum = _get_sha256sum(_LARGE_FILE)
-
-    # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
     object_name = f"{uuid4()}"
-
     log_entry["args"] = {
         "bucket_name": bucket_name,
         "object_name": object_name,
     }
+    _CLIENT.make_bucket(bucket_name)
 
-    # A list of exceptions raised by get_object_and_check
-    # called in multiple threads.
+    test_file_sha256sum = _get_sha256sum(_LARGE_FILE)
     exceptions = []
 
-    # get_object_and_check() downloads an object, stores it in a file
-    # and then calculates its checksum. In case of mismatch, a new
-    # exception is generated and saved in exceptions.
     def get_object_and_check(index):
+        local_file = f"copied_file_{index}"
         try:
-            local_file = f"copied_file_{index}"
             _CLIENT.fget_object(bucket_name, object_name, local_file)
-            copied_file_sha_sum = _get_sha256sum(local_file)
-            # Compare sha-sum values of the source file and the copied one
-            if test_file_sha_sum != copied_file_sha_sum:
+            if _get_sha256sum(local_file) != test_file_sha256sum:
                 raise ValueError(
-                    'Sha-sum mismatch on multi-threaded put and '
-                    'get objects')
+                    "checksum mismatch on multi-threaded put/get objects")
         except Exception as exc:  # pylint: disable=broad-except
             exceptions.append(exc)
         finally:
-            # Remove downloaded file
             _ = os.path.isfile(local_file) and os.remove(local_file)
 
-    _CLIENT.make_bucket(bucket_name)
-    no_of_threads = 5
     try:
-        # Put/Upload 'no_of_threads' many objects
-        # simultaneously using multi-threading
-        for _ in range(no_of_threads):
+        thread_count = 5
+
+        # Start threads for put object.
+        for _ in range(thread_count):
             thread = Thread(target=_CLIENT.fput_object,
                             args=(bucket_name, object_name, _LARGE_FILE))
             thread.start()
             thread.join()
 
-        # Get/Download 'no_of_threads' many objects
-        # simultaneously using multi-threading
-        thread_list = []
-        for i in range(no_of_threads):
-            # Create dynamic/varying names for to be created threads
-            thread_name = f"thread_{i}"
-            vars()[thread_name] = Thread(
-                target=get_object_and_check, args=(i,))
-            vars()[thread_name].start()
-            thread_list.append(vars()[thread_name])
-
-        # Wait until all threads to finish
-        for thread in thread_list:
+        # Start threads for get object.
+        threads = []
+        for i in range(thread_count):
+            thread = Thread(target=get_object_and_check, args=(i,))
+            threads.append(thread)
+            thread.start()
+        for thread in threads:
             thread.join()
 
         if exceptions:
