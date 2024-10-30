@@ -839,8 +839,10 @@ class Worker(Thread):
                     self._results_queue.put(result)
                 except Exception as ex:  # pylint: disable=broad-except
                     self._exceptions_queue.put(ex)
-                finally:
-                    cleanup_func()
+
+            # cleanup_func represents semaphore.release() to manage thread pool capacity,
+            # it should be called unconditionally to avoid semaphore leaks and deadlocks.
+            cleanup_func()
             # Mark this task as done, whether an exception happened or not
             self._tasks_queue.task_done()
 
