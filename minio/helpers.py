@@ -829,11 +829,11 @@ class Worker(Thread):
             if not task:
                 self._tasks_queue.task_done()
                 break
+            
+            func, args, kargs, cleanup_func = task
             # No exception detected in any thread,
             # continue the execution.
             if self._exceptions_queue.empty():
-                # Execute the task
-                func, args, kargs, cleanup_func = task
                 try:
                     result = func(*args, **kargs)
                     self._results_queue.put(result)
