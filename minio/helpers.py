@@ -840,7 +840,8 @@ class Worker(Thread):
                 except Exception as ex:  # pylint: disable=broad-except
                     self._exceptions_queue.put(ex)
 
-            # call cleanup i.e. Semaphore.release irrespective of task execution to avoid race condition.
+            # call cleanup i.e. Semaphore.release irrespective of task
+            # execution to avoid race condition.
             cleanup_func()
             # Mark this task as done, whether an exception happened or not
             self._tasks_queue.task_done()
