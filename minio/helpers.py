@@ -829,7 +829,6 @@ class Worker(Thread):
             if not task:
                 self._tasks_queue.task_done()
                 break
-            
             func, args, kargs, cleanup_func = task
             # No exception detected in any thread,
             # continue the execution.
