@@ -78,16 +78,7 @@ def from_http_header(value: str) -> datetime:
         raise ValueError(
             f"time data {value} does not match HTTP header format"
         )
-    if not value[5:7].isnumeric():
-        raise ValueError(
-            f"time data {value} does not match HTTP header format"
-        )
     day = int(value[5:7])
-
-    if day < 1 or day > 31:
-        raise ValueError(
-            f"time data {value} does not match HTTP header format"
-        )
 
     if value[8:11] not in _MONTHS:
         raise ValueError(
