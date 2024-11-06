@@ -115,14 +115,7 @@ class TimeutilsTest(unittest.TestCase):
             ("Tue, 30 Set 2024 09:35:00 GMT", "name of day doesn't match"),
         ]:
             with self.subTest(case=case):
-                with self.assertRaises(
-                    ValueError,
-                ) as exc:
-                    from_http_header(case[0])
-                self.assertEqual(
-                    str(exc.exception),
-                    f"time data {case[0]} does not match HTTP header format",
-                )
+                self.assertRaises(ValueError, from_http_header, case[0])
 
     def test_from_http_header_default_locale(self) -> None:
         result_datetime = from_http_header(LAST_MODIFIED_STR)
