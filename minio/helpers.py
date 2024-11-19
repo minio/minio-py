@@ -829,18 +829,19 @@ class Worker(Thread):
             if not task:
                 self._tasks_queue.task_done()
                 break
+            func, args, kargs, cleanup_func = task
             # No exception detected in any thread,
             # continue the execution.
             if self._exceptions_queue.empty():
-                # Execute the task
-                func, args, kargs, cleanup_func = task
                 try:
                     result = func(*args, **kargs)
                     self._results_queue.put(result)
                 except Exception as ex:  # pylint: disable=broad-except
                     self._exceptions_queue.put(ex)
-                finally:
-                    cleanup_func()
+
+            # call cleanup i.e. Semaphore.release irrespective of task
+            # execution to avoid race condition.
+            cleanup_func()
             # Mark this task as done, whether an exception happened or not
             self._tasks_queue.task_done()
 
