@@ -28,13 +28,14 @@ Simple Storage Service (aka S3) client to perform bucket and object operations.
 from __future__ import absolute_import, annotations
 
 import itertools
+import json
 import os
 import tarfile
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 from io import BytesIO
 from random import random
-from typing import IO, BinaryIO, Iterator, TextIO, Tuple, Union, cast
+from typing import Any, BinaryIO, Iterator, TextIO, Tuple, Union, cast
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
@@ -50,7 +51,7 @@ except ImportError:
 
 from urllib3.util import Timeout
 
-from . import __title__, __version__, time
+from . import time
 from .commonconfig import (COPY, REPLACE, ComposeSource, CopySource,
                            SnowballObject, Tags)
 from .credentials import Credentials, StaticProvider
@@ -65,7 +66,7 @@ from .error import InvalidResponseError, S3Error, ServerError
 from .helpers import (_DEFAULT_USER_AGENT, MAX_MULTIPART_COUNT,
                       MAX_MULTIPART_OBJECT_SIZE, MAX_PART_SIZE, MIN_PART_SIZE,
                       BaseURL, DictType, ObjectWriteResult, ProgressType,
-                      ThreadPool, check_bucket_name, check_non_empty_string,
+                      ThreadPool, check_bucket_name, check_object_name,
                       check_sse, check_ssec, genheaders, get_part_info,
                       headers_to_strings, is_valid_policy_type, makedirs,
                       md5sum_hash, queryencode, read_part_data, sha256_hash)
@@ -594,7 +595,7 @@ class Minio:
                 print(result.stats())
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         if not isinstance(request, SelectRequest):
             raise ValueError("request must be SelectRequest type")
         body = marshal(request)
@@ -1107,7 +1108,7 @@ class Minio:
             )
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
 
         if os.path.isdir(file_path):
             raise ValueError(f"file {file_path} is a directory")
@@ -1145,7 +1146,7 @@ class Minio:
                 progress.set_meta(object_name=object_name, total_length=length)
 
             with open(tmp_file_path, "wb") as tmp_file:
-                for data in response.stream(amt=1024*1024):
+                for data in response.stream(amt=1024 * 1024):
                     size = tmp_file.write(data)
                     if progress:
                         progress.update(size)
@@ -1187,14 +1188,17 @@ class Minio:
 
         Example::
             # Get data of an object.
+            response = None
             try:
                 response = client.get_object("my-bucket", "my-object")
                 # Read data from response.
             finally:
-                response.close()
-                response.release_conn()
+                if response:
+                    response.close()
+                    response.release_conn()
 
             # Get data of an object of version-ID.
+            response = None
             try:
                 response = client.get_object(
                     "my-bucket", "my-object",
@@ -1202,20 +1206,24 @@ class Minio:
                 )
                 # Read data from response.
             finally:
-                response.close()
-                response.release_conn()
+                if response:
+                    response.close()
+                    response.release_conn()
 
             # Get data of an object from offset and length.
+            response = None
             try:
                 response = client.get_object(
                     "my-bucket", "my-object", offset=512, length=1024,
                 )
                 # Read data from response.
             finally:
-                response.close()
-                response.release_conn()
+                if response:
+                    response.close()
+                    response.release_conn()
 
             # Get data of an SSE-C encrypted object.
+            response = None
             try:
                 response = client.get_object(
                     "my-bucket", "my-object",
@@ -1223,11 +1231,12 @@ class Minio:
                 )
                 # Read data from response.
             finally:
-                response.close()
-                response.release_conn()
+                if response:
+                    response.close()
+                    response.release_conn()
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         check_ssec(ssec)
 
         headers = cast(DictType, ssec.headers() if ssec else {})
@@ -1247,6 +1256,70 @@ class Minio:
             object_name,
             headers=cast(DictType, headers),
             query_params=extra_query_params,
+            preload_content=False,
+        )
+
+    def prompt_object(
+            self,
+            bucket_name: str,
+            object_name: str,
+            prompt: str,
+            lambda_arn: str | None = None,
+            request_headers: DictType | None = None,
+            ssec: SseCustomerKey | None = None,
+            version_id: str | None = None,
+            **kwargs: Any | None,
+    ) -> BaseHTTPResponse:
+        """
+        Prompt an object using natural language.
+
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param prompt: Prompt the Object to interact with the AI model.
+                                request.
+        :param lambda_arn: Lambda ARN to use for prompt.
+        :param request_headers: Any additional headers to be added with POST
+        :param ssec: Server-side encryption customer key.
+        :param version_id: Version-ID of the object.
+        :param kwargs: Extra parameters for advanced usage.
+        :return: :class:`urllib3.response.BaseHTTPResponse` object.
+
+        Example::
+            # prompt an object.
+            response = None
+            try:
+                response = client.get_object(
+                "my-bucket", "my-object",
+                "Describe the object for me")
+                # Read data from response.
+            finally:
+                if response:
+                    response.close()
+                    response.release_conn()
+        """
+        check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
+        check_object_name(object_name)
+        check_ssec(ssec)
+
+        headers = cast(DictType, ssec.headers() if ssec else {})
+        headers.update(request_headers or {})
+
+        extra_query_params = {"lambdaArn": lambda_arn or ""}
+
+        if version_id:
+            extra_query_params["versionId"] = version_id
+
+        prompt_body = kwargs
+        prompt_body["prompt"] = prompt
+
+        body = json.dumps(prompt_body)
+        return self._execute(
+            "POST",
+            bucket_name,
+            object_name,
+            headers=cast(DictType, headers),
+            query_params=cast(DictType, extra_query_params),
+            body=body.encode(),
             preload_content=False,
         )
 
@@ -1315,7 +1388,7 @@ class Minio:
             print(result.object_name, result.version_id)
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         if not isinstance(source, CopySource):
             raise ValueError("source must be CopySource type")
         check_sse(sse)
@@ -1535,7 +1608,7 @@ class Minio:
             print(result.object_name, result.version_id)
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         if not isinstance(sources, (list, tuple)) or not sources:
             raise ValueError("sources must be non-empty list or tuple type")
         i = 0
@@ -1584,11 +1657,11 @@ class Minio:
                     part_number += 1
                     if src.length is not None:
                         headers["x-amz-copy-source-range"] = (
-                            f"bytes={offset}-{offset+src.length-1}"
+                            f"bytes={offset}-{offset + src.length - 1}"
                         )
                     elif src.offset is not None:
                         headers["x-amz-copy-source-range"] = (
-                            f"bytes={offset}-{offset+size-1}"
+                            f"bytes={offset}-{offset + size - 1}"
                         )
                     etag, _ = self._upload_part_copy(
                         bucket_name,
@@ -1748,20 +1821,20 @@ class Minio:
         return args[5], self._upload_part(*args)
 
     def put_object(
-        self,
-        bucket_name: str,
-        object_name: str,
-        data: BinaryIO,
-        length: int,
-        content_type: str = "application/octet-stream",
-        metadata: DictType | None = None,
-        sse: Sse | None = None,
-        progress: ProgressType | None = None,
-        part_size: int = 0,
-        num_parallel_uploads: int = 3,
-        tags: Tags | None = None,
-        retention: Retention | None = None,
-        legal_hold: bool = False
+            self,
+            bucket_name: str,
+            object_name: str,
+            data: BinaryIO,
+            length: int,
+            content_type: str = "application/octet-stream",
+            metadata: DictType | None = None,
+            sse: Sse | None = None,
+            progress: ProgressType | None = None,
+            part_size: int = 0,
+            num_parallel_uploads: int = 3,
+            tags: Tags | None = None,
+            retention: Retention | None = None,
+            legal_hold: bool = False
     ) -> ObjectWriteResult:
         """
         Uploads data from a stream to an object in a bucket.
@@ -1808,7 +1881,7 @@ class Minio:
             )
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         check_sse(sse)
         if tags is not None and not isinstance(tags, Tags):
             raise ValueError("tags must be Tags type")
@@ -1901,7 +1974,7 @@ class Minio:
                 parts = [Part(0, "")] * part_count
                 while not result.empty():
                     part_number, etag = result.get()
-                    parts[part_number-1] = Part(part_number, etag)
+                    parts[part_number - 1] = Part(part_number, etag)
 
             upload_result = self._complete_multipart_upload(
                 bucket_name, object_name, cast(str, upload_id), parts,
@@ -2031,7 +2104,7 @@ class Minio:
         """
 
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         check_ssec(ssec)
 
         headers = cast(DictType, ssec.headers() if ssec else {})
@@ -2066,10 +2139,10 @@ class Minio:
         )
 
     def remove_object(
-        self,
-        bucket_name: str,
-        object_name: str,
-        version_id: str | None = None
+            self,
+            bucket_name: str,
+            object_name: str,
+            version_id: str | None = None
     ):
         """
         Remove an object.
@@ -2089,7 +2162,7 @@ class Minio:
             )
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         self._execute(
             "DELETE",
             bucket_name,
@@ -2252,7 +2325,7 @@ class Minio:
             print(url)
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         if expires.total_seconds() < 1 or expires.total_seconds() > 604800:
             raise ValueError("expires must be between 1 second to 7 days")
 
@@ -2636,7 +2709,7 @@ class Minio:
             client.delete_object_tags("my-bucket", "my-object")
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         query_params = {"versionId": version_id} if version_id else {}
         query_params["tagging"] = ""
         self._execute(
@@ -2664,7 +2737,7 @@ class Minio:
             tags = client.get_object_tags("my-bucket", "my-object")
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         query_params = {"versionId": version_id} if version_id else {}
         query_params["tagging"] = ""
         try:
@@ -2703,7 +2776,7 @@ class Minio:
             client.set_object_tags("my-bucket", "my-object", tags)
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         if not isinstance(tags, Tags):
             raise ValueError("tags must be Tags type")
         body = marshal(Tagging(tags))
@@ -2735,7 +2808,7 @@ class Minio:
             client.enable_object_legal_hold("my-bucket", "my-object")
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         body = marshal(LegalHold(True))
         query_params = {"versionId": version_id} if version_id else {}
         query_params["legal-hold"] = ""
@@ -2765,7 +2838,7 @@ class Minio:
             client.disable_object_legal_hold("my-bucket", "my-object")
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         body = marshal(LegalHold(False))
         query_params = {"versionId": version_id} if version_id else {}
         query_params["legal-hold"] = ""
@@ -2798,7 +2871,7 @@ class Minio:
                 print("legal hold is not enabled on my-object")
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         query_params = {"versionId": version_id} if version_id else {}
         query_params["legal-hold"] = ""
         try:
@@ -2889,7 +2962,7 @@ class Minio:
             config = client.get_object_retention("my-bucket", "my-object")
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         query_params = {"versionId": version_id} if version_id else {}
         query_params["retention"] = ""
         try:
@@ -2927,7 +3000,7 @@ class Minio:
             client.set_object_retention("my-bucket", "my-object", config)
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        check_non_empty_string(object_name)
+        check_object_name(object_name)
         if not isinstance(config, Retention):
             raise ValueError("config must be Retention type")
         body = marshal(config)
@@ -3012,7 +3085,7 @@ class Minio:
                     info.mtime = int(
                         time.to_float(obj.mod_time or time.utcnow()),
                     )
-                    tar.addfile(info, cast(Union[IO[bytes], None], obj.data))
+                    tar.addfile(info, obj.data)
 
         if not name:
             length = cast(BytesIO, fileobj).tell()
@@ -3039,7 +3112,7 @@ class Minio:
             object_name,
             cast(BinaryIO, fileobj),
             length,
-            metadata=cast(Union[DictType,  None], metadata),
+            metadata=cast(Union[DictType, None], metadata),
             sse=sse,
             tags=tags,
             retention=retention,
@@ -3058,7 +3131,7 @@ class Minio:
             max_keys: int | None = None,  # all
             prefix: str | None = None,  # all
             start_after: str | None = None,
-        # all: v1:marker, versioned:key_marker
+            # all: v1:marker, versioned:key_marker
             version_id_marker: str | None = None,  # versioned
             use_api_v1: bool = False,
             include_version: bool = False,

@@ -267,6 +267,16 @@ def check_non_empty_string(string: str | bytes):
         raise TypeError() from exc
 
 
+def check_object_name(object_name: str):
+    """Check whether given object name is valid."""
+    check_non_empty_string(object_name)
+    tokens = object_name.split("/")
+    if "." in tokens or ".." in tokens:
+        raise ValueError(
+            "object name with '.' or '..' path segment is not supported",
+        )
+
+
 def is_valid_policy_type(policy: str | bytes):
     """
     Validate if policy is type str
@@ -816,18 +826,19 @@ class Worker(Thread):
             if not task:
                 self._tasks_queue.task_done()
                 break
+            func, args, kargs, cleanup_func = task
             # No exception detected in any thread,
             # continue the execution.
             if self._exceptions_queue.empty():
-                # Execute the task
-                func, args, kargs, cleanup_func = task
                 try:
                     result = func(*args, **kargs)
                     self._results_queue.put(result)
                 except Exception as ex:  # pylint: disable=broad-except
                     self._exceptions_queue.put(ex)
-                finally:
-                    cleanup_func()
+
+            # call cleanup i.e. Semaphore.release irrespective of task
+            # execution to avoid race condition.
+            cleanup_func()
             # Mark this task as done, whether an exception happened or not
             self._tasks_queue.task_done()
 

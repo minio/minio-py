@@ -74,7 +74,11 @@ def from_http_header(value: str) -> datetime:
             f"time data {value} does not match HTTP header format")
     weekday = _WEEK_DAYS.index(value[0:3])
 
-    day = datetime.strptime(value[4:8], " %d ").day
+    if value[4] != " " or value[7] != " ":
+        raise ValueError(
+            f"time data {value} does not match HTTP header format"
+        )
+    day = int(value[5:7])
 
     if value[8:11] not in _MONTHS:
         raise ValueError(

@@ -30,7 +30,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
@@ -38,8 +38,10 @@ jobs:
     - name: Run spell check on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       uses: codespell-project/actions-codespell@master
+      with:
+        ignore_words_list: assertIn
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
