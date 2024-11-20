@@ -183,7 +183,7 @@ client.remove_bucket("my-bucket")
 
 <a name="list_objects"></a>
 
-### list_objects(bucket_name, prefix=None, recursive=False, start_after=None, include_user_meta=False, include_version=False, use_api_v1=False, use_url_encoding_type=True)
+### list_objects(bucket_name, prefix=None, recursive=False, start_after=None, include_user_meta=False, include_version=False, use_api_v1=False, use_url_encoding_type=True, extra_headers=None, extra_query_params=None)
 
 Lists object information of a bucket.
 
@@ -199,6 +199,8 @@ __Parameters__
 | `include_version`       | _bool_ | Flag to control whether include object versions.             |
 | `use_api_v1`            | _bool_ | Flag to control to use ListObjectV1 S3 API or not.           |
 | `use_url_encoding_type` | _bool_ | Flag to control whether URL encoding type to be used or not. |
+| `extra_headers`         | _dict_ | Extra HTTP headers for advanced usage.                       |
+| `extra_query_params`    | _dict_ | Extra query parameters for advanced usage.                   |
 
 __Return Value__
 
@@ -1374,7 +1376,7 @@ print(
 
 <a name="stat_object"></a>
 
-### stat_object(bucket_name, object_name, ssec=None, version_id=None, extra_query_params=None)
+### stat_object(bucket_name, object_name, ssec=None, version_id=None, extra_headers=None, extra_query_params=None)
 
 Get object information and metadata of an object.
 
