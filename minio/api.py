@@ -1121,6 +1121,7 @@ class Minio:
             object_name,
             ssec,
             version_id=version_id,
+            extra_headers=request_headers,
         )
 
         etag = queryencode(cast(str, stat.etag))
