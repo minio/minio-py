@@ -31,7 +31,7 @@ from abc import ABCMeta, abstractmethod
 from datetime import timedelta
 from pathlib import Path
 from typing import Callable, cast
-from urllib.parse import urlencode, urlsplit, urlunsplit
+from urllib.parse import urlencode, urlsplit
 from xml.etree import ElementTree as ET
 
 import certifi
@@ -44,7 +44,7 @@ except ImportError:
 
 from urllib3.util import Retry, parse_url
 
-from minio.helpers import sha256_hash, url_replace
+from minio.helpers import sha256_hash
 from minio.signer import sign_v4_sts
 from minio.time import from_iso8601utc, to_amz_date, utcnow
 from minio.xml import find, findtext
