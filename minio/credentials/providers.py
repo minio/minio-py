@@ -514,7 +514,8 @@ class IamAwsProvider(Provider):
             role_names = res.data.decode("utf-8").split("\n")
             if not role_names:
                 raise ValueError(f"no IAM roles attached to EC2 service {url}")
-            url += "/latest/meta-data/iam/security-credentials/" + role_names[0].strip("\r")
+            url += "/latest/meta-data/iam/security-credentials/" + \
+                role_names[0].strip("\r")
         if not url:
             raise ValueError("url is empty; this should not happen")
         self._credentials = self.fetch(url, headers=headers)
