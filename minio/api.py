@@ -2006,6 +2006,8 @@ class Minio:
             use_api_v1: bool = False,
             use_url_encoding_type: bool = True,
             fetch_owner: bool = False,
+            extra_headers: DictType | None = None,
+            extra_query_params: DictType | None = None,
     ):
         """
         Lists object information of a bucket.
@@ -2021,6 +2023,8 @@ class Minio:
         :param use_api_v1: Flag to control to use ListObjectV1 S3 API or not.
         :param use_url_encoding_type: Flag to control whether URL encoding type
                                       to be used or not.
+        :param extra_headers: Extra HTTP headers for advanced usage.
+        :param extra_query_params: Extra query parameters for advanced usage.
         :return: Iterator of :class:`Object <Object>`.
 
         Example::
@@ -2065,6 +2069,8 @@ class Minio:
             include_version=include_version,
             encoding_type="url" if use_url_encoding_type else None,
             fetch_owner=fetch_owner,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
     def stat_object(
@@ -3136,6 +3142,8 @@ class Minio:
             version_id_marker: str | None = None,  # versioned
             use_api_v1: bool = False,
             include_version: bool = False,
+            extra_headers: DictType | None = None,
+            extra_query_params: DictType | None = None,
     ) -> Iterator[Object]:
         """
         List objects optionally including versions.
@@ -3152,7 +3160,7 @@ class Minio:
 
         is_truncated = True
         while is_truncated:
-            query = {}
+            query = extra_query_params or {}
             if include_version:
                 query["versions"] = ""
             elif not use_api_v1:
@@ -3184,6 +3192,7 @@ class Minio:
                 "GET",
                 bucket_name,
                 query_params=cast(DictType, query),
+                headers=extra_headers,
             )
 
             objects, is_truncated, start_after, version_id_marker = (
