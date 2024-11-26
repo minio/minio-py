@@ -31,7 +31,7 @@ from abc import ABCMeta, abstractmethod
 from datetime import timedelta
 from pathlib import Path
 from typing import Callable, cast
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import urlencode, urlsplit, urljoin
 from xml.etree import ElementTree as ET
 
 import certifi
@@ -503,19 +503,25 @@ class IamAwsProvider(Provider):
             )
             token = res.data.decode("utf-8")
             headers = {"X-aws-ec2-metadata-token": token} if token else None
-
+            iam_security_creds_url = urlsplit(url)._replace(
+                path="/latest/meta-data/iam/security-credentials/"
+            )
             # Get role name
             res = _urlopen(
                 self._http_client,
                 "GET",
-                url+"/latest/meta-data/iam/security-credentials/",
+                iam_security_creds_url.geturl(),
                 headers=headers,
             )
             role_names = res.data.decode("utf-8").split("\n")
             if not role_names:
                 raise ValueError(f"no IAM roles attached to EC2 service {url}")
-            url += "/latest/meta-data/iam/security-credentials/" + \
-                role_names[0].strip("\r")
+            url = iam_security_creds_url._replace(
+                path=urljoin(
+                    iam_security_creds_url.path,
+                    role_names[0].strip("\r"),
+                )
+            ).geturl()
         if not url:
             raise ValueError("url is empty; this should not happen")
         self._credentials = self.fetch(url, headers=headers)
