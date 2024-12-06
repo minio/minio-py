@@ -505,21 +505,17 @@ class IamAwsProvider(Provider):
             headers = {"X-aws-ec2-metadata-token": token} if token else None
 
             # Get role name
-            res = _urlopen(
-                self._http_client,
-                "GET",
-                urlunsplit(
-                    url_replace(
-                        urlsplit(url),
-                        path="/latest/meta-data/iam/security-credentials/",
-                    ),
+            url = urlunsplit(
+                url_replace(
+                    urlsplit(url),
+                    path="/latest/meta-data/iam/security-credentials/",
                 ),
-                headers=headers,
             )
+            res = _urlopen(self._http_client, "GET", url, headers=headers)
             role_names = res.data.decode("utf-8").split("\n")
             if not role_names:
                 raise ValueError(f"no IAM roles attached to EC2 service {url}")
-            url += "/" + role_names[0].strip("\r")
+            url += role_names[0].strip("\r")
         if not url:
             raise ValueError("url is empty; this should not happen")
         self._credentials = self.fetch(url, headers=headers)
