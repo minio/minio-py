@@ -31,7 +31,7 @@ from abc import ABCMeta, abstractmethod
 from datetime import timedelta
 from pathlib import Path
 from typing import Callable, cast
-from urllib.parse import urlencode, urlsplit, urlunsplit
+from urllib.parse import urlencode, urlsplit
 from xml.etree import ElementTree as ET
 
 import certifi
@@ -44,7 +44,7 @@ except ImportError:
 
 from urllib3.util import Retry, parse_url
 
-from minio.helpers import sha256_hash, url_replace
+from minio.helpers import sha256_hash
 from minio.signer import sign_v4_sts
 from minio.time import from_iso8601utc, to_amz_date, utcnow
 from minio.xml import find, findtext
@@ -504,22 +504,18 @@ class IamAwsProvider(Provider):
             token = res.data.decode("utf-8")
             headers = {"X-aws-ec2-metadata-token": token} if token else None
 
+            url += "/latest/meta-data/iam/security-credentials/"
             # Get role name
             res = _urlopen(
                 self._http_client,
                 "GET",
-                urlunsplit(
-                    url_replace(
-                        urlsplit(url),
-                        path="/latest/meta-data/iam/security-credentials/",
-                    ),
-                ),
-                headers=headers,
+                url,
+                headers=headers
             )
             role_names = res.data.decode("utf-8").split("\n")
             if not role_names:
                 raise ValueError(f"no IAM roles attached to EC2 service {url}")
-            url += "/" + role_names[0].strip("\r")
+            url += role_names[0].strip("\r")
         if not url:
             raise ValueError("url is empty; this should not happen")
         self._credentials = self.fetch(url, headers=headers)
