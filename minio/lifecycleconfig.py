@@ -163,7 +163,9 @@ C = TypeVar("C", bound="NoncurrentVersionExpiration")
 class NoncurrentVersionExpiration:
     """Noncurrent version expiration."""
 
-    def __init__(self, noncurrent_days: int | None = None, noncurrent_versions: int | None = None):
+    def __init__(self,
+                 noncurrent_days: int | None = None,
+                 noncurrent_versions: int | None = None):
         self._noncurrent_days = noncurrent_days
         self._noncurrent_versions = noncurrent_versions
 
@@ -171,7 +173,7 @@ class NoncurrentVersionExpiration:
     def noncurrent_days(self) -> int | None:
         """Get Noncurrent days."""
         return self._noncurrent_days
-    
+
     @property
     def noncurrent_versions(self) -> int | None:
         """Get Noncurrent versions."""
@@ -187,7 +189,7 @@ class NoncurrentVersionExpiration:
         noncurrent_days = findtext(element, "NoncurrentDays")
         noncurrent_versions = findtext(element, "NewerNoncurrentVersions")
 
-        return cls(int(noncurrent_days) if noncurrent_days else None, 
+        return cls(int(noncurrent_days) if noncurrent_days else None,
                    int(noncurrent_versions) if noncurrent_versions else None)
 
     def toxml(self, element: ET.Element | None) -> ET.Element:
@@ -198,15 +200,17 @@ class NoncurrentVersionExpiration:
 
         if not self._noncurrent_days and not self._noncurrent_versions:
             raise ValueError("Either one value must be set")
-        
+
         if self._noncurrent_versions and self._noncurrent_days:
             raise ValueError("Only one value can be set")
-        
+
         if self._noncurrent_days:
-            SubElement(element, "NoncurrentDays", str(self._noncurrent_days))
-            
+            SubElement(element, "NoncurrentDays",
+                       str(self._noncurrent_days))
+
         if self._noncurrent_versions:
-            SubElement(element, "NewerNoncurrentVersions", str(self._noncurrent_versions))
+            SubElement(element, "NewerNoncurrentVersions",
+                       str(self._noncurrent_versions))
 
         return element
 
