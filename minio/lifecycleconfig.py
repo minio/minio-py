@@ -118,9 +118,11 @@ class NoncurrentVersionTransition:
             self,
             noncurrent_days: int | None = None,
             storage_class: str | None = None,
+            newer_noncurrent_versions: int | None = None,
     ):
         self._noncurrent_days = noncurrent_days
         self._storage_class = storage_class
+        self._newer_noncurrent_versions = newer_noncurrent_versions
 
     @property
     def noncurrent_days(self) -> int | None:
@@ -132,6 +134,11 @@ class NoncurrentVersionTransition:
         """Get storage class."""
         return self._storage_class
 
+    @property
+    def newer_noncurrent_versions(self) -> int | None:
+        """Get Newer Noncurrent versions."""
+        return self._newer_noncurrent_versions
+
     @classmethod
     def fromxml(cls: Type[B], element: ET.Element) -> B:
         """Create new object with values from XML element."""
@@ -140,9 +147,11 @@ class NoncurrentVersionTransition:
             find(element, "NoncurrentVersionTransition", True),
         )
         noncurrent_days = findtext(element, "NoncurrentDays")
+        versions = findtext(element, "NewerNoncurrentVersions")
         return cls(
             int(noncurrent_days) if noncurrent_days else None,
             findtext(element, "StorageClass"),
+            int(versions) if versions else None,
         )
 
     def toxml(self, element: ET.Element | None) -> ET.Element:
@@ -154,6 +163,9 @@ class NoncurrentVersionTransition:
             SubElement(element, "NoncurrentDays", str(self._noncurrent_days))
         if self._storage_class:
             SubElement(element, "StorageClass", self._storage_class)
+        if self._newer_noncurrent_versions:
+            SubElement(element, "NewerNoncurrentVersions",
+                       str(self._newer_noncurrent_versions))
         return element
 
 
@@ -163,13 +175,20 @@ C = TypeVar("C", bound="NoncurrentVersionExpiration")
 class NoncurrentVersionExpiration:
     """Noncurrent version expiration."""
 
-    def __init__(self, noncurrent_days: int | None = None):
+    def __init__(self, noncurrent_days: int | None = None,
+                 newer_noncurrent_versions: int | None = None):
         self._noncurrent_days = noncurrent_days
+        self._newer_noncurrent_versions = newer_noncurrent_versions
 
     @property
     def noncurrent_days(self) -> int | None:
         """Get Noncurrent days."""
         return self._noncurrent_days
+
+    @property
+    def newer_noncurrent_versions(self) -> int | None:
+        """Get Newer Noncurrent versions."""
+        return self._newer_noncurrent_versions
 
     @classmethod
     def fromxml(cls: Type[C], element: ET.Element) -> C:
@@ -179,7 +198,9 @@ class NoncurrentVersionExpiration:
             find(element, "NoncurrentVersionExpiration", True),
         )
         noncurrent_days = findtext(element, "NoncurrentDays")
-        return cls(int(noncurrent_days) if noncurrent_days else None)
+        versions = findtext(element, "NewerNoncurrentVersions")
+        return cls(int(noncurrent_days) if noncurrent_days else None,
+                   int(versions) if versions else None)
 
     def toxml(self, element: ET.Element | None) -> ET.Element:
         """Convert to XML."""
@@ -188,6 +209,9 @@ class NoncurrentVersionExpiration:
         element = SubElement(element, "NoncurrentVersionExpiration")
         if self._noncurrent_days:
             SubElement(element, "NoncurrentDays", str(self._noncurrent_days))
+        if self._newer_noncurrent_versions:
+            SubElement(element, "NewerNoncurrentVersions",
+                       str(self._newer_noncurrent_versions))
         return element
 
 
