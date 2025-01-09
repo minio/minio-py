@@ -49,7 +49,7 @@ from minio.select import (CSVInputSerialization, CSVOutputSerialization,
                           SelectRequest)
 from minio.sse import SseCustomerKey
 from minio.time import to_http_header
-from minio.versioningconfig import VersioningConfig
+from minio.versioningconfig import SUSPENDED, VersioningConfig
 
 _CLIENT = None  # initialized in main().
 _TEST_FILE = None  # initialized in main().
@@ -1935,6 +1935,61 @@ def test_upload_snowball_objects_with_staging(  # pylint: disable=invalid-name
     _test_upload_snowball_objects(log_entry, staging_filename)
 
 
+def test_set_get_bucket_versioning(log_entry):
+    """Test set/get bucket_versining"""
+
+    # Get a unique bucket_name and object_name
+    bucket_name = _gen_bucket_name()
+
+    log_entry["args"] = {
+        "bucket_name": bucket_name,
+    }
+
+    excl_prefixes = ['prefix1', 'prefix2']
+
+    _CLIENT.make_bucket(bucket_name)
+
+    try:
+        # Test all fields of versioning configuration
+        _CLIENT.set_bucket_versioning(
+            bucket_name,
+            VersioningConfig(status=ENABLED,
+                             exclude_folders=True,
+                             excluded_prefixes=excl_prefixes),
+        )
+
+        vcfg = _CLIENT.get_bucket_versioning(bucket_name)
+        if vcfg.status != ENABLED:
+            raise ValueError(f'(1) unexpected get_bucket_versioning result: '
+                             f'status: {vcfg.status}')
+        if not vcfg.exclude_folders:
+            raise ValueError(f'(1) unexpected get_bucket_versioning result: '
+                             f'exclude_folders: {vcfg.exclude_folders}')
+        if set(vcfg.excluded_prefixes) != set(excl_prefixes):
+            raise ValueError(f'(1) unexpected get_bucket_versioning result: '
+                             f'excluded_prefixes: {vcfg.excluded_prefixes}')
+
+        # Disable all fields of versioning configuration
+        _CLIENT.set_bucket_versioning(
+            bucket_name,
+            VersioningConfig(status=SUSPENDED),
+        )
+
+        vcfg = _CLIENT.get_bucket_versioning(bucket_name)
+        if vcfg.status != SUSPENDED:
+            raise ValueError(f'(2) unexpected get_bucket_versioning result: '
+                             f'status: {vcfg.status}')
+        if vcfg.exclude_folders:
+            raise ValueError(f'(2) unexpected get_bucket_versioning result: '
+                             f'exclude_folders: {vcfg.exclude_folders}')
+        if len(vcfg.excluded_prefixes) != 0:
+            raise ValueError(f'(2) unexpected get_bucket_versioning result: '
+                             f'excluded_prefixes: {vcfg.excluded_prefixes}')
+
+    finally:
+        _CLIENT.remove_bucket(bucket_name)
+
+
 def main():
     """
     Functional testing of minio python library.
@@ -2026,6 +2081,7 @@ def main():
             test_presigned_put_object_expiry: None,
             test_presigned_post_policy: None,
             test_thread_safe: None,
+            test_set_get_bucket_versioning: None,
             test_get_bucket_policy: None,
             test_set_bucket_policy_readonly: None,
             test_set_bucket_policy_readwrite: None,
