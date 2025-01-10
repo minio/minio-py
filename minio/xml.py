@@ -60,10 +60,9 @@ def _get_namespace(element: ET.Element) -> str:
 def findall(element: ET.Element, name: str) -> list[ET.Element]:
     """Namespace aware ElementTree.Element.findall()."""
     namespace = _get_namespace(element)
-    return element.findall(
-        "ns:" + name if namespace else name,
-        {"ns": namespace} if namespace else {},
-    )
+    if namespace:
+        name = "/".join(["ns:" + token for token in name.split("/")])
+    return element.findall(name, {"ns": namespace} if namespace else {})
 
 
 def find(
