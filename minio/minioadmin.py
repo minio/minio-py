@@ -24,7 +24,7 @@ import json
 import os
 from datetime import timedelta
 from enum import Enum, unique
-from typing import Any, TextIO, Tuple, cast
+from typing import Any, Mapping, TextIO, Tuple, cast
 from urllib.parse import urlunsplit
 
 import certifi
@@ -164,7 +164,7 @@ class MinioAdmin:
             self,
             method: str,
             command: _COMMAND,
-            query_params: DictType | None = None,
+            query_params: Mapping | None = None,
             body: bytes | None = None,
             preload_content: bool = True,
     ) -> BaseHTTPResponse:
@@ -325,12 +325,15 @@ class MinioAdmin:
 
     def account_info(self, prefix_usage: bool = False) -> str:
         """Get usage information for the authenticating account"""
+        query_params = None
+        if prefix_usage:
+            query_params = {
+                "prefix-usage": "true",
+            }
         response = self._url_open(
             "GET",
             _COMMAND.ACCOUNT_INFO,
-            query_params={
-                "prefix-usage": str(prefix_usage).lower(),
-            },
+            query_params=query_params,
         )
         return response.data.decode()
 
