@@ -856,8 +856,21 @@ class MinioAdmin:
                 "POST",
                 command,
                 body=encrypt(body, self._provider.retrieve().secret_key),
+                preload_content=False,
             )
-            return response.data.decode()
+            if (
+                    command in [
+                        _COMMAND.IDP_BUILTIN_POLICY_ATTACH,
+                        _COMMAND.IDP_BUILTIN_POLICY_DETACH,
+                    ] and
+                    response.status in [201, 204]
+            ):
+                # Older MinIO servers do not return response.
+                response.close()
+                response.release_conn()
+                return ""
+            data = decrypt(response, self._provider.retrieve().secret_key)
+            return data.decode()
         raise ValueError("either user or group must be set")
 
     def attach_policy_ldap(
