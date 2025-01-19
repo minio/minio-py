@@ -323,11 +323,14 @@ class MinioAdmin:
         )
         return response.data.decode()
 
-    def account_info(self) -> str:
-        """Get MinIO Account (aka User) information."""
+    def account_info(self, prefix_usage: bool = False) -> str:
+        """Get usage information for the authenticating account"""
         response = self._url_open(
             "GET",
             _COMMAND.ACCOUNT_INFO,
+            query_params={
+                "prefix-usage": str(prefix_usage).lower(),
+            },
         )
         return response.data.decode()
 
