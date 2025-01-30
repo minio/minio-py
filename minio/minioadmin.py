@@ -24,6 +24,7 @@ import json
 import os
 from datetime import timedelta
 from enum import Enum, unique
+from pathlib import Path
 from typing import Any, TextIO, Tuple, cast
 from urllib.parse import urlunsplit
 
@@ -452,16 +453,26 @@ class MinioAdmin:
         response = self._url_open("GET", _COMMAND.LIST_GROUPS)
         return response.data.decode()
 
-    def policy_add(self, policy_name: str, policy_file: str) -> str:
+    def policy_add(self,
+                   policy_name: str,
+                   policy_file: str | os.PathLike | None = None,
+                   policy: dict | None = None) -> str:
         """Add new policy."""
-        with open(policy_file, encoding='utf-8') as file:
-            response = self._url_open(
-                "PUT",
-                _COMMAND.ADD_CANNED_POLICY,
-                query_params={"name": policy_name},
-                body=file.read().encode(),
-            )
-            return response.data.decode()
+        if policy_file:
+            with Path(policy_file).open(encoding='utf-8') as file:
+                body = file.read().encode()
+        elif policy:
+            body = json.dumps(policy).encode()
+        else:
+            raise ValueError("either policy or policy_file must be specified")
+
+        response = self._url_open(
+            "PUT",
+            _COMMAND.ADD_CANNED_POLICY,
+            query_params={"name": policy_name},
+            body=body,
+        )
+        return response.data.decode()
 
     def policy_remove(self, policy_name: str) -> str:
         """Remove policy."""
@@ -753,7 +764,8 @@ class MinioAdmin:
                             secret_key: str | None = None,
                             name: str | None = None,
                             description: str | None = None,
-                            policy_file: str | None = None,
+                            policy: dict | None = None,
+                            policy_file: str | os.PathLike | None = None,
                             expiration: str | None = None,
                             status: str | None = None) -> str:
         """
@@ -763,7 +775,9 @@ class MinioAdmin:
             raise ValueError("both access key and secret key must be provided")
         if access_key == "" or secret_key == "":
             raise ValueError("access key or secret key must not be empty")
-        data = {
+        if policy_file and policy:
+            raise ValueError("specify either policy_file or policy, not both")
+        data: dict[str, Any] = {
             "status": "enabled",
             "accessKey": access_key,
             "secretKey": secret_key,
@@ -773,8 +787,10 @@ class MinioAdmin:
         if description:
             data["description"] = description
         if policy_file:
-            with open(policy_file, encoding="utf-8") as file:
+            with Path(policy_file).open(encoding="utf-8") as file:
                 data["policy"] = json.load(file)
+        if policy:
+            data["policy"] = policy
         if expiration:
             data["expiration"] = expiration
         if status:
@@ -797,16 +813,20 @@ class MinioAdmin:
                                secret_key: str | None = None,
                                name: str | None = None,
                                description: str | None = None,
-                               policy_file: str | None = None,
+                               policy_file: str | os.PathLike | None = None,
+                               policy: dict | None = None,
                                expiration: str | None = None,
                                status: str | None = None) -> str:
         """Update an existing service account"""
-        args = [secret_key, name, description, policy_file, expiration, status]
+        args = [secret_key, name, description,
+                policy_file, policy, expiration, status]
         if not any(arg for arg in args):
             raise ValueError("at least one of secret_key, name, description, "
-                             "policy_file, expiration or status must be "
-                             "specified")
-        data = {}
+                             "policy_file, policy, expiration or status must "
+                             "be specified")
+        if policy_file and policy:
+            raise ValueError("specify either policy_file or policy, not both")
+        data: dict[str, Any] = {}
         if secret_key:
             data["newSecretKey"] = secret_key
         if name:
@@ -814,8 +834,10 @@ class MinioAdmin:
         if description:
             data["newDescription"] = description
         if policy_file:
-            with open(policy_file, encoding="utf-8") as file:
+            with Path(policy_file).open(encoding="utf-8") as file:
                 data["newPolicy"] = json.load(file)
+        if policy:
+            data["newPolicy"] = policy
         if expiration:
             data["newExpiration"] = expiration
         if status:
