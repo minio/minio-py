@@ -459,10 +459,11 @@ class MinioAdmin:
         """Add new policy."""
         if not (policy_file is not None) ^ (policy is not None):
             raise ValueError("either policy_file or policy must be provided")
-        body = json.dumps(policy).encode() if policy else None
         if policy_file:
             with open(policy_file, encoding='utf-8') as file:
                 body = file.read().encode()
+        else:
+            body = json.dumps(policy).encode()
         response = self._url_open(
             "PUT",
             _COMMAND.ADD_CANNED_POLICY,
