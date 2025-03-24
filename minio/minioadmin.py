@@ -53,6 +53,7 @@ from .signer import sign_v4_s3
 @unique
 class _COMMAND(Enum):
     """Admin Command enumerations."""
+    ACCOUNT_INFO = "accountinfo"
     ADD_USER = "add-user"
     USER_INFO = "user-info"
     LIST_USERS = "list-users"
@@ -62,7 +63,6 @@ class _COMMAND(Enum):
     SET_USER_OR_GROUP_POLICY = "set-user-or-group-policy"
     LIST_CANNED_POLICIES = "list-canned-policies"
     REMOVE_CANNED_POLICY = "remove-canned-policy"
-    UNSET_USER_OR_GROUP_POLICY = "idp/builtin/policy/detach"
     CANNED_POLICY_INFO = "info-canned-policy"
     SET_BUCKET_QUOTA = "set-bucket-quota"
     GET_BUCKET_QUOTA = "get-bucket-quota"
@@ -94,6 +94,13 @@ class _COMMAND(Enum):
     SERVICE_ACCOUNT_ADD = "add-service-account"
     SERVICE_ACCOUNT_UPDATE = "update-service-account"
     SERVICE_ACCOUNT_DELETE = "delete-service-account"
+    IDP_LDAP_POLICY_ATTACH = "idp/ldap/policy/attach"
+    IDP_LDAP_POLICY_DETACH = "idp/ldap/policy/detach"
+    IDP_LDAP_LIST_ACCESS_KEYS = "idp/ldap/list-access-keys"
+    IDP_LDAP_LIST_ACCESS_KEYS_BULK = "idp/ldap/list-access-keys-bulk"
+    IDP_BUILTIN_POLICY_ATTACH = "idp/builtin/policy/attach"
+    IDP_BUILTIN_POLICY_DETACH = "idp/builtin/policy/detach"
+    IDP_BUILTIN_POLICY_ENTITIES = "idp/builtin/policy-entities"
 
 
 def _safe_str(value: Any) -> str:
@@ -316,6 +323,15 @@ class MinioAdmin:
         )
         return response.data.decode()
 
+    def account_info(self, prefix_usage: bool = False) -> str:
+        """Get usage information for the authenticating account"""
+        response = self._url_open(
+            "GET",
+            _COMMAND.ACCOUNT_INFO,
+            query_params={"prefix-usage": "true"} if prefix_usage else None,
+        )
+        return response.data.decode()
+
     def user_add(self, access_key: str, secret_key: str) -> str:
         """Create user with access and secret keys"""
         body = json.dumps(
@@ -472,7 +488,7 @@ class MinioAdmin:
 
     def policy_set(
             self,
-            policy_name: str | list[str],
+            policy_name: str,
             user: str | None = None,
             group: str | None = None,
     ) -> str:
@@ -495,29 +511,9 @@ class MinioAdmin:
             group: str | None = None,
     ) -> str:
         """Unset an IAM policy for a user or group."""
-        if (user is not None) ^ (group is not None):
-            policies = (
-                policy_name if isinstance(policy_name, list) else [policy_name]
-            )
-            data: dict[str, str | list[str]] = {"policies": policies}
-            if user:
-                data["user"] = user
-            if group:
-                data["group"] = group
-            response = self._url_open(
-                "POST",
-                _COMMAND.UNSET_USER_OR_GROUP_POLICY,
-                body=encrypt(
-                    json.dumps(data).encode(),
-                    self._provider.retrieve().secret_key,
-                ),
-                preload_content=False,
-            )
-            plain_data = decrypt(
-                response, self._provider.retrieve().secret_key,
-            )
-            return plain_data.decode()
-        raise ValueError("either user or group must be set")
+        return self.detach_policy(
+            policy_name if isinstance(policy_name, list) else [policy_name],
+            user, group)
 
     def config_get(self, key: str | None = None) -> str:
         """Get configuration parameters."""
@@ -842,3 +838,136 @@ class MinioAdmin:
             query_params={"accessKey": access_key},
         )
         return response.data.decode()
+
+    def _attach_detach_policy(
+            self,
+            command: _COMMAND,
+            policies: list[str],
+            user: str | None = None,
+            group: str | None = None,
+    ) -> str:
+        """Attach or detach policies for builtin or LDAP."""
+        if (user is not None) ^ (group is not None):
+            key = "user" if user else "group"
+            body = json.dumps(
+                {"policies": policies,
+                 key: cast(str, user or group)},
+            ).encode()
+            response = self._url_open(
+                "POST",
+                command,
+                body=encrypt(body, self._provider.retrieve().secret_key),
+                preload_content=False,
+            )
+            if (
+                    command in [
+                        _COMMAND.IDP_BUILTIN_POLICY_ATTACH,
+                        _COMMAND.IDP_BUILTIN_POLICY_DETACH,
+                    ] and
+                    response.status in [201, 204]
+            ):
+                # Older MinIO servers do not return response.
+                response.close()
+                response.release_conn()
+                return ""
+            data = decrypt(response, self._provider.retrieve().secret_key)
+            return data.decode()
+        raise ValueError("either user or group must be set")
+
+    def attach_policy_ldap(
+            self,
+            policies: list[str],
+            user: str | None = None,
+            group: str | None = None,
+    ) -> str:
+        """Attach policies for LDAP."""
+        return self._attach_detach_policy(
+            _COMMAND.IDP_LDAP_POLICY_ATTACH, policies, user, group,
+        )
+
+    def detach_policy_ldap(
+            self,
+            policies: list[str],
+            user: str | None = None,
+            group: str | None = None,
+    ) -> str:
+        """Detach policies for LDAP."""
+        return self._attach_detach_policy(
+            _COMMAND.IDP_LDAP_POLICY_DETACH, policies, user, group,
+        )
+
+    def list_access_keys_ldap(
+            self,
+            user_dn: str,
+            list_type: str,
+    ) -> str:
+        """List service accounts belonging to the specified user."""
+        response = self._url_open(
+            "GET", _COMMAND.IDP_LDAP_LIST_ACCESS_KEYS,
+            query_params={"userDN": user_dn, "listType": list_type},
+            preload_content=False,
+        )
+        plain_data = decrypt(
+            response, self._provider.retrieve().secret_key,
+        )
+        return plain_data.decode()
+
+    def list_access_keys_ldap_bulk(
+            self,
+            users: list[str],
+            list_type: str,
+            all_users: bool,
+    ) -> str:
+        """List access keys belonging to the given users or all users."""
+        if len(users) != 0 and all_users:
+            raise ValueError("both users and all_users are not permitted")
+
+        key, value = ("all", "true") if all_users else ("userDNs", users)
+        response = self._url_open(
+            "GET", _COMMAND.IDP_LDAP_LIST_ACCESS_KEYS_BULK,
+            query_params={"listType": list_type, key: value},
+            preload_content=False,
+        )
+        plain_data = decrypt(
+            response, self._provider.retrieve().secret_key,
+        )
+        return plain_data.decode()
+
+    def attach_policy(
+            self,
+            policies: list[str],
+            user: str | None = None,
+            group: str | None = None,
+    ) -> str:
+        """Attach builtin policies."""
+        return self._attach_detach_policy(
+            _COMMAND.IDP_BUILTIN_POLICY_ATTACH, policies, user, group,
+        )
+
+    def detach_policy(
+            self,
+            policies: list[str],
+            user: str | None = None,
+            group: str | None = None,
+    ) -> str:
+        """Detach builtin policies."""
+        return self._attach_detach_policy(
+            _COMMAND.IDP_BUILTIN_POLICY_DETACH, policies, user, group,
+        )
+
+    def get_policy_entities(
+            self,
+            users: list[str],
+            groups: list[str],
+            policies: list[str],
+    ) -> str:
+        """Get builtin policy entities."""
+        response = self._url_open(
+            "GET", _COMMAND.IDP_BUILTIN_POLICY_ENTITIES,
+            query_params={"user": users, "group": groups, "policy": policies},
+            preload_content=False,
+        )
+        plain_data = decrypt(
+            response, self._provider.retrieve().secret_key,
+        )
+        return plain_data.decode()

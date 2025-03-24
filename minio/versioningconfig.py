@@ -78,7 +78,7 @@ class VersioningConfig:
             prefix.text
             for prefix in findall(
                 element,
-                "ExcludedPrefixes/ExcludedPrefix",
+                "ExcludedPrefixes/Prefix",
             )
         ]
         exclude_folders = findtext(element, "ExcludeFolders") == "true"
@@ -99,7 +99,7 @@ class VersioningConfig:
         for prefix in self._excluded_prefixes or []:
             SubElement(
                 SubElement(element, "ExcludedPrefixes"),
-                "ExcludedPrefix",
+                "Prefix",
                 prefix,
             )
         if self._exclude_folders:
