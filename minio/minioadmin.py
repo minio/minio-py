@@ -755,7 +755,8 @@ class MinioAdmin:
                             description: str | None = None,
                             policy_file: str | None = None,
                             expiration: str | None = None,
-                            status: str | None = None) -> str:
+                            status: str | None = None,
+                            target_user: str | None = None) -> str:
         """
         Add a new service account with the given access key and secret key
         """
@@ -779,6 +780,8 @@ class MinioAdmin:
             data["expiration"] = expiration
         if status:
             data["status"] = status
+        if target_user:
+            data["targetUser"] = target_user
 
         body = json.dumps(data).encode()
         response = self._url_open(
