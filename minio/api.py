@@ -20,6 +20,7 @@
 # pylint: disable=too-many-lines
 # pylint: disable=too-many-public-methods
 # pylint: disable=too-many-statements
+# pylint: disable=too-many-locals
 
 """
 Simple Storage Service (aka S3) client to perform bucket and object operations.
@@ -1835,7 +1836,8 @@ class Minio:
             num_parallel_uploads: int = 3,
             tags: Tags | None = None,
             retention: Retention | None = None,
-            legal_hold: bool = False
+            legal_hold: bool = False,
+            write_offset: int | None = None,
     ) -> ObjectWriteResult:
         """
         Uploads data from a stream to an object in a bucket.
@@ -1854,6 +1856,7 @@ class Minio:
         :param tags: :class:`Tags` for the object.
         :param retention: :class:`Retention` configuration object.
         :param legal_hold: Flag to set legal hold for the object.
+        :param write_offset: Offset byte for appending data to existing object.
         :return: :class:`ObjectWriteResult` object.
 
         Example::
@@ -1890,6 +1893,12 @@ class Minio:
             raise ValueError("retention must be Retention type")
         if not callable(getattr(data, "read")):
             raise ValueError("input data must have callable read()")
+        if write_offset is not None:
+            if write_offset < 0:
+                raise ValueError("write offset should not be negative")
+            if length < 0:
+                raise ValueError("length must be provided for write offset")
+            part_size = length if length > MIN_PART_SIZE else MIN_PART_SIZE
         part_size, part_count = get_part_info(length, part_size)
         if progress:
             # Set progress bar length and object name before upload
@@ -1897,6 +1906,8 @@ class Minio:
 
         headers = genheaders(metadata, sse, tags, retention, legal_hold)
         headers["Content-Type"] = content_type or "application/octet-stream"
+        if write_offset:
+            headers["x-amz-write-offset-bytes"] = str(write_offset)
 
         object_size = length
         uploaded_size = 0
