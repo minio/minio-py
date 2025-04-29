@@ -29,7 +29,7 @@ import urllib.parse
 from datetime import datetime
 from queue import Queue
 from threading import BoundedSemaphore, Thread
-from typing import BinaryIO, Dict, List, Mapping, Tuple, Union
+from typing import IO, Dict, List, Mapping, Tuple, Union
 
 from typing_extensions import Protocol
 from urllib3._collections import HTTPHeaderDict
@@ -191,7 +191,7 @@ class ProgressType(Protocol):
 
 
 def read_part_data(
-        stream: BinaryIO,
+        stream: IO[bytes],
         size: int,
         part_data: bytes = b"",
         progress: ProgressType | None = None,
