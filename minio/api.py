@@ -36,7 +36,7 @@ from collections.abc import Iterable
 from datetime import datetime, timedelta
 from io import BytesIO
 from random import random
-from typing import Any, BinaryIO, Iterator, TextIO, Tuple, Union, cast
+from typing import IO, Any, Iterator, Tuple, Union, cast
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
@@ -128,7 +128,7 @@ class Minio:
     _region_map: dict[str, str]
     _base_url: BaseURL
     _user_agent: str
-    _trace_stream: TextIO | None
+    _trace_stream: IO[str] | None
     _provider: Provider | None
     _http: urllib3.PoolManager
 
@@ -525,7 +525,7 @@ class Minio:
             raise ValueError("Application name/version cannot be empty.")
         self._user_agent = f"{_DEFAULT_USER_AGENT} {app_name}/{app_version}"
 
-    def trace_on(self, stream: TextIO):
+    def trace_on(self, stream: IO[str]):
         """
         Enable http trace.
 
@@ -1826,7 +1826,7 @@ class Minio:
             self,
             bucket_name: str,
             object_name: str,
-            data: BinaryIO,
+            data: IO[bytes],
             length: int,
             content_type: str = "application/octet-stream",
             metadata: DictType | None = None,
@@ -3129,7 +3129,7 @@ class Minio:
         return self.put_object(
             bucket_name,
             object_name,
-            cast(BinaryIO, fileobj),
+            cast("IO[bytes]", fileobj),
             length,
             metadata=cast(Union[DictType, None], metadata),
             sse=sse,
