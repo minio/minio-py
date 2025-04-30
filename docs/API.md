@@ -63,30 +63,30 @@ client = Minio(
 
 | Bucket operations                                           | Object operations                                               |
 |:------------------------------------------------------------|:----------------------------------------------------------------|
-| [`make_bucket`](#make_bucket)                               | [`get_object`](#get_object)                                     |
-| [`list_buckets`](#list_buckets)                             | [`put_object`](#put_object)                                     |
-| [`bucket_exists`](#bucket_exists)                           | [`copy_object`](#copy_object)                                   |
-| [`remove_bucket`](#remove_bucket)                           | [`compose_object`](#compose_object)                             |
-| [`list_objects`](#list_objects)                             | [`stat_object`](#stat_object)                                   |
-| [`get_bucket_versioning`](#get_bucket_versioning)           | [`remove_object`](#remove_object)                               |
-| [`set_bucket_versioning`](#set_bucket_versioning)           | [`remove_objects`](#remove_objects)                             |
-| [`delete_bucket_replication`](#delete_bucket_replication)   | [`fput_object`](#fput_object)                                   |
-| [`get_bucket_replication`](#get_bucket_replication)         | [`fget_object`](#fget_object)                                   |
-| [`set_bucket_replication`](#set_bucket_replication)         | [`select_object_content`](#select_object_content)               |
-| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)       | [`delete_object_tags`](#delete_object_tags)                     |
-| [`get_bucket_lifecycle`](#get_bucket_lifecycle)             | [`get_object_tags`](#get_object_tags)                           |
-| [`set_bucket_lifecycle`](#set_bucket_lifecycle)             | [`set_object_tags`](#set_object_tags)                           |
-| [`delete_bucket_tags`](#delete_bucket_tags)                 | [`enable_object_legal_hold`](#enable_object_legal_hold)         |
-| [`get_bucket_tags`](#get_bucket_tags)                       | [`disable_object_legal_hold`](#disable_object_legal_hold)       |
-| [`set_bucket_tags`](#set_bucket_tags)                       | [`is_object_legal_hold_enabled`](#is_object_legal_hold_enabled) |
-| [`delete_bucket_policy`](#delete_bucket_policy)             | [`get_object_retention`](#get_object_retention)                 |
-| [`get_bucket_policy`](#get_bucket_policy)                   | [`set_object_retention`](#set_object_retention)                 |
-| [`set_bucket_policy`](#set_bucket_policy)                   | [`presigned_get_object`](#presigned_get_object)                 |
-| [`delete_bucket_notification`](#delete_bucket_notification) | [`presigned_put_object`](#presigned_put_object)                 |
-| [`get_bucket_notification`](#get_bucket_notification)       | [`presigned_post_policy`](#presigned_post_policy)               |
-| [`set_bucket_notification`](#set_bucket_notification)       | [`get_presigned_url`](#get_presigned_url)                       |
-| [`listen_bucket_notification`](#listen_bucket_notification) | [`upload_snowball_objects`](#upload_snowball_objects)           |
-| [`delete_bucket_encryption`](#delete_bucket_encryption)     |                                                                 |
+| [`make_bucket`](#make_bucket)                               | [`append_object`](#append_object)                               |
+| [`list_buckets`](#list_buckets)                             | [`get_object`](#get_object)                                     |
+| [`bucket_exists`](#bucket_exists)                           | [`put_object`](#put_object)                                     |
+| [`remove_bucket`](#remove_bucket)                           | [`copy_object`](#copy_object)                                   |
+| [`list_objects`](#list_objects)                             | [`compose_object`](#compose_object)                             |
+| [`get_bucket_versioning`](#get_bucket_versioning)           | [`stat_object`](#stat_object)                                   |
+| [`set_bucket_versioning`](#set_bucket_versioning)           | [`remove_object`](#remove_object)                               |
+| [`delete_bucket_replication`](#delete_bucket_replication)   | [`remove_objects`](#remove_objects)                             |
+| [`get_bucket_replication`](#get_bucket_replication)         | [`fput_object`](#fput_object)                                   |
+| [`set_bucket_replication`](#set_bucket_replication)         | [`fget_object`](#fget_object)                                   |
+| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)       | [`select_object_content`](#select_object_content)               |
+| [`get_bucket_lifecycle`](#get_bucket_lifecycle)             | [`delete_object_tags`](#delete_object_tags)                     |
+| [`set_bucket_lifecycle`](#set_bucket_lifecycle)             | [`get_object_tags`](#get_object_tags)                           |
+| [`delete_bucket_tags`](#delete_bucket_tags)                 | [`set_object_tags`](#set_object_tags)                           |
+| [`get_bucket_tags`](#get_bucket_tags)                       | [`enable_object_legal_hold`](#enable_object_legal_hold)         |
+| [`set_bucket_tags`](#set_bucket_tags)                       | [`disable_object_legal_hold`](#disable_object_legal_hold)       |
+| [`delete_bucket_policy`](#delete_bucket_policy)             | [`is_object_legal_hold_enabled`](#is_object_legal_hold_enabled) |
+| [`get_bucket_policy`](#get_bucket_policy)                   | [`get_object_retention`](#get_object_retention)                 |
+| [`set_bucket_policy`](#set_bucket_policy)                   | [`set_object_retention`](#set_object_retention)                 |
+| [`delete_bucket_notification`](#delete_bucket_notification) | [`presigned_get_object`](#presigned_get_object)                 |
+| [`get_bucket_notification`](#get_bucket_notification)       | [`presigned_put_object`](#presigned_put_object)                 |
+| [`set_bucket_notification`](#set_bucket_notification)       | [`presigned_post_policy`](#presigned_post_policy)               |
+| [`listen_bucket_notification`](#listen_bucket_notification) | [`get_presigned_url`](#get_presigned_url)                       |
+| [`delete_bucket_encryption`](#delete_bucket_encryption)     | [`upload_snowball_objects`](#upload_snowball_objects)           |
 | [`get_bucket_encryption`](#get_bucket_encryption)           |                                                                 |
 | [`set_bucket_encryption`](#set_bucket_encryption)           |                                                                 |
 | [`delete_object_lock_config`](#delete_object_lock_config)   |                                                                 |
@@ -835,6 +835,57 @@ client.set_object_lock_config("my-bucket", config)
 ```
 
 ## 3. Object operations
+
+<a name="append_object"></a>
+
+### append_object(bucket_name, object_name, data, length, content_type="application/octet-stream", metadata=None, sse=None, progress=None, part_size=0, num_parallel_uploads=3, tags=None, retention=None, legal_hold=False)
+
+Appends from a stream to existing object in a bucket.
+
+__Parameters__
+
+| Param           | Type        | Description                                              |
+|:----------------|:------------|:---------------------------------------------------------|
+| `bucket_name`   | _str_       | Name of the bucket.                                      |
+| `object_name`   | _str_       | Object name in the bucket.                               |
+| `data`          | _object_    | An object having callable read() returning bytes object. |
+| `length`        | _int_       | Data size; -1 for unknown size and set valid part_size.  |
+| `part_size`     | _int_       | Chunk size.                                              |
+| `progress`      | _threading_ | A progress object.                                       |
+| `extra_headers` | _dict_      | Extra headers.                                           |
+
+__Return Value__
+
+| Return                      |
+|:----------------------------|
+| _ObjectWriteResult_ object. |
+
+__Example__
+```py
+# Append data.
+result = client.append_object(
+    "my-bucket", "my-object", io.BytesIO(b"world"), 5,
+)
+print(f"appended {result.object_name} object; etag: {result.etag}")
+
+# Append data in chunks.
+data = urlopen(
+    "https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.13.12.tar.xz",
+)
+result = client.append_object(
+    "my-bucket", "my-object", data, 148611164, 5*1024*1024,
+)
+print(f"appended {result.object_name} object; etag: {result.etag}")
+
+# Append unknown sized data.
+data = urlopen(
+    "https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.14.3.tar.xz",
+)
+result = client.append_object(
+    "my-bucket", "my-object", data, 149426584, 5*1024*1024,
+)
+print(f"appended {result.object_name} object; etag: {result.etag}")
+```
 
 <a name="get_object"></a>
 
