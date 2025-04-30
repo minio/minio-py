@@ -313,8 +313,8 @@ class ObjectConditionalReadArgs:
             length: int | None = None,
             match_etag: str | None = None,
             not_match_etag: str | None = None,
-            modified_since: str | None = None,
-            unmodified_since: str | None = None,
+            modified_since: datetime | None = None,
+            unmodified_since: datetime | None = None,
     ):
         if ssec is not None and not isinstance(ssec, SseCustomerKey):
             raise ValueError("ssec must be SseCustomerKey type")
@@ -395,12 +395,12 @@ class ObjectConditionalReadArgs:
         return self._not_match_etag
 
     @property
-    def modified_since(self) -> str | None:
+    def modified_since(self) -> datetime | None:
         """Get modified since condition."""
         return self._modified_since
 
     @property
-    def unmodified_since(self) -> str | None:
+    def unmodified_since(self) -> datetime | None:
         """Get unmodified since condition."""
         return self._unmodified_since
 
@@ -460,8 +460,8 @@ class ComposeSource(ObjectConditionalReadArgs):
             length: int | None = None,
             match_etag: str | None = None,
             not_match_etag: str | None = None,
-            modified_since: str | None = None,
-            unmodified_since: str | None = None,
+            modified_since: datetime | None = None,
+            unmodified_since: datetime | None = None,
     ):
         super().__init__(
             bucket_name, object_name, region, version_id, ssec, offset, length,
