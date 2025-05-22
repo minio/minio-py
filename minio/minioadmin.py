@@ -753,6 +753,7 @@ class MinioAdmin:
                             secret_key: str | None = None,
                             name: str | None = None,
                             description: str | None = None,
+                            targetuser: str | None = None,
                             policy_file: str | None = None,
                             expiration: str | None = None,
                             status: str | None = None) -> str:
@@ -772,6 +773,8 @@ class MinioAdmin:
             data["name"] = name
         if description:
             data["description"] = description
+        if targetuser:
+            data["targetuser"] = targetuser
         if policy_file:
             with open(policy_file, encoding="utf-8") as file:
                 data["policy"] = json.load(file)
