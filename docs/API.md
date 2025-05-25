@@ -916,12 +916,14 @@ __Example__
 
 ```py
 # Get data of an object.
+response = None
 try:
     response = client.get_object("my-bucket", "my-object")
     # Read data from response.
 finally:
-    response.close()
-    response.release_conn()
+    if response:
+        response.close()
+        response.release_conn()
 
 # Get data of an object of version-ID.
 try:
@@ -931,8 +933,9 @@ try:
     )
     # Read data from response.
 finally:
-    response.close()
-    response.release_conn()
+    if response:
+        response.close()
+        response.release_conn()
 
 # Get data of an object from offset and length.
 try:
@@ -941,8 +944,9 @@ try:
     )
     # Read data from response.
 finally:
-    response.close()
-    response.release_conn()
+    if response:
+        response.close()
+        response.release_conn()
 
 # Get data of an SSE-C encrypted object.
 try:
@@ -952,8 +956,9 @@ try:
     )
     # Read data from response.
 finally:
-    response.close()
-    response.release_conn()
+    if response:
+        response.close()
+        response.release_conn()
 ```
 
 <a name="select_object_content"></a>
