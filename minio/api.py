@@ -20,6 +20,8 @@
 # pylint: disable=too-many-lines
 # pylint: disable=too-many-public-methods
 # pylint: disable=too-many-statements
+# pylint: disable=too-many-locals
+# pylint: disable=too-many-positional-arguments
 
 """
 Simple Storage Service (aka S3) client to perform bucket and object operations.
@@ -1835,7 +1837,8 @@ class Minio:
             num_parallel_uploads: int = 3,
             tags: Tags | None = None,
             retention: Retention | None = None,
-            legal_hold: bool = False
+            legal_hold: bool = False,
+            write_offset: int | None = None,
     ) -> ObjectWriteResult:
         """
         Uploads data from a stream to an object in a bucket.
@@ -1854,6 +1857,7 @@ class Minio:
         :param tags: :class:`Tags` for the object.
         :param retention: :class:`Retention` configuration object.
         :param legal_hold: Flag to set legal hold for the object.
+        :param write_offset: Offset byte for appending data to existing object.
         :return: :class:`ObjectWriteResult` object.
 
         Example::
@@ -1890,6 +1894,12 @@ class Minio:
             raise ValueError("retention must be Retention type")
         if not callable(getattr(data, "read")):
             raise ValueError("input data must have callable read()")
+        if write_offset is not None:
+            if write_offset < 0:
+                raise ValueError("write offset should not be negative")
+            if length < 0:
+                raise ValueError("length must be provided for write offset")
+            part_size = length if length > MIN_PART_SIZE else MIN_PART_SIZE
         part_size, part_count = get_part_info(length, part_size)
         if progress:
             # Set progress bar length and object name before upload
@@ -1897,6 +1907,8 @@ class Minio:
 
         headers = genheaders(metadata, sse, tags, retention, legal_hold)
         headers["Content-Type"] = content_type or "application/octet-stream"
+        if write_offset:
+            headers["x-amz-write-offset-bytes"] = str(write_offset)
 
         object_size = length
         uploaded_size = 0
@@ -1994,6 +2006,124 @@ class Minio:
                     bucket_name, object_name, upload_id,
                 )
             raise exc
+
+    def append_object(
+            self,
+            bucket_name: str,
+            object_name: str,
+            data: BinaryIO,
+            length: int,
+            chunk_size: int | None = None,
+            progress: ProgressType | None = None,
+            extra_headers: DictType | None = None,
+    ) -> ObjectWriteResult:
+        """
+        Appends from a stream to existing object in a bucket.
+
+        :param bucket_name: Name of the bucket.
+        :param object_name: Object name in the bucket.
+        :param data: An object having callable read() returning bytes object.
+        :param length: Data size; -1 for unknown size.
+        :param chunk_size: Chunk size to optimize uploads.
+        :return: :class:`ObjectWriteResult` object.
+
+        Example::
+            # Append data.
+            result = client.append_object(
+                "my-bucket", "my-object", io.BytesIO(b"world"), 5,
+            )
+            print(f"appended {result.object_name} object; etag: {result.etag}")
+
+            # Append data in chunks.
+            data = urlopen(
+                "https://www.kernel.org/pub/linux/kernel/v6.x/"
+                "linux-6.13.12.tar.xz",
+            )
+            result = client.append_object(
+                "my-bucket", "my-object", data, 148611164, 5*1024*1024,
+            )
+            print(f"appended {result.object_name} object; etag: {result.etag}")
+
+            # Append unknown sized data.
+            data = urlopen(
+                "https://www.kernel.org/pub/linux/kernel/v6.x/"
+                "linux-6.14.3.tar.xz",
+            )
+            result = client.append_object(
+                "my-bucket", "my-object", data, 149426584, 5*1024*1024,
+            )
+            print(f"appended {result.object_name} object; etag: {result.etag}")
+        """
+        if length == 0:
+            raise ValueError("length should not be zero")
+        if chunk_size is not None:
+            if chunk_size < MIN_PART_SIZE:
+                raise ValueError("chunk size must be minimum of 5 MiB")
+            if chunk_size > MAX_PART_SIZE:
+                raise ValueError("chunk size must be less than 5 GiB")
+        else:
+            chunk_size = length if length > MIN_PART_SIZE else MIN_PART_SIZE
+
+        chunk_count = -1
+        if length > 0:
+            chunk_count = int(length / chunk_size)
+            if (chunk_count * chunk_size) < length:
+                chunk_count += 1
+            chunk_count = chunk_count or 1
+
+        object_size = length
+        uploaded_size = 0
+        chunk_number = 0
+        one_byte = b""
+        stop = False
+
+        stat = self.stat_object(bucket_name, object_name)
+        write_offset = cast(int, stat.size)
+
+        while not stop:
+            chunk_number += 1
+            if chunk_count > 0:
+                if chunk_number == chunk_count:
+                    chunk_size = object_size - uploaded_size
+                    stop = True
+                chunk_data = read_part_data(
+                    data, chunk_size, progress=progress,
+                )
+                if len(chunk_data) != chunk_size:
+                    raise IOError(
+                        f"stream having not enough data;"
+                        f"expected: {chunk_size}, "
+                        f"got: {len(chunk_data)} bytes"
+                    )
+            else:
+                chunk_data = read_part_data(
+                    data, chunk_size + 1, one_byte, progress=progress,
+                )
+                # If chunk_data_size is less or equal to chunk_size,
+                # then we have reached last chunk.
+                if len(chunk_data) <= chunk_size:
+                    chunk_count = chunk_number
+                    stop = True
+                else:
+                    one_byte = chunk_data[-1:]
+                    chunk_data = chunk_data[:-1]
+
+            uploaded_size += len(chunk_data)
+
+            headers = extra_headers or {}
+            headers["x-amz-write-offset-bytes"] = str(write_offset)
+            upload_result = self._put_object(
+                bucket_name, object_name, chunk_data, headers=headers,
+            )
+            write_offset += len(chunk_data)
+        return ObjectWriteResult(
+            cast(str, upload_result.bucket_name),
+            cast(str, upload_result.object_name),
+            upload_result.version_id,
+            upload_result.etag,
+            upload_result.http_headers,
+            location=upload_result.location,
+        )
 
     def list_objects(
             self,
