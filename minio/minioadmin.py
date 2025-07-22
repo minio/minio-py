@@ -765,7 +765,8 @@ class MinioAdmin:
                             policy: dict | None = None,
                             policy_file: str | os.PathLike | None = None,
                             expiration: str | None = None,
-                            status: str | None = None) -> str:
+                            status: str | None = None,
+                            targetuser: str | None = None) -> str:
         """
         Add a new service account with the given access key and secret key
         """
@@ -784,6 +785,8 @@ class MinioAdmin:
             data["name"] = name
         if description:
             data["description"] = description
+        if targetuser:
+            data["targetuser"] = targetuser
         if policy_file:
             with open(policy_file, encoding="utf-8") as file:
                 data["policy"] = json.load(file)
