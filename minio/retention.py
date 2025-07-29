@@ -18,8 +18,9 @@
 
 from __future__ import absolute_import, annotations
 
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Type, TypeVar, cast
+from typing import Optional, Type, TypeVar, cast
 from xml.etree import ElementTree as ET
 
 from .commonconfig import COMPLIANCE, GOVERNANCE
@@ -29,28 +30,20 @@ from .xml import Element, SubElement, findtext
 A = TypeVar("A", bound="Retention")
 
 
+@dataclass(frozen=True)
 class Retention:
     """Retention configuration."""
 
-    def __init__(self, mode: str, retain_until_date: datetime):
-        if mode not in [GOVERNANCE, COMPLIANCE]:
+    mode: str
+    retain_until_date: datetime
+
+    def __post_init__(self):
+        if self.mode not in [GOVERNANCE, COMPLIANCE]:
             raise ValueError(f"mode must be {GOVERNANCE} or {COMPLIANCE}")
-        if not isinstance(retain_until_date, datetime):
+        if not isinstance(self.retain_until_date, datetime):
             raise ValueError(
                 "retain until date must be datetime type",
             )
-        self._mode = mode
-        self._retain_until_date = retain_until_date
-
-    @property
-    def mode(self) -> str:
-        """Get mode."""
-        return self._mode
-
-    @property
-    def retain_until_date(self) -> datetime:
-        """Get retain util date."""
-        return self._retain_until_date
 
     @classmethod
     def fromxml(cls: Type[A], element: ET.Element) -> A:
@@ -62,15 +55,15 @@ class Retention:
                 cast(str, findtext(element, "RetainUntilDate", True)),
             ),
         )
-        return cls(mode, retain_until_date)
+        return cls(mode=mode, retain_until_date=retain_until_date)
 
-    def toxml(self, element: ET.Element | None) -> ET.Element:
+    def toxml(self, element: Optional[ET.Element]) -> ET.Element:
         """Convert to XML."""
         element = Element("Retention")
-        SubElement(element, "Mode", self._mode)
+        SubElement(element, "Mode", self.mode)
         SubElement(
             element,
             "RetainUntilDate",
-            to_iso8601utc(self._retain_until_date),
+            to_iso8601utc(self.retain_until_date),
         )
         return element

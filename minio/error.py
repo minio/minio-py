@@ -30,7 +30,8 @@ and API specific errors.
 
 from __future__ import absolute_import, annotations
 
-from typing import Type, TypeVar
+from dataclasses import dataclass
+from typing import Optional, Type, TypeVar
 from xml.etree import ElementTree as ET
 
 try:
@@ -48,7 +49,9 @@ class MinioException(Exception):
 class InvalidResponseError(MinioException):
     """Raised to indicate that non-xml response from server."""
 
-    def __init__(self, code: int, content_type: str | None, body: str | None):
+    def __init__(
+            self, code: int, content_type: Optional[str], body: Optional[str],
+    ):
         self._code = code
         self._content_type = content_type
         self._body = body
@@ -77,92 +80,62 @@ class ServerError(MinioException):
 A = TypeVar("A", bound="S3Error")
 
 
+@dataclass(frozen=True)
 class S3Error(MinioException):
     """
     Raised to indicate that error response is received
     when executing S3 operation.
     """
+    response: BaseHTTPResponse
+    code: Optional[str]
+    message: Optional[str]
+    resource: Optional[str]
+    request_id: Optional[str]
+    host_id: Optional[str]
+    bucket_name: Optional[str] = None
+    object_name: Optional[str] = None
 
-    def __init__(
-            self,
-            code: str | None,
-            message: str | None,
-            resource: str | None,
-            request_id: str | None,
-            host_id: str | None,
-            response: BaseHTTPResponse,
-            bucket_name: str | None = None,
-            object_name: str | None = None,
-    ):
-        self._code = code
-        self._message = message
-        self._resource = resource
-        self._request_id = request_id
-        self._host_id = host_id
-        self._response = response
-        self._bucket_name = bucket_name
-        self._object_name = object_name
-
+    def __post_init__(self):
         bucket_message = (
-            (", bucket_name: " + self._bucket_name)
-            if self._bucket_name else ""
+            (", bucket_name: " + self.bucket_name)
+            if self.bucket_name else ""
         )
         object_message = (
-            (", object_name: " + self._object_name)
-            if self._object_name else ""
+            (", object_name: " + self.object_name)
+            if self.object_name else ""
         )
         super().__init__(
-            f"S3 operation failed; code: {code}, message: {message}, "
-            f"resource: {resource}, request_id: {request_id}, "
-            f"host_id: {host_id}{bucket_message}{object_message}"
+            f"S3 operation failed; code: {self.code}, message: {self.message}, "
+            f"resource: {self.resource}, request_id: {self.request_id}, "
+            f"host_id: {self.host_id}{bucket_message}{object_message}"
         )
-
-    def __reduce__(self):
-        return type(self), (self._code, self._message, self._resource,
-                            self._request_id, self._host_id, self._response,
-                            self._bucket_name, self._object_name)
-
-    @property
-    def code(self) -> str | None:
-        """Get S3 error code."""
-        return self._code
-
-    @property
-    def message(self) -> str | None:
-        """Get S3 error message."""
-        return self._message
-
-    @property
-    def response(self) -> BaseHTTPResponse:
-        """Get HTTP response."""
-        return self._response
 
     @classmethod
     def fromxml(cls: Type[A], response: BaseHTTPResponse) -> A:
         """Create new object with values from XML element."""
         element = ET.fromstring(response.data.decode())
         return cls(
-            findtext(element, "Code"),
-            findtext(element, "Message"),
-            findtext(element, "Resource"),
-            findtext(element, "RequestId"),
-            findtext(element, "HostId"),
+            response=response,
+            code=findtext(element, "Code"),
+            message=findtext(element, "Message"),
+            resource=findtext(element, "Resource"),
+            request_id=findtext(element, "RequestId"),
+            host_id=findtext(element, "HostId"),
             bucket_name=findtext(element, "BucketName"),
             object_name=findtext(element, "Key"),
-            response=response,
         )
 
     def copy(self, code: str, message: str) -> S3Error:
         """Make a copy with replace code and message."""
         return S3Error(
-            code,
-            message,
-            self._resource,
-            self._request_id,
-            self._host_id,
-            self._response,
-            self._bucket_name,
-            self._object_name,
+            response=self.response,
+            code=code,
+            message=message,
+            resource=self.resource,
+            request_id=self.request_id,
+            host_id=self.host_id,
+            bucket_name=self.bucket_name,
+            object_name=self.object_name,
         )
 
 

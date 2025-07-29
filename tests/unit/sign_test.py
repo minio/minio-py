@@ -117,8 +117,16 @@ class AuthorizationHeaderTest(TestCase):
 class PresignURLTest(TestCase):
     def test_presigned_versioned_id(self):
         credentials = Credentials("minio", "minio123")
-        url = presign_v4('GET', urlsplit('http://localhost:9000/bucket-name/objectName?versionId=uuid'),
-                         'us-east-1', credentials, dt, 604800)
+        url = presign_v4(
+            method='GET',
+            url=urlsplit(
+                'http://localhost:9000/bucket-name/objectName?versionId=uuid'
+            ),
+            region='us-east-1',
+            credentials=credentials,
+            date=dt,
+            expires=604800,
+        )
 
         self.assertEqual(urlunsplit(url), 'http://localhost:9000/bucket-name/objectName?versionId=uuid&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=minio%2F20150620%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20150620T010203Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=3ce13e2ca929fafa20581a05730e4e9435f2a5e20ec7c5a082d175692fb0a663')
 
@@ -135,20 +143,22 @@ class SignV4Test(TestCase):
             'x-amz-date': '20150620T010203Z',
         }
         url = client._base_url.build(
-            "PUT",
-            "us-east-1",
+            method="PUT",
+            region="us-east-1",
             bucket_name="testbucket",
             object_name="~testobject",
             query_params={"partID": "1", "uploadID": "~abcd"},
         )
         headers = sign_v4_s3(
-            "PUT",
-            url,
-            "us-east-1",
-            headers,
-            creds,
-            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            dt,
+            method="PUT",
+            url=url,
+            region="us-east-1",
+            headers=headers,
+            credentials=creds,
+            content_sha256=(
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            ),
+            date=dt,
         )
         self.assertEqual(headers['Authorization'],
                          'AWS4-HMAC-SHA256 Credential='

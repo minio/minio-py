@@ -26,8 +26,8 @@ class NotificationConfigTest(TestCase):
         config = NotificationConfig(
             queue_config_list=[
                 QueueConfig(
-                    "QUEUE-ARN-OF-THIS-BUCKET",
-                    ['s3:ObjectCreated:*'],
+                    queue="QUEUE-ARN-OF-THIS-BUCKET",
+                    events=['s3:ObjectCreated:*'],
                     config_id="1",
                     prefix_filter_rule=PrefixFilterRule("abc"),
                 ),

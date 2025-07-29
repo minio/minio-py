@@ -18,7 +18,8 @@
 
 from __future__ import absolute_import, annotations
 
-from typing import Type, TypeVar
+from dataclasses import dataclass
+from typing import Optional, Type, TypeVar
 from xml.etree import ElementTree as ET
 
 from .xml import Element, SubElement, findtext
@@ -26,25 +27,20 @@ from .xml import Element, SubElement, findtext
 A = TypeVar("A", bound="LegalHold")
 
 
+@dataclass(frozen=True)
 class LegalHold:
     """Legal hold configuration."""
 
-    def __init__(self, status: bool = False):
-        self._status = status
-
-    @property
-    def status(self) -> bool:
-        """Get status."""
-        return self._status
+    status: bool = False
 
     @classmethod
     def fromxml(cls: Type[A], element: ET.Element) -> A:
         """Create new object with values from XML element."""
         status = findtext(element, "Status")
-        return cls(status == "ON")
+        return cls(status=status == "ON")
 
-    def toxml(self, element: ET.Element | None) -> ET.Element:
+    def toxml(self, element: Optional[ET.Element]) -> ET.Element:
         """Convert to XML."""
         element = Element("LegalHold")
-        SubElement(element, "Status", "ON" if self._status is True else "OFF")
+        SubElement(element, "Status", "ON" if self.status is True else "OFF")
         return element
