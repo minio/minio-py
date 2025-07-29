@@ -17,59 +17,37 @@
 """Credential definitions to access S3 service."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 
+@dataclass(frozen=True)
 class Credentials:
     """
     Represents credentials access key, secret key and session token.
     """
 
-    _access_key: str
-    _secret_key: str
-    _session_token: str | None
-    _expiration: datetime | None
+    access_key: str
+    secret_key: str
+    session_token: Optional[str] = None
+    expiration: Optional[datetime] = None
 
-    def __init__(
-        self,
-        access_key: str,
-        secret_key: str,
-        session_token: str | None = None,
-        expiration: datetime | None = None,
-    ):
-        if not access_key:
+    def __post_init__(self):
+        if not self.access_key:
             raise ValueError("Access key must not be empty")
 
-        if not secret_key:
+        if not self.secret_key:
             raise ValueError("Secret key must not be empty")
 
-        self._access_key = access_key
-        self._secret_key = secret_key
-        self._session_token = session_token
-        if expiration and expiration.tzinfo:
-            expiration = (
-                expiration.astimezone(timezone.utc).replace(tzinfo=None)
+        if self.expiration and self.expiration.tzinfo:
+            self.expiration = (
+                self.expiration.astimezone(timezone.utc).replace(tzinfo=None)
             )
-        self._expiration = expiration
-
-    @property
-    def access_key(self) -> str:
-        """Get access key."""
-        return self._access_key
-
-    @property
-    def secret_key(self) -> str:
-        """Get secret key."""
-        return self._secret_key
-
-    @property
-    def session_token(self) -> str | None:
-        """Get session token."""
-        return self._session_token
 
     def is_expired(self) -> bool:
         """Check whether this credentials expired or not."""
         return (
-            self._expiration < (datetime.utcnow() + timedelta(seconds=10))
-            if self._expiration else False
+            self.expiration < (datetime.utcnow() + timedelta(seconds=10))
+            if self.expiration else False
         )

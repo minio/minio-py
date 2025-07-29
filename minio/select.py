@@ -18,9 +18,11 @@
 
 from __future__ import absolute_import
 
-from abc import ABCMeta
+from abc import ABC, abstractmethod
 from binascii import crc32
+from dataclasses import dataclass
 from io import BytesIO
+from typing import Optional
 from xml.etree import ElementTree as ET
 
 from .error import MinioException
@@ -41,15 +43,16 @@ QUOTE_FIELDS_ALWAYS = "ALWAYS"
 QUOTE_FIELDS_ASNEEDED = "ASNEEDED"
 
 
-class InputSerialization:
+@dataclass(frozen=True)
+class InputSerialization(ABC):
     """Input serialization."""
 
-    __metaclass__ = ABCMeta
+    compression_type: Optional[str] = None
 
-    def __init__(self, compression_type):
+    def __post_init__(self):
         if (
-                compression_type is not None and
-                compression_type not in [
+                self.compression_type is not None and
+                self.compression_type not in [
                     COMPRESSION_TYPE_NONE,
                     COMPRESSION_TYPE_GZIP,
                     COMPRESSION_TYPE_BZIP2,
@@ -59,30 +62,30 @@ class InputSerialization:
                 f"compression type must be {COMPRESSION_TYPE_NONE}, "
                 f"{COMPRESSION_TYPE_GZIP} or {COMPRESSION_TYPE_BZIP2}"
             )
-        self._compression_type = compression_type
 
     def toxml(self, element):
         """Convert to XML."""
-        if self._compression_type is not None:
-            SubElement(element, "CompressionType", self._compression_type)
+        if self.compression_type is not None:
+            SubElement(element, "CompressionType", self.compression_type)
         return element
 
 
+@dataclass(frozen=True)
 class CSVInputSerialization(InputSerialization):
     """CSV input serialization."""
 
-    def __init__(self, compression_type=None,
-                 allow_quoted_record_delimiter=None, comments=None,
-                 field_delimiter=None, file_header_info=None,
-                 quote_character=None, quote_escape_character=None,
-                 record_delimiter=None):
-        super().__init__(compression_type)
-        self._allow_quoted_record_delimiter = allow_quoted_record_delimiter
-        self._comments = comments
-        self._field_delimiter = field_delimiter
+    allow_quoted_record_delimiter = None
+    comments = None
+    field_delimiter = None
+    file_header_info = None
+    quote_character = None
+    quote_escape_character = None
+    record_delimiter = None
+
+    def __post_init__(self):
         if (
-                file_header_info is not None and
-                file_header_info not in [
+                self.file_header_info is not None and
+                self.file_header_info not in [
                     FILE_HEADER_INFO_USE,
                     FILE_HEADER_INFO_IGNORE,
                     FILE_HEADER_INFO_NONE,
@@ -92,66 +95,61 @@ class CSVInputSerialization(InputSerialization):
                 f"file header info must be {FILE_HEADER_INFO_USE}, "
                 f"{FILE_HEADER_INFO_IGNORE} or {FILE_HEADER_INFO_NONE}"
             )
-        self._file_header_info = file_header_info
-        self._quote_character = quote_character
-        self._quote_escape_character = quote_escape_character
-        self._record_delimiter = record_delimiter
 
     def toxml(self, element):
         """Convert to XML."""
         super().toxml(element)
         element = SubElement(element, "CSV")
-        if self._allow_quoted_record_delimiter is not None:
+        if self.allow_quoted_record_delimiter is not None:
             SubElement(
                 element,
                 "AllowQuotedRecordDelimiter",
-                self._allow_quoted_record_delimiter,
+                self.allow_quoted_record_delimiter,
             )
-        if self._comments is not None:
-            SubElement(element, "Comments", self._comments)
-        if self._field_delimiter is not None:
-            SubElement(element, "FieldDelimiter", self._field_delimiter)
-        if self._file_header_info is not None:
-            SubElement(element, "FileHeaderInfo", self._file_header_info)
-        if self._quote_character is not None:
-            SubElement(element, "QuoteCharacter", self._quote_character)
-        if self._quote_escape_character is not None:
+        if self.comments is not None:
+            SubElement(element, "Comments", self.comments)
+        if self.field_delimiter is not None:
+            SubElement(element, "FieldDelimiter", self.field_delimiter)
+        if self.file_header_info is not None:
+            SubElement(element, "FileHeaderInfo", self.file_header_info)
+        if self.quote_character is not None:
+            SubElement(element, "QuoteCharacter", self.quote_character)
+        if self.quote_escape_character is not None:
             SubElement(
                 element,
                 "QuoteEscapeCharacter",
-                self._quote_escape_character,
+                self.quote_escape_character,
             )
-        if self._record_delimiter is not None:
-            SubElement(element, "RecordDelimiter", self._record_delimiter)
+        if self.record_delimiter is not None:
+            SubElement(element, "RecordDelimiter", self.record_delimiter)
 
 
+@dataclass(frozen=True)
 class JSONInputSerialization(InputSerialization):
     """JSON input serialization."""
 
-    def __init__(self, compression_type=None, json_type=None):
-        super().__init__(compression_type)
+    json_type = None
+
+    def __post_init__(self):
         if (
-                json_type is not None and
-                json_type not in [JSON_TYPE_DOCUMENT, JSON_TYPE_LINES]
+                self.json_type is not None and
+                self.json_type not in [JSON_TYPE_DOCUMENT, JSON_TYPE_LINES]
         ):
             raise ValueError(
                 f"json type must be {JSON_TYPE_DOCUMENT} or {JSON_TYPE_LINES}"
             )
-        self._json_type = json_type
 
     def toxml(self, element):
         """Convert to XML."""
         super().toxml(element)
         element = SubElement(element, "JSON")
-        if self._json_type is not None:
-            SubElement(element, "Type", self._json_type)
+        if self.json_type is not None:
+            SubElement(element, "Type", self.json_type)
 
 
+@dataclass(frozen=True)
 class ParquetInputSerialization(InputSerialization):
     """Parquet input serialization."""
-
-    def __init__(self):
-        super().__init__(None)
 
     def toxml(self, element):
         """Convert to XML."""
@@ -159,18 +157,29 @@ class ParquetInputSerialization(InputSerialization):
         return SubElement(element, "Parquet")
 
 
-class CSVOutputSerialization:
+@dataclass(frozen=True)
+class OutputSerialization(ABC):
+    """Output serialization."""
+
+    @abstractmethod
+    def toxml(self, element):
+        """Convert to XML."""
+
+
+@dataclass(frozen=True)
+class CSVOutputSerialization(OutputSerialization):
     """CSV output serialization."""
 
-    def __init__(self, field_delimiter=None, quote_character=None,
-                 quote_escape_character=None, quote_fields=None,
-                 record_delimiter=None):
-        self._field_delimiter = field_delimiter
-        self._quote_character = quote_character
-        self._quote_escape_character = quote_escape_character
+    field_delimiter = None
+    quote_character = None
+    quote_escape_character = None
+    quote_fields = None
+    record_delimiter = None
+
+    def __post_init__(self):
         if (
-                quote_fields is not None and
-                quote_fields not in [
+                self.quote_fields is not None and
+                self.quote_fields not in [
                     QUOTE_FIELDS_ALWAYS, QUOTE_FIELDS_ASNEEDED,
                 ]
         ):
@@ -178,95 +187,71 @@ class CSVOutputSerialization:
                 f"quote fields must be {QUOTE_FIELDS_ALWAYS} or "
                 f"{QUOTE_FIELDS_ASNEEDED}"
             )
-        self._quote_fields = quote_fields
-        self._record_delimiter = record_delimiter
 
     def toxml(self, element):
         """Convert to XML."""
         element = SubElement(element, "CSV")
-        if self._field_delimiter is not None:
-            SubElement(element, "FieldDelimiter", self._field_delimiter)
-        if self._quote_character is not None:
-            SubElement(element, "QuoteCharacter", self._quote_character)
-        if self._quote_escape_character is not None:
+        if self.field_delimiter is not None:
+            SubElement(element, "FieldDelimiter", self.field_delimiter)
+        if self.quote_character is not None:
+            SubElement(element, "QuoteCharacter", self.quote_character)
+        if self.quote_escape_character is not None:
             SubElement(
                 element,
                 "QuoteEscapeCharacter",
-                self._quote_escape_character,
+                self.quote_escape_character,
             )
-        if self._quote_fields is not None:
-            SubElement(element, "QuoteFields", self._quote_fields)
-        if self._record_delimiter is not None:
-            SubElement(element, "RecordDelimiter", self._record_delimiter)
+        if self.quote_fields is not None:
+            SubElement(element, "QuoteFields", self.quote_fields)
+        if self.record_delimiter is not None:
+            SubElement(element, "RecordDelimiter", self.record_delimiter)
 
 
-class JSONOutputSerialization:
+@dataclass(frozen=True)
+class JSONOutputSerialization(OutputSerialization):
     """JSON output serialization."""
 
-    def __init__(self, record_delimiter=None):
-        self._record_delimiter = record_delimiter
+    record_delimiter = None
 
     def toxml(self, element):
         """Convert to XML."""
         element = SubElement(element, "JSON")
-        if self._record_delimiter is not None:
-            SubElement(element, "RecordDelimiter", self._record_delimiter)
+        if self.record_delimiter is not None:
+            SubElement(element, "RecordDelimiter", self.record_delimiter)
 
 
+@dataclass(frozen=True)
 class SelectRequest:
     """Select object content request."""
 
-    def __init__(self, expression, input_serialization, output_serialization,
-                 request_progress=False, scan_start_range=None,
-                 scan_end_range=None):
-        self._expression = expression
-        if not isinstance(
-                input_serialization,
-                (
-                    CSVInputSerialization,
-                    JSONInputSerialization,
-                    ParquetInputSerialization,
-                ),
-        ):
-            raise ValueError(
-                "input serialization must be CSVInputSerialization, "
-                "JSONInputSerialization or ParquetInputSerialization type",
-            )
-        self._input_serialization = input_serialization
-        if not isinstance(
-                output_serialization,
-                (CSVOutputSerialization, JSONOutputSerialization),
-        ):
-            raise ValueError(
-                "output serialization must be CSVOutputSerialization or "
-                "JSONOutputSerialization type",
-            )
-        self._output_serialization = output_serialization
-        self._request_progress = request_progress
-        self._scan_start_range = scan_start_range
-        self._scan_end_range = scan_end_range
+    expression: str
+    input_serialization: InputSerialization
+    output_serialization: OutputSerialization
+    request_progress: bool = False
+    scan_start_range: Optional[int] = None
+    scan_end_range: Optional[int] = None
 
     def toxml(self, element):
         """Convert to XML."""
         element = Element("SelectObjectContentRequest")
-        SubElement(element, "Expression", self._expression)
+        SubElement(element, "Expression", self.expression)
         SubElement(element, "ExpressionType", "SQL")
-        self._input_serialization.toxml(
+        self.input_serialization.toxml(
             SubElement(element, "InputSerialization"),
         )
-        self._output_serialization.toxml(
+        self.output_serialization.toxml(
             SubElement(element, "OutputSerialization"),
         )
-        if self._request_progress:
+        if self.request_progress:
             SubElement(
                 SubElement(element, "RequestProgress"), "Enabled", "true",
             )
-        if self._scan_start_range or self._scan_end_range:
+        if self.scan_start_range or self.scan_end_range:
             tag = SubElement(element, "ScanRange")
-            if self._scan_start_range:
-                SubElement(tag, "Start", self._scan_start_range)
-            if self._scan_end_range:
-                SubElement(tag, "End", self._scan_end_range)
+            if self.scan_start_range:
+                SubElement(tag, "Start", self.scan_start_range)
+            if self.scan_end_range:
+                SubElement(tag, "End", self.scan_end_range)
         return element
 
 
@@ -304,29 +289,31 @@ def _decode_header(data):
     return headers
 
 
+@dataclass(frozen=True)
 class Stats:
     """Progress/Stats information."""
 
+    bytes_scanned: Optional[str] = None
+    bytes_processed: Optional[str] = None
+    bytes_returned: Optional[str] = None
+
     def __init__(self, data):
         element = ET.fromstring(data.decode())
-        self._bytes_scanned = findtext(element, "BytesScanned")
-        self._bytes_processed = findtext(element, "BytesProcessed")
-        self._bytes_returned = findtext(element, "BytesReturned")
-
-    @property
-    def bytes_scanned(self):
-        """Get bytes scanned."""
-        return self._bytes_scanned
-
-    @property
-    def bytes_processed(self):
-        """Get bytes processed."""
-        return self._bytes_processed
-
-    @property
-    def bytes_returned(self):
-        """Get bytes returned."""
-        return self._bytes_returned
+        object.__setattr__(
+            self,
+            "bytes_scanned",
+            findtext(element, "BytesScanned"),
+        )
+        object.__setattr__(
+            self,
+            "bytes_processed",
+            findtext(element, "BytesProcessed"),
+        )
+        object.__setattr__(
+            self,
+            "bytes_returned",
+            findtext(element, "BytesReturned"),
+        )
 
 
 class SelectObjectReader:

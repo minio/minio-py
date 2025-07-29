@@ -21,7 +21,6 @@
 # pylint: disable=too-many-public-methods
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-locals
-# pylint: disable=too-many-positional-arguments
 
 """
 Simple Storage Service (aka S3) client to perform bucket and object operations.
@@ -37,7 +36,8 @@ from collections.abc import Iterable
 from datetime import datetime, timedelta
 from io import BytesIO
 from random import random
-from typing import Any, BinaryIO, Iterator, TextIO, Tuple, Union, cast
+from typing import (Any, BinaryIO, Iterator, Optional, TextIO, Tuple, Union,
+                    cast)
 from urllib.parse import urlunsplit
 from xml.etree import ElementTree as ET
 
@@ -129,20 +129,21 @@ class Minio:
     _region_map: dict[str, str]
     _base_url: BaseURL
     _user_agent: str
-    _trace_stream: TextIO | None
-    _provider: Provider | None
+    _trace_stream: Optional[TextIO]
+    _provider: Optional[Provider]
     _http: urllib3.PoolManager
 
     def __init__(
             self,
+            *,
             endpoint: str,
-            access_key: str | None = None,
-            secret_key: str | None = None,
-            session_token: str | None = None,
+            access_key: Optional[str] = None,
+            secret_key: Optional[str] = None,
+            session_token: Optional[str] = None,
             secure: bool = True,
-            region: str | None = None,
-            http_client: urllib3.PoolManager | None = None,
-            credentials: Provider | None = None,
+            region: Optional[str] = None,
+            http_client: Optional[urllib3.PoolManager] = None,
+            credentials: Optional[Provider] = None,
             cert_check: bool = True,
     ):
         # Validate http client has correct base class.
@@ -185,10 +186,10 @@ class Minio:
     def _handle_redirect_response(
             self,
             method: str,
-            bucket_name: str | None,
             response: BaseHTTPResponse,
+            bucket_name: Optional[str] = None,
             retry: bool = False,
-    ) -> tuple[str | None, str | None]:
+    ) -> tuple[Optional[str], Optional[str]]:
         """
         Handle redirect response indicates whether retry HEAD request
         on failure.
@@ -213,9 +214,9 @@ class Minio:
     def _build_headers(
             self,
             host: str,
-            headers: DictType | None,
-            body: bytes | None,
-            creds: Credentials | None,
+            headers: Optional[DictType] = None,
+            body: Optional[bytes] = None,
+            creds: Optional[Credentials] = None,
     ) -> tuple[DictType, datetime]:
         """Build headers with given parameters."""
         headers = headers or {}
@@ -247,21 +248,22 @@ class Minio:
 
     def _url_open(
             self,
+            *,
             method: str,
             region: str,
-            bucket_name: str | None = None,
-            object_name: str | None = None,
-            body: bytes | None = None,
-            headers: DictType | None = None,
-            query_params: DictType | None = None,
+            bucket_name: Optional[str] = None,
+            object_name: Optional[str] = None,
+            body: Optional[bytes] = None,
+            headers: Optional[DictType] = None,
+            query_params: Optional[DictType] = None,
             preload_content: bool = True,
             no_body_trace: bool = False,
     ) -> BaseHTTPResponse:
         """Execute HTTP request."""
         creds = self._provider.retrieve() if self._provider else None
         url = self._base_url.build(
-            method,
-            region,
+            method=method,
+            region=region,
             bucket_name=bucket_name,
             object_name=object_name,
             query_params=query_params,
@@ -269,13 +271,13 @@ class Minio:
         headers, date = self._build_headers(url.netloc, headers, body, creds)
         if creds:
             headers = sign_v4_s3(
-                method,
-                url,
-                region,
-                headers,
-                creds,
-                cast(str, headers.get("x-amz-content-sha256")),
-                date,
+                method=method,
+                url=url,
+                region=region,
+                headers=headers,
+                credentials=creds,
+                content_sha256=cast(str, headers.get("x-amz-content-sha256")),
+                date=date,
             )
 
         if self._trace_stream:
@@ -369,13 +371,13 @@ class Minio:
 
         error_map = {
             301: lambda: self._handle_redirect_response(
-                method, bucket_name, response, True,
+                method, response, bucket_name, True,
             ),
             307: lambda: self._handle_redirect_response(
-                method, bucket_name, response, True,
+                method, response, bucket_name, True,
             ),
             400: lambda: self._handle_redirect_response(
-                method, bucket_name, response, True,
+                method, response, bucket_name, True,
             ),
             403: lambda: ("AccessDenied", "Access denied"),
             404: lambda: (
@@ -409,12 +411,12 @@ class Minio:
                     response.status,
                 )
             response_error = S3Error(
-                cast(str, code),
-                cast(Union[str, None], message),
-                url.path,
-                response.headers.get("x-amz-request-id"),
-                response.headers.get("x-amz-id-2"),
-                response,
+                response=response,
+                code=cast(str, code),
+                message=cast(Union[str, None], message),
+                resource=url.path,
+                request_id=response.headers.get("x-amz-request-id"),
+                host_id=response.headers.get("x-amz-id-2"),
                 bucket_name=bucket_name,
                 object_name=object_name,
             )
@@ -427,12 +429,13 @@ class Minio:
 
     def _execute(
             self,
+            *,
             method: str,
-            bucket_name: str | None = None,
-            object_name: str | None = None,
-            body: bytes | None = None,
-            headers: DictType | None = None,
-            query_params: DictType | None = None,
+            bucket_name: Optional[str] = None,
+            object_name: Optional[str] = None,
+            body: Optional[bytes] = None,
+            headers: Optional[DictType] = None,
+            query_params: Optional[DictType] = None,
             preload_content: bool = True,
             no_body_trace: bool = False,
     ) -> BaseHTTPResponse:
@@ -441,8 +444,8 @@ class Minio:
 
         try:
             return self._url_open(
-                method,
-                region,
+                method=method,
+                region=region,
                 bucket_name=bucket_name,
                 object_name=object_name,
                 body=body,
@@ -458,8 +461,8 @@ class Minio:
         # Retry only once on RetryHead error.
         try:
             return self._url_open(
-                method,
-                region,
+                method=method,
+                region=region,
                 bucket_name=bucket_name,
                 object_name=object_name,
                 body=body,
@@ -473,11 +476,11 @@ class Minio:
                 raise
 
             code, message = self._handle_redirect_response(
-                method, bucket_name, exc.response,
+                method, exc.response, bucket_name,
             )
             raise exc.copy(cast(str, code), cast(str, message))
 
-    def _get_region(self, bucket_name: str | None) -> str:
+    def _get_region(self, bucket_name: Optional[str] = None) -> str:
         """
         Return region of given bucket either from region cache or set in
         constructor.
@@ -495,8 +498,8 @@ class Minio:
 
         # Execute GetBucketLocation REST API to get region of the bucket.
         response = self._url_open(
-            "GET",
-            "us-east-1",
+            method="GET",
+            region="us-east-1",
             bucket_name=bucket_name,
             query_params={"location": ""},
         )
@@ -602,7 +605,7 @@ class Minio:
             raise ValueError("request must be SelectRequest type")
         body = marshal(request)
         response = self._execute(
-            "POST",
+            method="POST",
             bucket_name=bucket_name,
             object_name=object_name,
             body=body,
@@ -615,7 +618,7 @@ class Minio:
     def make_bucket(
             self,
             bucket_name: str,
-            location: str | None = None,
+            location: Optional[str] = None,
             object_lock: bool = False,
     ):
         """
@@ -646,7 +649,7 @@ class Minio:
                     f"but passed {location}"
                 )
         location = self._base_url.region or location or "us-east-1"
-        headers: DictType | None = (
+        headers: Optional[DictType] = (
             {"x-amz-bucket-object-lock-enabled": "true"}
             if object_lock else None
         )
@@ -657,8 +660,8 @@ class Minio:
             SubElement(element, "LocationConstraint", location)
             body = getbytes(element)
         self._url_open(
-            "PUT",
-            location,
+            method="PUT",
+            region=location,
             bucket_name=bucket_name,
             body=body,
             headers=headers,
@@ -677,7 +680,7 @@ class Minio:
                 print(bucket.name, bucket.creation_date)
         """
 
-        response = self._execute("GET")
+        response = self._execute(method="GET")
         result = unmarshal(ListAllMyBucketsResult, response.data.decode())
         return result.buckets
 
@@ -696,7 +699,7 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         try:
-            self._execute("HEAD", bucket_name)
+            self._execute(method="HEAD", bucket_name=bucket_name)
             return True
         except S3Error as exc:
             if exc.code != "NoSuchBucket":
@@ -713,7 +716,7 @@ class Minio:
             client.remove_bucket("my-bucket")
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        self._execute("DELETE", bucket_name)
+        self._execute(method="DELETE", bucket_name=bucket_name)
         self._region_map.pop(bucket_name, None)
 
     def get_bucket_policy(self, bucket_name: str) -> str:
@@ -728,7 +731,7 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         response = self._execute(
-            "GET", bucket_name, query_params={"policy": ""},
+            method="GET", bucket_name=bucket_name, query_params={"policy": ""},
         )
         return response.data.decode()
 
@@ -742,7 +745,11 @@ class Minio:
             client.delete_bucket_policy("my-bucket")
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        self._execute("DELETE", bucket_name, query_params={"policy": ""})
+        self._execute(
+            method="DELETE",
+            bucket_name=bucket_name,
+            query_params={"policy": ""},
+        )
 
     def set_bucket_policy(self, bucket_name: str, policy: str | bytes):
         """
@@ -757,8 +764,8 @@ class Minio:
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         is_valid_policy_type(policy)
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=policy if isinstance(policy, bytes) else policy.encode(),
             headers={"Content-MD5": cast(str, md5sum_hash(policy))},
             query_params={"policy": ""},
@@ -776,7 +783,9 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         response = self._execute(
-            "GET", bucket_name, query_params={"notification": ""},
+            method="GET",
+            bucket_name=bucket_name,
+            query_params={"notification": ""},
         )
         return unmarshal(NotificationConfig, response.data.decode())
 
@@ -809,8 +818,8 @@ class Minio:
             raise ValueError("config must be NotificationConfig type")
         body = marshal(config)
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=body,
             headers={"Content-MD5": cast(str, md5sum_hash(body))},
             query_params={"notification": ""},
@@ -845,14 +854,14 @@ class Minio:
             raise ValueError("config must be SSEConfig type")
         body = marshal(config)
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=body,
             headers={"Content-MD5": cast(str, md5sum_hash(body))},
             query_params={"encryption": ""},
         )
 
-    def get_bucket_encryption(self, bucket_name: str) -> SSEConfig | None:
+    def get_bucket_encryption(self, bucket_name: str) -> Optional[SSEConfig]:
         """
         Get encryption configuration of a bucket.
 
@@ -865,8 +874,8 @@ class Minio:
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         try:
             response = self._execute(
-                "GET",
-                bucket_name,
+                method="GET",
+                bucket_name=bucket_name,
                 query_params={"encryption": ""},
             )
             return unmarshal(SSEConfig, response.data.decode())
@@ -887,8 +896,8 @@ class Minio:
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         try:
             self._execute(
-                "DELETE",
-                bucket_name,
+                method="DELETE",
+                bucket_name=bucket_name,
                 query_params={"encryption": ""},
             )
         except S3Error as exc:
@@ -931,8 +940,8 @@ class Minio:
 
         return EventIterable(
             lambda: self._execute(
-                "GET",
-                bucket_name,
+                method="GET",
+                bucket_name=bucket_name,
                 query_params={
                     "prefix": prefix or "",
                     "suffix": suffix or "",
@@ -963,8 +972,8 @@ class Minio:
             raise ValueError("config must be VersioningConfig type")
         body = marshal(config)
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=body,
             headers={"Content-MD5": cast(str, md5sum_hash(body))},
             query_params={"versioning": ""},
@@ -983,25 +992,26 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         response = self._execute(
-            "GET",
-            bucket_name,
+            method="GET",
+            bucket_name=bucket_name,
             query_params={"versioning": ""},
         )
         return unmarshal(VersioningConfig, response.data.decode())
 
     def fput_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             file_path: str,
             content_type: str = "application/octet-stream",
-            metadata: DictType | None = None,
-            sse: Sse | None = None,
-            progress: ProgressType | None = None,
+            metadata: Optional[DictType] = None,
+            sse: Optional[Sse] = None,
+            progress: Optional[ProgressType] = None,
             part_size: int = 0,
             num_parallel_uploads: int = 3,
-            tags: Tags | None = None,
-            retention: Retention | None = None,
+            tags: Optional[Tags] = None,
+            retention: Optional[Retention] = None,
             legal_hold: bool = False,
     ) -> ObjectWriteResult:
         """
@@ -1051,10 +1061,10 @@ class Minio:
         file_size = os.stat(file_path).st_size
         with open(file_path, "rb") as file_data:
             return self.put_object(
-                bucket_name,
-                object_name,
-                file_data,
-                file_size,
+                bucket_name=bucket_name,
+                object_name=object_name,
+                data=file_data,
+                length=file_size,
                 content_type=content_type,
                 metadata=cast(Union[DictType, None], metadata),
                 sse=sse,
@@ -1068,15 +1078,16 @@ class Minio:
 
     def fget_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             file_path: str,
-            request_headers: DictType | None = None,
-            ssec: SseCustomerKey | None = None,
-            version_id: str | None = None,
-            extra_query_params: DictType | None = None,
-            tmp_file_path: str | None = None,
-            progress: ProgressType | None = None,
+            request_headers: Optional[DictType] = None,
+            ssec: Optional[SseCustomerKey] = None,
+            version_id: Optional[str] = None,
+            extra_query_params: Optional[DictType] = None,
+            tmp_file_path: Optional[str] = None,
+            progress: Optional[ProgressType] = None,
     ):
         """
         Downloads data of an object to file.
@@ -1119,9 +1130,9 @@ class Minio:
         makedirs(os.path.dirname(file_path))
 
         stat = self.stat_object(
-            bucket_name,
-            object_name,
-            ssec,
+            bucket_name=bucket_name,
+            object_name=object_name,
+            ssec=ssec,
             version_id=version_id,
             extra_headers=request_headers,
         )
@@ -1135,8 +1146,8 @@ class Minio:
         response = None
         try:
             response = self.get_object(
-                bucket_name,
-                object_name,
+                bucket_name=bucket_name,
+                object_name=object_name,
                 request_headers=request_headers,
                 ssec=ssec,
                 version_id=version_id,
@@ -1164,14 +1175,15 @@ class Minio:
 
     def get_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             offset: int = 0,
             length: int = 0,
-            request_headers: DictType | None = None,
-            ssec: SseCustomerKey | None = None,
-            version_id: str | None = None,
-            extra_query_params: DictType | None = None,
+            request_headers: Optional[DictType] = None,
+            ssec: Optional[SseCustomerKey] = None,
+            version_id: Optional[str] = None,
+            extra_query_params: Optional[DictType] = None,
     ) -> BaseHTTPResponse:
         """
         Get data of an object. Returned response should be closed after use to
@@ -1254,9 +1266,9 @@ class Minio:
             extra_query_params["versionId"] = version_id
 
         return self._execute(
-            "GET",
-            bucket_name,
-            object_name,
+            method="GET",
+            bucket_name=bucket_name,
+            object_name=object_name,
             headers=cast(DictType, headers),
             query_params=extra_query_params,
             preload_content=False,
@@ -1264,14 +1276,15 @@ class Minio:
 
     def prompt_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             prompt: str,
-            lambda_arn: str | None = None,
-            request_headers: DictType | None = None,
-            ssec: SseCustomerKey | None = None,
-            version_id: str | None = None,
-            **kwargs: Any | None,
+            lambda_arn: Optional[str] = None,
+            request_headers: Optional[DictType] = None,
+            ssec: Optional[SseCustomerKey] = None,
+            version_id: Optional[str] = None,
+            **kwargs: Optional[Any],
     ) -> BaseHTTPResponse:
         """
         Prompt an object using natural language.
@@ -1317,9 +1330,9 @@ class Minio:
 
         body = json.dumps(prompt_body)
         return self._execute(
-            "POST",
-            bucket_name,
-            object_name,
+            method="POST",
+            bucket_name=bucket_name,
+            object_name=object_name,
             headers=cast(DictType, headers),
             query_params=cast(DictType, extra_query_params),
             body=body.encode(),
@@ -1328,16 +1341,17 @@ class Minio:
 
     def copy_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             source: CopySource,
-            sse: Sse | None = None,
-            metadata: DictType | None = None,
-            tags: Tags | None = None,
-            retention: Retention | None = None,
+            sse: Optional[Sse] = None,
+            metadata: Optional[DictType] = None,
+            tags: Optional[Tags] = None,
+            retention: Optional[Retention] = None,
             legal_hold: bool = False,
-            metadata_directive: str | None = None,
-            tagging_directive: str | None = None,
+            metadata_directive: Optional[str] = None,
+            tagging_directive: Optional[str] = None,
     ) -> ObjectWriteResult:
         """
         Create an object by server-side copying data from another object.
@@ -1413,8 +1427,8 @@ class Minio:
         size = -1
         if source.offset is None and source.length is None:
             stat = self.stat_object(
-                source.bucket_name,
-                source.object_name,
+                bucket_name=source.bucket_name,
+                object_name=source.object_name,
                 version_id=source.version_id,
                 ssec=source.ssec,
             )
@@ -1436,8 +1450,13 @@ class Minio:
                     "object size greater than 5 GiB"
                 )
             return self.compose_object(
-                bucket_name, object_name, [ComposeSource.of(source)],
-                sse=sse, metadata=metadata, tags=tags, retention=retention,
+                bucket_name=bucket_name,
+                object_name=object_name,
+                sources=[ComposeSource.of(source)],
+                sse=sse,
+                metadata=metadata,
+                tags=tags,
+                retention=retention,
                 legal_hold=legal_hold,
             )
 
@@ -1454,8 +1473,8 @@ class Minio:
             headers["x-amz-tagging-directive"] = tagging_directive
         headers.update(source.gen_copy_headers())
         response = self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             object_name=object_name,
             headers=headers,
         )
@@ -1477,8 +1496,8 @@ class Minio:
         for src in sources:
             i += 1
             stat = self.stat_object(
-                src.bucket_name,
-                src.object_name,
+                bucket_name=src.bucket_name,
+                object_name=src.object_name,
                 version_id=src.version_id,
                 ssec=src.ssec,
             )
@@ -1536,17 +1555,18 @@ class Minio:
 
     def _upload_part_copy(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             upload_id: str,
             part_number: int,
             headers: DictType,
-    ) -> tuple[str, datetime | None]:
+    ) -> tuple[str, Optional[datetime]]:
         """Execute UploadPartCopy S3 API."""
         response = self._execute(
-            "PUT",
-            bucket_name,
-            object_name,
+            method="PUT",
+            bucket_name=bucket_name,
+            object_name=object_name,
             headers=headers,
             query_params={
                 "partNumber": str(part_number),
@@ -1557,13 +1577,14 @@ class Minio:
 
     def compose_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             sources: list[ComposeSource],
-            sse: Sse | None = None,
-            metadata: DictType | None = None,
-            tags: Tags | None = None,
-            retention: Retention | None = None,
+            sse: Optional[Sse] = None,
+            metadata: Optional[DictType] = None,
+            tags: Optional[Tags] = None,
+            retention: Optional[Retention] = None,
             legal_hold: bool = False,
     ) -> ObjectWriteResult:
         """
@@ -1632,8 +1653,13 @@ class Minio:
                 sources[0].length is None
         ):
             return self.copy_object(
-                bucket_name, object_name, CopySource.of(sources[0]),
-                sse=sse, metadata=metadata, tags=tags, retention=retention,
+                bucket_name=bucket_name,
+                object_name=object_name,
+                source=CopySource.of(sources[0]),
+                sse=sse,
+                metadata=metadata,
+                tags=tags,
+                retention=retention,
                 legal_hold=legal_hold,
                 metadata_directive=REPLACE if metadata else None,
                 tagging_directive=REPLACE if tags else None,
@@ -1667,11 +1693,11 @@ class Minio:
                             f"bytes={offset}-{offset + size - 1}"
                         )
                     etag, _ = self._upload_part_copy(
-                        bucket_name,
-                        object_name,
-                        upload_id,
-                        part_number,
-                        headers,
+                        bucket_name=bucket_name,
+                        object_name=object_name,
+                        upload_id=upload_id,
+                        part_number=part_number,
+                        headers=headers,
                     )
                     total_parts.append(Part(part_number, etag))
                     continue
@@ -1684,11 +1710,11 @@ class Minio:
                         f"bytes={offset}-{end_bytes}"
                     )
                     etag, _ = self._upload_part_copy(
-                        bucket_name,
-                        object_name,
-                        upload_id,
-                        part_number,
-                        headers_copy,
+                        bucket_name=bucket_name,
+                        object_name=object_name,
+                        upload_id=upload_id,
+                        part_number=part_number,
+                        headers=headers_copy,
                     )
                     total_parts.append(Part(part_number, etag))
                     offset += length
@@ -1719,9 +1745,9 @@ class Minio:
     ):
         """Execute AbortMultipartUpload S3 API."""
         self._execute(
-            "DELETE",
-            bucket_name,
-            object_name,
+            method="DELETE",
+            bucket_name=bucket_name,
+            object_name=object_name,
             query_params={'uploadId': upload_id},
         )
 
@@ -1740,9 +1766,9 @@ class Minio:
             SubElement(tag, "ETag", '"' + part.etag + '"')
         body = getbytes(element)
         response = self._execute(
-            "POST",
-            bucket_name,
-            object_name,
+            method="POST",
+            bucket_name=bucket_name,
+            object_name=object_name,
             body=body,
             headers={
                 "Content-Type": 'application/xml',
@@ -1762,9 +1788,9 @@ class Minio:
         if not headers.get("Content-Type"):
             headers["Content-Type"] = "application/octet-stream"
         response = self._execute(
-            "POST",
-            bucket_name,
-            object_name,
+            method="POST",
+            bucket_name=bucket_name,
+            object_name=object_name,
             headers=headers,
             query_params={"uploads": ""},
         )
@@ -1773,17 +1799,18 @@ class Minio:
 
     def _put_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             data: bytes,
-            headers: DictType | None,
-            query_params: DictType | None = None,
+            headers: Optional[DictType] = None,
+            query_params: Optional[DictType] = None,
     ) -> ObjectWriteResult:
         """Execute PutObject S3 API."""
         response = self._execute(
-            "PUT",
-            bucket_name,
-            object_name,
+            method="PUT",
+            bucket_name=bucket_name,
+            object_name=object_name,
             body=data,
             headers=headers,
             query_params=query_params,
@@ -1802,16 +1829,16 @@ class Minio:
             bucket_name: str,
             object_name: str,
             data: bytes,
-            headers: DictType | None,
+            headers: Optional[DictType],
             upload_id: str,
             part_number: int,
     ) -> str:
         """Execute UploadPart S3 API."""
         result = self._put_object(
-            bucket_name,
-            object_name,
-            data,
-            headers,
+            bucket_name=bucket_name,
+            object_name=object_name,
+            data=data,
+            headers=headers,
             query_params={
                 "partNumber": str(part_number),
                 "uploadId": upload_id,
@@ -1825,20 +1852,21 @@ class Minio:
 
     def put_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             data: BinaryIO,
             length: int,
             content_type: str = "application/octet-stream",
-            metadata: DictType | None = None,
-            sse: Sse | None = None,
-            progress: ProgressType | None = None,
+            metadata: Optional[DictType] = None,
+            sse: Optional[Sse] = None,
+            progress: Optional[ProgressType] = None,
             part_size: int = 0,
             num_parallel_uploads: int = 3,
-            tags: Tags | None = None,
-            retention: Retention | None = None,
+            tags: Optional[Tags] = None,
+            retention: Optional[Retention] = None,
             legal_hold: bool = False,
-            write_offset: int | None = None,
+            write_offset: Optional[int] = None,
     ) -> ObjectWriteResult:
         """
         Uploads data from a stream to an object in a bucket.
@@ -1917,7 +1945,7 @@ class Minio:
         stop = False
         upload_id = None
         parts: list[Part] = []
-        pool: ThreadPool | None = None
+        pool: Optional[ThreadPool] = None
 
         try:
             while not stop:
@@ -1952,7 +1980,10 @@ class Minio:
 
                 if part_count == 1:
                     return self._put_object(
-                        bucket_name, object_name, part_data, headers,
+                        bucket_name=bucket_name,
+                        object_name=object_name,
+                        data=part_data,
+                        headers=headers,
                     )
 
                 if not upload_id:
@@ -2009,13 +2040,14 @@ class Minio:
 
     def append_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             data: BinaryIO,
             length: int,
-            chunk_size: int | None = None,
-            progress: ProgressType | None = None,
-            extra_headers: DictType | None = None,
+            chunk_size: Optional[int] = None,
+            progress: Optional[ProgressType] = None,
+            extra_headers: Optional[DictType] = None,
     ) -> ObjectWriteResult:
         """
         Appends from a stream to existing object in a bucket.
@@ -2077,7 +2109,10 @@ class Minio:
         one_byte = b""
         stop = False
 
-        stat = self.stat_object(bucket_name, object_name)
+        stat = self.stat_object(
+            bucket_name=bucket_name,
+            object_name=object_name,
+        )
         write_offset = cast(int, stat.size)
 
         while not stop:
@@ -2113,7 +2148,10 @@ class Minio:
             headers = extra_headers or {}
             headers["x-amz-write-offset-bytes"] = str(write_offset)
             upload_result = self._put_object(
-                bucket_name, object_name, chunk_data, headers=headers,
+                bucket_name=bucket_name,
+                object_name=object_name,
+                data=chunk_data,
+                headers=headers,
             )
             write_offset += len(chunk_data)
         return ObjectWriteResult(
@@ -2127,17 +2165,18 @@ class Minio:
 
     def list_objects(
             self,
+            *,
             bucket_name: str,
-            prefix: str | None = None,
+            prefix: Optional[str] = None,
             recursive: bool = False,
-            start_after: str | None = None,
+            start_after: Optional[str] = None,
             include_user_meta: bool = False,
             include_version: bool = False,
             use_api_v1: bool = False,
             use_url_encoding_type: bool = True,
             fetch_owner: bool = False,
-            extra_headers: DictType | None = None,
-            extra_query_params: DictType | None = None,
+            extra_headers: Optional[DictType] = None,
+            extra_query_params: Optional[DictType] = None,
     ):
         """
         Lists object information of a bucket.
@@ -2190,7 +2229,7 @@ class Minio:
                 print(obj)
         """
         return self._list_objects(
-            bucket_name,
+            bucket_name=bucket_name,
             delimiter=None if recursive else "/",
             include_user_meta=include_user_meta,
             prefix=prefix,
@@ -2205,12 +2244,13 @@ class Minio:
 
     def stat_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
-            ssec: SseCustomerKey | None = None,
-            version_id: str | None = None,
-            extra_headers: DictType | None = None,
-            extra_query_params: DictType | None = None,
+            ssec: Optional[SseCustomerKey] = None,
+            version_id: Optional[str] = None,
+            extra_headers: Optional[DictType] = None,
+            extra_query_params: Optional[DictType] = None,
     ) -> Object:
         """
         Get object information and metadata of an object.
@@ -2251,9 +2291,9 @@ class Minio:
         query_params = extra_query_params or {}
         query_params.update({"versionId": version_id} if version_id else {})
         response = self._execute(
-            "HEAD",
-            bucket_name,
-            object_name,
+            method="HEAD",
+            bucket_name=bucket_name,
+            object_name=object_name,
             headers=headers,
             query_params=query_params,
         )
@@ -2279,7 +2319,7 @@ class Minio:
             self,
             bucket_name: str,
             object_name: str,
-            version_id: str | None = None
+            version_id: Optional[str] = None
     ):
         """
         Remove an object.
@@ -2301,9 +2341,9 @@ class Minio:
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         check_object_name(object_name)
         self._execute(
-            "DELETE",
-            bucket_name,
-            object_name,
+            method="DELETE",
+            bucket_name=bucket_name,
+            object_name=object_name,
             query_params={"versionId": version_id} if version_id else None,
         )
 
@@ -2331,8 +2371,8 @@ class Minio:
         if bypass_governance_mode:
             headers["x-amz-bypass-governance-retention"] = "true"
         response = self._execute(
-            "POST",
-            bucket_name,
+            method="POST",
+            bucket_name=bucket_name,
             body=body,
             headers=headers,
             query_params={"delete": ""},
@@ -2423,14 +2463,15 @@ class Minio:
 
     def get_presigned_url(
             self,
+            *,
             method: str,
             bucket_name: str,
             object_name: str,
             expires: timedelta = timedelta(days=7),
-            response_headers: DictType | None = None,
-            request_date: datetime | None = None,
-            version_id: str | None = None,
-            extra_query_params: DictType | None = None,
+            response_headers: Optional[DictType] = None,
+            request_date: Optional[datetime] = None,
+            version_id: Optional[str] = None,
+            extra_query_params: Optional[DictType] = None,
     ) -> str:
         """
         Get presigned URL of an object for HTTP method, expiry time and custom
@@ -2474,8 +2515,8 @@ class Minio:
         if creds and creds.session_token:
             query_params["X-Amz-Security-Token"] = creds.session_token
         url = self._base_url.build(
-            method,
-            region,
+            method=method,
+            region=region,
             bucket_name=bucket_name,
             object_name=object_name,
             query_params=query_params,
@@ -2483,24 +2524,25 @@ class Minio:
 
         if creds:
             url = presign_v4(
-                method,
-                url,
-                region,
-                creds,
-                request_date or time.utcnow(),
-                int(expires.total_seconds()),
+                method=method,
+                url=url,
+                region=region,
+                credentials=creds,
+                date=request_date or time.utcnow(),
+                expires=int(expires.total_seconds()),
             )
         return urlunsplit(url)
 
     def presigned_get_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             expires: timedelta = timedelta(days=7),
-            response_headers: DictType | None = None,
-            request_date: datetime | None = None,
-            version_id: str | None = None,
-            extra_query_params: DictType | None = None,
+            response_headers: Optional[DictType] = None,
+            request_date: Optional[datetime] = None,
+            version_id: Optional[str] = None,
+            extra_query_params: Optional[DictType] = None,
     ) -> str:
         """
         Get presigned URL of an object to download its data with expiry time
@@ -2533,10 +2575,10 @@ class Minio:
             print(url)
         """
         return self.get_presigned_url(
-            "GET",
-            bucket_name,
-            object_name,
-            expires,
+            method="GET",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            expires=expires,
             response_headers=response_headers,
             request_date=request_date,
             version_id=version_id,
@@ -2572,7 +2614,10 @@ class Minio:
             print(url)
         """
         return self.get_presigned_url(
-            "PUT", bucket_name, object_name, expires,
+            method="PUT",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            expires=expires,
         )
 
     def presigned_post_policy(self, policy: PostPolicy) -> dict[str, str]:
@@ -2616,12 +2661,16 @@ class Minio:
             client.delete_bucket_replication("my-bucket")
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        self._execute("DELETE", bucket_name, query_params={"replication": ""})
+        self._execute(
+            method="DELETE",
+            bucket_name=bucket_name,
+            query_params={"replication": ""},
+        )
 
     def get_bucket_replication(
             self,
             bucket_name: str,
-    ) -> ReplicationConfig | None:
+    ) -> Optional[ReplicationConfig]:
         """
         Get bucket replication configuration of a bucket.
 
@@ -2634,7 +2683,9 @@ class Minio:
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         try:
             response = self._execute(
-                "GET", bucket_name, query_params={"replication": ""},
+                method="GET",
+                bucket_name=bucket_name,
+                query_params={"replication": ""},
             )
             return unmarshal(ReplicationConfig, response.data.decode())
         except S3Error as exc:
@@ -2683,8 +2734,8 @@ class Minio:
             raise ValueError("config must be ReplicationConfig type")
         body = marshal(config)
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=body,
             headers={"Content-MD5": cast(str, md5sum_hash(body))},
             query_params={"replication": ""},
@@ -2700,12 +2751,16 @@ class Minio:
             client.delete_bucket_lifecycle("my-bucket")
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        self._execute("DELETE", bucket_name, query_params={"lifecycle": ""})
+        self._execute(
+            method="DELETE",
+            bucket_name=bucket_name,
+            query_params={"lifecycle": ""},
+        )
 
     def get_bucket_lifecycle(
             self,
             bucket_name: str,
-    ) -> LifecycleConfig | None:
+    ) -> Optional[LifecycleConfig]:
         """
         Get bucket lifecycle configuration of a bucket.
 
@@ -2718,7 +2773,9 @@ class Minio:
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         try:
             response = self._execute(
-                "GET", bucket_name, query_params={"lifecycle": ""},
+                method="GET",
+                bucket_name=bucket_name,
+                query_params={"lifecycle": ""},
             )
             return unmarshal(LifecycleConfig, response.data.decode())
         except S3Error as exc:
@@ -2763,8 +2820,8 @@ class Minio:
             raise ValueError("config must be LifecycleConfig type")
         body = marshal(config)
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=body,
             headers={"Content-MD5": cast(str, md5sum_hash(body))},
             query_params={"lifecycle": ""},
@@ -2780,9 +2837,13 @@ class Minio:
             client.delete_bucket_tags("my-bucket")
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        self._execute("DELETE", bucket_name, query_params={"tagging": ""})
+        self._execute(
+            method="DELETE",
+            bucket_name=bucket_name,
+            query_params={"tagging": ""},
+        )
 
-    def get_bucket_tags(self, bucket_name: str) -> Tags | None:
+    def get_bucket_tags(self, bucket_name: str) -> Optional[Tags]:
         """
         Get tags configuration of a bucket.
 
@@ -2795,7 +2856,9 @@ class Minio:
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         try:
             response = self._execute(
-                "GET", bucket_name, query_params={"tagging": ""},
+                method="GET",
+                bucket_name=bucket_name,
+                query_params={"tagging": ""},
             )
             tagging = unmarshal(Tagging, response.data.decode())
             return tagging.tags
@@ -2822,8 +2885,8 @@ class Minio:
             raise ValueError("tags must be Tags type")
         body = marshal(Tagging(tags))
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=body,
             headers={"Content-MD5": cast(str, md5sum_hash(body))},
             query_params={"tagging": ""},
@@ -2833,7 +2896,7 @@ class Minio:
             self,
             bucket_name: str,
             object_name: str,
-            version_id: str | None = None,
+            version_id: Optional[str] = None,
     ):
         """
         Delete tags configuration of an object.
@@ -2850,8 +2913,8 @@ class Minio:
         query_params = {"versionId": version_id} if version_id else {}
         query_params["tagging"] = ""
         self._execute(
-            "DELETE",
-            bucket_name,
+            method="DELETE",
+            bucket_name=bucket_name,
             object_name=object_name,
             query_params=cast(DictType, query_params),
         )
@@ -2860,8 +2923,8 @@ class Minio:
             self,
             bucket_name: str,
             object_name: str,
-            version_id: str | None = None,
-    ) -> Tags | None:
+            version_id: Optional[str] = None,
+    ) -> Optional[Tags]:
         """
         Get tags configuration of a object.
 
@@ -2879,8 +2942,8 @@ class Minio:
         query_params["tagging"] = ""
         try:
             response = self._execute(
-                "GET",
-                bucket_name,
+                method="GET",
+                bucket_name=bucket_name,
                 object_name=object_name,
                 query_params=cast(DictType, query_params),
             )
@@ -2896,7 +2959,7 @@ class Minio:
             bucket_name: str,
             object_name: str,
             tags: Tags,
-            version_id: str | None = None,
+            version_id: Optional[str] = None,
     ):
         """
         Set tags configuration to an object.
@@ -2920,8 +2983,8 @@ class Minio:
         query_params = {"versionId": version_id} if version_id else {}
         query_params["tagging"] = ""
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             object_name=object_name,
             body=body,
             headers={"Content-MD5": cast(str, md5sum_hash(body))},
@@ -2932,7 +2995,7 @@ class Minio:
             self,
             bucket_name: str,
             object_name: str,
-            version_id: str | None = None,
+            version_id: Optional[str] = None,
     ):
         """
         Enable legal hold on an object.
@@ -2950,8 +3013,8 @@ class Minio:
         query_params = {"versionId": version_id} if version_id else {}
         query_params["legal-hold"] = ""
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             object_name=object_name,
             body=body,
             headers={"Content-MD5": cast(str, md5sum_hash(body))},
@@ -2962,7 +3025,7 @@ class Minio:
             self,
             bucket_name: str,
             object_name: str,
-            version_id: str | None = None,
+            version_id: Optional[str] = None,
     ):
         """
         Disable legal hold on an object.
@@ -2980,8 +3043,8 @@ class Minio:
         query_params = {"versionId": version_id} if version_id else {}
         query_params["legal-hold"] = ""
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             object_name=object_name,
             body=body,
             headers={"Content-MD5": cast(str, md5sum_hash(body))},
@@ -2992,7 +3055,7 @@ class Minio:
             self,
             bucket_name: str,
             object_name: str,
-            version_id: str | None = None,
+            version_id: Optional[str] = None,
     ) -> bool:
         """
         Returns true if legal hold is enabled on an object.
@@ -3013,8 +3076,8 @@ class Minio:
         query_params["legal-hold"] = ""
         try:
             response = self._execute(
-                "GET",
-                bucket_name,
+                method="GET",
+                bucket_name=bucket_name,
                 object_name=object_name,
                 query_params=cast(DictType, query_params),
             )
@@ -3050,7 +3113,9 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         response = self._execute(
-            "GET", bucket_name, query_params={"object-lock": ""},
+            method="GET",
+            bucket_name=bucket_name,
+            query_params={"object-lock": ""},
         )
         return unmarshal(ObjectLockConfig, response.data.decode())
 
@@ -3074,8 +3139,8 @@ class Minio:
             raise ValueError("config must be ObjectLockConfig type")
         body = marshal(config)
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=body,
             headers={"Content-MD5": cast(str, md5sum_hash(body))},
             query_params={"object-lock": ""},
@@ -3085,8 +3150,8 @@ class Minio:
             self,
             bucket_name: str,
             object_name: str,
-            version_id: str | None = None,
-    ) -> Retention | None:
+            version_id: Optional[str] = None,
+    ) -> Optional[Retention]:
         """
         Get retention configuration of an object.
 
@@ -3104,8 +3169,8 @@ class Minio:
         query_params["retention"] = ""
         try:
             response = self._execute(
-                "GET",
-                bucket_name,
+                method="GET",
+                bucket_name=bucket_name,
                 object_name=object_name,
                 query_params=cast(DictType, query_params),
             )
@@ -3120,7 +3185,7 @@ class Minio:
             bucket_name: str,
             object_name: str,
             config: Retention,
-            version_id: str | None = None,
+            version_id: Optional[str] = None,
     ):
         """
         Set retention configuration on an object.
@@ -3144,8 +3209,8 @@ class Minio:
         query_params = {"versionId": version_id} if version_id else {}
         query_params["retention"] = ""
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             object_name=object_name,
             body=body,
             headers={"Content-MD5": cast(str, md5sum_hash(body))},
@@ -3154,14 +3219,15 @@ class Minio:
 
     def upload_snowball_objects(
             self,
+            *,
             bucket_name: str,
             object_list: Iterable[SnowballObject],
-            metadata: DictType | None = None,
-            sse: Sse | None = None,
-            tags: Tags | None = None,
-            retention: Retention | None = None,
+            metadata: Optional[DictType] = None,
+            sse: Optional[Sse] = None,
+            tags: Optional[Tags] = None,
+            retention: Optional[Retention] = None,
             legal_hold: bool = False,
-            staging_filename: str | None = None,
+            staging_filename: Optional[str] = None,
             compression: bool = False,
     ) -> ObjectWriteResult:
         """
@@ -3235,9 +3301,9 @@ class Minio:
 
         if name:
             return self.fput_object(
-                bucket_name,
-                object_name,
-                cast(str, staging_filename),
+                bucket_name=bucket_name,
+                object_name=object_name,
+                file_path=cast(str, staging_filename),
                 metadata=metadata,
                 sse=sse,
                 tags=tags,
@@ -3246,10 +3312,10 @@ class Minio:
                 part_size=part_size,
             )
         return self.put_object(
-            bucket_name,
-            object_name,
-            cast(BinaryIO, fileobj),
-            length,
+            bucket_name=bucket_name,
+            object_name=object_name,
+            data=cast(BinaryIO, fileobj),
+            length=length,
             metadata=cast(Union[DictType, None], metadata),
             sse=sse,
             tags=tags,
@@ -3260,21 +3326,22 @@ class Minio:
 
     def _list_objects(
             self,
+            *,
             bucket_name: str,
-            continuation_token: str | None = None,  # listV2 only
-            delimiter: str | None = None,  # all
-            encoding_type: str | None = None,  # all
-            fetch_owner: bool | None = None,  # listV2 only
+            continuation_token: Optional[str] = None,  # listV2 only
+            delimiter: Optional[str] = None,  # all
+            encoding_type: Optional[str] = None,  # all
+            fetch_owner: Optional[bool] = None,  # listV2 only
             include_user_meta: bool = False,  # MinIO specific listV2.
-            max_keys: int | None = None,  # all
-            prefix: str | None = None,  # all
-            start_after: str | None = None,
+            max_keys: Optional[int] = None,  # all
+            prefix: Optional[str] = None,  # all
+            start_after: Optional[str] = None,
             # all: v1:marker, versioned:key_marker
-            version_id_marker: str | None = None,  # versioned
+            version_id_marker: Optional[str] = None,  # versioned
             use_api_v1: bool = False,
             include_version: bool = False,
-            extra_headers: DictType | None = None,
-            extra_query_params: DictType | None = None,
+            extra_headers: Optional[DictType] = None,
+            extra_query_params: Optional[DictType] = None,
     ) -> Iterator[Object]:
         """
         List objects optionally including versions.
@@ -3320,8 +3387,8 @@ class Minio:
                 query["version-id-marker"] = version_id_marker
 
             response = self._execute(
-                "GET",
-                bucket_name,
+                method="GET",
+                bucket_name=bucket_name,
                 query_params=cast(DictType, query),
                 headers=extra_headers,
             )
@@ -3339,15 +3406,16 @@ class Minio:
 
     def _list_multipart_uploads(
             self,
+            *,
             bucket_name: str,
-            delimiter: str | None = None,
-            encoding_type: str | None = None,
-            key_marker: str | None = None,
-            max_uploads: int | None = None,
-            prefix: str | None = None,
-            upload_id_marker: str | None = None,
-            extra_headers: DictType | None = None,
-            extra_query_params: DictType | None = None,
+            delimiter: Optional[str] = None,
+            encoding_type: Optional[str] = None,
+            key_marker: Optional[str] = None,
+            max_uploads: Optional[int] = None,
+            prefix: Optional[str] = None,
+            upload_id_marker: Optional[str] = None,
+            extra_headers: Optional[DictType] = None,
+            extra_query_params: Optional[DictType] = None,
     ) -> ListMultipartUploadsResult:
         """
         Execute ListMultipartUploads S3 API.
@@ -3385,8 +3453,8 @@ class Minio:
             query_params["upload-id-marker"] = upload_id_marker
 
         response = self._execute(
-            "GET",
-            bucket_name,
+            method="GET",
+            bucket_name=bucket_name,
             query_params=cast(DictType, query_params),
             headers=cast(Union[DictType, None], extra_headers),
         )
@@ -3394,13 +3462,14 @@ class Minio:
 
     def _list_parts(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             upload_id: str,
-            max_parts: int | None = None,
-            part_number_marker: str | None = None,
-            extra_headers: DictType | None = None,
-            extra_query_params: DictType | None = None,
+            max_parts: Optional[int] = None,
+            part_number_marker: Optional[str] = None,
+            extra_headers: Optional[DictType] = None,
+            extra_query_params: Optional[DictType] = None,
     ) -> ListPartsResult:
         """
         Execute ListParts S3 API.
@@ -3427,8 +3496,8 @@ class Minio:
             query_params["part-number-marker"] = part_number_marker
 
         response = self._execute(
-            "GET",
-            bucket_name,
+            method="GET",
+            bucket_name=bucket_name,
             object_name=object_name,
             query_params=cast(DictType, query_params),
             headers=cast(Union[DictType, None], extra_headers),

@@ -32,7 +32,7 @@ class VersioningConfigTest(TestCase):
 </VersioningConfiguration>""",
         )
         xml.marshal(config)
-        self.assertEqual(config.status, OFF)
+        self.assertEqual(config.status_string, OFF)
 
         config = xml.unmarshal(
             VersioningConfig,
@@ -41,7 +41,7 @@ class VersioningConfigTest(TestCase):
 </VersioningConfiguration>""",
         )
         xml.marshal(config)
-        self.assertEqual(config.status, ENABLED)
+        self.assertEqual(config.status_string, ENABLED)
 
         config = xml.unmarshal(
             VersioningConfig,
@@ -51,5 +51,5 @@ class VersioningConfigTest(TestCase):
 </VersioningConfiguration>""",
         )
         xml.marshal(config)
-        self.assertEqual(config.status, SUSPENDED)
+        self.assertEqual(config.status_string, SUSPENDED)
         self.assertEqual(config.mfa_delete, DISABLED)
