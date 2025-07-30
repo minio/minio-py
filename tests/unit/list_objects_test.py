@@ -48,8 +48,8 @@ class ListObjectsTest(TestCase):
                 content=mock_data.encode(),
             ),
         )
-        client = Minio('localhost:9000')
-        object_iter = client.list_objects('bucket', recursive=True)
+        client = Minio(endpoint='localhost:9000')
+        object_iter = client.list_objects(bucket_name='bucket', recursive=True)
         objects = []
         for obj in object_iter:
             objects.append(obj)
@@ -92,8 +92,8 @@ class ListObjectsTest(TestCase):
                 content=mock_data.encode(),
             ),
         )
-        client = Minio('localhost:9000')
-        objects_iter = client.list_objects('bucket')
+        client = Minio(endpoint='localhost:9000')
+        objects_iter = client.list_objects(bucket_name='bucket')
         objects = []
         for obj in objects_iter:
             objects.append(obj)

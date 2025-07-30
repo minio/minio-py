@@ -19,7 +19,7 @@ from minio.notificationconfig import (NotificationConfig, PrefixFilterRule,
                                       QueueConfig)
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
@@ -27,11 +27,11 @@ client = Minio(
 config = NotificationConfig(
     queue_config_list=[
         QueueConfig(
-            "QUEUE-ARN-OF-THIS-BUCKET",
-            ["s3:ObjectCreated:*"],
+            queue="QUEUE-ARN-OF-THIS-BUCKET",
+            events=["s3:ObjectCreated:*"],
             config_id="1",
             prefix_filter_rule=PrefixFilterRule("abc"),
         ),
     ],
 )
-client.set_bucket_notification("my-bucket", config)
+client.set_bucket_notification(bucket_name="my-bucket", config=config)

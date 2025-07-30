@@ -264,6 +264,71 @@ def check_status(status: str):
         raise ValueError("status must be 'Enabled' or 'Disabled'")
 
 
+@dataclass(frozen=True)
+class SourceObject:
+    """Source object for copy and compose object."""
+    bucket_name: str
+    object_name: str
+    version_id: Optional[str] = None
+    ssec: Optional[SseCustomerKey] = None
+    offset: int = 0
+    length: int = 0
+    match_etag: Optional[str] = None
+    not_match_etag: Optional[str] = None
+    modified_since: Optional[datetime] = None
+    unmodified_since: Optional[datetime] = None
+    fetch_checksum: bool = False
+    region: Optional[str] = None
+
+    def __post_init__(self):
+        if (
+                self.ssec is not None and
+                not isinstance(self.ssec, SseCustomerKey)
+        ):
+            raise ValueError("ssec must be SseCustomerKey type")
+        if self.offset < 0:
+            raise ValueError("offset should be zero or greater")
+        if self.length <= 0:
+            raise ValueError("length should be greater than zero")
+        if self.match_etag is not None and self.match_etag == "":
+            raise ValueError("match_etag must not be empty")
+        if self.not_match_etag is not None and self.not_match_etag == "":
+            raise ValueError("not_match_etag must not be empty")
+        if (
+                self.modified_since is not None and
+                not isinstance(self.modified_since, datetime)
+        ):
+            raise ValueError("modified_since must be datetime type")
+        if (
+                self.unmodified_since is not None and
+                not isinstance(self.unmodified_since, datetime)
+        ):
+            raise ValueError("unmodified_since must be datetime type")
+
+    def gen_copy_headers(self) -> dict[str, str]:
+        """Generate copy source headers."""
+        copy_source = quote("/" + self.bucket_name + "/" + self.object_name)
+        if self.version_id:
+            copy_source += "?versionId=" + quote(self.version_id)
+
+        headers = {"x-amz-copy-source": copy_source}
+        if self.ssec:
+            headers.update(self.ssec.copy_headers())
+        if self.match_etag:
+            headers["x-amz-copy-source-if-match"] = self.match_etag
+        if self.not_match_etag:
+            headers["x-amz-copy-source-if-none-match"] = self.not_match_etag
+        if self.modified_since:
+            headers["x-amz-copy-source-if-modified-since"] = (
+                to_http_header(self.modified_since)
+            )
+        if self.unmodified_since:
+            headers["x-amz-copy-source-if-unmodified-since"] = (
+                to_http_header(self.unmodified_since)
+            )
+        return headers
+
+
 @dataclass
 class ObjectConditionalReadArgs(ABC):
     """Base argument class holds condition properties for reading object."""

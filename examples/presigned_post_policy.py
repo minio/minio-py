@@ -20,24 +20,20 @@ from minio import Minio
 from minio.datatypes import PostPolicy
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
-policy = PostPolicy(
-    "my-bucket", datetime.utcnow() + timedelta(days=10),
-)
+policy = PostPolicy("my-bucket", datetime.utcnow() + timedelta(days=10))
 policy.add_starts_with_condition("key", "my/object/prefix/")
 policy.add_content_length_range_condition(1*1024*1024, 10*1024*1024)
 
 form_data = client.presigned_post_policy(policy)
 
+args = " ".join([f"-F {k}={v}" for k, v in form_data.items()])
 curl_cmd = (
-    "curl -X POST "
-    "https://play.min.io/my-bucket "
-    "{0} -F file=@<FILE> -F key=<OBJECT-NAME>"
-).format(
-    " ".join(["-F {0}={1}".format(k, v) for k, v in form_data.items()]),
+    "curl -X POST https://play.min.io/my-bucket "
+    f"{args} -F file=@<FILE> -F key=<OBJECT-NAME>"
 )
 print(curl_cmd)

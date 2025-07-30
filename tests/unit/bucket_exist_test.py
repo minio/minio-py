@@ -26,16 +26,19 @@ from .minio_mocks import MockConnection, MockResponse
 
 class BucketExists(TestCase):
     def test_bucket_is_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(TypeError, client.bucket_exists, 1234)
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(TypeError):
+            client.bucket_exists(bucket_name=1234)
 
     def test_bucket_is_not_empty_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(ValueError, client.bucket_exists, '  \t \n  ')
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(ValueError):
+            client.bucket_exists(bucket_name='  \t \n  ')
 
     def test_bucket_exists_invalid_name(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(ValueError, client.bucket_exists, 'AB*CD')
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(ValueError):
+            client.bucket_exists(bucket_name='AB*CD')
 
     @mock.patch('urllib3.PoolManager')
     def test_bucket_exists_bad_request(self, mock_connection):
@@ -47,8 +50,9 @@ class BucketExists(TestCase):
                          {'User-Agent': _DEFAULT_USER_AGENT},
                          400)
         )
-        client = Minio('localhost:9000')
-        self.assertRaises(S3Error, client.bucket_exists, 'hello')
+        client = Minio(endpoint='localhost:9000')
+        kwargs = {"bucket_name": 'hello'}
+        self.assertRaises(S3Error, client.bucket_exists, **kwargs)
 
     @mock.patch('urllib3.PoolManager')
     def test_bucket_exists_works(self, mock_connection):
@@ -60,8 +64,8 @@ class BucketExists(TestCase):
                          {'User-Agent': _DEFAULT_USER_AGENT},
                          200)
         )
-        client = Minio('localhost:9000')
-        result = client.bucket_exists('hello')
+        client = Minio(endpoint='localhost:9000')
+        result = client.bucket_exists(bucket_name='hello')
         self.assertTrue(result)
         mock_server.mock_add_request(
             MockResponse('HEAD',
@@ -69,5 +73,5 @@ class BucketExists(TestCase):
                          {'User-Agent': _DEFAULT_USER_AGENT},
                          404)
         )
-        false_result = client.bucket_exists('goodbye')
+        false_result = client.bucket_exists(bucket_name='goodbye')
         self.assertFalse(false_result)

@@ -18,8 +18,11 @@
 from minio import Minio
 from minio.credentials import EnvMinioProvider
 
-client = Minio("MINIO-HOST:MINIO-PORT", credentials=EnvMinioProvider())
+client = Minio(
+    endpoint="MINIO-HOST:MINIO-PORT",
+    credentials=EnvMinioProvider(),
+)
 
 # Get information of an object.
-stat = client.stat_object("my-bucket", "my-object")
+stat = client.stat_object(bucket_name="my-bucket", object_name="my-object")
 print(stat)

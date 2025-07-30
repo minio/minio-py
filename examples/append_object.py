@@ -17,41 +17,53 @@
 import io
 from urllib.request import urlopen
 
-from examples.progress import Progress
 from minio import Minio
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
 # Upload data.
 result = client.put_object(
-    "my-bucket", "my-object", io.BytesIO(b"hello, "), 7,
+    bucket_name="my-bucket",
+    object_name="my-object",
+    data=io.BytesIO(b"hello, "),
+    length=7,
 )
 print(f"created {result.object_name} object; etag: {result.etag}")
 
 # Append data.
 result = client.append_object(
-    "my-bucket", "my-object", io.BytesIO(b"world"), 5,
+    bucket_name="my-bucket",
+    object_name="my-object",
+    data=io.BytesIO(b"world"),
+    length=5,
 )
 print(f"appended {result.object_name} object; etag: {result.etag}")
 
 # Append data in chunks.
-data = urlopen(
+with urlopen(
     "https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.13.12.tar.xz",
-)
-result = client.append_object(
-    "my-bucket", "my-object", data, 148611164, 5*1024*1024,
-)
-print(f"appended {result.object_name} object; etag: {result.etag}")
+) as stream:
+    result = client.append_object(
+        bucket_name="my-bucket",
+        object_name="my-object",
+        stream=stream,
+        length=148611164,
+        chunk_size=5*1024*1024,
+    )
+    print(f"appended {result.object_name} object; etag: {result.etag}")
 
 # Append unknown sized data.
-data = urlopen(
+with urlopen(
     "https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.14.3.tar.xz",
-)
-result = client.append_object(
-    "my-bucket", "my-object", data, 149426584, 5*1024*1024,
-)
-print(f"appended {result.object_name} object; etag: {result.etag}")
+) as stream:
+    result = client.append_object(
+        bucket_name="my-bucket",
+        object_name="my-object",
+        stream=stream,
+        chunk_size=5*1024*1024,
+    )
+    print(f"appended {result.object_name} object; etag: {result.etag}")

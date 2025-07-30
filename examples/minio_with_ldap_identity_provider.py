@@ -27,10 +27,14 @@ ldap_username = "LDAP-USERNAME"
 # LDAP password.
 ldap_password = "LDAP-PASSWORD"
 
-provider = LdapIdentityProvider(sts_endpoint, ldap_username, ldap_password)
+provider = LdapIdentityProvider(
+    sts_endpoint=sts_endpoint,
+    ldap_username=ldap_username,
+    ldap_password=ldap_password,
+)
 
-client = Minio("MINIO-HOST:MINIO-PORT", credentials=provider)
+client = Minio(endpoint="MINIO-HOST:MINIO-PORT", credentials=provider)
 
 # Get information of an object.
-stat = client.stat_object("my-bucket", "my-object")
+stat = client.stat_object(bucket_name="my-bucket", object_name="my-object")
 print(stat)
