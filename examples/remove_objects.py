@@ -18,18 +18,21 @@ from minio import Minio
 from minio.deleteobjects import DeleteObject
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
 # Remove list of objects.
 errors = client.remove_objects(
-    "my-bucket",
-    [
-        DeleteObject("my-object1"),
-        DeleteObject("my-object2"),
-        DeleteObject("my-object3", "13f88b18-8dcd-4c83-88f2-8631fdb6250c"),
+    bucket_name="my-bucket",
+    delete_object_list=[
+        DeleteObject(name="my-object1"),
+        DeleteObject(name="my-object2"),
+        DeleteObject(
+            name="my-object3",
+            version_id="13f88b18-8dcd-4c83-88f2-8631fdb6250c",
+        ),
     ],
 )
 for error in errors:
@@ -38,8 +41,15 @@ for error in errors:
 # Remove a prefix recursively.
 delete_object_list = map(
     lambda x: DeleteObject(x.object_name),
-    client.list_objects("my-bucket", "my/prefix/", recursive=True),
+    client.list_objects(
+        bucket_name="my-bucket",
+        prefix="my/prefix/",
+        recursive=True,
+    ),
 )
-errors = client.remove_objects("my-bucket", delete_object_list)
+errors = client.remove_objects(
+    bucket_name="my-bucket",
+    delete_object_list=delete_object_list,
+)
 for error in errors:
     print("error occurred when deleting object", error)

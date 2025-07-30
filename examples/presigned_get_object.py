@@ -19,19 +19,24 @@ from datetime import timedelta
 from minio import Minio
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
 # Get presigned URL string to download 'my-object' in
 # 'my-bucket' with default expiry (i.e. 7 days).
-url = client.presigned_get_object("my-bucket", "my-object")
+url = client.presigned_get_object(
+    bucket_name="my-bucket",
+    object_name="my-object",
+)
 print(url)
 
 # Get presigned URL string to download 'my-object' in
 # 'my-bucket' with two hours expiry.
 url = client.presigned_get_object(
-    "my-bucket", "my-object", expires=timedelta(hours=2),
+    bucket_name="my-bucket",
+    object_name="my-object",
+    expires=timedelta(hours=2),
 )
 print(url)

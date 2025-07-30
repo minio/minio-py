@@ -43,9 +43,9 @@ policy = "POLICY"
 region = "REGION"
 
 provider = AssumeRoleProvider(
-    sts_endpoint,
-    access_key,
-    secret_key,
+    sts_endpoint=sts_endpoint,
+    access_key=access_key,
+    secret_key=secret_key,
     policy=policy,
     region=region,
     role_arn=role_arn,
@@ -53,8 +53,8 @@ provider = AssumeRoleProvider(
     external_id=external_id,
 )
 
-client = Minio("MINIO-HOST:MINIO-PORT", credentials=provider)
+client = Minio(endpoint="MINIO-HOST:MINIO-PORT", credentials=provider)
 
 # Get information of an object.
-stat = client.stat_object("my-bucket", "my-object")
+stat = client.stat_object(bucket_name="my-bucket", object_name="my-object")
 print(stat)

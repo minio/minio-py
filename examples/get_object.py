@@ -18,7 +18,7 @@ from minio import Minio
 from minio.sse import SseCustomerKey
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
@@ -26,7 +26,10 @@ client = Minio(
 # Get data of an object.
 response = None
 try:
-    response = client.get_object("my-bucket", "my-object")
+    response = client.get_object(
+        bucket_name="my-bucket",
+        object_name="my-object",
+    )
     # Read data from response.
 finally:
     if response:
@@ -37,7 +40,8 @@ finally:
 response = None
 try:
     response = client.get_object(
-        "my-bucket", "my-object",
+        bucket_name="my-bucket",
+        object_name="my-object",
         version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
     )
     # Read data from response.
@@ -50,7 +54,10 @@ finally:
 response = None
 try:
     response = client.get_object(
-        "my-bucket", "my-object", offset=512, length=1024,
+        bucket_name="my-bucket",
+        object_name="my-object",
+        offset=512,
+        length=1024,
     )
     # Read data from response.
 finally:
@@ -62,7 +69,8 @@ finally:
 response = None
 try:
     response = client.get_object(
-        "my-bucket", "my-object",
+        bucket_name="my-bucket",
+        object_name="my-object",
         ssec=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
     )
     # Read data from response.

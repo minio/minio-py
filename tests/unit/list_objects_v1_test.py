@@ -48,9 +48,9 @@ class ListObjectsV1Test(TestCase):
                 content=mock_data.encode(),
             ),
         )
-        client = Minio('localhost:9000')
+        client = Minio(endpoint='localhost:9000')
         bucket_iter = client.list_objects(
-            'bucket', recursive=True, use_api_v1=True,
+            bucket_name='bucket', recursive=True, use_api_v1=True,
         )
         buckets = []
         for bucket in bucket_iter:
@@ -103,8 +103,9 @@ class ListObjectsV1Test(TestCase):
                 content=mock_data.encode(),
             ),
         )
-        client = Minio('localhost:9000')
-        bucket_iter = client.list_objects('bucket', use_api_v1=True)
+        client = Minio(endpoint='localhost:9000')
+        bucket_iter = client.list_objects(
+            bucket_name='bucket', use_api_v1=True)
         buckets = []
         for bucket in bucket_iter:
             # cause an xml exception and fail if we try retrieving again
@@ -202,9 +203,9 @@ class ListObjectsV1Test(TestCase):
                 content=mock_data1.encode(),
             ),
         )
-        client = Minio('localhost:9000')
+        client = Minio(endpoint='localhost:9000')
         bucket_iter = client.list_objects(
-            'bucket', recursive=True, use_api_v1=True,
+            bucket_name='bucket', recursive=True, use_api_v1=True,
         )
         buckets = []
         for bucket in bucket_iter:

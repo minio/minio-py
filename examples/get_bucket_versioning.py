@@ -17,10 +17,10 @@
 from minio import Minio
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
-config = client.get_bucket_versioning("my-bucket")
+config = client.get_bucket_versioning(bucket_name="my-bucket")
 print(config.status)
