@@ -21,7 +21,8 @@ APIs.
 
 from __future__ import absolute_import, annotations
 
-from typing import Type, TypeVar, cast
+from dataclasses import dataclass
+from typing import Optional, Type, TypeVar, cast
 from xml.etree import ElementTree as ET
 
 from .commonconfig import COMPLIANCE, ENABLED, GOVERNANCE
@@ -33,38 +34,30 @@ YEARS = "Years"
 A = TypeVar("A", bound="ObjectLockConfig")
 
 
+@dataclass(frozen=True)
 class ObjectLockConfig:
     """Object lock configuration."""
 
-    def __init__(
-            self,
-            mode: str | None,
-            duration: int | None,
-            duration_unit: str | None,
-    ):
-        if (mode is not None) ^ (duration is not None):
-            if mode is None:
+    mode: Optional[str]
+    duration: Optional[int]
+    duration_unit: Optional[str]
+
+    def __post_init__(self):
+        if (self.mode is not None) ^ (self.duration is not None):
+            if self.mode is None:
                 raise ValueError("mode must be provided")
             raise ValueError("duration must be provided")
-        if mode is not None and mode not in [GOVERNANCE, COMPLIANCE]:
+        if self.mode is not None and self.mode not in [GOVERNANCE, COMPLIANCE]:
             raise ValueError(f"mode must be {GOVERNANCE} or {COMPLIANCE}")
-        if duration_unit:
-            duration_unit = duration_unit.title()
-        if duration is not None and duration_unit not in [DAYS, YEARS]:
+        if (
+                self.duration is not None and
+                self.duration_unit not in [DAYS, YEARS]
+        ):
             raise ValueError(f"duration unit must be {DAYS} or {YEARS}")
-        self._mode = mode
-        self._duration = duration
-        self._duration_unit = duration_unit
-
-    @property
-    def mode(self) -> str | None:
-        """Get mode."""
-        return self._mode
-
-    @property
-    def duration(self) -> tuple[int | None, str | None]:
-        """Get duration and it's unit."""
-        return self._duration, self._duration_unit
+        if self.duration_unit:
+            object.__setattr__(
+                self, "duration_unit", self.duration_unit.title(),
+            )
 
     @classmethod
     def fromxml(cls: Type[A], element: ET.Element) -> A:
@@ -81,17 +74,21 @@ class ObjectLockConfig:
             duration = findtext(elem, duration_unit)
         if not duration:
             raise ValueError(f"XML element <{DAYS}> or <{YEARS}> not found")
-        return cls(mode, int(duration), duration_unit)
+        return cls(
+            mode=mode,
+            duration=int(duration),
+            duration_unit=duration_unit,
+        )
 
-    def toxml(self, element: ET.Element | None) -> ET.Element:
+    def toxml(self, element: Optional[ET.Element]) -> ET.Element:
         """Convert to XML."""
         element = Element("ObjectLockConfiguration")
         SubElement(element, "ObjectLockEnabled", ENABLED)
-        if self._mode:
+        if self.mode:
             rule = SubElement(element, "Rule")
             retention = SubElement(rule, "DefaultRetention")
-            SubElement(retention, "Mode", self._mode)
-            if not self._duration_unit:
+            SubElement(retention, "Mode", self.mode)
+            if not self.duration_unit:
                 raise ValueError("duration unit must be provided")
-            SubElement(retention, self._duration_unit, str(self._duration))
+            SubElement(retention, self.duration_unit, str(self.duration))
         return element

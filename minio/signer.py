@@ -187,6 +187,7 @@ def _get_authorization(
 
 
 def _sign_v4(
+        *,
         service_name: str,
         method: str,
         url: SplitResult,
@@ -215,6 +216,7 @@ def _sign_v4(
 
 
 def sign_v4_s3(
+        *,
         method: str,
         url: SplitResult,
         region: str,
@@ -225,18 +227,19 @@ def sign_v4_s3(
 ) -> DictType:
     """Do signature V4 of given request for S3 service."""
     return _sign_v4(
-        "s3",
-        method,
-        url,
-        region,
-        headers,
-        credentials,
-        content_sha256,
-        date,
+        service_name="s3",
+        method=method,
+        url=url,
+        region=region,
+        headers=headers,
+        credentials=credentials,
+        content_sha256=content_sha256,
+        date=date,
     )
 
 
 def sign_v4_sts(
+        *,
         method: str,
         url: SplitResult,
         region: str,
@@ -247,18 +250,19 @@ def sign_v4_sts(
 ) -> DictType:
     """Do signature V4 of given request for STS service."""
     return _sign_v4(
-        "sts",
-        method,
-        url,
-        region,
-        headers,
-        credentials,
-        content_sha256,
-        date,
+        service_name="sts",
+        method=method,
+        url=url,
+        region=region,
+        headers=headers,
+        credentials=credentials,
+        content_sha256=content_sha256,
+        date=date,
     )
 
 
 def _get_presign_canonical_request_hash(  # pylint: disable=invalid-name
+        *,
         method: str,
         url: SplitResult,
         access_key: str,
@@ -303,6 +307,7 @@ def _get_presign_canonical_request_hash(  # pylint: disable=invalid-name
 
 
 def presign_v4(
+        *,
         method: str,
         url: SplitResult,
         region: str,
@@ -314,7 +319,12 @@ def presign_v4(
 
     scope = _get_scope(date, region, "s3")
     canonical_request_hash, url = _get_presign_canonical_request_hash(
-        method, url, credentials.access_key, scope, date, expires,
+        method=method,
+        url=url,
+        access_key=credentials.access_key,
+        scope=scope,
+        date=date,
+        expires=expires,
     )
     string_to_sign = _get_string_to_sign(date, scope, canonical_request_hash)
     signing_key = _get_signing_key(credentials.secret_key, date, region, "s3")

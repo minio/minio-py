@@ -609,7 +609,11 @@ def test_copy_object_modified_since(log_entry):
         # and expect the copy to complete successfully
         _CLIENT.copy_object(
             bucket_name, object_copy,
-            CopySource(bucket_name, object_source, modified_since=mod_since),
+            CopySource(
+                bucket_name=bucket_name,
+                object_name=object_source,
+                modified_since=mod_since,
+            ),
         )
     finally:
         _CLIENT.remove_object(bucket_name, object_source)
@@ -650,7 +654,9 @@ def test_copy_object_unmodified_since(  # pylint: disable=invalid-name
             _CLIENT.copy_object(
                 bucket_name, object_copy,
                 CopySource(
-                    bucket_name, object_source, unmodified_since=unmod_since,
+                    bucket_name=bucket_name,
+                    object_name=object_source,
+                    unmodified_since=unmod_since,
                 ),
             )
         except S3Error as exc:

@@ -27,6 +27,8 @@ try:
 except ImportError:
     _UTC_IMPORTED = False
 
+from typing import Optional
+
 _WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 _MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct",
            "Nov", "Dec"]
@@ -40,7 +42,7 @@ def _to_utc(value: datetime) -> datetime:
     )
 
 
-def from_iso8601utc(value: str | None) -> datetime | None:
+def from_iso8601utc(value: Optional[str]) -> Optional[datetime]:
     """Parse UTC ISO-8601 formatted string to datetime."""
     if value is None:
         return None
@@ -52,7 +54,7 @@ def from_iso8601utc(value: str | None) -> datetime | None:
     return time.replace(tzinfo=timezone.utc)
 
 
-def to_iso8601utc(value: datetime | None) -> str | None:
+def to_iso8601utc(value: Optional[datetime]) -> Optional[str]:
     """Format datetime into UTC ISO-8601 formatted string."""
     if value is None:
         return None

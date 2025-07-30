@@ -28,13 +28,12 @@ from __future__ import absolute_import, annotations
 
 import base64
 import json
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from typing import Any, cast
 
 
-class Sse:
+class Sse(ABC):
     """Server-side encryption base class."""
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def headers(self) -> dict[str, str]:
