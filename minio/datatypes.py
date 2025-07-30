@@ -41,7 +41,7 @@ except ImportError:
 
 from .commonconfig import Tags
 from .credentials import Credentials
-from .helpers import check_bucket_name
+from .helpers import HTTPQueryDict, check_bucket_name
 from .signer import get_credential_string, post_presign_v4
 from .time import from_iso8601utc, to_amz_date, to_iso8601utc
 from .xml import find, findall, findtext
@@ -67,10 +67,19 @@ A = TypeVar("A", bound="ListAllMyBucketsResult")
 class ListAllMyBucketsResult:
     """LissBuckets API result."""
     buckets: list[Bucket]
+    prefix: Optional[str]
+    continuation_token: Optional[str]
+    owner_id: Optional[str] = None
+    owner_name: Optional[str] = None
 
     @classmethod
     def fromxml(cls: Type[A], element: ET.Element) -> A:
         """Create new object with values from XML element."""
+        prefix = findtext(element, "Prefix")
+        continuation_token = findtext(element, "ContinuationToken")
+        owner = find(element, "Owner")
+        owner_id = None if owner is None else findtext(owner, "ID")
+        owner_name = None if owner is None else findtext(owner, "DisplayName")
         element = cast(ET.Element, find(element, "Buckets", True))
         buckets = []
         elements = findall(element, "Bucket")
@@ -81,7 +90,13 @@ class ListAllMyBucketsResult:
                 name,
                 from_iso8601utc(creation_date) if creation_date else None,
             ))
-        return cls(buckets)
+        return cls(
+            buckets=buckets,
+            prefix=prefix,
+            continuation_token=continuation_token,
+            owner_id=owner_id,
+            owner_name=owner_name,
+        )
 
 
 B = TypeVar("B", bound="Object")
@@ -232,7 +247,7 @@ def parse_list_objects(
 class CompleteMultipartUploadResult:
     """CompleteMultipartUpload API result."""
 
-    http_headers: HTTPHeaderDict
+    headers: HTTPHeaderDict
     bucket_name: Optional[str] = None
     object_name: Optional[str] = None
     location: Optional[str] = None
@@ -240,7 +255,7 @@ class CompleteMultipartUploadResult:
     version_id: Optional[str] = None
 
     def __init__(self, response: BaseHTTPResponse):
-        object.__setattr__(self, "http_headers", response.headers)
+        object.__setattr__(self, "headers", response.headers)
         element = ET.fromstring(response.data.decode())
         object.__setattr__(self, "bucket_name", findtext(element, "Bucket"))
         object.__setattr__(self, "object_name", findtext(element, "Key"))
@@ -751,16 +766,15 @@ class SiteReplicationStatusOptions:
     entity: Optional[str] = None
     entity_value: Optional[str] = None
 
-    def to_query_params(self) -> dict[str, str]:
+    def to_query_params(self) -> HTTPQueryDict:
         """Convert this options to query parameters."""
-        params = {
-            "buckets": str(self.buckets).lower(),
-            "policies": str(self.policies).lower(),
-            "users": str(self.users).lower(),
-            "groups": str(self.groups).lower(),
-            "metrics": str(self.metrics).lower(),
-            "showDeleted": str(self.show_deleted).lower(),
-        }
+        params = HTTPQueryDict()
+        params["buckets"] = str(self.buckets).lower()
+        params["policies"] = str(self.policies).lower()
+        params["users"] = str(self.users).lower()
+        params["groups"] = str(self.groups).lower()
+        params["metrics"] = str(self.metrics).lower()
+        params["showDeleted"] = str(self.show_deleted).lower()
         if self.entity and self.entity_value:
             params["entity"] = self.entity
             params["entityvalue"] = self.entity_value

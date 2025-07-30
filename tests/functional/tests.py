@@ -39,12 +39,14 @@ from uuid import uuid4
 
 import certifi
 import urllib3
+from urllib3._collections import HTTPHeaderDict
 
 from minio import Minio
 from minio.commonconfig import ENABLED, REPLACE, CopySource, SnowballObject
 from minio.datatypes import PostPolicy
 from minio.deleteobjects import DeleteObject
 from minio.error import S3Error
+from minio.helpers import HTTPQueryDict
 from minio.select import (CSVInputSerialization, CSVOutputSerialization,
                           SelectRequest)
 from minio.sse import SseCustomerKey
@@ -61,6 +63,11 @@ HTTP = urllib3.PoolManager(
     cert_reqs='CERT_REQUIRED',
     ca_certs=os.environ.get('SSL_CERT_FILE') or certifi.where()
 )
+
+
+def _serialize(headers: HTTPHeaderDict) -> dict:
+    """Convert HTTPHeaderDict to dict."""
+    return {key: headers.getlist(key) for key in headers}
 
 
 def _gen_bucket_name():
@@ -320,7 +327,7 @@ def _test_fput_object(bucket_name, object_name, filename, metadata, sse):
                 bucket_name=bucket_name,
                 object_name=object_name,
                 file_path=filename,
-                metadata=metadata,
+                user_metadata=metadata,
                 sse=sse,
             )
         else:
@@ -350,13 +357,13 @@ def test_fput_object_small_file(log_entry, sse=None):
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
     object_name = f"{uuid4()}-f"
-    metadata = {'x-amz-storage-class': 'STANDARD_IA'}
+    metadata = HTTPHeaderDict({'x-amz-storage-class': 'STANDARD_IA'})
 
     log_entry["args"] = {
         "bucket_name": bucket_name,
         "object_name": object_name,
         "file_path": _TEST_FILE,
-        "metadata": metadata,
+        "metadata": _serialize(metadata),
     }
 
     _test_fput_object(bucket_name, object_name, _TEST_FILE, metadata, sse)
@@ -371,13 +378,13 @@ def test_fput_object_large_file(log_entry, sse=None):
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
     object_name = f"{uuid4()}-large"
-    metadata = {'x-amz-storage-class': 'STANDARD_IA'}
+    metadata = HTTPHeaderDict({'x-amz-storage-class': 'STANDARD_IA'})
 
     log_entry["args"] = {
         "bucket_name": bucket_name,
         "object_name": object_name,
         "file_path": _LARGE_FILE,
-        "metadata": metadata,
+        "metadata": _serialize(metadata),
     }
 
     # upload local large file through multipart.
@@ -391,14 +398,14 @@ def test_fput_object_with_content_type(  # pylint: disable=invalid-name
     # Get a unique bucket_name and object_name
     bucket_name = _gen_bucket_name()
     object_name = f"{uuid4()}-f"
-    metadata = {'x-amz-storage-class': 'STANDARD_IA'}
+    metadata = HTTPHeaderDict({'x-amz-storage-class': 'STANDARD_IA'})
     content_type = 'application/octet-stream'
 
     log_entry["args"] = {
         "bucket_name": bucket_name,
         "object_name": object_name,
         "file_path": _TEST_FILE,
-        "metadata": metadata,
+        "metadata": _serialize(metadata),
         "content_type": content_type,
     }
 
@@ -512,17 +519,17 @@ def test_copy_object_with_metadata(log_entry):
     object_name = f"{uuid4()}"
     object_source = object_name + "-source"
     object_copy = object_name + "-copy"
-    metadata = {
+    metadata = HTTPHeaderDict({
         "testing-string": "string",
-        "testing-int": 1,
-        10: 'value',
-    }
+        "testing-int": "1",
+        "10": 'value',
+    })
 
     log_entry["args"] = {
         "bucket_name": bucket_name,
         "object_source": object_source,
         "object_name": object_copy,
-        "metadata": metadata,
+        "metadata": _serialize(metadata),
     }
 
     try:
@@ -544,7 +551,7 @@ def test_copy_object_with_metadata(log_entry):
                 bucket_name=bucket_name,
                 object_name=object_source,
             ),
-            metadata=metadata,
+            user_metadata=metadata,
             metadata_directive=REPLACE,
         )
         # Verification
@@ -838,7 +845,7 @@ def test_put_object(log_entry, sse=None):
             data=reader,
             length=length,
             content_type=content_type,
-            metadata=metadata,
+            user_metadata=metadata,
             sse=sse,
         )
         # Stat on the uploaded object to check if it exists
@@ -961,7 +968,7 @@ def _test_stat_object(log_entry, sse=None, version_check=False):
             data=reader,
             length=length,
             content_type=content_type,
-            metadata=metadata,
+            user_metadata=metadata,
             sse=sse,
         )
         version_id2 = result.version_id
@@ -1019,7 +1026,8 @@ def _test_remove_object(log_entry, version_check=False):
     try:
         if version_check:
             _CLIENT.set_bucket_versioning(
-                bucket_name, VersioningConfig(ENABLED),
+                bucket_name=bucket_name,
+                config=VersioningConfig(ENABLED),
             )
         result = _CLIENT.put_object(
             bucket_name=bucket_name,
@@ -1646,15 +1654,15 @@ def test_presigned_get_object_response_headers(  # pylint: disable=invalid-name
             data=LimitedRandomReader(size),
             length=size,
         )
-        response_headers = {
+        extra_query_params = HTTPQueryDict({
             'response-content-type': content_type,
-            'response-content-language': content_language
-        }
+            'response-content-language': content_language,
+        })
         presigned_get_object_url = _CLIENT.presigned_get_object(
             bucket_name=bucket_name,
             object_name=object_name,
             expires=timedelta(seconds=120),
-            response_headers=response_headers,
+            extra_query_params=extra_query_params,
         )
 
         log_entry["args"]["presigned_get_object_url"] = (
@@ -1916,14 +1924,13 @@ def test_thread_safe(log_entry):
             _ = os.path.isfile(local_file) and os.remove(local_file)
 
     try:
-        thread_count = 5
+        _CLIENT.fput_object(
+            bucket_name=bucket_name,
+            object_name=object_name,
+            file_path=_LARGE_FILE,
+        )
 
-        # Start threads for put object.
-        for _ in range(thread_count):
-            thread = Thread(target=_CLIENT.fput_object,
-                            args=(bucket_name, object_name, _LARGE_FILE))
-            thread.start()
-            thread.join()
+        thread_count = 5
 
         # Start threads for get object.
         threads = []
@@ -1974,7 +1981,8 @@ def _get_policy_actions(stat):
 
 def _validate_policy(bucket_name, policy):
     """Validate policy."""
-    policy_dict = json.loads(_CLIENT.get_bucket_policy(bucket_name=bucket_name))
+    policy_dict = json.loads(
+        _CLIENT.get_bucket_policy(bucket_name=bucket_name))
     actions = _get_policy_actions(policy_dict.get('Statement'))
     expected_actions = _get_policy_actions(policy.get('Statement'))
     return expected_actions == actions
@@ -2219,7 +2227,7 @@ def _test_upload_snowball_objects(log_entry, staging_filename=None):
         reader2 = LimitedRandomReader(size)
         _CLIENT.upload_snowball_objects(
             bucket_name=bucket_name,
-            object_list=[
+            objects=[
                 SnowballObject("my-object1", data=io.BytesIO(b"py"), length=2),
                 SnowballObject(
                     "my-object2", data=reader1, length=size,
@@ -2233,9 +2241,12 @@ def _test_upload_snowball_objects(log_entry, staging_filename=None):
         )
         _test_list_objects_api(bucket_name, 3)
     finally:
-        _CLIENT.remove_object(bucket_name=bucket_name, object_name="my-object1")
-        _CLIENT.remove_object(bucket_name=bucket_name, object_name="my-object2")
-        _CLIENT.remove_object(bucket_name=bucket_name, object_name="my-object3")
+        _CLIENT.remove_object(bucket_name=bucket_name,
+                              object_name="my-object1")
+        _CLIENT.remove_object(bucket_name=bucket_name,
+                              object_name="my-object2")
+        _CLIENT.remove_object(bucket_name=bucket_name,
+                              object_name="my-object3")
         _CLIENT.remove_bucket(bucket_name=bucket_name)
         if staging_filename and os.path.exists(staging_filename):
             os.remove(staging_filename)
