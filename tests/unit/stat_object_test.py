@@ -25,16 +25,19 @@ from .minio_mocks import MockConnection, MockResponse
 
 class StatObject(TestCase):
     def test_object_is_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(TypeError, client.stat_object, 'hello', 1234)
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(TypeError):
+            client.stat_object(bucket_name='hello', object_name=1234)
 
     def test_object_is_not_empty_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(ValueError, client.stat_object, 'hello', '  \t \n  ')
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(ValueError):
+            client.stat_object(bucket_name='hello', object_name='  \t \n  ')
 
     def test_stat_object_invalid_name(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(ValueError, client.stat_object, 'AB#CD', 'world')
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(ValueError):
+            client.stat_object(bucket_name='AB#CD', object_name='world')
 
     @mock.patch('urllib3.PoolManager')
     def test_stat_object_works(self, mock_connection):
@@ -52,5 +55,5 @@ class StatObject(TestCase):
                          {'User-Agent': _DEFAULT_USER_AGENT}, 200,
                          response_headers=mock_headers)
         )
-        client = Minio('localhost:9000')
-        client.stat_object('hello', 'world')
+        client = Minio(endpoint='localhost:9000')
+        client.stat_object(bucket_name='hello', object_name='world')

@@ -25,16 +25,19 @@ from .minio_mocks import MockConnection, MockResponse
 
 class RemoveBucket(TestCase):
     def test_bucket_is_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(TypeError, client.remove_bucket, 1234)
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(TypeError):
+            client.remove_bucket(bucket_name=1234)
 
     def test_bucket_is_not_empty_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(ValueError, client.remove_bucket, '  \t \n  ')
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(ValueError):
+            client.remove_bucket(bucket_name='  \t \n  ')
 
     def test_remove_bucket_invalid_name(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(ValueError, client.remove_bucket, 'AB*CD')
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(ValueError):
+            client.remove_bucket(bucket_name='AB*CD')
 
     @mock.patch('urllib3.PoolManager')
     def test_remove_bucket_works(self, mock_connection):
@@ -45,5 +48,5 @@ class RemoveBucket(TestCase):
                          'https://localhost:9000/hello',
                          {'User-Agent': _DEFAULT_USER_AGENT}, 204)
         )
-        client = Minio('localhost:9000')
-        client.remove_bucket('hello')
+        client = Minio(endpoint='localhost:9000')
+        client.remove_bucket(bucket_name='hello')
