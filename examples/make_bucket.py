@@ -17,16 +17,18 @@
 from minio import Minio
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
 # Create bucket.
-client.make_bucket("my-bucket")
+client.make_bucket(bucket_name="my-bucket")
 
 # Create bucket on specific region.
-client.make_bucket("my-bucket", "us-west-1")
+client.make_bucket(bucket_name="my-bucket", location="us-west-1")
 
 # Create bucket with object-lock feature on specific region.
-client.make_bucket("my-bucket", "eu-west-2", object_lock=True)
+client.make_bucket(
+    bucket_name="my-bucket", location="eu-west-2", object_lock=True,
+)

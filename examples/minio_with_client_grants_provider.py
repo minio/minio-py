@@ -52,11 +52,12 @@ client_secret = "PASSWORD"
 sts_endpoint = "http://STS-HOST:STS-PORT/"
 
 provider = ClientGrantsProvider(
-    lambda: get_jwt(client_id, client_secret, idp_endpoint), sts_endpoint,
+    jwt_provider_func=lambda: get_jwt(client_id, client_secret, idp_endpoint),
+    sts_endpoint=sts_endpoint,
 )
 
-client = Minio("MINIO-HOST:MINIO-PORT", credentials=provider)
+client = Minio(endpoint="MINIO-HOST:MINIO-PORT", credentials=provider)
 
 # Get information of an object.
-stat = client.stat_object("my-bucket", "my-object")
+stat = client.stat_object(bucket_name="my-bucket", object_name="my-object")
 print(stat)

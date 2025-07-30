@@ -34,13 +34,13 @@ class RemoveObjectsTest(TestCase):
             MockResponse('POST',
                          'https://localhost:9000/hello?delete=',
                          {'User-Agent': _DEFAULT_USER_AGENT,
-                          'Content-Md5': u'Te1kmIjQRNNz70DJjsrD8A=='}, 200,
+                          'Content-Md5': 'Te1kmIjQRNNz70DJjsrD8A=='}, 200,
                          content=b'<Delete/>')
         )
-        client = Minio('localhost:9000')
+        client = Minio(endpoint='localhost:9000')
         for err in client.remove_objects(
-                "hello",
-                [DeleteObject("Ab"), DeleteObject("c")],
+                bucket_name="hello",
+                delete_object_list=[DeleteObject("Ab"), DeleteObject("c")],
         ):
             print(err)
 
@@ -52,13 +52,13 @@ class RemoveObjectsTest(TestCase):
             MockResponse('POST',
                          'https://localhost:9000/hello?delete=',
                          {'User-Agent': _DEFAULT_USER_AGENT,
-                          'Content-Md5': u'Te1kmIjQRNNz70DJjsrD8A=='}, 200,
+                          'Content-Md5': 'Te1kmIjQRNNz70DJjsrD8A=='}, 200,
                          content=b'<Delete/>')
         )
-        client = Minio('localhost:9000')
+        client = Minio(endpoint='localhost:9000')
         for err in client.remove_objects(
-                "hello",
-                (DeleteObject("Ab"), DeleteObject("c")),
+                bucket_name="hello",
+                delete_object_list=(DeleteObject("Ab"), DeleteObject("c")),
         ):
             print(err)
 
@@ -70,10 +70,12 @@ class RemoveObjectsTest(TestCase):
             MockResponse('POST',
                          'https://localhost:9000/hello?delete=',
                          {'User-Agent': _DEFAULT_USER_AGENT,
-                          'Content-Md5': u'Te1kmIjQRNNz70DJjsrD8A=='}, 200,
+                          'Content-Md5': 'Te1kmIjQRNNz70DJjsrD8A=='}, 200,
                          content=b'<Delete/>')
         )
-        client = Minio('localhost:9000')
+        client = Minio(endpoint='localhost:9000')
         it = itertools.chain((DeleteObject("Ab"), DeleteObject("c")))
-        for err in client.remove_objects('hello', it):
+        result = client.remove_objects(
+            bucket_name='hello', delete_object_list=it)
+        for err in result:
             print(err)

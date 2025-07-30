@@ -17,9 +17,9 @@
 from minio import Minio
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
-tags = client.get_bucket_tags("my-bucket")
+tags = client.get_bucket_tags(bucket_name="my-bucket")
