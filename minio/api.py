@@ -21,7 +21,6 @@
 # pylint: disable=too-many-public-methods
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-locals
-# pylint: disable=too-many-positional-arguments
 
 """
 Simple Storage Service (aka S3) client to perform bucket and object operations.
@@ -29,6 +28,7 @@ Simple Storage Service (aka S3) client to perform bucket and object operations.
 
 from __future__ import absolute_import, annotations
 
+import io
 import itertools
 import json
 import os
@@ -37,8 +37,8 @@ from collections.abc import Iterable
 from datetime import datetime, timedelta
 from io import BytesIO
 from random import random
-from typing import Any, BinaryIO, Iterator, TextIO, Tuple, Union, cast
-from urllib.parse import urlunsplit
+from typing import Any, BinaryIO, Iterator, Optional, TextIO, Union, cast
+from urllib.parse import quote, urlencode, urlunsplit
 from xml.etree import ElementTree as ET
 
 import certifi
@@ -54,6 +54,7 @@ except ImportError:
 from urllib3.util import Timeout
 
 from . import time
+from .checksum import Algorithm, make_headers, new_hashers
 from .commonconfig import (COPY, REPLACE, ComposeSource, CopySource,
                            SnowballObject, Tags)
 from .credentials import Credentials, StaticProvider
@@ -67,11 +68,12 @@ from .deleteobjects import (DeleteError, DeleteObject, DeleteRequest,
 from .error import InvalidResponseError, S3Error, ServerError
 from .helpers import (_DEFAULT_USER_AGENT, MAX_MULTIPART_COUNT,
                       MAX_MULTIPART_OBJECT_SIZE, MAX_PART_SIZE, MIN_PART_SIZE,
-                      BaseURL, DictType, ObjectWriteResult, ProgressType,
-                      ThreadPool, check_bucket_name, check_object_name,
-                      check_sse, check_ssec, genheaders, get_part_info,
+                      BaseURL, HTTPQueryDict, ObjectWriteResult, ProgressType,
+                      RegionMap, ThreadPool, check_bucket_name,
+                      check_object_name, check_sse, check_ssec, get_part_info,
                       headers_to_strings, is_valid_policy_type, makedirs,
-                      md5sum_hash, queryencode, read_part_data, sha256_hash)
+                      md5sum_hash, normalize_headers, queryencode,
+                      read_part_data, sha256_hash)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
@@ -83,6 +85,7 @@ from .signer import presign_v4, sign_v4_s3
 from .sse import Sse, SseCustomerKey
 from .sseconfig import SSEConfig
 from .tagging import Tagging
+from .time import to_http_header, to_iso8601utc
 from .versioningconfig import VersioningConfig
 from .xml import Element, SubElement, findtext, getbytes, marshal, unmarshal
 
@@ -106,14 +109,18 @@ class Minio:
 
     Example::
         # Create client with anonymous access.
-        client = Minio("play.min.io")
+        client = Minio(endpoint="play.min.io")
 
         # Create client with access and secret key.
-        client = Minio("s3.amazonaws.com", "ACCESS-KEY", "SECRET-KEY")
+        client = Minio(
+            endpoint="s3.amazonaws.com",
+            access_key="ACCESS-KEY",
+            secret_key="SECRET-KEY",
+        )
 
         # Create client with access key and secret key with specific region.
         client = Minio(
-            "play.minio.io:9000",
+            endpoint="play.minio.io:9000",
             access_key="Q3AM3UQ867SPQQA43P2F",
             secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
             region="my-region",
@@ -124,34 +131,35 @@ class Minio:
     it between multiple processes, for example when using
     `multiprocessing.Pool`. The solution is simply to create a new `Minio`
     object in each process, and not share it between processes.
-
     """
-    _region_map: dict[str, str]
+    _region_map: RegionMap
     _base_url: BaseURL
     _user_agent: str
-    _trace_stream: TextIO | None
-    _provider: Provider | None
+    _trace_stream: Optional[TextIO]
+    _provider: Optional[Provider]
     _http: urllib3.PoolManager
 
     def __init__(
             self,
+            *,
             endpoint: str,
-            access_key: str | None = None,
-            secret_key: str | None = None,
-            session_token: str | None = None,
+            access_key: Optional[str] = None,
+            secret_key: Optional[str] = None,
+            session_token: Optional[str] = None,
             secure: bool = True,
-            region: str | None = None,
-            http_client: urllib3.PoolManager | None = None,
-            credentials: Provider | None = None,
+            region: Optional[str] = None,
+            http_client: Optional[urllib3.PoolManager] = None,
+            credentials: Optional[Provider] = None,
             cert_check: bool = True,
     ):
         # Validate http client has correct base class.
         if http_client and not isinstance(http_client, urllib3.PoolManager):
-            raise ValueError(
-                "HTTP client should be instance of `urllib3.PoolManager`"
+            raise TypeError(
+                "HTTP client should be urllib3.PoolManager like object, "
+                f"got {type(http_client).__name__}",
             )
 
-        self._region_map = {}
+        self._region_map = RegionMap()
         self._base_url = BaseURL(
             ("https://" if secure else "http://") + endpoint,
             region,
@@ -182,13 +190,74 @@ class Minio:
         if hasattr(self, "_http"):  # Only required for unit test run
             self._http.clear()
 
+    @staticmethod
+    def _gen_read_headers(
+            *,
+            ssec: Optional[SseCustomerKey] = None,
+            offset: int = 0,
+            length: int = 0,
+            match_etag: Optional[str] = None,
+            not_match_etag: Optional[str] = None,
+            modified_since: Optional[datetime] = None,
+            unmodified_since: Optional[datetime] = None,
+            fetch_checksum: bool = False,
+    ) -> HTTPHeaderDict:
+        """Generates conditional headers for get/head object."""
+        headers = HTTPHeaderDict()
+        if ssec:
+            headers.extend(ssec.headers())
+        if offset or length:
+            end = (offset + length - 1) if length else ""
+            headers['Range'] = f"bytes={offset}-{end}"
+        if match_etag:
+            headers["if-match"] = match_etag
+        if not_match_etag:
+            headers["if-none-match"] = not_match_etag
+        if modified_since:
+            headers["if-modified-since"] = to_http_header(modified_since)
+        if unmodified_since:
+            headers["if-unmodified-since"] = to_http_header(unmodified_since)
+        if fetch_checksum:
+            headers["x-amz-checksum-mode"] = "ENABLED"
+        return headers
+
+    @staticmethod
+    def _gen_write_headers(
+            *,
+            headers: Optional[HTTPHeaderDict] = None,
+            user_metadata: Optional[HTTPHeaderDict] = None,
+            sse: Optional[Sse] = None,
+            tags: Optional[Tags] = None,
+            retention: Optional[Retention] = None,
+            legal_hold: bool = False,
+    ) -> HTTPHeaderDict:
+        """Generate headers for given parameters."""
+        headers = headers.copy() if headers else HTTPHeaderDict()
+        if user_metadata:
+            headers.extend(user_metadata)
+        headers = normalize_headers(headers)
+        if sse:
+            headers.extend(sse.headers())
+        if tags:
+            headers["x-amz-tagging"] = urlencode(
+                list(tags.items()), quote_via=quote,
+            )
+        if retention and retention.mode:
+            headers["x-amz-object-lock-mode"] = retention.mode
+            headers["x-amz-object-lock-retain-until-date"] = cast(
+                str, to_iso8601utc(retention.retain_until_date),
+            )
+        if legal_hold:
+            headers["x-amz-object-lock-legal-hold"] = "ON"
+        return headers
+
     def _handle_redirect_response(
             self,
             method: str,
-            bucket_name: str | None,
             response: BaseHTTPResponse,
+            bucket_name: Optional[str] = None,
             retry: bool = False,
-    ) -> tuple[str | None, str | None]:
+    ) -> tuple[Optional[str], Optional[str]]:
         """
         Handle redirect response indicates whether retry HEAD request
         on failure.
@@ -213,12 +282,12 @@ class Minio:
     def _build_headers(
             self,
             host: str,
-            headers: DictType | None,
-            body: bytes | None,
-            creds: Credentials | None,
-    ) -> tuple[DictType, datetime]:
+            headers: Optional[HTTPHeaderDict] = None,
+            body: Optional[bytes] = None,
+            creds: Optional[Credentials] = None,
+    ) -> tuple[HTTPHeaderDict, datetime]:
         """Build headers with given parameters."""
-        headers = headers or {}
+        headers = headers or HTTPHeaderDict()
         md5sum_added = headers.get("Content-MD5")
         headers["Host"] = host
         headers["User-Agent"] = self._user_agent
@@ -247,35 +316,43 @@ class Minio:
 
     def _url_open(
             self,
+            *,
             method: str,
             region: str,
-            bucket_name: str | None = None,
-            object_name: str | None = None,
-            body: bytes | None = None,
-            headers: DictType | None = None,
-            query_params: DictType | None = None,
+            bucket_name: Optional[str] = None,
+            object_name: Optional[str] = None,
+            body: Optional[bytes] = None,
+            headers: Optional[HTTPHeaderDict] = None,
+            query_params: Optional[HTTPQueryDict] = None,
             preload_content: bool = True,
             no_body_trace: bool = False,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> BaseHTTPResponse:
         """Execute HTTP request."""
         creds = self._provider.retrieve() if self._provider else None
         url = self._base_url.build(
-            method,
-            region,
+            method=method,
+            region=region,
             bucket_name=bucket_name,
             object_name=object_name,
             query_params=query_params,
+            extra_query_params=extra_query_params,
         )
+
+        headers = headers.copy() if headers else HTTPHeaderDict()
+        if extra_headers:
+            headers.extend(extra_headers)
         headers, date = self._build_headers(url.netloc, headers, body, creds)
         if creds:
             headers = sign_v4_s3(
-                method,
-                url,
-                region,
-                headers,
-                creds,
-                cast(str, headers.get("x-amz-content-sha256")),
-                date,
+                method=method,
+                url=url,
+                region=region,
+                headers=headers,
+                credentials=creds,
+                content_sha256=cast(str, headers.get("x-amz-content-sha256")),
+                date=date,
             )
 
         if self._trace_stream:
@@ -369,13 +446,13 @@ class Minio:
 
         error_map = {
             301: lambda: self._handle_redirect_response(
-                method, bucket_name, response, True,
+                method, response, bucket_name, True,
             ),
             307: lambda: self._handle_redirect_response(
-                method, bucket_name, response, True,
+                method, response, bucket_name, True,
             ),
             400: lambda: self._handle_redirect_response(
-                method, bucket_name, response, True,
+                method, response, bucket_name, True,
             ),
             403: lambda: ("AccessDenied", "Access denied"),
             404: lambda: (
@@ -409,40 +486,47 @@ class Minio:
                     response.status,
                 )
             response_error = S3Error(
-                cast(str, code),
-                cast(Union[str, None], message),
-                url.path,
-                response.headers.get("x-amz-request-id"),
-                response.headers.get("x-amz-id-2"),
-                response,
+                response=response,
+                code=cast(str, code),
+                message=cast(Union[str, None], message),
+                resource=url.path,
+                request_id=response.headers.get("x-amz-request-id"),
+                host_id=response.headers.get("x-amz-id-2"),
                 bucket_name=bucket_name,
                 object_name=object_name,
             )
 
         if response_error.code in ["NoSuchBucket", "RetryHead"]:
             if bucket_name is not None:
-                self._region_map.pop(bucket_name, None)
+                self._region_map.remove(bucket_name)
 
         raise response_error
 
     def _execute(
             self,
+            *,
             method: str,
-            bucket_name: str | None = None,
-            object_name: str | None = None,
-            body: bytes | None = None,
-            headers: DictType | None = None,
-            query_params: DictType | None = None,
+            bucket_name: Optional[str] = None,
+            object_name: Optional[str] = None,
+            body: Optional[bytes] = None,
+            headers: Optional[HTTPHeaderDict] = None,
+            query_params: Optional[HTTPQueryDict] = None,
             preload_content: bool = True,
             no_body_trace: bool = False,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> BaseHTTPResponse:
         """Execute HTTP request."""
-        region = self._get_region(bucket_name)
+        region = self._get_region(
+            bucket_name=bucket_name,
+            region=region,
+        )
 
         try:
             return self._url_open(
-                method,
-                region,
+                method=method,
+                region=region,
                 bucket_name=bucket_name,
                 object_name=object_name,
                 body=body,
@@ -450,6 +534,8 @@ class Minio:
                 query_params=query_params,
                 preload_content=preload_content,
                 no_body_trace=no_body_trace,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
         except S3Error as exc:
             if exc.code != "RetryHead":
@@ -458,8 +544,8 @@ class Minio:
         # Retry only once on RetryHead error.
         try:
             return self._url_open(
-                method,
-                region,
+                method=method,
+                region=region,
                 bucket_name=bucket_name,
                 object_name=object_name,
                 body=body,
@@ -467,23 +553,43 @@ class Minio:
                 query_params=query_params,
                 preload_content=preload_content,
                 no_body_trace=no_body_trace,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
         except S3Error as exc:
             if exc.code != "RetryHead":
                 raise
 
             code, message = self._handle_redirect_response(
-                method, bucket_name, exc.response,
+                method, exc.response, bucket_name,
             )
             raise exc.copy(cast(str, code), cast(str, message))
 
-    def _get_region(self, bucket_name: str | None) -> str:
+    def _get_region(
+            self,
+            *,
+            bucket_name: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> str:
         """
         Return region of given bucket either from region cache or set in
         constructor.
         """
 
-        if self._base_url.region:
+        if (
+                region is not None and self._base_url.region is not None and
+                region != self._base_url.region
+        ):
+            raise ValueError(
+                f"region must be {self._base_url.region}, but passed {region}",
+            )
+
+        if region is not None:
+            return region
+
+        if self._base_url.region is not None:
             return self._base_url.region
 
         if not bucket_name or not self._provider:
@@ -495,10 +601,12 @@ class Minio:
 
         # Execute GetBucketLocation REST API to get region of the bucket.
         response = self._url_open(
-            "GET",
-            "us-east-1",
+            method="GET",
+            region="us-east-1",
             bucket_name=bucket_name,
-            query_params={"location": ""},
+            query_params=HTTPQueryDict({"location": ""}),
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
         element = ET.fromstring(response.data.decode())
@@ -509,7 +617,7 @@ class Minio:
         else:
             region = element.text
 
-        self._region_map[bucket_name] = region
+        self._region_map.set(bucket_name, region)
         return region
 
     def set_app_info(self, app_name: str, app_version: str):
@@ -569,9 +677,13 @@ class Minio:
 
     def select_object_content(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             request: SelectRequest,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> SelectObjectReader:
         """
         Select content of an object by SQL expression.
@@ -601,22 +713,31 @@ class Minio:
         if not isinstance(request, SelectRequest):
             raise ValueError("request must be SelectRequest type")
         body = marshal(request)
+        headers = HTTPHeaderDict(
+            {"Content-MD5": cast(str, md5sum_hash(body))},
+        )
         response = self._execute(
-            "POST",
+            method="POST",
             bucket_name=bucket_name,
             object_name=object_name,
             body=body,
-            headers={"Content-MD5": cast(str, md5sum_hash(body))},
-            query_params={"select": "", "select-type": "2"},
+            headers=headers,
+            query_params=HTTPQueryDict({"select": "", "select-type": "2"}),
             preload_content=False,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
         return SelectObjectReader(response)
 
     def make_bucket(
             self,
+            *,
             bucket_name: str,
-            location: str | None = None,
+            location: Optional[str] = None,
             object_lock: bool = False,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """
         Create a bucket with region and object lock.
@@ -646,26 +767,64 @@ class Minio:
                     f"but passed {location}"
                 )
         location = self._base_url.region or location or "us-east-1"
-        headers: DictType | None = (
-            {"x-amz-bucket-object-lock-enabled": "true"}
-            if object_lock else None
-        )
-
+        headers = HTTPHeaderDict()
+        if object_lock:
+            headers["x-amz-bucket-object-lock-enabled"] = "true"
         body = None
         if location != "us-east-1":
             element = Element("CreateBucketConfiguration")
             SubElement(element, "LocationConstraint", location)
             body = getbytes(element)
         self._url_open(
-            "PUT",
-            location,
+            method="PUT",
+            region=location,
             bucket_name=bucket_name,
             body=body,
             headers=headers,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
-        self._region_map[bucket_name] = location
+        self._region_map.set(bucket_name, location)
 
-    def list_buckets(self) -> list[Bucket]:
+    def _list_buckets(
+            self,
+            *,
+            bucket_region: Optional[str] = None,
+            max_buckets: int = 10000,
+            prefix: Optional[str] = None,
+            continuation_token: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> ListAllMyBucketsResult:
+        """Do ListBuckets S3 API."""
+        query_params = HTTPQueryDict()
+        query_params["max-buckets"] = str(
+            max_buckets if max_buckets > 0 else 10000,
+        )
+        if bucket_region is not None:
+            query_params["bucket-region"] = bucket_region
+        if prefix:
+            query_params["prefix"] = prefix
+        if continuation_token:
+            query_params["continuation-token"] = continuation_token
+
+        response = self._execute(
+            method="GET",
+            query_params=query_params,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
+        )
+        return unmarshal(ListAllMyBucketsResult, response.data.decode())
+
+    def list_buckets(
+            self,
+            *,
+            bucket_region: Optional[str] = None,
+            max_buckets: int = 10000,
+            prefix: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> Iterator[Bucket]:
         """
         List information of all accessible buckets.
 
@@ -673,15 +832,30 @@ class Minio:
 
         Example::
             buckets = client.list_buckets()
-            for bucket in buckets:
+s            for bucket in buckets:
                 print(bucket.name, bucket.creation_date)
         """
+        continuation_token: Optional[str] = ""
+        while continuation_token is not None:
+            result = self._list_buckets(
+                bucket_region=bucket_region,
+                max_buckets=max_buckets,
+                prefix=prefix,
+                continuation_token=continuation_token,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
+            )
+            continuation_token = result.continuation_token
+            yield from result.buckets
 
-        response = self._execute("GET")
-        result = unmarshal(ListAllMyBucketsResult, response.data.decode())
-        return result.buckets
-
-    def bucket_exists(self, bucket_name: str) -> bool:
+    def bucket_exists(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> bool:
         """
         Check if a bucket exists.
 
@@ -696,14 +870,27 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         try:
-            self._execute("HEAD", bucket_name)
+            self._execute(
+                method="HEAD",
+                bucket_name=bucket_name,
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
+            )
             return True
         except S3Error as exc:
             if exc.code != "NoSuchBucket":
                 raise
         return False
 
-    def remove_bucket(self, bucket_name: str):
+    def remove_bucket(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ):
         """
         Remove an empty bucket.
 
@@ -713,10 +900,23 @@ class Minio:
             client.remove_bucket("my-bucket")
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        self._execute("DELETE", bucket_name)
-        self._region_map.pop(bucket_name, None)
+        self._execute(
+            method="DELETE",
+            bucket_name=bucket_name,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
+        )
+        self._region_map.remove(bucket_name)
 
-    def get_bucket_policy(self, bucket_name: str) -> str:
+    def get_bucket_policy(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> str:
         """
         Get bucket policy configuration of a bucket.
 
@@ -728,11 +928,43 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         response = self._execute(
-            "GET", bucket_name, query_params={"policy": ""},
+            method="GET",
+            bucket_name=bucket_name,
+            query_params=HTTPQueryDict({"policy": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
         return response.data.decode()
 
-    def delete_bucket_policy(self, bucket_name: str):
+    def _execute_delete_bucket(
+            self,
+            *,
+            bucket_name: str,
+            query_params: HTTPQueryDict,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ):
+        """ Delete any bucket API. """
+        check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
+        self._execute(
+            method="DELETE",
+            bucket_name=bucket_name,
+            query_params=query_params,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
+        )
+
+    def delete_bucket_policy(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ):
         """
         Delete bucket policy configuration of a bucket.
 
@@ -741,10 +973,23 @@ class Minio:
         Example::
             client.delete_bucket_policy("my-bucket")
         """
-        check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        self._execute("DELETE", bucket_name, query_params={"policy": ""})
+        self._execute_delete_bucket(
+            bucket_name=bucket_name,
+            query_params=HTTPQueryDict({"policy": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
+        )
 
-    def set_bucket_policy(self, bucket_name: str, policy: str | bytes):
+    def set_bucket_policy(
+            self,
+            *,
+            bucket_name: str,
+            policy: str | bytes,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ):
         """
         Set bucket policy configuration to a bucket.
 
@@ -756,15 +1001,29 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         is_valid_policy_type(policy)
+        body = policy if isinstance(policy, bytes) else policy.encode()
+        headers = HTTPHeaderDict(
+            {"Content-MD5": cast(str, md5sum_hash(body))},
+        )
         self._execute(
-            "PUT",
-            bucket_name,
-            body=policy if isinstance(policy, bytes) else policy.encode(),
-            headers={"Content-MD5": cast(str, md5sum_hash(policy))},
-            query_params={"policy": ""},
+            method="PUT",
+            bucket_name=bucket_name,
+            body=body,
+            headers=headers,
+            query_params=HTTPQueryDict({"policy": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
-    def get_bucket_notification(self, bucket_name: str) -> NotificationConfig:
+    def get_bucket_notification(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> NotificationConfig:
         """
         Get notification configuration of a bucket.
 
@@ -776,14 +1035,23 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         response = self._execute(
-            "GET", bucket_name, query_params={"notification": ""},
+            method="GET",
+            bucket_name=bucket_name,
+            query_params=HTTPQueryDict({"notification": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
         return unmarshal(NotificationConfig, response.data.decode())
 
     def set_bucket_notification(
             self,
+            *,
             bucket_name: str,
             config: NotificationConfig,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """
         Set notification configuration of a bucket.
@@ -808,15 +1076,28 @@ class Minio:
         if not isinstance(config, NotificationConfig):
             raise ValueError("config must be NotificationConfig type")
         body = marshal(config)
+        headers = HTTPHeaderDict(
+            {"Content-MD5": cast(str, md5sum_hash(body))},
+        )
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=body,
-            headers={"Content-MD5": cast(str, md5sum_hash(body))},
-            query_params={"notification": ""},
+            headers=headers,
+            query_params=HTTPQueryDict({"notification": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
-    def delete_bucket_notification(self, bucket_name: str):
+    def delete_bucket_notification(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ):
         """
         Delete notification configuration of a bucket. On success, S3 service
         stops notification of events previously set of the bucket.
@@ -826,9 +1107,23 @@ class Minio:
         Example::
             client.delete_bucket_notification("my-bucket")
         """
-        self.set_bucket_notification(bucket_name, NotificationConfig())
+        self.set_bucket_notification(
+            bucket_name=bucket_name,
+            config=NotificationConfig(),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
+        )
 
-    def set_bucket_encryption(self, bucket_name: str, config: SSEConfig):
+    def set_bucket_encryption(
+            self,
+            *,
+            bucket_name: str,
+            config: SSEConfig,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ):
         """
         Set encryption configuration of a bucket.
 
@@ -844,15 +1139,28 @@ class Minio:
         if not isinstance(config, SSEConfig):
             raise ValueError("config must be SSEConfig type")
         body = marshal(config)
+        headers = HTTPHeaderDict(
+            {"Content-MD5": cast(str, md5sum_hash(body))},
+        )
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=body,
-            headers={"Content-MD5": cast(str, md5sum_hash(body))},
-            query_params={"encryption": ""},
+            headers=headers,
+            query_params=HTTPQueryDict({"encryption": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
-    def get_bucket_encryption(self, bucket_name: str) -> SSEConfig | None:
+    def get_bucket_encryption(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> Optional[SSEConfig]:
         """
         Get encryption configuration of a bucket.
 
@@ -865,9 +1173,12 @@ class Minio:
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         try:
             response = self._execute(
-                "GET",
-                bucket_name,
-                query_params={"encryption": ""},
+                method="GET",
+                bucket_name=bucket_name,
+                query_params=HTTPQueryDict({"encryption": ""}),
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
             return unmarshal(SSEConfig, response.data.decode())
         except S3Error as exc:
@@ -875,7 +1186,14 @@ class Minio:
                 raise
         return None
 
-    def delete_bucket_encryption(self, bucket_name: str):
+    def delete_bucket_encryption(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ):
         """
         Delete encryption configuration of a bucket.
 
@@ -884,12 +1202,13 @@ class Minio:
         Example::
             client.delete_bucket_encryption("my-bucket")
         """
-        check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         try:
-            self._execute(
-                "DELETE",
-                bucket_name,
-                query_params={"encryption": ""},
+            self._execute_delete_bucket(
+                bucket_name=bucket_name,
+                query_params=HTTPQueryDict({"encryption": ""}),
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
         except S3Error as exc:
             if exc.code != "ServerSideEncryptionConfigurationNotFoundError":
@@ -897,12 +1216,18 @@ class Minio:
 
     def listen_bucket_notification(
             self,
+            *,
             bucket_name: str,
             prefix: str = "",
             suffix: str = "",
-            events: tuple[str, ...] = ('s3:ObjectCreated:*',
-                                       's3:ObjectRemoved:*',
-                                       's3:ObjectAccessed:*'),
+            events: tuple[str, ...] = (
+                's3:ObjectCreated:*',
+                's3:ObjectRemoved:*',
+                's3:ObjectAccessed:*',
+            ),
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> EventIterable:
         """
         Listen events of object prefix and suffix of a bucket. Caller should
@@ -929,23 +1254,31 @@ class Minio:
                 "ListenBucketNotification API is not supported in Amazon S3",
             )
 
+        query_params = HTTPQueryDict({
+            "prefix": prefix or "",
+            "suffix": suffix or "",
+            "events": events,
+        })
         return EventIterable(
             lambda: self._execute(
-                "GET",
-                bucket_name,
-                query_params={
-                    "prefix": prefix or "",
-                    "suffix": suffix or "",
-                    "events": cast(Tuple[str], events),
-                },
+                method="GET",
+                bucket_name=bucket_name,
+                query_params=query_params,
                 preload_content=False,
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             ),
         )
 
     def set_bucket_versioning(
             self,
+            *,
             bucket_name: str,
             config: VersioningConfig,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """
         Set versioning configuration to a bucket.
@@ -962,15 +1295,28 @@ class Minio:
         if not isinstance(config, VersioningConfig):
             raise ValueError("config must be VersioningConfig type")
         body = marshal(config)
+        headers = HTTPHeaderDict(
+            {"Content-MD5": cast(str, md5sum_hash(body))},
+        )
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=body,
-            headers={"Content-MD5": cast(str, md5sum_hash(body))},
-            query_params={"versioning": ""},
+            headers=headers,
+            query_params=HTTPQueryDict({"versioning": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
-    def get_bucket_versioning(self, bucket_name: str) -> VersioningConfig:
+    def get_bucket_versioning(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> VersioningConfig:
         """
         Get versioning configuration of a bucket.
 
@@ -983,26 +1329,35 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         response = self._execute(
-            "GET",
-            bucket_name,
-            query_params={"versioning": ""},
+            method="GET",
+            bucket_name=bucket_name,
+            query_params=HTTPQueryDict({"versioning": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
         return unmarshal(VersioningConfig, response.data.decode())
 
     def fput_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             file_path: str,
             content_type: str = "application/octet-stream",
-            metadata: DictType | None = None,
-            sse: Sse | None = None,
-            progress: ProgressType | None = None,
+            headers: Optional[HTTPHeaderDict] = None,
+            user_metadata: Optional[HTTPHeaderDict] = None,
+            sse: Optional[Sse] = None,
+            progress: Optional[ProgressType] = None,
             part_size: int = 0,
+            checksum: Optional[Algorithm] = None,
             num_parallel_uploads: int = 3,
-            tags: Tags | None = None,
-            retention: Retention | None = None,
+            tags: Optional[Tags] = None,
+            retention: Optional[Retention] = None,
             legal_hold: bool = False,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> ObjectWriteResult:
         """
         Uploads data from a file to an object in a bucket.
@@ -1011,7 +1366,7 @@ class Minio:
         :param object_name: Object name in the bucket.
         :param file_path: Name of file to upload.
         :param content_type: Content type of the object.
-        :param metadata: Any additional metadata to be uploaded along
+        :param user_metadata: Any additional user metadata to be uploaded along
             with your PUT request.
         :param sse: Server-side encryption.
         :param progress: A progress object
@@ -1028,10 +1383,10 @@ class Minio:
                 "my-bucket", "my-object", "my-filename",
             )
 
-            # Upload data with metadata.
+            # Upload data with user metadata.
             result = client.fput_object(
                 "my-bucket", "my-object", "my-filename",
-                metadata={"My-Project": "one"},
+                user_metadata={"My-Project": "one"},
             )
 
             # Upload data with tags, retention and legal-hold.
@@ -1051,32 +1406,44 @@ class Minio:
         file_size = os.stat(file_path).st_size
         with open(file_path, "rb") as file_data:
             return self.put_object(
-                bucket_name,
-                object_name,
-                file_data,
-                file_size,
+                bucket_name=bucket_name,
+                object_name=object_name,
+                data=file_data,
+                length=file_size,
                 content_type=content_type,
-                metadata=cast(Union[DictType, None], metadata),
+                headers=headers,
+                user_metadata=user_metadata,
                 sse=sse,
+                checksum=checksum,
                 progress=progress,
                 part_size=part_size,
                 num_parallel_uploads=num_parallel_uploads,
                 tags=tags,
                 retention=retention,
                 legal_hold=legal_hold,
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
 
     def fget_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             file_path: str,
-            request_headers: DictType | None = None,
-            ssec: SseCustomerKey | None = None,
-            version_id: str | None = None,
-            extra_query_params: DictType | None = None,
-            tmp_file_path: str | None = None,
-            progress: ProgressType | None = None,
+            match_etag: Optional[str] = None,
+            not_match_etag: Optional[str] = None,
+            modified_since: Optional[datetime] = None,
+            unmodified_since: Optional[datetime] = None,
+            fetch_checksum: bool = False,
+            ssec: Optional[SseCustomerKey] = None,
+            version_id: Optional[str] = None,
+            tmp_file_path: Optional[str] = None,
+            progress: Optional[ProgressType] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """
         Downloads data of an object to file.
@@ -1084,8 +1451,6 @@ class Minio:
         :param bucket_name: Name of the bucket.
         :param object_name: Object name in the bucket.
         :param file_path: Name of file to download.
-        :param request_headers: Any additional headers to be added with GET
-                                request.
         :param ssec: Server-side encryption customer key.
         :param version_id: Version-ID of the object.
         :param extra_query_params: Extra query parameters for advanced usage.
@@ -1119,11 +1484,10 @@ class Minio:
         makedirs(os.path.dirname(file_path))
 
         stat = self.stat_object(
-            bucket_name,
-            object_name,
-            ssec,
+            bucket_name=bucket_name,
+            object_name=object_name,
+            ssec=ssec,
             version_id=version_id,
-            extra_headers=request_headers,
         )
 
         etag = queryencode(cast(str, stat.etag))
@@ -1135,11 +1499,17 @@ class Minio:
         response = None
         try:
             response = self.get_object(
-                bucket_name,
-                object_name,
-                request_headers=request_headers,
+                bucket_name=bucket_name,
+                object_name=object_name,
+                match_etag=match_etag,
+                not_match_etag=not_match_etag,
+                modified_since=modified_since,
+                unmodified_since=unmodified_since,
+                fetch_checksum=fetch_checksum,
                 ssec=ssec,
                 version_id=version_id,
+                region=region,
+                extra_headers=extra_headers,
                 extra_query_params=extra_query_params,
             )
 
@@ -1164,14 +1534,21 @@ class Minio:
 
     def get_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
+            version_id: Optional[str] = None,
+            ssec: Optional[SseCustomerKey] = None,
             offset: int = 0,
             length: int = 0,
-            request_headers: DictType | None = None,
-            ssec: SseCustomerKey | None = None,
-            version_id: str | None = None,
-            extra_query_params: DictType | None = None,
+            match_etag: Optional[str] = None,
+            not_match_etag: Optional[str] = None,
+            modified_since: Optional[datetime] = None,
+            unmodified_since: Optional[datetime] = None,
+            fetch_checksum: bool = False,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> BaseHTTPResponse:
         """
         Get data of an object. Returned response should be closed after use to
@@ -1182,8 +1559,6 @@ class Minio:
         :param object_name: Object name in the bucket.
         :param offset: Start byte position of object data.
         :param length: Number of bytes of object data from offset.
-        :param request_headers: Any additional headers to be added with GET
-                                request.
         :param ssec: Server-side encryption customer key.
         :param version_id: Version-ID of the object.
         :param extra_query_params: Extra query parameters for advanced usage.
@@ -1242,36 +1617,45 @@ class Minio:
         check_object_name(object_name)
         check_ssec(ssec)
 
-        headers = cast(DictType, ssec.headers() if ssec else {})
-        headers.update(request_headers or {})
-
-        if offset or length:
-            end = (offset + length - 1) if length else ""
-            headers['Range'] = f"bytes={offset}-{end}"
-
+        headers = self._gen_read_headers(
+            ssec=ssec,
+            offset=offset,
+            length=length,
+            match_etag=match_etag,
+            not_match_etag=not_match_etag,
+            modified_since=modified_since,
+            unmodified_since=unmodified_since,
+            fetch_checksum=fetch_checksum,
+        )
+        query_params = HTTPQueryDict()
         if version_id:
-            extra_query_params = extra_query_params or {}
-            extra_query_params["versionId"] = version_id
+            query_params["versionId"] = version_id
 
         return self._execute(
-            "GET",
-            bucket_name,
-            object_name,
-            headers=cast(DictType, headers),
-            query_params=extra_query_params,
+            method="GET",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            headers=headers,
+            query_params=query_params,
             preload_content=False,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
     def prompt_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             prompt: str,
-            lambda_arn: str | None = None,
-            request_headers: DictType | None = None,
-            ssec: SseCustomerKey | None = None,
-            version_id: str | None = None,
-            **kwargs: Any | None,
+            lambda_arn: Optional[str] = None,
+            ssec: Optional[SseCustomerKey] = None,
+            version_id: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+            **kwargs: Optional[Any],
     ) -> BaseHTTPResponse:
         """
         Prompt an object using natural language.
@@ -1281,7 +1665,6 @@ class Minio:
         :param prompt: Prompt the Object to interact with the AI model.
                                 request.
         :param lambda_arn: Lambda ARN to use for prompt.
-        :param request_headers: Any additional headers to be added with POST
         :param ssec: Server-side encryption customer key.
         :param version_id: Version-ID of the object.
         :param kwargs: Extra parameters for advanced usage.
@@ -1304,40 +1687,44 @@ class Minio:
         check_object_name(object_name)
         check_ssec(ssec)
 
-        headers = cast(DictType, ssec.headers() if ssec else {})
-        headers.update(request_headers or {})
-
-        extra_query_params = {"lambdaArn": lambda_arn or ""}
-
+        query_params = HTTPQueryDict()
         if version_id:
-            extra_query_params["versionId"] = version_id
+            query_params["versionId"] = version_id
+        query_params["lambdaArn"] = lambda_arn or ""
 
         prompt_body = kwargs
         prompt_body["prompt"] = prompt
 
         body = json.dumps(prompt_body)
         return self._execute(
-            "POST",
-            bucket_name,
-            object_name,
-            headers=cast(DictType, headers),
-            query_params=cast(DictType, extra_query_params),
+            method="POST",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            headers=HTTPHeaderDict(ssec.headers()) if ssec else None,
+            query_params=query_params,
             body=body.encode(),
             preload_content=False,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
     def copy_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             source: CopySource,
-            sse: Sse | None = None,
-            metadata: DictType | None = None,
-            tags: Tags | None = None,
-            retention: Retention | None = None,
+            sse: Optional[Sse] = None,
+            user_metadata: Optional[HTTPHeaderDict] = None,
+            tags: Optional[Tags] = None,
+            retention: Optional[Retention] = None,
             legal_hold: bool = False,
-            metadata_directive: str | None = None,
-            tagging_directive: str | None = None,
+            metadata_directive: Optional[str] = None,
+            tagging_directive: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> ObjectWriteResult:
         """
         Create an object by server-side copying data from another object.
@@ -1347,7 +1734,7 @@ class Minio:
         :param object_name: Object name in the bucket.
         :param source: :class:`CopySource` object.
         :param sse: Server-side encryption of destination object.
-        :param metadata: Any user-defined metadata to be copied along with
+        :param user_metadata: Any user-defined metadata to be copied along with
                          destination object.
         :param tags: Tags for destination object.
         :param retention: :class:`Retention` configuration object.
@@ -1379,13 +1766,13 @@ class Minio:
             )
             print(result.object_name, result.version_id)
 
-            # copy an object from a bucket with replacing metadata.
-            metadata = {"test_meta_key": "test_meta_value"}
+            # copy an object from a bucket with replacing user metadata.
+            user_metadata = {"test_meta_key": "test_meta_value"}
             result = client.copy_object(
                 "my-bucket",
                 "my-object",
                 CopySource("my-sourcebucket", "my-sourceobject"),
-                metadata=metadata,
+                user_metadata=user_metadata,
                 metadata_directive=REPLACE,
             )
             print(result.object_name, result.version_id)
@@ -1413,8 +1800,8 @@ class Minio:
         size = -1
         if source.offset is None and source.length is None:
             stat = self.stat_object(
-                source.bucket_name,
-                source.object_name,
+                bucket_name=source.bucket_name,
+                object_name=source.object_name,
                 version_id=source.version_id,
                 ssec=source.ssec,
             )
@@ -1436,28 +1823,36 @@ class Minio:
                     "object size greater than 5 GiB"
                 )
             return self.compose_object(
-                bucket_name, object_name, [ComposeSource.of(source)],
-                sse=sse, metadata=metadata, tags=tags, retention=retention,
+                bucket_name=bucket_name,
+                object_name=object_name,
+                sources=[ComposeSource.of(source)],
+                sse=sse,
+                user_metadata=user_metadata,
+                tags=tags,
+                retention=retention,
                 legal_hold=legal_hold,
             )
 
-        headers = genheaders(
-            metadata,
-            sse,
-            tags,
-            retention,
-            legal_hold,
+        headers = self._gen_write_headers(
+            user_metadata=user_metadata,
+            sse=sse,
+            tags=tags,
+            retention=retention,
+            legal_hold=legal_hold,
         )
         if metadata_directive:
             headers["x-amz-metadata-directive"] = metadata_directive
         if tagging_directive:
             headers["x-amz-tagging-directive"] = tagging_directive
-        headers.update(source.gen_copy_headers())
+        headers.extend(source.gen_copy_headers())
         response = self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             object_name=object_name,
             headers=headers,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
         etag, last_modified = parse_copy_object(response)
         return ObjectWriteResult(
@@ -1477,8 +1872,8 @@ class Minio:
         for src in sources:
             i += 1
             stat = self.stat_object(
-                src.bucket_name,
-                src.object_name,
+                bucket_name=src.bucket_name,
+                object_name=src.object_name,
                 version_id=src.version_id,
                 ssec=src.ssec,
             )
@@ -1536,35 +1931,49 @@ class Minio:
 
     def _upload_part_copy(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             upload_id: str,
             part_number: int,
-            headers: DictType,
-    ) -> tuple[str, datetime | None]:
+            headers: HTTPHeaderDict,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> tuple[str, Optional[datetime]]:
         """Execute UploadPartCopy S3 API."""
-        response = self._execute(
-            "PUT",
-            bucket_name,
-            object_name,
-            headers=headers,
-            query_params={
+        query_params = HTTPQueryDict(
+            {
                 "partNumber": str(part_number),
                 "uploadId": upload_id,
             },
+        )
+        response = self._execute(
+            method="PUT",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            headers=headers,
+            query_params=query_params,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
         return parse_copy_object(response)
 
     def compose_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             sources: list[ComposeSource],
-            sse: Sse | None = None,
-            metadata: DictType | None = None,
-            tags: Tags | None = None,
-            retention: Retention | None = None,
+            sse: Optional[Sse] = None,
+            user_metadata: Optional[HTTPHeaderDict] = None,
+            tags: Optional[Tags] = None,
+            retention: Optional[Retention] = None,
             legal_hold: bool = False,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> ObjectWriteResult:
         """
         Create an object by combining data from different source objects using
@@ -1574,7 +1983,7 @@ class Minio:
         :param object_name: Object name in the bucket.
         :param sources: List of :class:`ComposeSource` object.
         :param sse: Server-side encryption of destination object.
-        :param metadata: Any user-defined metadata to be copied along with
+        :param user_metadata: Any user-defined metadata to be copied along with
                          destination object.
         :param tags: Tags for destination object.
         :param retention: :class:`Retention` configuration object.
@@ -1599,7 +2008,7 @@ class Minio:
                 "my-bucket",
                 "my-object",
                 sources,
-                metadata={"test_meta_key": "test_meta_value"},
+                user_metadata={"test_meta_key": "test_meta_value"},
             )
             print(result.object_name, result.version_id)
 
@@ -1632,18 +2041,37 @@ class Minio:
                 sources[0].length is None
         ):
             return self.copy_object(
-                bucket_name, object_name, CopySource.of(sources[0]),
-                sse=sse, metadata=metadata, tags=tags, retention=retention,
+                bucket_name=bucket_name,
+                object_name=object_name,
+                source=CopySource.of(sources[0]),
+                sse=sse,
+                user_metadata=user_metadata,
+                tags=tags,
+                retention=retention,
                 legal_hold=legal_hold,
-                metadata_directive=REPLACE if metadata else None,
+                metadata_directive=REPLACE if user_metadata else None,
                 tagging_directive=REPLACE if tags else None,
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
 
-        headers = genheaders(metadata, sse, tags, retention, legal_hold)
-        upload_id = self._create_multipart_upload(
-            bucket_name, object_name, headers,
+        headers = self._gen_write_headers(
+            user_metadata=user_metadata,
+            sse=sse,
+            tags=tags,
+            retention=retention,
+            legal_hold=legal_hold,
         )
-        ssec_headers = sse.headers() if isinstance(sse, SseCustomerKey) else {}
+        upload_id = self._create_multipart_upload(
+            bucket_name=bucket_name,
+            object_name=object_name,
+            headers=headers,
+        )
+        ssec_headers = (
+            sse.headers() if isinstance(sse, SseCustomerKey)
+            else HTTPHeaderDict()
+        )
         try:
             part_number = 0
             total_parts = []
@@ -1654,8 +2082,8 @@ class Minio:
                 elif src.offset is not None:
                     size -= src.offset
                 offset = src.offset or 0
-                headers = cast(DictType, src.headers)
-                headers.update(ssec_headers)
+                headers = cast(HTTPHeaderDict, src.headers)
+                headers.extend(ssec_headers)
                 if size <= MAX_PART_SIZE:
                     part_number += 1
                     if src.length is not None:
@@ -1667,11 +2095,11 @@ class Minio:
                             f"bytes={offset}-{offset + size - 1}"
                         )
                     etag, _ = self._upload_part_copy(
-                        bucket_name,
-                        object_name,
-                        upload_id,
-                        part_number,
-                        headers,
+                        bucket_name=bucket_name,
+                        object_name=object_name,
+                        upload_id=upload_id,
+                        part_number=part_number,
+                        headers=headers,
                     )
                     total_parts.append(Part(part_number, etag))
                     continue
@@ -1684,17 +2112,20 @@ class Minio:
                         f"bytes={offset}-{end_bytes}"
                     )
                     etag, _ = self._upload_part_copy(
-                        bucket_name,
-                        object_name,
-                        upload_id,
-                        part_number,
-                        headers_copy,
+                        bucket_name=bucket_name,
+                        object_name=object_name,
+                        upload_id=upload_id,
+                        part_number=part_number,
+                        headers=headers_copy,
                     )
                     total_parts.append(Part(part_number, etag))
                     offset += length
                     size -= length
             result = self._complete_multipart_upload(
-                bucket_name, object_name, upload_id, total_parts,
+                bucket_name=bucket_name,
+                object_name=object_name,
+                upload_id=upload_id,
+                parts=total_parts,
             )
             return ObjectWriteResult(
                 cast(str, result.bucket_name),
@@ -1707,30 +2138,43 @@ class Minio:
         except Exception as exc:
             if upload_id:
                 self._abort_multipart_upload(
-                    bucket_name, object_name, upload_id,
+                    bucket_name=bucket_name,
+                    object_name=object_name,
+                    upload_id=upload_id,
                 )
             raise exc
 
     def _abort_multipart_upload(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             upload_id: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """Execute AbortMultipartUpload S3 API."""
         self._execute(
-            "DELETE",
-            bucket_name,
-            object_name,
-            query_params={'uploadId': upload_id},
+            method="DELETE",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            query_params=HTTPQueryDict({'uploadId': upload_id}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
     def _complete_multipart_upload(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             upload_id: str,
             parts: list[Part],
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> CompleteMultipartUploadResult:
         """Execute CompleteMultipartUpload S3 API."""
         element = Element("CompleteMultipartUpload")
@@ -1739,55 +2183,75 @@ class Minio:
             SubElement(tag, "PartNumber", str(part.part_number))
             SubElement(tag, "ETag", '"' + part.etag + '"')
         body = getbytes(element)
-        response = self._execute(
-            "POST",
-            bucket_name,
-            object_name,
-            body=body,
-            headers={
+        headers = HTTPHeaderDict(
+            {
                 "Content-Type": 'application/xml',
                 "Content-MD5": cast(str, md5sum_hash(body)),
             },
-            query_params={'uploadId': upload_id},
+        )
+        response = self._execute(
+            method="POST",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            body=body,
+            headers=headers,
+            query_params=HTTPQueryDict({'uploadId': upload_id}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
         return CompleteMultipartUploadResult(response)
 
     def _create_multipart_upload(
             self,
+            *,
             bucket_name: str,
             object_name: str,
-            headers: DictType,
+            headers: HTTPHeaderDict,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> str:
         """Execute CreateMultipartUpload S3 API."""
         if not headers.get("Content-Type"):
             headers["Content-Type"] = "application/octet-stream"
         response = self._execute(
-            "POST",
-            bucket_name,
-            object_name,
+            method="POST",
+            bucket_name=bucket_name,
+            object_name=object_name,
             headers=headers,
-            query_params={"uploads": ""},
+            query_params=HTTPQueryDict({"uploads": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
         element = ET.fromstring(response.data.decode())
         return cast(str, findtext(element, "UploadId", True))
 
     def _put_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             data: bytes,
-            headers: DictType | None,
-            query_params: DictType | None = None,
+            headers: Optional[HTTPHeaderDict] = None,
+            query_params: Optional[HTTPQueryDict] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> ObjectWriteResult:
         """Execute PutObject S3 API."""
         response = self._execute(
-            "PUT",
-            bucket_name,
-            object_name,
+            method="PUT",
+            bucket_name=bucket_name,
+            object_name=object_name,
             body=data,
             headers=headers,
             query_params=query_params,
             no_body_trace=True,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
         return ObjectWriteResult(
             bucket_name,
@@ -1799,46 +2263,59 @@ class Minio:
 
     def _upload_part(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             data: bytes,
-            headers: DictType | None,
+            headers: Optional[HTTPHeaderDict],
             upload_id: str,
             part_number: int,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> str:
         """Execute UploadPart S3 API."""
+        query_params = HTTPQueryDict({
+            "partNumber": str(part_number),
+            "uploadId": upload_id,
+        })
         result = self._put_object(
-            bucket_name,
-            object_name,
-            data,
-            headers,
-            query_params={
-                "partNumber": str(part_number),
-                "uploadId": upload_id,
-            },
+            bucket_name=bucket_name,
+            object_name=object_name,
+            data=data,
+            headers=headers,
+            query_params=query_params,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
         return cast(str, result.etag)
 
-    def _upload_part_task(self, args):
+    def _upload_part_task(self, kwargs):
         """Upload_part task for ThreadPool."""
-        return args[5], self._upload_part(*args)
+        return kwargs["part_number"], self._upload_part(**kwargs)
 
     def put_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             data: BinaryIO,
             length: int,
             content_type: str = "application/octet-stream",
-            metadata: DictType | None = None,
-            sse: Sse | None = None,
-            progress: ProgressType | None = None,
+            headers: Optional[HTTPHeaderDict] = None,
+            user_metadata: Optional[HTTPHeaderDict] = None,
+            sse: Optional[Sse] = None,
+            progress: Optional[ProgressType] = None,
             part_size: int = 0,
+            checksum: Optional[Algorithm] = None,
             num_parallel_uploads: int = 3,
-            tags: Tags | None = None,
-            retention: Retention | None = None,
+            tags: Optional[Tags] = None,
+            retention: Optional[Retention] = None,
             legal_hold: bool = False,
-            write_offset: int | None = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> ObjectWriteResult:
         """
         Uploads data from a stream to an object in a bucket.
@@ -1848,7 +2325,7 @@ class Minio:
         :param data: An object having callable read() returning bytes object.
         :param length: Data size; -1 for unknown size and set valid part_size.
         :param content_type: Content type of the object.
-        :param metadata: Any additional metadata to be uploaded along
+        :param user_metadata: Any additional user metadata to be uploaded along
             with your PUT request.
         :param sse: Server-side encryption.
         :param progress: A progress object;
@@ -1857,7 +2334,6 @@ class Minio:
         :param tags: :class:`Tags` for the object.
         :param retention: :class:`Retention` configuration object.
         :param legal_hold: Flag to set legal hold for the object.
-        :param write_offset: Offset byte for appending data to existing object.
         :return: :class:`ObjectWriteResult` object.
 
         Example::
@@ -1866,10 +2342,10 @@ class Minio:
                 "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
             )
 
-            # Upload data with metadata.
+            # Upload data with user metadata.
             result = client.put_object(
                 "my-bucket", "my-object", io.BytesIO(b"hello"), 5,
-                metadata={"My-Project": "one"},
+                user_metadata={"My-Project": "one"},
             )
 
             # Upload data with tags, retention and legal-hold.
@@ -1894,21 +2370,27 @@ class Minio:
             raise ValueError("retention must be Retention type")
         if not callable(getattr(data, "read")):
             raise ValueError("input data must have callable read()")
-        if write_offset is not None:
-            if write_offset < 0:
-                raise ValueError("write offset should not be negative")
-            if length < 0:
-                raise ValueError("length must be provided for write offset")
-            part_size = length if length > MIN_PART_SIZE else MIN_PART_SIZE
         part_size, part_count = get_part_info(length, part_size)
         if progress:
             # Set progress bar length and object name before upload
             progress.set_meta(object_name=object_name, total_length=length)
 
-        headers = genheaders(metadata, sse, tags, retention, legal_hold)
+        add_content_sha256 = self._base_url.is_https
+        algorithms = [checksum or Algorithm.CRC32C]
+        add_sha256_checksum = algorithms[0] == Algorithm.SHA256
+        if add_content_sha256 and not add_sha256_checksum:
+            algorithms.append(Algorithm.SHA256)
+        hashers = new_hashers(algorithms)
+
+        headers = self._gen_write_headers(
+            headers=headers,
+            user_metadata=user_metadata,
+            sse=sse,
+            tags=tags,
+            retention=retention,
+            legal_hold=legal_hold,
+        )
         headers["Content-Type"] = content_type or "application/octet-stream"
-        if write_offset:
-            headers["x-amz-write-offset-bytes"] = str(write_offset)
 
         object_size = length
         uploaded_size = 0
@@ -1917,7 +2399,7 @@ class Minio:
         stop = False
         upload_id = None
         parts: list[Part] = []
-        pool: ThreadPool | None = None
+        pool: Optional[ThreadPool] = None
 
         try:
             while not stop:
@@ -1927,7 +2409,10 @@ class Minio:
                         part_size = object_size - uploaded_size
                         stop = True
                     part_data = read_part_data(
-                        data, part_size, progress=progress,
+                        stream=data,
+                        size=part_size,
+                        progress=progress,
+                        hashers=hashers,
                     )
                     if len(part_data) != part_size:
                         raise IOError(
@@ -1937,7 +2422,11 @@ class Minio:
                         )
                 else:
                     part_data = read_part_data(
-                        data, part_size + 1, one_byte, progress=progress,
+                        stream=data,
+                        size=part_size + 1,
+                        part_data=one_byte,
+                        progress=progress,
+                        hashers=hashers,
                     )
                     # If part_data_size is less or equal to part_size,
                     # then we have reached last part.
@@ -1950,36 +2439,61 @@ class Minio:
 
                 uploaded_size += len(part_data)
 
+                checksum_headers = make_headers(
+                    hashers, add_content_sha256, add_sha256_checksum,
+                )
+
                 if part_count == 1:
+                    headers.extend(checksum_headers)
                     return self._put_object(
-                        bucket_name, object_name, part_data, headers,
+                        bucket_name=bucket_name,
+                        object_name=object_name,
+                        data=part_data,
+                        headers=headers,
+                        region=region,
+                        extra_headers=extra_headers,
+                        extra_query_params=extra_query_params,
                     )
 
                 if not upload_id:
+                    headers.extend(checksum_headers)
                     upload_id = self._create_multipart_upload(
-                        bucket_name, object_name, headers,
+                        bucket_name=bucket_name,
+                        object_name=object_name,
+                        headers=headers,
+                        region=region,
+                        extra_headers=extra_headers,
+                        extra_query_params=extra_query_params,
                     )
                     if num_parallel_uploads and num_parallel_uploads > 1:
                         pool = ThreadPool(num_parallel_uploads)
                         pool.start_parallel()
 
-                args = (
-                    bucket_name,
-                    object_name,
-                    part_data,
-                    (
-                        cast(DictType, sse.headers())
-                        if isinstance(sse, SseCustomerKey) else None
-                    ),
-                    upload_id,
-                    part_number,
+                headers = HTTPHeaderDict(
+                    sse.headers() if isinstance(sse, SseCustomerKey) else None,
                 )
+                headers.extend(checksum_headers)
                 if num_parallel_uploads > 1:
+                    kwargs = {
+                        "bucket_name": bucket_name,
+                        "object_name": object_name,
+                        "data": part_data,
+                        "headers": headers,
+                        "upload_id": upload_id,
+                        "part_number": part_number,
+                    }
                     cast(ThreadPool, pool).add_task(
-                        self._upload_part_task, args,
+                        self._upload_part_task, kwargs,
                     )
                 else:
-                    etag = self._upload_part(*args)
+                    etag = self._upload_part(
+                        bucket_name=bucket_name,
+                        object_name=object_name,
+                        data=part_data,
+                        headers=headers,
+                        upload_id=upload_id,
+                        part_number=part_number,
+                    )
                     parts.append(Part(part_number, etag))
 
             if pool:
@@ -1990,7 +2504,10 @@ class Minio:
                     parts[part_number - 1] = Part(part_number, etag)
 
             upload_result = self._complete_multipart_upload(
-                bucket_name, object_name, cast(str, upload_id), parts,
+                bucket_name=bucket_name,
+                object_name=object_name,
+                upload_id=cast(str, upload_id),
+                parts=parts,
             )
             return ObjectWriteResult(
                 cast(str, upload_result.bucket_name),
@@ -2003,19 +2520,111 @@ class Minio:
         except Exception as exc:
             if upload_id:
                 self._abort_multipart_upload(
-                    bucket_name, object_name, upload_id,
+                    bucket_name=bucket_name,
+                    object_name=object_name,
+                    upload_id=upload_id,
                 )
             raise exc
 
-    def append_object(
+    def _append_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
-            data: BinaryIO,
-            length: int,
-            chunk_size: int | None = None,
-            progress: ProgressType | None = None,
-            extra_headers: DictType | None = None,
+            stream: BinaryIO,
+            length: Optional[int] = None,
+            chunk_size: int,
+            progress: Optional[ProgressType] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> ObjectWriteResult:
+        """Do append object."""
+        chunk_count = -1
+        if length is not None:
+            chunk_count = max(int((length + chunk_size - 1) / chunk_size), 1)
+
+        object_size = length
+        uploaded_size = 0
+        chunk_number = 0
+        one_byte = b""
+        stop = False
+
+        stat = self.stat_object(
+            bucket_name=bucket_name,
+            object_name=object_name,
+        )
+        write_offset = cast(int, stat.size)
+
+        while not stop:
+            chunk_number += 1
+            if chunk_count > 0:
+                if chunk_number == chunk_count and object_size is not None:
+                    chunk_size = object_size - uploaded_size
+                    stop = True
+                chunk_data = read_part_data(
+                    stream=stream, size=chunk_size, progress=progress,
+                )
+                if len(chunk_data) != chunk_size:
+                    raise IOError(
+                        f"stream having not enough data;"
+                        f"expected: {chunk_size}, "
+                        f"got: {len(chunk_data)} bytes"
+                    )
+            else:
+                chunk_data = read_part_data(
+                    stream=stream,
+                    size=chunk_size + 1,
+                    part_data=one_byte,
+                    progress=progress,
+                )
+                # If chunk_data_size is less or equal to chunk_size,
+                # then we have reached last chunk.
+                if len(chunk_data) <= chunk_size:
+                    chunk_count = chunk_number
+                    stop = True
+                else:
+                    one_byte = chunk_data[-1:]
+                    chunk_data = chunk_data[:-1]
+
+            uploaded_size += len(chunk_data)
+
+            headers = HTTPHeaderDict(
+                {"x-amz-write-offset-bytes": str(write_offset)},
+            )
+            upload_result = self._put_object(
+                bucket_name=bucket_name,
+                object_name=object_name,
+                data=chunk_data,
+                headers=headers,
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
+            )
+            write_offset += len(chunk_data)
+        return ObjectWriteResult(
+            cast(str, upload_result.bucket_name),
+            cast(str, upload_result.object_name),
+            upload_result.version_id,
+            upload_result.etag,
+            upload_result.http_headers,
+            location=upload_result.location,
+        )
+
+    def append_object(
+            self,
+            *,
+            bucket_name: str,
+            object_name: str,
+            filename: Optional[str | os.PathLike] = None,
+            stream: Optional[BinaryIO] = None,
+            data: Optional[bytes] = None,
+            length: Optional[int] = None,
+            chunk_size: Optional[int] = None,
+            progress: Optional[ProgressType] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> ObjectWriteResult:
         """
         Appends from a stream to existing object in a bucket.
@@ -2054,91 +2663,63 @@ class Minio:
             )
             print(f"appended {result.object_name} object; etag: {result.etag}")
         """
-        if length == 0:
-            raise ValueError("length should not be zero")
+        if sum(x is not None for x in (filename, stream, data)) != 1:
+            raise ValueError(
+                "either filename, stream or data must be provided")
+        if (length is not None and length <= 0):
+            raise ValueError("valid length must be provided")
+        if data is not None and length is None:
+            raise ValueError("valid length must be provided for data")
         if chunk_size is not None:
             if chunk_size < MIN_PART_SIZE:
                 raise ValueError("chunk size must be minimum of 5 MiB")
             if chunk_size > MAX_PART_SIZE:
                 raise ValueError("chunk size must be less than 5 GiB")
         else:
-            chunk_size = length if length > MIN_PART_SIZE else MIN_PART_SIZE
+            chunk_size = max(MIN_PART_SIZE, length or 0)
 
-        chunk_count = -1
-        if length > 0:
-            chunk_count = int(length / chunk_size)
-            if (chunk_count * chunk_size) < length:
-                chunk_count += 1
-            chunk_count = chunk_count or 1
-
-        object_size = length
-        uploaded_size = 0
-        chunk_number = 0
-        one_byte = b""
-        stop = False
-
-        stat = self.stat_object(bucket_name, object_name)
-        write_offset = cast(int, stat.size)
-
-        while not stop:
-            chunk_number += 1
-            if chunk_count > 0:
-                if chunk_number == chunk_count:
-                    chunk_size = object_size - uploaded_size
-                    stop = True
-                chunk_data = read_part_data(
-                    data, chunk_size, progress=progress,
+        if filename:
+            file_size = os.stat(filename).st_size
+            with open(filename, "rb") as file:
+                return self._append_object(
+                    bucket_name=bucket_name,
+                    object_name=object_name,
+                    stream=file,
+                    length=file_size,
+                    chunk_size=cast(int, chunk_size),
+                    progress=progress,
+                    region=region,
+                    extra_headers=extra_headers,
+                    extra_query_params=extra_query_params,
                 )
-                if len(chunk_data) != chunk_size:
-                    raise IOError(
-                        f"stream having not enough data;"
-                        f"expected: {chunk_size}, "
-                        f"got: {len(chunk_data)} bytes"
-                    )
-            else:
-                chunk_data = read_part_data(
-                    data, chunk_size + 1, one_byte, progress=progress,
-                )
-                # If chunk_data_size is less or equal to chunk_size,
-                # then we have reached last chunk.
-                if len(chunk_data) <= chunk_size:
-                    chunk_count = chunk_number
-                    stop = True
-                else:
-                    one_byte = chunk_data[-1:]
-                    chunk_data = chunk_data[:-1]
-
-            uploaded_size += len(chunk_data)
-
-            headers = extra_headers or {}
-            headers["x-amz-write-offset-bytes"] = str(write_offset)
-            upload_result = self._put_object(
-                bucket_name, object_name, chunk_data, headers=headers,
-            )
-            write_offset += len(chunk_data)
-        return ObjectWriteResult(
-            cast(str, upload_result.bucket_name),
-            cast(str, upload_result.object_name),
-            upload_result.version_id,
-            upload_result.etag,
-            upload_result.http_headers,
-            location=upload_result.location,
+        return self._append_object(
+            bucket_name=bucket_name,
+            object_name=object_name,
+            stream=stream if stream else io.BytesIO(cast(bytes, data)),
+            length=length,
+            chunk_size=cast(int, chunk_size),
+            progress=progress,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
     def list_objects(
             self,
+            *,
             bucket_name: str,
-            prefix: str | None = None,
+            prefix: Optional[str] = None,
             recursive: bool = False,
-            start_after: str | None = None,
+            start_after: Optional[str] = None,
             include_user_meta: bool = False,
             include_version: bool = False,
             use_api_v1: bool = False,
             use_url_encoding_type: bool = True,
             fetch_owner: bool = False,
-            extra_headers: DictType | None = None,
-            extra_query_params: DictType | None = None,
-    ):
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> Iterator[Object]:
         """
         Lists object information of a bucket.
 
@@ -2190,7 +2771,7 @@ class Minio:
                 print(obj)
         """
         return self._list_objects(
-            bucket_name,
+            bucket_name=bucket_name,
             delimiter=None if recursive else "/",
             include_user_meta=include_user_meta,
             prefix=prefix,
@@ -2199,18 +2780,28 @@ class Minio:
             include_version=include_version,
             encoding_type="url" if use_url_encoding_type else None,
             fetch_owner=fetch_owner,
+            region=region,
             extra_headers=extra_headers,
             extra_query_params=extra_query_params,
         )
 
     def stat_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
-            ssec: SseCustomerKey | None = None,
-            version_id: str | None = None,
-            extra_headers: DictType | None = None,
-            extra_query_params: DictType | None = None,
+            version_id: Optional[str] = None,
+            ssec: Optional[SseCustomerKey] = None,
+            offset: int = 0,
+            length: int = 0,
+            match_etag: Optional[str] = None,
+            not_match_etag: Optional[str] = None,
+            modified_since: Optional[datetime] = None,
+            unmodified_since: Optional[datetime] = None,
+            fetch_checksum: bool = False,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> Object:
         """
         Get object information and metadata of an object.
@@ -2244,18 +2835,28 @@ class Minio:
         check_object_name(object_name)
         check_ssec(ssec)
 
-        headers = cast(DictType, ssec.headers() if ssec else {})
-        if extra_headers:
-            headers.update(extra_headers)
-
-        query_params = extra_query_params or {}
-        query_params.update({"versionId": version_id} if version_id else {})
+        headers = self._gen_read_headers(
+            ssec=ssec,
+            offset=offset,
+            length=length,
+            match_etag=match_etag,
+            not_match_etag=not_match_etag,
+            modified_since=modified_since,
+            unmodified_since=unmodified_since,
+            fetch_checksum=fetch_checksum,
+        )
+        query_params = HTTPQueryDict()
+        if version_id:
+            query_params["versionId"] = version_id
         response = self._execute(
-            "HEAD",
-            bucket_name,
-            object_name,
+            method="HEAD",
+            bucket_name=bucket_name,
+            object_name=object_name,
             headers=headers,
             query_params=query_params,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
         value = response.headers.get("last-modified")
@@ -2277,9 +2878,13 @@ class Minio:
 
     def remove_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
-            version_id: str | None = None
+            version_id: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """
         Remove an object.
@@ -2300,19 +2905,29 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         check_object_name(object_name)
+        query_params = HTTPQueryDict()
+        if version_id:
+            query_params["versionId"] = version_id
         self._execute(
-            "DELETE",
-            bucket_name,
-            object_name,
-            query_params={"versionId": version_id} if version_id else None,
+            method="DELETE",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            query_params=query_params,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
     def _delete_objects(
             self,
+            *,
             bucket_name: str,
             delete_object_list: list[DeleteObject],
             quiet: bool = False,
             bypass_governance_mode: bool = False,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> DeleteResult:
         """
         Delete multiple objects.
@@ -2325,17 +2940,18 @@ class Minio:
         :return: :class:`DeleteResult <DeleteResult>` object.
         """
         body = marshal(DeleteRequest(delete_object_list, quiet=quiet))
-        headers: DictType = {
-            "Content-MD5": cast(str, md5sum_hash(body)),
-        }
+        headers = HTTPHeaderDict({"Content-MD5": cast(str, md5sum_hash(body))})
         if bypass_governance_mode:
             headers["x-amz-bypass-governance-retention"] = "true"
         response = self._execute(
-            "POST",
-            bucket_name,
+            method="POST",
+            bucket_name=bucket_name,
             body=body,
             headers=headers,
-            query_params={"delete": ""},
+            query_params=HTTPQueryDict({"delete": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
         element = ET.fromstring(response.data.decode())
@@ -2347,9 +2963,13 @@ class Minio:
 
     def remove_objects(
             self,
+            *,
             bucket_name: str,
             delete_object_list: Iterable[DeleteObject],
             bypass_governance_mode: bool = False,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> Iterator[DeleteError]:
         """
         Remove multiple objects.
@@ -2408,10 +3028,13 @@ class Minio:
                 break
 
             result = self._delete_objects(
-                bucket_name,
-                objects,
+                bucket_name=bucket_name,
+                delete_object_list=objects,
                 quiet=True,
                 bypass_governance_mode=bypass_governance_mode,
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
 
             for error in result.error_list:
@@ -2423,14 +3046,15 @@ class Minio:
 
     def get_presigned_url(
             self,
+            *,
             method: str,
             bucket_name: str,
             object_name: str,
             expires: timedelta = timedelta(days=7),
-            response_headers: DictType | None = None,
-            request_date: datetime | None = None,
-            version_id: str | None = None,
-            extra_query_params: DictType | None = None,
+            request_date: Optional[datetime] = None,
+            version_id: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> str:
         """
         Get presigned URL of an object for HTTP method, expiry time and custom
@@ -2440,9 +3064,6 @@ class Minio:
         :param bucket_name: Name of the bucket.
         :param object_name: Object name in the bucket.
         :param expires: Expiry in seconds; defaults to 7 days.
-        :param response_headers: Optional response_headers argument to
-                                 specify response fields like date, size,
-                                 type of file, data about server, etc.
         :param request_date: Optional request_date argument to
                              specify a different request date. Default is
                              current date.
@@ -2466,41 +3087,43 @@ class Minio:
         if expires.total_seconds() < 1 or expires.total_seconds() > 604800:
             raise ValueError("expires must be between 1 second to 7 days")
 
-        region = self._get_region(bucket_name)
-        query_params = extra_query_params or {}
-        query_params.update({"versionId": version_id} if version_id else {})
-        query_params.update(response_headers or {})
+        region = self._get_region(bucket_name=bucket_name)
+        query_params = HTTPQueryDict()
+        if version_id:
+            query_params["versionId"] = version_id
         creds = self._provider.retrieve() if self._provider else None
         if creds and creds.session_token:
             query_params["X-Amz-Security-Token"] = creds.session_token
         url = self._base_url.build(
-            method,
-            region,
+            method=method,
+            region=region,
             bucket_name=bucket_name,
             object_name=object_name,
             query_params=query_params,
+            extra_query_params=extra_query_params,
         )
 
         if creds:
             url = presign_v4(
-                method,
-                url,
-                region,
-                creds,
-                request_date or time.utcnow(),
-                int(expires.total_seconds()),
+                method=method,
+                url=url,
+                region=region,
+                credentials=creds,
+                date=request_date or time.utcnow(),
+                expires=int(expires.total_seconds()),
             )
         return urlunsplit(url)
 
     def presigned_get_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             expires: timedelta = timedelta(days=7),
-            response_headers: DictType | None = None,
-            request_date: datetime | None = None,
-            version_id: str | None = None,
-            extra_query_params: DictType | None = None,
+            request_date: Optional[datetime] = None,
+            version_id: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> str:
         """
         Get presigned URL of an object to download its data with expiry time
@@ -2509,9 +3132,6 @@ class Minio:
         :param bucket_name: Name of the bucket.
         :param object_name: Object name in the bucket.
         :param expires: Expiry in seconds; defaults to 7 days.
-        :param response_headers: Optional response_headers argument to
-                                  specify response fields like date, size,
-                                  type of file, data about server, etc.
         :param request_date: Optional request_date argument to
                               specify a different request date. Default is
                               current date.
@@ -2533,21 +3153,24 @@ class Minio:
             print(url)
         """
         return self.get_presigned_url(
-            "GET",
-            bucket_name,
-            object_name,
-            expires,
-            response_headers=response_headers,
+            method="GET",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            expires=expires,
             request_date=request_date,
             version_id=version_id,
+            region=region,
             extra_query_params=extra_query_params,
         )
 
     def presigned_put_object(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             expires: timedelta = timedelta(days=7),
+            region: Optional[str] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> str:
         """
         Get presigned URL of an object to upload data with expiry time and
@@ -2572,7 +3195,12 @@ class Minio:
             print(url)
         """
         return self.get_presigned_url(
-            "PUT", bucket_name, object_name, expires,
+            method="PUT",
+            bucket_name=bucket_name,
+            object_name=object_name,
+            expires=expires,
+            region=region,
+            extra_query_params=extra_query_params,
         )
 
     def presigned_post_policy(self, policy: PostPolicy) -> dict[str, str]:
@@ -2603,10 +3231,17 @@ class Minio:
             policy.bucket_name, s3_check=self._base_url.is_aws_host)
         return policy.form_data(
             self._provider.retrieve(),
-            self._get_region(policy.bucket_name),
+            self._get_region(bucket_name=policy.bucket_name),
         )
 
-    def delete_bucket_replication(self, bucket_name: str):
+    def delete_bucket_replication(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ):
         """
         Delete replication configuration of a bucket.
 
@@ -2615,13 +3250,22 @@ class Minio:
         Example::
             client.delete_bucket_replication("my-bucket")
         """
-        check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        self._execute("DELETE", bucket_name, query_params={"replication": ""})
+        self._execute_delete_bucket(
+            bucket_name=bucket_name,
+            query_params=HTTPQueryDict({"replication": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
+        )
 
     def get_bucket_replication(
             self,
+            *,
             bucket_name: str,
-    ) -> ReplicationConfig | None:
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> Optional[ReplicationConfig]:
         """
         Get bucket replication configuration of a bucket.
 
@@ -2634,7 +3278,12 @@ class Minio:
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         try:
             response = self._execute(
-                "GET", bucket_name, query_params={"replication": ""},
+                method="GET",
+                bucket_name=bucket_name,
+                query_params=HTTPQueryDict({"replication": ""}),
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
             return unmarshal(ReplicationConfig, response.data.decode())
         except S3Error as exc:
@@ -2644,8 +3293,12 @@ class Minio:
 
     def set_bucket_replication(
             self,
+            *,
             bucket_name: str,
             config: ReplicationConfig,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """
         Set bucket replication configuration to a bucket.
@@ -2682,15 +3335,28 @@ class Minio:
         if not isinstance(config, ReplicationConfig):
             raise ValueError("config must be ReplicationConfig type")
         body = marshal(config)
+        headers = HTTPHeaderDict(
+            {"Content-MD5": cast(str, md5sum_hash(body))},
+        )
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=body,
-            headers={"Content-MD5": cast(str, md5sum_hash(body))},
-            query_params={"replication": ""},
+            headers=headers,
+            query_params=HTTPQueryDict({"replication": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
-    def delete_bucket_lifecycle(self, bucket_name: str):
+    def delete_bucket_lifecycle(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ):
         """
         Delete notification configuration of a bucket.
 
@@ -2699,13 +3365,22 @@ class Minio:
         Example::
             client.delete_bucket_lifecycle("my-bucket")
         """
-        check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        self._execute("DELETE", bucket_name, query_params={"lifecycle": ""})
+        self._execute_delete_bucket(
+            bucket_name=bucket_name,
+            query_params=HTTPQueryDict({"lifecycle": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
+        )
 
     def get_bucket_lifecycle(
             self,
+            *,
             bucket_name: str,
-    ) -> LifecycleConfig | None:
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> Optional[LifecycleConfig]:
         """
         Get bucket lifecycle configuration of a bucket.
 
@@ -2718,7 +3393,12 @@ class Minio:
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         try:
             response = self._execute(
-                "GET", bucket_name, query_params={"lifecycle": ""},
+                method="GET",
+                bucket_name=bucket_name,
+                query_params=HTTPQueryDict({"lifecycle": ""}),
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
             return unmarshal(LifecycleConfig, response.data.decode())
         except S3Error as exc:
@@ -2728,8 +3408,12 @@ class Minio:
 
     def set_bucket_lifecycle(
             self,
+            *,
             bucket_name: str,
             config: LifecycleConfig,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """
         Set bucket lifecycle configuration to a bucket.
@@ -2762,15 +3446,28 @@ class Minio:
         if not isinstance(config, LifecycleConfig):
             raise ValueError("config must be LifecycleConfig type")
         body = marshal(config)
+        headers = HTTPHeaderDict(
+            {"Content-MD5": cast(str, md5sum_hash(body))},
+        )
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=body,
-            headers={"Content-MD5": cast(str, md5sum_hash(body))},
-            query_params={"lifecycle": ""},
+            headers=headers,
+            query_params=HTTPQueryDict({"lifecycle": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
-    def delete_bucket_tags(self, bucket_name: str):
+    def delete_bucket_tags(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ):
         """
         Delete tags configuration of a bucket.
 
@@ -2779,10 +3476,22 @@ class Minio:
         Example::
             client.delete_bucket_tags("my-bucket")
         """
-        check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
-        self._execute("DELETE", bucket_name, query_params={"tagging": ""})
+        self._execute_delete_bucket(
+            bucket_name=bucket_name,
+            query_params=HTTPQueryDict({"tagging": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
+        )
 
-    def get_bucket_tags(self, bucket_name: str) -> Tags | None:
+    def get_bucket_tags(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> Optional[Tags]:
         """
         Get tags configuration of a bucket.
 
@@ -2795,7 +3504,12 @@ class Minio:
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         try:
             response = self._execute(
-                "GET", bucket_name, query_params={"tagging": ""},
+                method="GET",
+                bucket_name=bucket_name,
+                query_params=HTTPQueryDict({"tagging": ""}),
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
             tagging = unmarshal(Tagging, response.data.decode())
             return tagging.tags
@@ -2804,7 +3518,15 @@ class Minio:
                 raise
         return None
 
-    def set_bucket_tags(self, bucket_name: str, tags: Tags):
+    def set_bucket_tags(
+            self,
+            *,
+            bucket_name: str,
+            tags: Tags,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ):
         """
         Set tags configuration to a bucket.
 
@@ -2821,19 +3543,29 @@ class Minio:
         if not isinstance(tags, Tags):
             raise ValueError("tags must be Tags type")
         body = marshal(Tagging(tags))
+        headers = HTTPHeaderDict(
+            {"Content-MD5": cast(str, md5sum_hash(body))},
+        )
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=body,
-            headers={"Content-MD5": cast(str, md5sum_hash(body))},
-            query_params={"tagging": ""},
+            headers=headers,
+            query_params=HTTPQueryDict({"tagging": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
     def delete_object_tags(
             self,
+            *,
             bucket_name: str,
             object_name: str,
-            version_id: str | None = None,
+            version_id: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """
         Delete tags configuration of an object.
@@ -2847,21 +3579,30 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         check_object_name(object_name)
-        query_params = {"versionId": version_id} if version_id else {}
+        query_params = HTTPQueryDict()
+        if version_id:
+            query_params["versionId"] = version_id
         query_params["tagging"] = ""
         self._execute(
-            "DELETE",
-            bucket_name,
+            method="DELETE",
+            bucket_name=bucket_name,
             object_name=object_name,
-            query_params=cast(DictType, query_params),
+            query_params=query_params,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
     def get_object_tags(
             self,
+            *,
             bucket_name: str,
             object_name: str,
-            version_id: str | None = None,
-    ) -> Tags | None:
+            version_id: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> Optional[Tags]:
         """
         Get tags configuration of a object.
 
@@ -2875,14 +3616,19 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         check_object_name(object_name)
-        query_params = {"versionId": version_id} if version_id else {}
+        query_params = HTTPQueryDict()
+        if version_id:
+            query_params["versionId"] = version_id
         query_params["tagging"] = ""
         try:
             response = self._execute(
-                "GET",
-                bucket_name,
+                method="GET",
+                bucket_name=bucket_name,
                 object_name=object_name,
-                query_params=cast(DictType, query_params),
+                query_params=query_params,
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
             tagging = unmarshal(Tagging, response.data.decode())
             return tagging.tags
@@ -2893,10 +3639,14 @@ class Minio:
 
     def set_object_tags(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             tags: Tags,
-            version_id: str | None = None,
+            version_id: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """
         Set tags configuration to an object.
@@ -2917,22 +3667,34 @@ class Minio:
         if not isinstance(tags, Tags):
             raise ValueError("tags must be Tags type")
         body = marshal(Tagging(tags))
-        query_params = {"versionId": version_id} if version_id else {}
+        headers = HTTPHeaderDict(
+            {"Content-MD5": cast(str, md5sum_hash(body))},
+        )
+        query_params = HTTPQueryDict()
+        if version_id:
+            query_params["versionId"] = version_id
         query_params["tagging"] = ""
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             object_name=object_name,
             body=body,
-            headers={"Content-MD5": cast(str, md5sum_hash(body))},
-            query_params=cast(DictType, query_params),
+            headers=headers,
+            query_params=query_params,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
     def enable_object_legal_hold(
             self,
+            *,
             bucket_name: str,
             object_name: str,
-            version_id: str | None = None,
+            version_id: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """
         Enable legal hold on an object.
@@ -2947,22 +3709,34 @@ class Minio:
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         check_object_name(object_name)
         body = marshal(LegalHold(True))
-        query_params = {"versionId": version_id} if version_id else {}
+        headers = HTTPHeaderDict(
+            {"Content-MD5": cast(str, md5sum_hash(body))},
+        )
+        query_params = HTTPQueryDict()
+        if version_id:
+            query_params["versionId"] = version_id
         query_params["legal-hold"] = ""
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             object_name=object_name,
             body=body,
-            headers={"Content-MD5": cast(str, md5sum_hash(body))},
-            query_params=cast(DictType, query_params),
+            headers=headers,
+            query_params=query_params,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
     def disable_object_legal_hold(
             self,
+            *,
             bucket_name: str,
             object_name: str,
-            version_id: str | None = None,
+            version_id: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """
         Disable legal hold on an object.
@@ -2977,22 +3751,34 @@ class Minio:
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         check_object_name(object_name)
         body = marshal(LegalHold(False))
-        query_params = {"versionId": version_id} if version_id else {}
+        headers = HTTPHeaderDict(
+            {"Content-MD5": cast(str, md5sum_hash(body))},
+        )
+        query_params = HTTPQueryDict()
+        if version_id:
+            query_params["versionId"] = version_id
         query_params["legal-hold"] = ""
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             object_name=object_name,
             body=body,
-            headers={"Content-MD5": cast(str, md5sum_hash(body))},
-            query_params=cast(DictType, query_params),
+            headers=headers,
+            query_params=query_params,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
     def is_object_legal_hold_enabled(
             self,
+            *,
             bucket_name: str,
             object_name: str,
-            version_id: str | None = None,
+            version_id: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> bool:
         """
         Returns true if legal hold is enabled on an object.
@@ -3009,14 +3795,19 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         check_object_name(object_name)
-        query_params = {"versionId": version_id} if version_id else {}
+        query_params = HTTPQueryDict()
+        if version_id:
+            query_params["versionId"] = version_id
         query_params["legal-hold"] = ""
         try:
             response = self._execute(
-                "GET",
-                bucket_name,
+                method="GET",
+                bucket_name=bucket_name,
                 object_name=object_name,
-                query_params=cast(DictType, query_params),
+                query_params=query_params,
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
             legal_hold = unmarshal(LegalHold, response.data.decode())
             return legal_hold.status
@@ -3025,7 +3816,14 @@ class Minio:
                 raise
         return False
 
-    def delete_object_lock_config(self, bucket_name: str):
+    def delete_object_lock_config(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ):
         """
         Delete object-lock configuration of a bucket.
 
@@ -3035,10 +3833,21 @@ class Minio:
             client.delete_object_lock_config("my-bucket")
         """
         self.set_object_lock_config(
-            bucket_name, ObjectLockConfig(None, None, None)
+            bucket_name=bucket_name,
+            config=ObjectLockConfig(None, None, None),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
-    def get_object_lock_config(self, bucket_name: str) -> ObjectLockConfig:
+    def get_object_lock_config(
+            self,
+            *,
+            bucket_name: str,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> ObjectLockConfig:
         """
         Get object-lock configuration of a bucket.
 
@@ -3050,14 +3859,23 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         response = self._execute(
-            "GET", bucket_name, query_params={"object-lock": ""},
+            method="GET",
+            bucket_name=bucket_name,
+            query_params=HTTPQueryDict({"object-lock": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
         return unmarshal(ObjectLockConfig, response.data.decode())
 
     def set_object_lock_config(
             self,
+            *,
             bucket_name: str,
             config: ObjectLockConfig,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """
         Set object-lock configuration to a bucket.
@@ -3073,20 +3891,30 @@ class Minio:
         if not isinstance(config, ObjectLockConfig):
             raise ValueError("config must be ObjectLockConfig type")
         body = marshal(config)
+        headers = HTTPHeaderDict(
+            {"Content-MD5": cast(str, md5sum_hash(body))},
+        )
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             body=body,
-            headers={"Content-MD5": cast(str, md5sum_hash(body))},
-            query_params={"object-lock": ""},
+            headers=headers,
+            query_params=HTTPQueryDict({"object-lock": ""}),
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
     def get_object_retention(
             self,
+            *,
             bucket_name: str,
             object_name: str,
-            version_id: str | None = None,
-    ) -> Retention | None:
+            version_id: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+    ) -> Optional[Retention]:
         """
         Get retention configuration of an object.
 
@@ -3100,14 +3928,19 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         check_object_name(object_name)
-        query_params = {"versionId": version_id} if version_id else {}
+        query_params = HTTPQueryDict()
+        if version_id:
+            query_params["versionId"] = version_id
         query_params["retention"] = ""
         try:
             response = self._execute(
-                "GET",
-                bucket_name,
+                method="GET",
+                bucket_name=bucket_name,
                 object_name=object_name,
-                query_params=cast(DictType, query_params),
+                query_params=query_params,
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
             return unmarshal(Retention, response.data.decode())
         except S3Error as exc:
@@ -3117,10 +3950,14 @@ class Minio:
 
     def set_object_retention(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             config: Retention,
-            version_id: str | None = None,
+            version_id: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """
         Set retention configuration on an object.
@@ -3141,28 +3978,41 @@ class Minio:
         if not isinstance(config, Retention):
             raise ValueError("config must be Retention type")
         body = marshal(config)
-        query_params = {"versionId": version_id} if version_id else {}
+        headers = HTTPHeaderDict(
+            {"Content-MD5": cast(str, md5sum_hash(body))},
+        )
+        query_params = HTTPQueryDict()
+        if version_id:
+            query_params["versionId"] = version_id
         query_params["retention"] = ""
         self._execute(
-            "PUT",
-            bucket_name,
+            method="PUT",
+            bucket_name=bucket_name,
             object_name=object_name,
             body=body,
-            headers={"Content-MD5": cast(str, md5sum_hash(body))},
-            query_params=cast(DictType, query_params),
+            headers=headers,
+            query_params=query_params,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
     def upload_snowball_objects(
             self,
+            *,
             bucket_name: str,
-            object_list: Iterable[SnowballObject],
-            metadata: DictType | None = None,
-            sse: Sse | None = None,
-            tags: Tags | None = None,
-            retention: Retention | None = None,
+            objects: Iterable[SnowballObject],
+            headers: Optional[HTTPHeaderDict] = None,
+            user_metadata: Optional[HTTPHeaderDict] = None,
+            sse: Optional[Sse] = None,
+            tags: Optional[Tags] = None,
+            retention: Optional[Retention] = None,
             legal_hold: bool = False,
-            staging_filename: str | None = None,
+            staging_filename: Optional[str] = None,
             compression: bool = False,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> ObjectWriteResult:
         """
         Uploads multiple objects in a single put call. It is done by creating
@@ -3172,7 +4022,7 @@ class Minio:
         :param bucket_name: Name of the bucket.
         :param object_list: An iterable containing
             :class:`SnowballObject <SnowballObject>` object.
-        :param metadata: Any additional metadata to be uploaded along
+        :param user_metadata: Any additional metadata to be uploaded along
             with your PUT request.
         :param sse: Server-side encryption.
         :param tags: :class:`Tags` for the object.
@@ -3204,17 +4054,17 @@ class Minio:
         object_name = f"snowball.{random()}.tar"
 
         # turn list like objects into an iterator.
-        object_list = itertools.chain(object_list)
+        objects = itertools.chain(objects)
 
-        metadata = metadata or {}
-        metadata["X-Amz-Meta-Snowball-Auto-Extract"] = "true"
+        headers = HTTPHeaderDict() if headers is None else headers.copy()
+        headers["X-Amz-Meta-Snowball-Auto-Extract"] = "true"
 
         name = staging_filename
         fileobj = None if name else BytesIO()
         with tarfile.open(
                 name=name, mode="w:gz" if compression else "w", fileobj=fileobj,
         ) as tar:
-            for obj in object_list:
+            for obj in objects:
                 if obj.filename:
                     tar.add(obj.filename, obj.object_name)
                 else:
@@ -3235,46 +4085,56 @@ class Minio:
 
         if name:
             return self.fput_object(
-                bucket_name,
-                object_name,
-                cast(str, staging_filename),
-                metadata=metadata,
+                bucket_name=bucket_name,
+                object_name=object_name,
+                file_path=cast(str, staging_filename),
+                headers=headers,
+                user_metadata=user_metadata,
                 sse=sse,
                 tags=tags,
                 retention=retention,
                 legal_hold=legal_hold,
                 part_size=part_size,
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
         return self.put_object(
-            bucket_name,
-            object_name,
-            cast(BinaryIO, fileobj),
-            length,
-            metadata=cast(Union[DictType, None], metadata),
+            bucket_name=bucket_name,
+            object_name=object_name,
+            data=cast(BinaryIO, fileobj),
+            length=length,
+            headers=headers,
+            user_metadata=user_metadata,
             sse=sse,
             tags=tags,
             retention=retention,
             legal_hold=legal_hold,
             part_size=part_size,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
 
     def _list_objects(
             self,
+            *,
             bucket_name: str,
-            continuation_token: str | None = None,  # listV2 only
-            delimiter: str | None = None,  # all
-            encoding_type: str | None = None,  # all
-            fetch_owner: bool | None = None,  # listV2 only
+            continuation_token: Optional[str] = None,  # listV2 only
+            delimiter: Optional[str] = None,  # all
+            encoding_type: Optional[str] = None,  # all
+            fetch_owner: Optional[bool] = None,  # listV2 only
             include_user_meta: bool = False,  # MinIO specific listV2.
-            max_keys: int | None = None,  # all
-            prefix: str | None = None,  # all
-            start_after: str | None = None,
+            max_keys: Optional[int] = None,  # all
+            prefix: Optional[str] = None,  # all
+            start_after: Optional[str] = None,
             # all: v1:marker, versioned:key_marker
-            version_id_marker: str | None = None,  # versioned
+            version_id_marker: Optional[str] = None,  # versioned
             use_api_v1: bool = False,
             include_version: bool = False,
-            extra_headers: DictType | None = None,
-            extra_query_params: DictType | None = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> Iterator[Object]:
         """
         List objects optionally including versions.
@@ -3291,39 +4151,40 @@ class Minio:
 
         is_truncated = True
         while is_truncated:
-            query = extra_query_params or {}
+            query_params = HTTPQueryDict()
             if include_version:
-                query["versions"] = ""
+                query_params["versions"] = ""
             elif not use_api_v1:
-                query["list-type"] = "2"
-
+                query_params["list-type"] = "2"
             if not include_version and not use_api_v1:
                 if continuation_token:
-                    query["continuation-token"] = continuation_token
+                    query_params["continuation-token"] = continuation_token
                 if fetch_owner:
-                    query["fetch-owner"] = "true"
+                    query_params["fetch-owner"] = "true"
                 if include_user_meta:
-                    query["metadata"] = "true"
-            query["delimiter"] = delimiter or ""
+                    query_params["metadata"] = "true"
+            query_params["delimiter"] = delimiter or ""
             if encoding_type:
-                query["encoding-type"] = encoding_type
-            query["max-keys"] = str(max_keys or 1000)
-            query["prefix"] = prefix or ""
+                query_params["encoding-type"] = encoding_type
+            query_params["max-keys"] = str(max_keys or 1000)
+            query_params["prefix"] = prefix or ""
             if start_after:
                 if include_version:
-                    query["key-marker"] = start_after
+                    query_params["key-marker"] = start_after
                 elif use_api_v1:
-                    query["marker"] = start_after
+                    query_params["marker"] = start_after
                 else:
-                    query["start-after"] = start_after
+                    query_params["start-after"] = start_after
             if version_id_marker:
-                query["version-id-marker"] = version_id_marker
+                query_params["version-id-marker"] = version_id_marker
 
             response = self._execute(
-                "GET",
-                bucket_name,
-                query_params=cast(DictType, query),
-                headers=extra_headers,
+                method="GET",
+                bucket_name=bucket_name,
+                query_params=query_params,
+                region=region,
+                extra_headers=extra_headers,
+                extra_query_params=extra_query_params,
             )
 
             objects, is_truncated, start_after, version_id_marker = (
@@ -3339,15 +4200,17 @@ class Minio:
 
     def _list_multipart_uploads(
             self,
+            *,
             bucket_name: str,
-            delimiter: str | None = None,
-            encoding_type: str | None = None,
-            key_marker: str | None = None,
-            max_uploads: int | None = None,
-            prefix: str | None = None,
-            upload_id_marker: str | None = None,
-            extra_headers: DictType | None = None,
-            extra_query_params: DictType | None = None,
+            delimiter: Optional[str] = None,
+            encoding_type: Optional[str] = None,
+            key_marker: Optional[str] = None,
+            max_uploads: Optional[int] = None,
+            prefix: Optional[str] = None,
+            upload_id_marker: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> ListMultipartUploadsResult:
         """
         Execute ListMultipartUploads S3 API.
@@ -3367,8 +4230,7 @@ class Minio:
                 object
         """
 
-        query_params = extra_query_params or {}
-        query_params.update(
+        query_params = HTTPQueryDict(
             {
                 "uploads": "",
                 "delimiter": delimiter or "",
@@ -3385,22 +4247,26 @@ class Minio:
             query_params["upload-id-marker"] = upload_id_marker
 
         response = self._execute(
-            "GET",
-            bucket_name,
-            query_params=cast(DictType, query_params),
-            headers=cast(Union[DictType, None], extra_headers),
+            method="GET",
+            bucket_name=bucket_name,
+            query_params=query_params,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
         return ListMultipartUploadsResult(response)
 
     def _list_parts(
             self,
+            *,
             bucket_name: str,
             object_name: str,
             upload_id: str,
-            max_parts: int | None = None,
-            part_number_marker: str | None = None,
-            extra_headers: DictType | None = None,
-            extra_query_params: DictType | None = None,
+            max_parts: Optional[int] = None,
+            part_number_marker: Optional[str] = None,
+            region: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> ListPartsResult:
         """
         Execute ListParts S3 API.
@@ -3416,8 +4282,7 @@ class Minio:
         :return: :class:`ListPartsResult <ListPartsResult>` object
         """
 
-        query_params = extra_query_params or {}
-        query_params.update(
+        query_params = HTTPQueryDict(
             {
                 "uploadId": upload_id,
                 "max-parts": str(max_parts or 1000),
@@ -3427,10 +4292,12 @@ class Minio:
             query_params["part-number-marker"] = part_number_marker
 
         response = self._execute(
-            "GET",
-            bucket_name,
+            method="GET",
+            bucket_name=bucket_name,
             object_name=object_name,
-            query_params=cast(DictType, query_params),
-            headers=cast(Union[DictType, None], extra_headers),
+            query_params=query_params,
+            region=region,
+            extra_headers=extra_headers,
+            extra_query_params=extra_query_params,
         )
         return ListPartsResult(response)

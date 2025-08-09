@@ -21,29 +21,41 @@ from minio import Minio
 
 class PutObjectTest(TestCase):
     def test_object_is_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(
-            TypeError,
-            client.put_object, 'hello', 1234, 1, iter([1, 2, 3])
-        )
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(TypeError):
+            client.put_object(
+                bucket_name='hello',
+                object_name=1234,
+                data=1,
+                length=iter([1, 2, 3]),
+            )
 
     def test_object_is_not_empty_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(
-            ValueError,
-            client.put_object, 'hello', ' \t \n ', 1, iter([1, 2, 3])
-        )
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(ValueError):
+            client.put_object(
+                bucket_name='hello',
+                object_name=' \t \n ',
+                data=1,
+                length=iter([1, 2, 3]),
+            )
 
     def test_length_is_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(
-            TypeError,
-            client.put_object, 'hello', 1234, '1', iter([1, 2, 3])
-        )
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(TypeError):
+            client.put_object(
+                bucket_name='hello',
+                object_name=1234,
+                data='1',
+                length=iter([1, 2, 3]),
+            )
 
     def test_length_is_not_empty_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(
-            ValueError,
-            client.put_object, 'hello', ' \t \n ', -1, iter([1, 2, 3])
-        )
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(ValueError):
+            client.put_object(
+                bucket_name='hello',
+                object_name=' \t \n ',
+                data=-1,
+                length=iter([1, 2, 3]),
+            )

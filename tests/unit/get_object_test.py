@@ -27,12 +27,14 @@ from .minio_mocks import MockConnection, MockResponse
 
 class GetObjectTest(TestCase):
     def test_object_is_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(TypeError, client.get_object, 'hello', 1234)
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(TypeError):
+            client.get_object(bucket_name='hello', object_name=1234)
 
     def test_object_is_not_empty_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(ValueError, client.get_object, 'hello', ' \t \n ')
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(ValueError):
+            client.get_object(bucket_name='hello', object_name=' \t \n ')
 
     @mock.patch('urllib3.PoolManager')
     def test_get_object_throws_fail(self, mock_connection):
@@ -49,5 +51,6 @@ class GetObjectTest(TestCase):
                          response_headers={"Content-Type": "application/xml"},
                          content=error_xml.encode())
         )
-        client = Minio('localhost:9000')
-        self.assertRaises(S3Error, client.get_object, 'hello', 'key')
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(S3Error):
+            client.get_object(bucket_name='hello', object_name='key')
