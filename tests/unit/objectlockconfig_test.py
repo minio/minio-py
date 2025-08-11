@@ -40,4 +40,4 @@ class ObjectLockConfigTest(TestCase):
         )
         xml.marshal(config)
         self.assertEqual(config.mode, COMPLIANCE)
-        self.assertEqual(config.duration, (3, YEARS))
+        self.assertEqual((config.duration, config.duration_unit), (3, YEARS))
