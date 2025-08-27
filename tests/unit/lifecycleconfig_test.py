@@ -24,15 +24,15 @@ from minio.lifecycleconfig import Expiration, LifecycleConfig, Rule, Transition
 class LifecycleConfigTest(TestCase):
     def test_config(self):
         config = LifecycleConfig(
-            [
+            rules=[
                 Rule(
-                    ENABLED,
+                    status=ENABLED,
                     rule_filter=Filter(prefix="documents/"),
                     rule_id="rule1",
                     transition=Transition(days=30, storage_class="GLACIER"),
                 ),
                 Rule(
-                    ENABLED,
+                    status=ENABLED,
                     rule_filter=Filter(prefix="logs/"),
                     rule_id="rule2",
                     expiration=Expiration(days=365),
@@ -42,9 +42,9 @@ class LifecycleConfigTest(TestCase):
         xml.marshal(config)
 
         config = LifecycleConfig(
-            [
+            rules=[
                 Rule(
-                    ENABLED,
+                    status=ENABLED,
                     rule_filter=Filter(prefix=""),
                     rule_id="rule",
                     expiration=Expiration(days=365),
