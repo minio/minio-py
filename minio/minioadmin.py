@@ -502,7 +502,7 @@ class MinioAdmin:
         )
         return response.data.decode()
 
-    def policy_list(self) -> str:
+    def policy_list(self) -> dict[str, dict[str, Any]]:
         """List policies."""
         response = self._url_open(
             method="GET",
