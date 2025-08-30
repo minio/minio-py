@@ -25,9 +25,10 @@ from __future__ import absolute_import, annotations
 import base64
 import json
 from collections import OrderedDict
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, List, Tuple, Type, TypeVar, cast
+from typing import Any, List, Optional, Tuple, Type, TypeVar, Union, cast
 from urllib.parse import unquote_plus
 from xml.etree import ElementTree as ET
 
@@ -52,53 +53,20 @@ except ImportError:
     JSONDecodeError = ValueError
 
 
+@dataclass(frozen=True)
 class Bucket:
     """Bucket information."""
-
-    def __init__(self, name: str, creation_date: datetime | None):
-        self._name = name
-        self._creation_date = creation_date
-
-    @property
-    def name(self) -> str:
-        """Get name."""
-        return self._name
-
-    @property
-    def creation_date(self) -> datetime | None:
-        """Get creation date."""
-        return self._creation_date
-
-    def __repr__(self):
-        return f"{type(self).__name__}('{self.name}')"
-
-    def __str__(self):
-        return self.name
-
-    def __eq__(self, other):
-        if isinstance(other, Bucket):
-            return self.name == other.name
-        if isinstance(other, str):
-            return self.name == other
-        return NotImplemented
-
-    def __hash__(self):
-        return hash(self.name)
+    name: str
+    creation_date: Optional[datetime]
 
 
 A = TypeVar("A", bound="ListAllMyBucketsResult")
 
 
+@dataclass(frozen=True)
 class ListAllMyBucketsResult:
     """LissBuckets API result."""
-
-    def __init__(self, buckets: list[Bucket]):
-        self._buckets = buckets
-
-    @property
-    def buckets(self):
-        """Get buckets."""
-        return self._buckets
+    buckets: list[Bucket]
 
     @classmethod
     def fromxml(cls: Type[A], element: ET.Element) -> A:
@@ -119,117 +87,31 @@ class ListAllMyBucketsResult:
 B = TypeVar("B", bound="Object")
 
 
+@dataclass(frozen=True)
 class Object:
     """Object information."""
+    bucket_name: str
+    object_name: Optional[str]
+    last_modified: Optional[datetime] = None
+    etag: Optional[str] = None
+    size: Optional[int] = None
+    metadata: Optional[Union[dict[str, str], HTTPHeaderDict]] = None
+    version_id: Optional[str] = None
+    is_latest: Optional[str] = None
+    storage_class: Optional[str] = None
+    owner_id: Optional[str] = None
+    owner_name: Optional[str] = None
+    content_type: Optional[str] = None
+    is_delete_marker: bool = False
+    tags: Optional[Tags] = None
+    is_dir: bool = field(default=False, init=False)
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __post_init__(self):
+        object.__setattr__(
             self,
-            bucket_name: str,
-            object_name: str | None,
-            last_modified: datetime | None = None,
-            etag: str | None = None,
-            size: int | None = None,
-            metadata: dict[str, str] | HTTPHeaderDict | None = None,
-            version_id: str | None = None,
-            is_latest: str | None = None,
-            storage_class: str | None = None,
-            owner_id: str | None = None,
-            owner_name: str | None = None,
-            content_type: str | None = None,
-            is_delete_marker: bool = False,
-            tags: Tags | None = None,
-    ):
-        self._bucket_name = bucket_name
-        self._object_name = object_name
-        self._last_modified = last_modified
-        self._etag = etag
-        self._size = size
-        self._metadata = metadata
-        self._version_id = version_id
-        self._is_latest = is_latest
-        self._storage_class = storage_class
-        self._owner_id = owner_id
-        self._owner_name = owner_name
-        self._content_type = content_type
-        self._is_delete_marker = is_delete_marker
-        self._tags = tags
-
-    @property
-    def bucket_name(self) -> str:
-        """Get bucket name."""
-        return self._bucket_name
-
-    @property
-    def object_name(self) -> str | None:
-        """Get object name."""
-        return self._object_name
-
-    @property
-    def is_dir(self) -> bool:
-        """Get whether this key is a directory."""
-        return (
-            self._object_name is not None and self._object_name.endswith("/")
+            "is_dir",
+            bool(self.object_name and self.object_name.endswith("/")),
         )
-
-    @property
-    def last_modified(self) -> datetime | None:
-        """Get last modified time."""
-        return self._last_modified
-
-    @property
-    def etag(self) -> str | None:
-        """Get etag."""
-        return self._etag
-
-    @property
-    def size(self) -> int | None:
-        """Get size."""
-        return self._size
-
-    @property
-    def metadata(self) -> dict[str, str] | HTTPHeaderDict | None:
-        """Get metadata."""
-        return self._metadata
-
-    @property
-    def version_id(self) -> str | None:
-        """Get version ID."""
-        return self._version_id
-
-    @property
-    def is_latest(self) -> str | None:
-        """Get is-latest flag."""
-        return self._is_latest
-
-    @property
-    def storage_class(self) -> str | None:
-        """Get storage class."""
-        return self._storage_class
-
-    @property
-    def owner_id(self) -> str | None:
-        """Get owner ID."""
-        return self._owner_id
-
-    @property
-    def owner_name(self) -> str | None:
-        """Get owner name."""
-        return self._owner_name
-
-    @property
-    def is_delete_marker(self) -> bool:
-        """Get whether this key is a delete marker."""
-        return self._is_delete_marker
-
-    @property
-    def content_type(self) -> str | None:
-        """Get content type."""
-        return self._content_type
-
-    @property
-    def tags(self) -> Tags | None:
-        """Get the tags"""
-        return self._tags
 
     @classmethod
     def fromxml(
@@ -237,7 +119,7 @@ class Object:
             element: ET.Element,
             bucket_name: str,
             is_delete_marker: bool = False,
-            encoding_type: str | None = None,
+            encoding_type: Optional[str] = None,
     ) -> B:
         """Create new object with values from XML element."""
         tag = findtext(element, "LastModified")
@@ -266,7 +148,7 @@ class Object:
             object_name = unquote_plus(object_name)
 
         tags_text = findtext(element, "UserTags")
-        tags: Tags | None = None
+        tags: Optional[Tags] = None
         if tags_text:
             tags = Tags.new_object_tags()
             tags.update(
@@ -277,8 +159,8 @@ class Object:
             )
 
         return cls(
-            bucket_name,
-            object_name,
+            bucket_name=bucket_name,
+            object_name=object_name,
             last_modified=last_modified,
             etag=etag,
             size=size,
@@ -295,8 +177,8 @@ class Object:
 
 def parse_list_objects(
         response: BaseHTTPResponse,
-        bucket_name: str | None = None,
-) -> tuple[list[Object], bool, str | None, str | None]:
+        bucket_name: Optional[str] = None,
+) -> tuple[list[Object], bool, Optional[str], Optional[str]]:
     """Parse ListObjects/ListObjectsV2/ListObjectVersions response."""
     element = ET.fromstring(response.data.decode())
     bucket_name = cast(str, findtext(element, "Name", True))
@@ -346,88 +228,47 @@ def parse_list_objects(
     return objects, is_truncated, continuation_token, version_id_marker
 
 
+@dataclass(frozen=True)
 class CompleteMultipartUploadResult:
     """CompleteMultipartUpload API result."""
 
+    http_headers: HTTPHeaderDict
+    bucket_name: Optional[str] = None
+    object_name: Optional[str] = None
+    location: Optional[str] = None
+    etag: Optional[str] = None
+    version_id: Optional[str] = None
+
     def __init__(self, response: BaseHTTPResponse):
+        object.__setattr__(self, "http_headers", response.headers)
         element = ET.fromstring(response.data.decode())
-        self._bucket_name = findtext(element, "Bucket")
-        self._object_name = findtext(element, "Key")
-        self._location = findtext(element, "Location")
-        self._etag = findtext(element, "ETag")
-        if self._etag:
-            self._etag = self._etag.replace('"', "")
-        self._version_id = response.headers.get("x-amz-version-id")
-        self._http_headers = response.headers
-
-    @property
-    def bucket_name(self) -> str | None:
-        """Get bucket name."""
-        return self._bucket_name
-
-    @property
-    def object_name(self) -> str | None:
-        """Get object name."""
-        return self._object_name
-
-    @property
-    def location(self) -> str | None:
-        """Get location."""
-        return self._location
-
-    @property
-    def etag(self) -> str | None:
-        """Get etag."""
-        return self._etag
-
-    @property
-    def version_id(self) -> str | None:
-        """Get version ID."""
-        return self._version_id
-
-    @property
-    def http_headers(self) -> HTTPHeaderDict:
-        """Get HTTP headers."""
-        return self._http_headers
+        object.__setattr__(self, "bucket_name", findtext(element, "Bucket"))
+        object.__setattr__(self, "object_name", findtext(element, "Key"))
+        object.__setattr__(self, "location", findtext(element, "Location"))
+        etag = findtext(element, "ETag")
+        if self.etag:
+            object.__setattr__(
+                self,
+                "etag",
+                cast(str, etag).replace('"', ""),
+            )
+        object.__setattr__(
+            self,
+            "version_id",
+            response.headers.get("x-amz-version-id"),
+        )
 
 
 C = TypeVar("C", bound="Part")
 
 
+@dataclass(frozen=True)
 class Part:
     """Part information of a multipart upload."""
-
-    def __init__(
-            self,
-            part_number: int,
-            etag: str,
-            last_modified: datetime | None = None,
-            size: int | None = None,
-    ):
-        self._part_number = part_number
-        self._etag = etag
-        self._last_modified = last_modified
-        self._size = size
-
-    @property
-    def part_number(self) -> int:
-        """Get part number. """
-        return self._part_number
-
-    @property
-    def etag(self) -> str:
-        """Get etag."""
-        return self._etag
-
-    @property
-    def last_modified(self) -> datetime | None:
-        """Get last-modified."""
-        return self._last_modified
-
-    @property
-    def size(self) -> int | None:
-        """Get size."""
-        return self._size
+    part_number: int
+    etag: str
+    last_modified: Optional[datetime] = None
+    size: Optional[int] = None
 
     @classmethod
     def fromxml(cls: Type[C], element: ET.Element) -> C:
@@ -439,254 +280,212 @@ class Part:
         last_modified = None if tag is None else from_iso8601utc(tag)
         size = findtext(element, "Size")
         return cls(
-            part_number, etag, last_modified, int(size) if size else None,
+            part_number=part_number,
+            etag=etag,
+            last_modified=last_modified,
+            size=int(size) if size else None,
         )
 
 
+@dataclass(frozen=True)
 class ListPartsResult:
     """ListParts API result."""
 
+    bucket_name: Optional[str] = None
+    object_name: Optional[str] = None
+    initiator_id: Optional[str] = None
+    initiator_name: Optional[str] = None
+    owner_id: Optional[str] = None
+    owner_name: Optional[str] = None
+    storage_class: Optional[str] = None
+    part_number_marker: Optional[str] = None
+    next_part_number_marker: Optional[str] = None
+    max_parts: Optional[int] = None
+    is_truncated: bool = False
+    parts: list[Part] = field(default_factory=list)
+
     def __init__(self, response: BaseHTTPResponse):
         element = ET.fromstring(response.data.decode())
-        self._bucket_name = findtext(element, "Bucket")
-        self._object_name = findtext(element, "Key")
+        object.__setattr__(self, "bucket_name", findtext(element, "Bucket"))
+        object.__setattr__(self, "object_name", findtext(element, "Key"))
         tag = find(element, "Initiator")
-        self._initiator_id = (
-            None if tag is None else findtext(tag, "ID")
+        object.__setattr__(
+            self,
+            "initiator_id",
+            None if tag is None else findtext(tag, "ID"),
         )
-        self._initiator_name = (
-            None if tag is None else findtext(tag, "DisplayName")
+        object.__setattr__(
+            self,
+            "initiator_name",
+            None if tag is None else findtext(tag, "DisplayName"),
         )
         tag = find(element, "Owner")
-        self._owner_id = (
+        object.__setattr__(
+            self,
+            "owner_id",
             None if tag is None else findtext(tag, "ID")
         )
-        self._owner_name = (
-            None if tag is None else findtext(tag, "DisplayName")
+        object.__setattr__(
+            self,
+            "owner_name",
+            None if tag is None else findtext(tag, "DisplayName"),
         )
-        self._storage_class = findtext(element, "StorageClass")
-        self._part_number_marker = findtext(element, "PartNumberMarker")
-        next_part_number_marker = findtext(element, "NextPartNumberMarker")
-        self._next_part_number_marker = (
-            int(next_part_number_marker) if next_part_number_marker else None
+        object.__setattr__(
+            self,
+            "storage_class",
+            findtext(element, "StorageClass"),
+        )
+        object.__setattr__(
+            self,
+            "part_number_marker",
+            findtext(element, "PartNumberMarker"),
+        )
+        object.__setattr__(
+            self,
+            "next_part_number_marker",
+            findtext(element, "NextPartNumberMarker"),
         )
         max_parts = findtext(element, "MaxParts")
-        self._max_parts = int(max_parts) if max_parts else None
-        is_truncated = findtext(element, "IsTruncated")
-        self._is_truncated = (
-            is_truncated is not None and is_truncated.lower() == "true"
+        object.__setattr__(
+            self,
+            "max_parts",
+            int(max_parts) if max_parts else None,
         )
-        self._parts = [Part.fromxml(tag) for tag in findall(element, "Part")]
-
-    @property
-    def bucket_name(self) -> str | None:
-        """Get bucket name."""
-        return self._bucket_name
-
-    @property
-    def object_name(self) -> str | None:
-        """Get object name."""
-        return self._object_name
-
-    @property
-    def initiator_id(self) -> str | None:
-        """Get initiator ID."""
-        return self._initiator_id
-
-    @property
-    def initator_name(self) -> str | None:
-        """Get initiator name."""
-        return self._initiator_name
-
-    @property
-    def owner_id(self) -> str | None:
-        """Get owner ID."""
-        return self._owner_id
-
-    @property
-    def owner_name(self) -> str | None:
-        """Get owner name."""
-        return self._owner_name
-
-    @property
-    def storage_class(self) -> str | None:
-        """Get storage class."""
-        return self._storage_class
-
-    @property
-    def part_number_marker(self) -> str | None:
-        """Get part number marker."""
-        return self._part_number_marker
-
-    @property
-    def next_part_number_marker(self) -> int | None:
-        """Get next part number marker."""
-        return self._next_part_number_marker
-
-    @property
-    def max_parts(self) -> int | None:
-        """Get max parts."""
-        return self._max_parts
-
-    @property
-    def is_truncated(self) -> bool:
-        """Get is-truncated flag."""
-        return self._is_truncated
-
-    @property
-    def parts(self) -> list[Part]:
-        """Get parts."""
-        return self._parts
+        is_truncated = findtext(element, "IsTruncated")
+        object.__setattr__(
+            self,
+            "is_truncated",
+            is_truncated is not None and is_truncated.lower() == "true",
+        )
+        object.__setattr__(
+            self,
+            "parts",
+            [Part.fromxml(tag) for tag in findall(element, "Part")],
+        )
 
 
+@dataclass(frozen=True)
 class Upload:
     """ Upload information of a multipart upload."""
 
-    def __init__(self, element: ET.Element, encoding_type: str | None = None):
-        self._encoding_type = encoding_type
+    object_name: str
+    encoding_type: Optional[str] = None
+    upload_id: Optional[str] = None
+    initiator_id: Optional[str] = None
+    initiator_name: Optional[str] = None
+    owner_id: Optional[str] = None
+    owner_name: Optional[str] = None
+    storage_class: Optional[str] = None
+    initiated_time: Optional[datetime] = None
+
+    def __init__(
+            self, element: ET.Element, encoding_type: Optional[str] = None,
+    ):
         object_name = cast(str, findtext(element, "Key", True))
-        self._object_name = (
-            unquote_plus(object_name) if self._encoding_type == "url"
-            else object_name
+        object.__setattr__(
+            self,
+            "object_name",
+            unquote_plus(object_name) if encoding_type == "url"
+            else object_name,
         )
-        self._upload_id = findtext(element, "UploadId")
+        object.__setattr__(self, "encoding_type", encoding_type)
+        object.__setattr__(self, "upload_id", findtext(element, "UploadId"))
         tag = find(element, "Initiator")
-        self._initiator_id = (
-            None if tag is None else findtext(tag, "ID")
+        object.__setattr__(
+            self,
+            "initiator_id",
+            None if tag is None else findtext(tag, "ID"),
         )
-        self._initiator_name = (
-            None if tag is None else findtext(tag, "DisplayName")
+        object.__setattr__(
+            self,
+            "initiator_name",
+            None if tag is None else findtext(tag, "DisplayName"),
         )
         tag = find(element, "Owner")
-        self._owner_id = (
-            None if tag is None else findtext(tag, "ID")
+        object.__setattr__(
+            self,
+            "owner_id",
+            None if tag is None else findtext(tag, "ID"),
         )
-        self._owner_name = (
-            None if tag is None else findtext(tag, "DisplayName")
+        object.__setattr__(
+            self,
+            "owner_name",
+            None if tag is None else findtext(tag, "DisplayName"),
         )
-        self._storage_class = findtext(element, "StorageClass")
+        object.__setattr__(
+            self,
+            "storage_class",
+            findtext(element, "StorageClass"),
+        )
         initiated_time = findtext(element, "Initiated")
-        self._initiated_time = (
-            from_iso8601utc(initiated_time) if initiated_time else None
+        object.__setattr__(
+            self,
+            "initiated_time",
+            from_iso8601utc(initiated_time) if initiated_time else None,
         )
 
-    @property
-    def object_name(self) -> str:
-        """Get object name."""
-        return self._object_name
 
-    @property
-    def initiator_id(self) -> str | None:
-        """Get initiator ID."""
-        return self._initiator_id
-
-    @property
-    def initator_name(self) -> str | None:
-        """Get initiator name."""
-        return self._initiator_name
-
-    @property
-    def owner_id(self) -> str | None:
-        """Get owner ID."""
-        return self._owner_id
-
-    @property
-    def owner_name(self) -> str | None:
-        """Get owner name."""
-        return self._owner_name
-
-    @property
-    def storage_class(self) -> str | None:
-        """Get storage class."""
-        return self._storage_class
-
-    @property
-    def upload_id(self) -> str | None:
-        """Get upload ID."""
-        return self._upload_id
-
-    @property
-    def initiated_time(self) -> datetime | None:
-        """Get initiated time."""
-        return self._initiated_time
-
-
+@dataclass(frozen=True)
 class ListMultipartUploadsResult:
     """ListMultipartUploads API result."""
 
+    encoding_type: Optional[str] = None
+    bucket_name: Optional[str] = None
+    key_marker: Optional[str] = None
+    upload_id_marker: Optional[str] = None
+    next_key_marker: Optional[str] = None
+    next_upload_id_marker: Optional[str] = None
+    max_uploads: Optional[int] = None
+    is_truncated: bool = False
+    uploads: list[Upload] = field(default_factory=list)
+
     def __init__(self, response: BaseHTTPResponse):
         element = ET.fromstring(response.data.decode())
-        self._encoding_type = findtext(element, "EncodingType")
-        self._bucket_name = findtext(element, "Bucket")
-        self._key_marker = findtext(element, "KeyMarker")
-        if self._key_marker:
-            self._key_marker = (
-                unquote_plus(self._key_marker) if self._encoding_type == "url"
-                else self._key_marker
-            )
-        self._upload_id_marker = findtext(element, "UploadIdMarker")
-        self._next_key_marker = findtext(element, "NextKeyMarker")
-        if self._next_key_marker:
-            self._next_key_marker = (
-                unquote_plus(self._next_key_marker)
-                if self._encoding_type == "url" else self._next_key_marker
-            )
-        self._next_upload_id_marker = findtext(element, "NextUploadIdMarker")
-        max_uploads = findtext(element, "MaxUploads")
-        self._max_uploads = int(max_uploads) if max_uploads else None
-        is_truncated = findtext(element, "IsTruncated")
-        self._is_truncated = (
-            is_truncated is not None and is_truncated.lower() == "true"
+        encoding_type = findtext(element, "EncodingType")
+        object.__setattr__(self, "encoding_type", encoding_type)
+        object.__setattr__(
+            self,
+            "bucket_name",
+            findtext(element, "Bucket"),
         )
-        self._uploads = [
-            Upload(tag, self._encoding_type)
-            for tag in findall(element, "Upload")
-        ]
-
-    @property
-    def bucket_name(self) -> str | None:
-        """Get bucket name."""
-        return self._bucket_name
-
-    @property
-    def key_marker(self) -> str | None:
-        """Get key marker."""
-        return self._key_marker
-
-    @property
-    def upload_id_marker(self) -> str | None:
-        """Get upload ID marker."""
-        return self._upload_id_marker
-
-    @property
-    def next_key_marker(self) -> str | None:
-        """Get next key marker."""
-        return self._next_key_marker
-
-    @property
-    def next_upload_id_marker(self) -> str | None:
-        """Get next upload ID marker."""
-        return self._next_upload_id_marker
-
-    @property
-    def max_uploads(self) -> int | None:
-        """Get max uploads."""
-        return self._max_uploads
-
-    @property
-    def is_truncated(self) -> bool:
-        """Get is-truncated flag."""
-        return self._is_truncated
-
-    @property
-    def encoding_type(self) -> str | None:
-        """Get encoding type."""
-        return self._encoding_type
-
-    @property
-    def uploads(self) -> list[Upload]:
-        """Get uploads."""
-        return self._uploads
+        value = findtext(element, "KeyMarker")
+        if value is not None and encoding_type == "url":
+            value = unquote_plus(value)
+        object.__setattr__(self, "key_marker", value)
+        object.__setattr__(
+            self,
+            "upload_id_marker",
+            findtext(element, "UploadIdMarker"),
+        )
+        value = findtext(element, "NextKeyMarker")
+        if value is not None and encoding_type == "url":
+            value = unquote_plus(value)
+        object.__setattr__(self, "next_key_marker", value)
+        object.__setattr__(
+            self,
+            "self._next_upload_id_marker",
+            findtext(element, "NextUploadIdMarker"),
+        )
+        max_uploads = findtext(element, "MaxUploads")
+        object.__setattr__(
+            self,
+            "max_uploads",
+            int(max_uploads) if max_uploads else None,
+        )
+        is_truncated = findtext(element, "IsTruncated")
+        object.__setattr__(
+            self,
+            "is_truncated",
+            is_truncated is not None and is_truncated.lower() == "true",
+        )
+        object.__setattr__(
+            self,
+            "uploads",
+            [
+                Upload(tag, encoding_type)
+                for tag in findall(element, "Upload")
+            ],
+        )
 
 
 _RESERVED_ELEMENTS = (
@@ -724,8 +523,8 @@ class PostPolicy:
         self._conditions: OrderedDict = OrderedDict()
         self._conditions[_EQ] = OrderedDict()
         self._conditions[_STARTS_WITH] = OrderedDict()
-        self._lower_limit: int | None = None
-        self._upper_limit: int | None = None
+        self._lower_limit: Optional[int] = None
+        self._upper_limit: Optional[int] = None
 
     def add_equals_condition(self, element: str, value: str):
         """Add equals condition of an element and value."""
@@ -858,7 +657,7 @@ class PostPolicy:
 
 def parse_copy_object(
         response: BaseHTTPResponse,
-) -> tuple[str, datetime | None]:
+) -> tuple[str, Optional[datetime]]:
     """Parse CopyObject/UploadPartCopy response."""
     element = ET.fromstring(response.data.decode())
     etag = cast(str, findtext(element, "ETag", True)).replace('"', "")
@@ -913,31 +712,25 @@ class EventIterable:
         self._close_response()
 
 
+@dataclass(frozen=True)
 class PeerSite:
     """Represents a cluster/site to be added to the set of replicated sites."""
-
-    def __init__(
-            self,
-            name: str,
-            endpoint: str,
-            access_key: str,
-            secret_key: str,
-    ):
-        self._name = name
-        self._endpoint = endpoint
-        self._access_key = access_key
-        self._secret_key = secret_key
+    name: str
+    endpoint: str
+    access_key: str
+    secret_key: str
 
     def to_dict(self) -> dict[str, str]:
         """Convert to dictionary."""
         return {
-            "name": self._name,
-            "endpoints": self._endpoint,
-            "accessKey": self._access_key,
-            "secretKey": self._secret_key,
+            "name": self.name,
+            "endpoints": self.endpoint,
+            "accessKey": self.access_key,
+            "secretKey": self.secret_key,
         }
 
 
+@dataclass(frozen=True)
 class SiteReplicationStatusOptions:
     """Represents site replication status options."""
     ENTITY_TYPE = Enum(
@@ -949,217 +742,58 @@ class SiteReplicationStatusOptions:
             "GROUP": "group",
         },
     )
-
-    def __init__(self):
-        self._buckets = False
-        self._policies = False
-        self._users = False
-        self._groups = False
-        self._metrics = False
-        self._entity = None
-        self._entity_value = None
-        self._show_deleted = False
-
-    @property
-    def buckets(self) -> bool:
-        """Get buckets."""
-        return self._buckets
-
-    @buckets.setter
-    def buckets(self, value: bool):
-        """Set buckets."""
-        self._buckets = value
-
-    @property
-    def policies(self) -> bool:
-        """Get policies."""
-        return self._policies
-
-    @policies.setter
-    def policies(self, value: bool):
-        """Set policies."""
-        self._policies = value
-
-    @property
-    def users(self) -> bool:
-        """Get users."""
-        return self._users
-
-    @users.setter
-    def users(self, value: bool):
-        """Set users."""
-        self._users = value
-
-    @property
-    def groups(self) -> bool:
-        """Get groups."""
-        return self._groups
-
-    @groups.setter
-    def groups(self, value: bool):
-        """Set groups."""
-        self._groups = value
-
-    @property
-    def metrics(self) -> bool:
-        """Get metrics."""
-        return self._metrics
-
-    @metrics.setter
-    def metrics(self, value: bool):
-        """Set metrics."""
-        self._metrics = value
-
-    @property
-    def entity(self) -> str:
-        """Get entity."""
-        return self._entity
-
-    @entity.setter
-    def entity(self, value: str):
-        """Set entity."""
-        self._entity = value
-
-    @property
-    def entity_value(self) -> str:
-        """Get entity value."""
-        return self._entity_value
-
-    @entity_value.setter
-    def entity_value(self, value: str):
-        """Set entity value."""
-        self._entity_value = value
-
-    @property
-    def show_deleted(self) -> bool:
-        """Get show deleted."""
-        return self._show_deleted
-
-    @show_deleted.setter
-    def show_deleted(self, value: bool):
-        """Set show deleted."""
-        self._show_deleted = value
+    buckets: bool = False
+    policies: bool = False
+    users: bool = False
+    groups: bool = False
+    metrics: bool = False
+    show_deleted: bool = False
+    entity: Optional[str] = None
+    entity_value: Optional[str] = None
 
     def to_query_params(self) -> dict[str, str]:
         """Convert this options to query parameters."""
         params = {
-            "buckets": str(self._buckets).lower(),
-            "policies": str(self._policies).lower(),
-            "users": str(self._users).lower(),
-            "groups": str(self._groups).lower(),
-            "metrics": str(self._metrics).lower(),
-            "showDeleted": str(self._show_deleted).lower(),
+            "buckets": str(self.buckets).lower(),
+            "policies": str(self.policies).lower(),
+            "users": str(self.users).lower(),
+            "groups": str(self.groups).lower(),
+            "metrics": str(self.metrics).lower(),
+            "showDeleted": str(self.show_deleted).lower(),
         }
-        if self._entity and self._entity_value:
-            params["entityvalue"] = self._entity_value
-            params["entity"] = self._entity.value
+        if self.entity and self.entity_value:
+            params["entity"] = self.entity
+            params["entityvalue"] = self.entity_value
         return params
 
 
+@dataclass(frozen=True)
 class PeerInfo:
     """Site replication peer information."""
-
-    def __init__(
-            self,
-            deployment_id: str,
-            endpoint: str,
-            bucket_bandwidth_limit: str,
-            bucket_bandwidth_set: str,
-    ):
-        self._deployment_id = deployment_id
-        self._endpoint = endpoint
-        self._name: str | None = None
-        self._sync_status: str | None = None
-        self._bucket_bandwidth_limit = bucket_bandwidth_limit
-        self._bucket_bandwidth_set = bucket_bandwidth_set
-        self._bucket_bandwidth_updated_at: datetime | None = None
-
-    @property
-    def deployment_id(self) -> str:
-        """Get deployment ID."""
-        return self._deployment_id
-
-    @deployment_id.setter
-    def deployment_id(self, value: str):
-        """Set deployment ID."""
-        self._deployment_id = value
-
-    @property
-    def endpoint(self) -> str:
-        """Get endpoint."""
-        return self._endpoint
-
-    @endpoint.setter
-    def endpoint(self, value: str):
-        """Set endpoint."""
-        self._endpoint = value
-
-    @property
-    def name(self) -> str | None:
-        """Get name."""
-        return self._name
-
-    @name.setter
-    def name(self, value: str):
-        """Set name."""
-        self._name = value
-
-    @property
-    def sync_status(self) -> str | None:
-        """Get sync status."""
-        return self._sync_status
-
-    @sync_status.setter
-    def sync_status(self, value: str):
-        """Set sync status."""
-        self._sync_status = value
-
-    @property
-    def bucket_bandwidth_limit(self) -> str:
-        """Get bucket bandwidth limit."""
-        return self._bucket_bandwidth_limit
-
-    @bucket_bandwidth_limit.setter
-    def bucket_bandwidth_limit(self, value: str):
-        """Set bucket bandwidth limit."""
-        self._bucket_bandwidth_limit = value
-
-    @property
-    def bucket_bandwidth_set(self) -> str:
-        """Get bucket bandwidth set."""
-        return self._bucket_bandwidth_set
-
-    @bucket_bandwidth_set.setter
-    def bucket_bandwidth_set(self, value: str):
-        """Set bucket bandwidth set."""
-        self._bucket_bandwidth_set = value
-
-    @property
-    def bucket_bandwidth_updated_at(self) -> datetime | None:
-        """Get bucket bandwidth updated at."""
-        return self._bucket_bandwidth_updated_at
-
-    @bucket_bandwidth_updated_at.setter
-    def bucket_bandwidth_updated_at(self, value: datetime | None):
-        """Set bucket bandwidth updated at."""
-        self._bucket_bandwidth_updated_at = value
+    deployment_id: str
+    endpoint: str
+    bucket_bandwidth_limit: str
+    bucket_bandwidth_set: str
+    name: Optional[str] = None
+    sync_status: Optional[str] = None
+    bucket_bandwidth_updated_at: Optional[datetime] = None
 
     def to_dict(self):
         """Converts peer information to dictionary."""
         data = {
-            "endpoint": self._endpoint,
-            "deploymentID": self._deployment_id,
+            "endpoint": self.endpoint,
+            "deploymentID": self.deployment_id,
             "defaultbandwidth": {
-                "bandwidthLimitPerBucket": self._bucket_bandwidth_limit,
-                "set": self._bucket_bandwidth_set,
+                "bandwidthLimitPerBucket": self.bucket_bandwidth_limit,
+                "set": self.bucket_bandwidth_set,
             },
         }
-        if self._name:
-            data["name"] = self._name
-        if self._sync_status is not None:
-            data["sync"] = "enable" if self._sync_status else "disable"
-        if self._bucket_bandwidth_updated_at:
+        if self.name:
+            data["name"] = self.name
+        if self.sync_status is not None:
+            data["sync"] = "enable" if self.sync_status else "disable"
+        if self.bucket_bandwidth_updated_at:
             data["defaultbandwidth"]["updatedAt"] = to_iso8601utc(
-                self._bucket_bandwidth_updated_at,
+                self.bucket_bandwidth_updated_at,
             )
         return data

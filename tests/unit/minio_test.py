@@ -44,36 +44,58 @@ class GetURLTests(TestCase):
     def test_url_build(self):
         url = BaseURL('http://localhost:9000', None)
         self.assertEqual(
-            urlunsplit(url.build("GET", None, bucket_name='bucket-name')),
+            urlunsplit(
+                url.build(
+                    method="GET",
+                    region=None,
+                    bucket_name='bucket-name',
+                ),
+            ),
             'http://localhost:9000/bucket-name',
         )
         self.assertEqual(
             urlunsplit(
-                url.build("GET", None, bucket_name='bucket-name',
-                          object_name='objectName'),
+                url.build(
+                    method="GET",
+                    region=None,
+                    bucket_name='bucket-name',
+                    object_name='objectName',
+                ),
             ),
             'http://localhost:9000/bucket-name/objectName',
         )
         self.assertEqual(
             urlunsplit(
-                url.build("GET", 'us-east-1', bucket_name='bucket-name',
-                          object_name='objectName',
-                          query_params={'foo': 'bar'}),
+                url.build(
+                    method="GET",
+                    region='us-east-1',
+                    bucket_name='bucket-name',
+                    object_name='objectName',
+                    query_params={'foo': 'bar'},
+                ),
             ),
             'http://localhost:9000/bucket-name/objectName?foo=bar',
         )
         self.assertEqual(
             urlunsplit(
-                url.build("GET", 'us-east-1', bucket_name='bucket-name',
-                          object_name='objectName',
-                          query_params={'foo': 'bar', 'b': 'c', 'a': 'b'}),
+                url.build(
+                    method="GET",
+                    region='us-east-1',
+                    bucket_name='bucket-name',
+                    object_name='objectName',
+                    query_params={'foo': 'bar', 'b': 'c', 'a': 'b'},
+                ),
             ),
             'http://localhost:9000/bucket-name/objectName?a=b&b=c&foo=bar',
         )
         self.assertEqual(
             urlunsplit(
-                url.build("GET", 'us-east-1', bucket_name='bucket-name',
-                          object_name='path/to/objectName/'),
+                url.build(
+                    method="GET",
+                    region='us-east-1',
+                    bucket_name='bucket-name',
+                    object_name='path/to/objectName/',
+                ),
             ),
             'http://localhost:9000/bucket-name/path/to/objectName/',
         )
@@ -81,27 +103,39 @@ class GetURLTests(TestCase):
         # S3 urls.
         url = BaseURL('https://s3.amazonaws.com', None)
         self.assertEqual(
-            urlunsplit(url.build("GET", "us-east-1")),
+            urlunsplit(url.build(method="GET", region="us-east-1")),
             'https://s3.us-east-1.amazonaws.com/',
         )
         self.assertEqual(
             urlunsplit(
-                url.build("GET", "eu-west-1", bucket_name='my.bucket.name'),
+                url.build(
+                    method="GET",
+                    region="eu-west-1",
+                    bucket_name='my.bucket.name',
+                ),
             ),
             'https://s3.eu-west-1.amazonaws.com/my.bucket.name',
         )
         self.assertEqual(
             urlunsplit(
-                url.build("GET", 'us-west-2', bucket_name='bucket-name',
-                          object_name='objectName'),
+                url.build(
+                    method="GET",
+                    region='us-west-2',
+                    bucket_name='bucket-name',
+                    object_name='objectName',
+                ),
             ),
             'https://bucket-name.s3.us-west-2.amazonaws.com/objectName',
         )
         self.assertEqual(
             urlunsplit(
-                url.build("GET", "us-east-1", bucket_name='bucket-name',
-                          object_name='objectName',
-                          query_params={'versionId': 'uuid'}),
+                url.build(
+                    method="GET",
+                    region="us-east-1",
+                    bucket_name='bucket-name',
+                    object_name='objectName',
+                    query_params={'versionId': 'uuid'},
+                ),
             ),
             "https://bucket-name.s3.us-east-1.amazonaws.com"
             "/objectName?versionId=uuid",

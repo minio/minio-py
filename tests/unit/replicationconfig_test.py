@@ -30,10 +30,10 @@ class ReplicationConfigTest(TestCase):
             "REPLACE-WITH-ACTUAL-ROLE",
             [
                 Rule(
-                    Destination(
+                    destination=Destination(
                         "REPLACE-WITH-ACTUAL-DESTINATION-BUCKET-ARN",
                     ),
-                    ENABLED,
+                    status=ENABLED,
                     delete_marker_replication=DeleteMarkerReplication(
                         DISABLED,
                     ),

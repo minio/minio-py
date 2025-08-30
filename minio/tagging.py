@@ -18,7 +18,8 @@
 
 from __future__ import absolute_import, annotations
 
-from typing import Type, TypeVar, cast
+from dataclasses import dataclass
+from typing import Optional, Type, TypeVar, cast
 from xml.etree import ElementTree as ET
 
 from .commonconfig import Tags
@@ -27,16 +28,11 @@ from .xml import Element, SubElement, find
 A = TypeVar("A", bound="Tagging")
 
 
+@dataclass(frozen=True)
 class Tagging:
     """Tagging for buckets and objects."""
 
-    def __init__(self, tags: Tags | None):
-        self._tags = tags
-
-    @property
-    def tags(self) -> Tags | None:
-        """Get tags."""
-        return self._tags
+    tags: Optional[Tags]
 
     @classmethod
     def fromxml(cls: Type[A], element: ET.Element) -> A:
@@ -46,11 +42,11 @@ class Tagging:
             None if find(element, "Tag") is None
             else Tags.fromxml(element)
         )
-        return cls(tags)
+        return cls(tags=tags)
 
-    def toxml(self, element: ET.Element | None) -> ET.Element:
+    def toxml(self, element: Optional[ET.Element]) -> ET.Element:
         """Convert to XML."""
         element = Element("Tagging")
-        if self._tags:
-            self._tags.toxml(SubElement(element, "TagSet"))
+        if self.tags:
+            self.tags.toxml(SubElement(element, "TagSet"))
         return element
