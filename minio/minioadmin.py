@@ -781,6 +781,7 @@ class MinioAdmin:
                             secret_key: Optional[str] = None,
                             name: Optional[str] = None,
                             description: Optional[str] = None,
+                            targetuser: Optional[str] = None,
                             policy: Optional[dict] = None,
                             policy_file: Optional[str | os.PathLike] = None,
                             expiration: Optional[str] = None,
@@ -803,6 +804,8 @@ class MinioAdmin:
             data["name"] = name
         if description:
             data["description"] = description
+        if targetuser:
+            data["targetuser"] = targetuser
         if policy_file:
             with open(policy_file, encoding="utf-8") as file:
                 data["policy"] = json.load(file)
