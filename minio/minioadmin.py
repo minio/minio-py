@@ -395,7 +395,7 @@ class MinioAdmin:
         )
         return plain_data.decode()
 
-    def group_add(self, group_name: str, members: str) -> str:
+    def group_add(self, group_name: str, members: list[str]) -> str:
         """Add users a new or existing group."""
         body = json.dumps({
             "group": group_name,
