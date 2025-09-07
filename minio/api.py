@@ -666,6 +666,141 @@ class Minio:
         )
         self._region_map[bucket_name] = location
 
+    def make_buckets(
+            self,
+            bucket_names: list[str],
+            location: Optional[str] = None,
+            object_lock: bool = False,
+            fail_on_error: bool = True,
+    ) -> dict[str, Union[bool, Exception]]:
+        """
+        Create multiple buckets with region and object lock.
+
+        :param bucket_names: List of bucket names to create.
+        :param location: Region in which the buckets will be created.
+        :param object_lock: Flag to set object-lock feature for all buckets.
+        :param fail_on_error: If True, raises exception on first failure.
+                             If False, continues creating other buckets and returns results.
+        :return: Dictionary mapping bucket names to success (True) or Exception objects.
+
+        Examples::
+            # Create multiple buckets.
+            results = client.make_buckets(["bucket1", "bucket2", "bucket3"])
+
+            # Create buckets on specific region.
+            results = client.make_buckets(
+                ["bucket1", "bucket2"],
+                location="us-west-1"
+            )
+
+            # Create buckets with object-lock feature.
+            results = client.make_buckets(
+                ["bucket1", "bucket2"],
+                location="eu-west-2",
+                object_lock=True
+            )
+
+            # Create buckets without failing on errors (continue on failures).
+            results = client.make_buckets(
+                ["valid-bucket", "invalid..bucket", "another-bucket"],
+                fail_on_error=False
+            )
+            # Check results
+            for bucket_name, result in results.items():
+                if result is True:
+                    print(f"Successfully created bucket: {bucket_name}")
+                else:
+                    print(f"Failed to create bucket {bucket_name}: {result}")
+        """
+        if not bucket_names:
+            raise ValueError("bucket_names list cannot be empty")
+
+        if not isinstance(bucket_names, (list, tuple)):
+            raise ValueError("bucket_names must be a list or tuple")
+
+        results = {}
+
+        for bucket_name in bucket_names:
+            try:
+                self.make_bucket(
+                    bucket_name=bucket_name,
+                    location=location,
+                    object_lock=object_lock
+                )
+                results[bucket_name] = True
+
+            except Exception as exc:
+                results[bucket_name] = exc
+                if fail_on_error:
+                    raise exc
+
+        return results
+
+    def make_buckets_parallel(
+            self,
+            bucket_names: list[str],
+            location: Optional[str] = None,
+            object_lock: bool = False,
+            max_workers: int = 5,
+    ) -> dict[str, Union[bool, Exception]]:
+        """
+        Create multiple buckets in parallel with region and object lock.
+
+        :param bucket_names: List of bucket names to create.
+        :param location: Region in which the buckets will be created.
+        :param object_lock: Flag to set object-lock feature for all buckets.
+        :param max_workers: Maximum number of parallel workers (default: 5).
+        :return: Dictionary mapping bucket names to success (True) or Exception objects.
+
+        Examples::
+            # Create multiple buckets in parallel.
+            results = client.make_buckets_parallel(
+                ["bucket1", "bucket2", "bucket3", "bucket4", "bucket5"]
+            )
+
+            # Create buckets in parallel with custom worker count.
+            results = client.make_buckets_parallel(
+                bucket_names=["bucket1", "bucket2", "bucket3"],
+                max_workers=3,
+                location="us-east-1"
+            )
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        if not bucket_names:
+            raise ValueError("bucket_names list cannot be empty")
+
+        if not isinstance(bucket_names, (list, tuple)):
+            raise ValueError("bucket_names must be a list or tuple")
+
+        results = {}
+
+        def create_single_bucket(bucket_name: str):
+            try:
+                self.make_bucket(
+                    bucket_name=bucket_name,
+                    location=location,
+                    object_lock=object_lock
+                )
+                return bucket_name, True
+            except Exception as exc:
+                return bucket_name, exc
+
+        # Use ThreadPoolExecutor for parallel execution
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all bucket creation tasks
+            future_to_bucket = {
+                executor.submit(create_single_bucket, bucket_name): bucket_name
+                for bucket_name in bucket_names
+            }
+
+            # Collect results as they complete
+            for future in as_completed(future_to_bucket):
+                bucket_name, result = future.result()
+                results[bucket_name] = result
+
+        return results
+
     def list_buckets(self) -> list[Bucket]:
         """
         List information of all accessible buckets.
@@ -716,6 +851,118 @@ class Minio:
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         self._execute("DELETE", bucket_name)
         self._region_map.pop(bucket_name, None)
+
+    def remove_buckets(
+            self,
+            bucket_names: list[str],
+            fail_on_error: bool = True,
+    ) -> dict[str, Union[bool, Exception]]:
+        """
+        Remove multiple empty buckets.
+
+        :param bucket_names: List of bucket names to remove.
+        :param fail_on_error: If True, raises exception on first failure.
+                             If False, continues removing other buckets and returns results.
+        :return: Dictionary mapping bucket names to success (True) or Exception objects.
+
+        Examples::
+            # Remove multiple buckets.
+            results = client.remove_buckets(["bucket1", "bucket2", "bucket3"])
+
+            # Remove buckets without failing on errors (continue on failures).
+            results = client.remove_buckets(
+                ["bucket1", "non-existent-bucket", "bucket3"],
+                fail_on_error=False
+            )
+            # Check results
+            for bucket_name, result in results.items():
+                if result is True:
+                    print(f"Successfully removed bucket: {bucket_name}")
+                else:
+                    print(f"Failed to remove bucket {bucket_name}: {result}")
+        """
+        if not bucket_names:
+            raise ValueError("bucket_names list cannot be empty")
+
+        if not isinstance(bucket_names, (list, tuple)):
+            raise ValueError("bucket_names must be a list or tuple")
+
+        results = {}
+
+        for bucket_name in bucket_names:
+            try:
+                self.remove_bucket(bucket_name=bucket_name)
+                results[bucket_name] = True
+
+            except Exception as exc:
+                results[bucket_name] = exc
+                if fail_on_error:
+                    raise exc
+
+        return results
+
+    def remove_buckets_parallel(
+            self,
+            bucket_names: list[str],
+            max_workers: int = 5,
+    ) -> dict[str, Union[bool, Exception]]:
+        """
+        Remove multiple empty buckets in parallel.
+
+        :param bucket_names: List of bucket names to remove.
+        :param max_workers: Maximum number of parallel workers (default: 5).
+        :return: Dictionary mapping bucket names to success (True) or Exception objects.
+
+        Examples::
+            # Remove multiple buckets in parallel.
+            results = client.remove_buckets_parallel(
+                ["bucket1", "bucket2", "bucket3", "bucket4", "bucket5"]
+            )
+
+            # Remove buckets in parallel with custom worker count.
+            results = client.remove_buckets_parallel(
+                bucket_names=["bucket1", "bucket2", "bucket3"],
+                max_workers=3
+            )
+
+            # Check results
+            failed_removals = [name for name, result in results.items() if result is not True]
+            if failed_removals:
+                print(f"Failed to remove buckets: {failed_removals}")
+            else:
+                print("All buckets removed successfully")
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        if not bucket_names:
+            raise ValueError("bucket_names list cannot be empty")
+
+        if not isinstance(bucket_names, (list, tuple)):
+            raise ValueError("bucket_names must be a list or tuple")
+
+        results = {}
+
+        def remove_single_bucket(bucket_name: str):
+            try:
+                self.remove_bucket(bucket_name=bucket_name)
+                return bucket_name, True
+            except Exception as exc:
+                return bucket_name, exc
+
+        # Use ThreadPoolExecutor for parallel execution
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all bucket removal tasks
+            future_to_bucket = {
+                executor.submit(remove_single_bucket, bucket_name): bucket_name
+                for bucket_name in bucket_names
+            }
+
+            # Collect results as they complete
+            for future in as_completed(future_to_bucket):
+                bucket_name, result = future.result()
+                results[bucket_name] = result
+
+        return results
 
     def get_bucket_policy(self, bucket_name: str) -> str:
         """
