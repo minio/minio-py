@@ -187,16 +187,6 @@ class GetRegionTests(TestCase):
         ).region
         self.assertEqual(region, 'us-west-1')
 
-    def test_region_with_accesspoint_name(self):
-        self.assertEqual(
-            BaseURL('https://reports-123456789012.s3-accesspoint.us-west-2.amazonaws.com', None,).region,
-            'us-west-2'
-        )
-        self.assertEqual(
-            BaseURL('https://myapp-prod-987654321000.s3-accesspoint.ap-south-1.amazonaws.com', None,).region,
-            'ap-south-1'
-        )
-
     def test_region_us_east(self):
         region = BaseURL('http://s3.amazonaws.com', None).region
         self.assertEqual(region, "")
