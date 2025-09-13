@@ -24,6 +24,7 @@ import configparser
 import ipaddress
 import json
 import os
+import re
 import socket
 import sys
 import time
@@ -80,7 +81,12 @@ def _urlopen(
     """Wrapper of urlopen() handles HTTP status code."""
     res = http_client.urlopen(method, url, body=body, headers=headers)
     if res.status not in [200, 204, 206]:
-        raise ValueError(f"{url} failed with HTTP status code {res.status}")
+        safe_url = re.sub(
+            r"LDAPPassword=([^&]+)", "LDAPPassword=*REDACTED*", url,
+        )
+        raise ValueError(
+            f"{safe_url} failed with HTTP status code {res.status}",
+        )
     return res
 
 
