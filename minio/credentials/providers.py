@@ -31,7 +31,7 @@ from abc import ABC, abstractmethod
 from datetime import timedelta
 from pathlib import Path
 from typing import Callable, Optional, cast
-from urllib.parse import urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 from xml.etree import ElementTree as ET
 
 import certifi
@@ -54,6 +54,38 @@ from .credentials import Credentials
 _MIN_DURATION_SECONDS = int(timedelta(minutes=15).total_seconds())
 _MAX_DURATION_SECONDS = int(timedelta(days=7).total_seconds())
 _DEFAULT_DURATION_SECONDS = int(timedelta(hours=1).total_seconds())
+
+
+def _sanitize_url_for_logging(url: str) -> str:
+    """Remove sensitive parameters from URL for safe logging."""
+    try:
+        parsed = urlsplit(url)
+        if not parsed.query:
+            return url
+
+        query_params = parse_qs(parsed.query, keep_blank_values=True)
+
+        # List of sensitive parameter names to sanitize
+        sensitive_params = {'LDAPPassword', 'Password', 'SecretAccessKey', 'SessionToken'}
+
+        for param in sensitive_params:
+            if param in query_params:
+                query_params[param] = ['***REDACTED***']
+
+        # Reconstruct query string
+        sanitized_query = urlencode(query_params, doseq=True)
+
+        # Return sanitized URL
+        return urlunsplit((
+            parsed.scheme,
+            parsed.netloc,
+            parsed.path,
+            sanitized_query,
+            parsed.fragment
+        ))
+    except Exception:
+        # If sanitization fails, return a generic message
+        return "***URL_REDACTED***"
 
 
 def _parse_credentials(data: str, name: str) -> Credentials:
@@ -80,7 +112,8 @@ def _urlopen(
     """Wrapper of urlopen() handles HTTP status code."""
     res = http_client.urlopen(method, url, body=body, headers=headers)
     if res.status not in [200, 204, 206]:
-        raise ValueError(f"{url} failed with HTTP status code {res.status}")
+        sanitized_url = _sanitize_url_for_logging(url)
+        raise ValueError(f"{sanitized_url} failed with HTTP status code {res.status}")
     return res
 
 
@@ -444,8 +477,9 @@ class IamAwsProvider(Provider):
         res = _urlopen(self._http_client, "GET", url, headers=headers)
         data = json.loads(res.data)
         if data.get("Code", "Success") != "Success":
+            sanitized_url = _sanitize_url_for_logging(url)
             raise ValueError(
-                f"{url} failed with code {data['Code']} "
+                f"{sanitized_url} failed with code {data['Code']} "
                 f"message {data.get('Message')}"
             )
         data["Expiration"] = from_iso8601utc(data["Expiration"])
@@ -524,7 +558,8 @@ class IamAwsProvider(Provider):
             res = _urlopen(self._http_client, "GET", url, headers=headers)
             role_names = res.data.decode("utf-8").split("\n")
             if not role_names:
-                raise ValueError(f"no IAM roles attached to EC2 service {url}")
+                sanitized_url = _sanitize_url_for_logging(url)
+                raise ValueError(f"no IAM roles attached to EC2 service {sanitized_url}")
             url += role_names[0].strip("\r")
         if not url:
             raise ValueError("url is empty; this should not happen")
