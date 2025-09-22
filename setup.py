@@ -63,6 +63,6 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     long_description=readme,
-    package_data={"": ["LICENSE", "README.md"]},
+    package_data={"": ["LICENSE", "README.md", "py.typed"]},
     include_package_data=True,
 )
