@@ -19,9 +19,12 @@ from minio.commonconfig import ENABLED
 from minio.versioningconfig import VersioningConfig
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
-client.set_bucket_versioning("my-bucket", VersioningConfig(ENABLED))
+client.set_bucket_versioning(
+    bucket_name="my-bucket",
+    config=VersioningConfig(ENABLED),
+)

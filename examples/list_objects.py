@@ -17,30 +17,30 @@
 from minio import Minio
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
 # List objects information.
-objects = client.list_objects("my-bucket")
+objects = client.list_objects(bucket_name="my-bucket")
 for obj in objects:
     print(obj)
 
 # List objects information whose names starts with "my/prefix/".
-objects = client.list_objects("my-bucket", prefix="my/prefix/")
+objects = client.list_objects(bucket_name="my-bucket", prefix="my/prefix/")
 for obj in objects:
     print(obj)
 
 # List objects information recursively.
-objects = client.list_objects("my-bucket", recursive=True)
+objects = client.list_objects(bucket_name="my-bucket", recursive=True)
 for obj in objects:
     print(obj)
 
 # List objects information recursively whose names starts with
 # "my/prefix/".
 objects = client.list_objects(
-    "my-bucket", prefix="my/prefix/", recursive=True,
+    bucket_name="my-bucket", prefix="my/prefix/", recursive=True,
 )
 for obj in objects:
     print(obj)
@@ -48,7 +48,7 @@ for obj in objects:
 # List objects information recursively after object name
 # "my/prefix/world/1".
 objects = client.list_objects(
-    "my-bucket", recursive=True, start_after="my/prefix/world/1",
+    bucket_name="my-bucket", recursive=True, start_after="my/prefix/world/1",
 )
 for obj in objects:
     print(obj)

@@ -63,14 +63,16 @@ role_arn = "ROLE-ARN"
 role_session_name = "ROLE-SESSION-NAME"
 
 provider = WebIdentityProvider(
-    lambda: get_jwt(client_id, client_secret, idp_client_id, idp_endpoint),
-    sts_endpoint,
+    jwt_provider_func=lambda: get_jwt(
+        client_id, client_secret, idp_client_id, idp_endpoint,
+    ),
+    sts_endpoint=sts_endpoint,
     role_arn=role_arn,
     role_session_name=role_session_name,
 )
 
-client = Minio("MINIO-HOST:MINIO-PORT", credentials=provider)
+client = Minio(endpoint="MINIO-HOST:MINIO-PORT", credentials=provider)
 
 # Get information of an object.
-stat = client.stat_object("my-bucket", "my-object")
+stat = client.stat_object(bucket_name="my-bucket", object_name="my-object")
 print(stat)

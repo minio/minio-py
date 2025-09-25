@@ -33,12 +33,14 @@ import hmac
 import re
 from collections import OrderedDict
 from datetime import datetime
-from typing import Mapping, cast
+from typing import cast
 from urllib.parse import SplitResult
+
+from urllib3._collections import HTTPHeaderDict
 
 from . import time
 from .credentials import Credentials
-from .helpers import DictType, queryencode, sha256_hash
+from .helpers import queryencode, sha256_hash
 
 SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'
 _MULTI_SPACE_REGEX = re.compile(r"( +)")
@@ -60,21 +62,16 @@ def _get_scope(date: datetime, region: str, service_name: str) -> str:
     return f"{time.to_signer_date(date)}/{region}/{service_name}/aws4_request"
 
 
-def _get_canonical_headers(
-        headers: Mapping[str, str | list[str] | tuple[str]],
-) -> tuple[str, str]:
+def _get_canonical_headers(headers: HTTPHeaderDict) -> tuple[str, str]:
     """Get canonical headers."""
 
     ordered_headers = {}
-    for key, values in headers.items():
+    for key in headers:
         key = key.lower()
-        if key not in (
-                "authorization",
-                "user-agent",
-        ):
-            values = values if isinstance(values, (list, tuple)) else [values]
+        if key not in ("authorization", "user-agent"):
             ordered_headers[key] = ",".join([
-                _MULTI_SPACE_REGEX.sub(" ", value).strip() for value in values
+                _MULTI_SPACE_REGEX.sub(" ", value).strip()
+                for value in headers.get_all(key)
             ])
 
     ordered_headers = OrderedDict(sorted(ordered_headers.items()))
@@ -101,7 +98,7 @@ def _get_canonical_query_string(query: str) -> str:
 def _get_canonical_request_hash(
         method: str,
         url: SplitResult,
-        headers: Mapping[str, str | list[str] | tuple[str]],
+        headers: HTTPHeaderDict,
         content_sha256: str,
 ) -> tuple[str, str]:
     """Get canonical request hash."""
@@ -192,11 +189,11 @@ def _sign_v4(
         method: str,
         url: SplitResult,
         region: str,
-        headers: DictType,
+        headers: HTTPHeaderDict,
         credentials: Credentials,
         content_sha256: str,
         date: datetime,
-) -> DictType:
+) -> HTTPHeaderDict:
     """Do signature V4 of given request for given service name."""
 
     scope = _get_scope(date, region, service_name)
@@ -220,11 +217,11 @@ def sign_v4_s3(
         method: str,
         url: SplitResult,
         region: str,
-        headers: DictType,
+        headers: HTTPHeaderDict,
         credentials: Credentials,
         content_sha256: str,
         date: datetime,
-) -> DictType:
+) -> HTTPHeaderDict:
     """Do signature V4 of given request for S3 service."""
     return _sign_v4(
         service_name="s3",
@@ -243,11 +240,11 @@ def sign_v4_sts(
         method: str,
         url: SplitResult,
         region: str,
-        headers: DictType,
+        headers: HTTPHeaderDict,
         credentials: Credentials,
         content_sha256: str,
         date: datetime,
-) -> DictType:
+) -> HTTPHeaderDict:
     """Do signature V4 of given request for STS service."""
     return _sign_v4(
         service_name="sts",
