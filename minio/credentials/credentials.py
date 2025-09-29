@@ -41,8 +41,9 @@ class Credentials:
             raise ValueError("Secret key must not be empty")
 
         if self.expiration and self.expiration.tzinfo:
-            self.expiration = (
-                self.expiration.astimezone(timezone.utc).replace(tzinfo=None)
+            object.__setattr__(
+                self, "expiration",
+                self.expiration.astimezone(timezone.utc).replace(tzinfo=None),
             )
 
     def is_expired(self) -> bool:
