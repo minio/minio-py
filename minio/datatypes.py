@@ -246,7 +246,7 @@ class CompleteMultipartUploadResult:
         object.__setattr__(self, "object_name", findtext(element, "Key"))
         object.__setattr__(self, "location", findtext(element, "Location"))
         etag = findtext(element, "ETag")
-        if self.etag:
+        if etag:
             object.__setattr__(
                 self,
                 "etag",
