@@ -54,7 +54,8 @@ class SseCustomerKey(Sse):
     def __init__(self, key: bytes):
         if len(key) != 32:
             raise ValueError(
-                "SSE-C keys need to be 256 bit base64 encoded",
+                "SSE-C keys must be exactly 256 bits (32 bytes) long. "
+                "Pass raw bytes, not the base64 encoded value.",
             )
         b64key = base64.b64encode(key).decode()
         from .helpers import \
