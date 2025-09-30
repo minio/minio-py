@@ -17,9 +17,10 @@
 from datetime import timedelta
 
 from minio import Minio
+from minio.helpers import HTTPQueryDict
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
@@ -27,9 +28,9 @@ client = Minio(
 # Get presigned URL string to delete 'my-object' in
 # 'my-bucket' with one day expiry.
 url = client.get_presigned_url(
-    "DELETE",
-    "my-bucket",
-    "my-object",
+    method="DELETE",
+    bucket_name="my-bucket",
+    object_name="my-object",
     expires=timedelta(days=1),
 )
 print(url)
@@ -38,20 +39,22 @@ print(url)
 # 'my-bucket' with response-content-type as application/json
 # and one day expiry.
 url = client.get_presigned_url(
-    "PUT",
-    "my-bucket",
-    "my-object",
+    method="PUT",
+    bucket_name="my-bucket",
+    object_name="my-object",
     expires=timedelta(days=1),
-    response_headers={"response-content-type": "application/json"},
+    extra_query_params=HTTPQueryDict(
+        {"response-content-type": "application/json"},
+    ),
 )
 print(url)
 
 # Get presigned URL string to download 'my-object' in
 # 'my-bucket' with two hours expiry.
 url = client.get_presigned_url(
-    "GET",
-    "my-bucket",
-    "my-object",
+    method="GET",
+    bucket_name="my-bucket",
+    object_name="my-object",
     expires=timedelta(hours=2),
 )
 print(url)

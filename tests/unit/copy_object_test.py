@@ -22,11 +22,13 @@ from minio.commonconfig import CopySource
 
 class CopyObjectTest(TestCase):
     def test_valid_copy_source(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(
-            ValueError,
-            client.copy_object, 'hello', '1', '/testbucket/object'
-        )
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(ValueError):
+            client.copy_object(
+                bucket_name='hello',
+                object_name='1',
+                source='/testbucket/object',
+            )
 
     def test_valid_match_etag(self):
         self.assertRaises(

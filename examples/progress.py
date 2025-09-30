@@ -69,6 +69,7 @@ class Progress(Thread):
         self.display_queue = Queue()
         self.initial_time = time.time()
         self.stdout = stdout
+        self.prefix = None
         self.start()
 
     def set_meta(self, total_length, object_name):
@@ -89,9 +90,9 @@ class Progress(Thread):
                 # display every interval secs
                 task = self.display_queue.get(timeout=self.interval)
             except Empty:
-                elapsed_time = time.time() - self.initial_time
-                if elapsed_time > displayed_time:
-                    displayed_time = elapsed_time
+                displayed_time = max(
+                    displayed_time, time.time() - self.initial_time,
+                )
                 self.print_status(current_size=self.current_size,
                                   total_length=self.total_length,
                                   displayed_time=displayed_time,
@@ -117,8 +118,8 @@ class Progress(Thread):
                      bytes.
         """
         if not isinstance(size, int):
-            raise ValueError('{} type can not be displayed. '
-                             'Please change it to Int.'.format(type(size)))
+            raise ValueError(f"{type(size)} type can not be displayed. "
+                             "Please change it to Int.")
 
         self.current_size += size
         self.display_queue.put((self.current_size, self.total_length))
@@ -147,8 +148,7 @@ def seconds_to_time(seconds):
     hours, m = divmod(minutes, 60)
     if hours:
         return _HOURS_OF_ELAPSED % (hours, m, seconds)
-    else:
-        return _MINUTES_OF_ELAPSED % (m, seconds)
+    return _MINUTES_OF_ELAPSED % (m, seconds)
 
 
 def format_string(current_size, total_length, elapsed_time):
