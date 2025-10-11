@@ -20,18 +20,18 @@ from minio.select import (CSVInputSerialization, CSVOutputSerialization,
                           SelectRequest)
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
 with client.select_object_content(
-        "my-bucket",
-        "my-object.csv",
-        SelectRequest(
-            "select * from S3Object",
-            CSVInputSerialization(),
-            CSVOutputSerialization(),
+        bucket_name="my-bucket",
+        object_name="my-object.csv",
+        request=SelectRequest(
+            expression="select * from S3Object",
+            input_serialization=CSVInputSerialization(),
+            output_serialization=CSVOutputSerialization(),
             request_progress=True,
         ),
 ) as result:

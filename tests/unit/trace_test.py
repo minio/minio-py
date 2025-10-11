@@ -21,5 +21,5 @@ from minio import Minio
 
 class TraceTest(TestCase):
     def test_bucket_is_string(self):
-        client = Minio('localhost:9000')
+        client = Minio(endpoint='localhost:9000')
         self.assertRaises(ValueError, client.trace_on, None)

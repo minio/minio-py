@@ -5,7 +5,7 @@ The MinIO Python Client SDK provides high level APIs to access any MinIO Object 
 This Quickstart Guide covers how to install the MinIO client SDK, connect to the object storage service, and create a sample file uploader.
 
 The example below uses:
-- [Python version 3.7+](https://www.python.org/downloads/) 
+- [Python version 3.9+](https://www.python.org/downloads/)
 - The [MinIO `mc` command line tool](https://min.io/docs/minio/linux/reference/minio-mc.html)
 - The MinIO `play` test server
 
@@ -17,7 +17,7 @@ For a complete list of APIs and examples, see the [Python Client API Reference](
 
 ## Install the MinIO Python SDK
 
-The Python SDK requires Python version 3.7+.
+The Python SDK requires Python version 3.9+.
 You can install the SDK with `pip` or from the [`minio/minio-py` GitHub repository](https://github.com/minio/minio-py):
 
 ### Using `pip`
@@ -49,7 +49,8 @@ For example:
 ```py
 from minio import Minio
 
-client = Minio("play.min.io",
+client = Minio(
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
@@ -74,7 +75,8 @@ from minio.error import S3Error
 def main():
     # Create a client with the MinIO server playground, its access key
     # and secret key.
-    client = Minio("play.min.io",
+    client = Minio(
+        endpoint="play.min.io",
         access_key="Q3AM3UQ867SPQQA43P2F",
         secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
     )
@@ -87,16 +89,18 @@ def main():
     destination_file = "my-test-file.txt"
     
     # Make the bucket if it doesn't exist.
-    found = client.bucket_exists(bucket_name)
+    found = client.bucket_exists(bucket_name=bucket_name)
     if not found:
-        client.make_bucket(bucket_name)
+        client.make_bucket(bucket_name=bucket_name)
         print("Created bucket", bucket_name)
     else:
         print("Bucket", bucket_name, "already exists")
 
     # Upload the file, renaming it in the process
     client.fput_object(
-        bucket_name, destination_file, source_file,
+        bucket_name=bucket_name,
+        object_name=destination_file,
+        file_path=source_file,
     )
     print(
         source_file, "successfully uploaded as object",

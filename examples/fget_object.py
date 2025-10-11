@@ -18,22 +18,30 @@ from minio import Minio
 from minio.sse import SseCustomerKey
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
 # Download data of an object.
-client.fget_object("my-bucket", "my-object", "my-filename")
+client.fget_object(
+    bucket_name="my-bucket",
+    object_name="my-object",
+    file_path="my-filename",
+)
 
 # Download data of an object of version-ID.
 client.fget_object(
-    "my-bucket", "my-object", "my-filename",
+    bucket_name="my-bucket",
+    object_name="my-object",
+    file_path="my-filename",
     version_id="dfbd25b3-abec-4184-a4e8-5a35a5c1174d",
 )
 
 # Download data of an SSE-C encrypted object.
 client.fget_object(
-    "my-bucket", "my-object", "my-filename",
+    bucket_name="my-bucket",
+    object_name="my-object",
+    file_path="my-filename",
     ssec=SseCustomerKey(b"32byteslongsecretkeymustprovided"),
 )

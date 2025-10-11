@@ -19,7 +19,7 @@ import json
 from minio import Minio
 
 client = Minio(
-    "play.min.io",
+    endpoint="play.min.io",
     access_key="Q3AM3UQ867SPQQA43P2F",
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
@@ -42,7 +42,7 @@ policy = {
         },
     ],
 }
-client.set_bucket_policy("my-bucket", json.dumps(policy))
+client.set_bucket_policy(bucket_name="my-bucket", policy=json.dumps(policy))
 
 # Example anonymous read-write bucket policy.
 policy = {
@@ -72,4 +72,4 @@ policy = {
         },
     ],
 }
-client.set_bucket_policy("my-bucket", json.dumps(policy))
+client.set_bucket_policy(bucket_name="my-bucket", policy=json.dumps(policy))

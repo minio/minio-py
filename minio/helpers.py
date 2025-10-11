@@ -29,15 +29,16 @@ import urllib.parse
 from dataclasses import dataclass
 from datetime import datetime
 from queue import Queue
-from threading import BoundedSemaphore, Thread
-from typing import BinaryIO, Dict, List, Mapping, Optional, Tuple, Union
+from threading import BoundedSemaphore, Lock, Thread
+from typing import (BinaryIO, Dict, Iterable, List, Mapping, Optional, Type,
+                    Union)
 
 from typing_extensions import Protocol
 from urllib3._collections import HTTPHeaderDict
 
 from . import __title__, __version__
+from .checksum import Algorithm, Hasher, reset_hashers, update_hashers
 from .sse import Sse, SseCustomerKey
-from .time import to_iso8601utc
 
 _DEFAULT_USER_AGENT = (
     f"MinIO ({platform.system()}; {platform.machine()}) "
@@ -53,6 +54,7 @@ _AWS_S3_PREFIX = (r'^(((bucket\.|accesspoint\.)'
                   r'vpce(-(?!_)[a-z_\d]+(?<!-)(?<!_))+\.s3\.)|'
                   r'((?!s3)(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.)'
                   r's3-control(-(?!_)[a-z_\d]+(?<!-)(?<!_))*\.|'
+                  r'([a-z\d\-]+-[0-9]{12})\.s3-accesspoint\.|'
                   r'(s3(-(?!_)[a-z_\d]+(?<!-)(?<!_))*\.))')
 
 _BUCKET_NAME_REGEX = re.compile(r'^[a-z0-9][a-z0-9\.\-]{1,61}[a-z0-9]$')
@@ -80,7 +82,96 @@ _AWS_S3_PREFIX_REGEX = re.compile(_AWS_S3_PREFIX, re.IGNORECASE)
 _REGION_REGEX = re.compile(r'^((?!_)(?!-)[a-z_\d-]{1,63}(?<!-)(?<!_))$',
                            re.IGNORECASE)
 
-DictType = Dict[str, Union[str, List[str], Tuple[str]]]
+
+class RegionMap:
+    """Thread-safe region map."""
+
+    def __init__(self):
+        self._lock = Lock()
+        self._map = {}
+
+    def get(self, bucket_name: str) -> Optional[str]:
+        """Get region associated to the bucket."""
+        with self._lock:
+            return self._map.get(bucket_name)
+
+    def set(self, bucket_name: str, region: str):
+        """Set region for the bucket."""
+        with self._lock:
+            self._map[bucket_name] = region
+
+    def remove(self, bucket_name: str):
+        """Remove region for the bucket."""
+        with self._lock:
+            self._map.pop(bucket_name, None)
+
+
+class HTTPQueryDict(dict[str, List[str]]):
+    """Dictionary for HTTP query parameters with multiple values per key."""
+
+    def __init__(
+        self,
+        initial: Optional[
+            Union[
+                "HTTPQueryDict",
+                Mapping[str, Union[str, Iterable[str]]],
+            ]
+        ] = None
+    ):
+        super().__init__()
+        if initial:
+            if not isinstance(initial, Mapping):
+                raise TypeError(
+                    "HTTPQueryDict expects a mapping-like object, "
+                    f"got {type(initial).__name__}",
+                )
+            for key, value in initial.items():
+                if isinstance(value, (str, bytes)):
+                    self[key] = [value]
+                else:
+                    self[key] = list(value)
+
+    def __setitem__(self, key: str, value: Union[str, Iterable[str]]) -> None:
+        super().__setitem__(
+            key,
+            [value] if isinstance(value, (str, bytes)) else list(value),
+        )
+
+    def copy(self) -> "HTTPQueryDict":
+        return HTTPQueryDict(self)
+
+    def extend(
+        self,
+        other: Optional[
+            Union[
+                "HTTPQueryDict",
+                Mapping[str, Union[str, Iterable[str]]],
+            ]
+        ],
+    ) -> "HTTPQueryDict":
+        """Merges other keys and values."""
+        if other is None:
+            return self
+        if not isinstance(other, Mapping):
+            raise TypeError(
+                "extend() expects a mapping-like object, "
+                f"got {type(other).__name__}",
+            )
+        for key, value in other.items():
+            normalized = (
+                [value] if isinstance(value, (str, bytes)) else list(value)
+            )
+            if key in self:
+                self[key] += normalized
+            else:
+                self[key] = normalized
+        return self
+
+    def __str__(self) -> str:
+        """Convert dictionary to a URL-encoded query string."""
+        query_list = [(k, v) for k, values in self.items() for v in values]
+        query_list.sort(key=lambda x: (x[0], x[1]))  # Sort by key, then value
+        return urllib.parse.urlencode(query_list, quote_via=urllib.parse.quote)
 
 
 def quote(
@@ -192,13 +283,19 @@ class ProgressType(Protocol):
 
 
 def read_part_data(
+        *,
         stream: BinaryIO,
         size: int,
         part_data: bytes = b"",
         progress: Optional[ProgressType] = None,
+        hashers: Optional[Dict[Algorithm, Hasher]] = None,
 ) -> bytes:
     """Read part data of given size from stream."""
-    size -= len(part_data)
+    reset_hashers(hashers)
+    initial_length = len(part_data)
+    size -= initial_length
+    if part_data:
+        update_hashers(hashers, part_data, initial_length)
     while size:
         data = stream.read(size)
         if not data:
@@ -207,6 +304,11 @@ def read_part_data(
             raise ValueError("read() must return 'bytes' object")
         part_data += data
         size -= len(data)
+        update_hashers(
+            hashers,
+            data,
+            len(data) - (initial_length if size == 0 else 0),
+        )
         if progress:
             progress.update(len(data))
     return part_data
@@ -352,90 +454,29 @@ def url_replace(
     )
 
 
-def _metadata_to_headers(metadata: DictType) -> dict[str, list[str]]:
-    """Convert user metadata to headers."""
-    def normalize_key(key: str) -> str:
-        if not key.lower().startswith("x-amz-meta-"):
-            key = "X-Amz-Meta-" + key
-        return key
-
-    def to_string(value) -> str:
-        value = str(value)
-        try:
-            value.encode("us-ascii")
-        except UnicodeEncodeError as exc:
-            raise ValueError(
-                f"unsupported metadata value {value}; "
-                f"only US-ASCII encoded characters are supported"
-            ) from exc
-        return value
-
-    def normalize_value(values: str | list[str] | tuple[str]) -> list[str]:
-        if not isinstance(values, (list, tuple)):
-            values = [values]
-        return [to_string(value) for value in values]
-
-    return {
-        normalize_key(key): normalize_value(value)
-        for key, value in (metadata or {}).items()
-    }
-
-
-def normalize_headers(headers: Optional[DictType]) -> DictType:
+def normalize_headers(headers: Optional[HTTPHeaderDict]) -> HTTPHeaderDict:
     """Normalize headers by prefixing 'X-Amz-Meta-' for user metadata."""
-    headers = {str(key): value for key, value in (headers or {}).items()}
+    allowed_headers = [
+        "cache-control",
+        "content-encoding",
+        "content-type",
+        "content-disposition",
+        "content-language",
+    ]
 
-    def guess_user_metadata(key: str) -> bool:
-        key = key.lower()
-        return not (
-            key.startswith("x-amz-") or
-            key in [
-                "cache-control",
-                "content-encoding",
-                "content-type",
-                "content-disposition",
-                "content-language",
-            ]
-        )
-
-    user_metadata = {
-        key: value for key, value in headers.items()
-        if guess_user_metadata(key)
-    }
-
-    # Remove guessed user metadata.
-    _ = [headers.pop(key) for key in user_metadata]
-
-    headers.update(_metadata_to_headers(user_metadata))
-    return headers
-
-
-def genheaders(
-        headers: Optional[DictType],
-        sse: Optional[Sse],
-        tags: Optional[dict[str, str]],
-        retention,
-        legal_hold: bool,
-) -> DictType:
-    """Generate headers for given parameters."""
-    headers = normalize_headers(headers)
-    headers.update(sse.headers() if sse else {})
-    tagging = "&".join(
-        [
-            queryencode(key) + "=" + queryencode(value)
-            for key, value in (tags or {}).items()
-        ],
-    )
-    if tagging:
-        headers["x-amz-tagging"] = tagging
-    if retention and retention.mode:
-        headers["x-amz-object-lock-mode"] = retention.mode
-        headers["x-amz-object-lock-retain-until-date"] = (
-            to_iso8601utc(retention.retain_until_date) or ""
-        )
-    if legal_hold:
-        headers["x-amz-object-lock-legal-hold"] = "ON"
-    return headers
+    headers = HTTPHeaderDict() if headers is None else headers
+    normalized_headers = HTTPHeaderDict()
+    for key in headers:
+        values = headers.get_all(key)
+        lower_key = key.lower()
+        if not (
+                lower_key.startswith(("x-amz-", "x-amz-meta-")) or
+                lower_key in allowed_headers
+        ):
+            key = "X-Amz-Meta-" + key
+        for value in values:
+            normalized_headers.add(key, value)
+    return normalized_headers
 
 
 def _get_aws_info(
@@ -495,7 +536,7 @@ def _get_aws_info(
 
     return ({"s3_prefix": aws_s3_prefix,
              "domain_suffix": aws_domain_suffix,
-             "region": region or region_in_host,
+             "region": region or region_in_host or None,
              "dualstack": dualstack}, None)
 
 
@@ -706,7 +747,8 @@ class BaseURL:
             region: str,
             bucket_name: Optional[str] = None,
             object_name: Optional[str] = None,
-            query_params: Optional[DictType] = None,
+            query_params: Optional[HTTPQueryDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> urllib.parse.SplitResult:
         """Build URL for given information."""
         if not bucket_name and object_name:
@@ -716,14 +758,10 @@ class BaseURL:
 
         url = url_replace(url=self._url, path="/")
 
-        query = []
-        for key, values in sorted((query_params or {}).items()):
-            values = values if isinstance(values, (list, tuple)) else [values]
-            query += [
-                f"{queryencode(key)}={queryencode(value)}"
-                for value in sorted(values)
-            ]
-        url = url_replace(url=url, query="&".join(query))
+        query_params = HTTPQueryDict().extend(query_params).extend(
+            extra_query_params,
+        )
+        url = url_replace(url=url, query=f"{query_params}")
 
         if not bucket_name:
             return self._build_list_buckets_url(url, region)
@@ -765,13 +803,48 @@ class BaseURL:
 @dataclass(frozen=True)
 class ObjectWriteResult:
     """Result class of any APIs doing object creation."""
+    headers: HTTPHeaderDict
     bucket_name: str
     object_name: str
-    version_id: Optional[str]
-    etag: Optional[str]
-    http_headers: HTTPHeaderDict
+    etag: str
+    version_id: Optional[str] = None
     last_modified: Optional[datetime] = None
     location: Optional[str] = None
+    checksum_crc32: Optional[str] = None
+    checksum_crc32c: Optional[str] = None
+    checksum_crc64nvme: Optional[str] = None
+    checksum_sha1: Optional[str] = None
+    checksum_sha256: Optional[str] = None
+    checksum_type: Optional[str] = None
+
+    @classmethod
+    def new(
+            cls: Type[ObjectWriteResult],
+            *,
+            headers: HTTPHeaderDict,
+            bucket_name: str,
+            object_name: str,
+            etag: Optional[str] = None,
+            version_id: Optional[str] = None,
+            last_modified: Optional[datetime] = None,
+            location: Optional[str] = None,
+    ) -> ObjectWriteResult:
+        """Creates object write result."""
+        return cls(
+            headers=headers,
+            bucket_name=bucket_name,
+            object_name=object_name,
+            etag=etag or headers.get("etag", "").replace('"', ""),
+            version_id=version_id or headers.get("x-amz-version-id"),
+            last_modified=last_modified,
+            location=location,
+            checksum_crc32=headers.get("x-amz-checksum-crc32"),
+            checksum_crc32c=headers.get("x-amz-checksum-crc32c"),
+            checksum_crc64nvme=headers.get("x-amz-checksum-crc64nvme"),
+            checksum_sha1=headers.get("x-amz-checksum-sha1"),
+            checksum_sha256=headers.get("x-amz-checksum-sha256"),
+            checksum_type=headers.get("x-amz-checksum-type"),
+        )
 
 
 class Worker(Thread):

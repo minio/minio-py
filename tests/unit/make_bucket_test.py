@@ -27,12 +27,14 @@ from .minio_mocks import MockConnection, MockResponse
 
 class MakeBucket(TestCase):
     def test_bucket_is_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(TypeError, client.make_bucket, 1234)
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(TypeError):
+            client.make_bucket(bucket_name=1234)
 
     def test_bucket_is_not_empty_string(self):
-        client = Minio('localhost:9000')
-        self.assertRaises(ValueError, client.make_bucket, '  \t \n  ')
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(ValueError):
+            client.make_bucket(bucket_name='  \t \n  ')
 
     @mock.patch('urllib3.PoolManager')
     def test_make_bucket_works(self, mock_connection):
@@ -44,7 +46,7 @@ class MakeBucket(TestCase):
                          {'User-Agent': _DEFAULT_USER_AGENT},
                          200)
         )
-        Minio('localhost:9000')
+        Minio(endpoint='localhost:9000')
 
     @mock.patch('urllib3.PoolManager')
     def test_make_bucket_throws_fail(self, mock_connection):
@@ -61,5 +63,6 @@ class MakeBucket(TestCase):
                          response_headers={"Content-Type": "application/xml"},
                          content=error_xml.encode())
         )
-        client = Minio('localhost:9000')
-        self.assertRaises(S3Error, client.make_bucket, 'hello')
+        client = Minio(endpoint='localhost:9000')
+        with self.assertRaises(S3Error):
+            client.make_bucket(bucket_name='hello')
