@@ -80,7 +80,6 @@ class ServerError(MinioException):
 A = TypeVar("A", bound="S3Error")
 
 
-@dataclass(frozen=True)
 class S3Error(MinioException):
     """
     Raised to indicate that error response is received
