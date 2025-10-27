@@ -53,10 +53,13 @@ from minio.sse import SseCustomerKey
 from minio.time import to_http_header
 from minio.versioningconfig import SUSPENDED, VersioningConfig
 
+# pylint: disable=invalid-name
 _CLIENT = None  # initialized in main().
 _TEST_FILE = None  # initialized in main().
 _LARGE_FILE = None  # initialized in main().
 _IS_AWS = None  # initialized in main().
+# pylint: enable=invalid-name
+
 KB = 1024
 MB = 1024 * KB
 HTTP = urllib3.PoolManager(
