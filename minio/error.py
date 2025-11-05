@@ -30,7 +30,6 @@ and API specific errors.
 
 from __future__ import absolute_import, annotations
 
-from dataclasses import dataclass
 from typing import Optional, Type, TypeVar
 from xml.etree import ElementTree as ET
 
@@ -80,7 +79,6 @@ class ServerError(MinioException):
 A = TypeVar("A", bound="S3Error")
 
 
-@dataclass(frozen=True)
 class S3Error(MinioException):
     """
     Raised to indicate that error response is received
@@ -92,23 +90,64 @@ class S3Error(MinioException):
     resource: Optional[str]
     request_id: Optional[str]
     host_id: Optional[str]
-    bucket_name: Optional[str] = None
-    object_name: Optional[str] = None
+    bucket_name: Optional[str]
+    object_name: Optional[str]
 
-    def __post_init__(self):
-        bucket_message = (
-            (", bucket_name: " + self.bucket_name)
-            if self.bucket_name else ""
-        )
-        object_message = (
-            (", object_name: " + self.object_name)
-            if self.object_name else ""
-        )
+    _EXC_MUTABLES = {"__traceback__", "__context__", "__cause__"}
+
+    def __init__(  # pylint: disable=too-many-positional-arguments
+        self,
+        response: BaseHTTPResponse,
+        code: Optional[str],
+        message: Optional[str],
+        resource: Optional[str],
+        request_id: Optional[str],
+        host_id: Optional[str],
+        bucket_name: Optional[str] = None,
+        object_name: Optional[str] = None,
+    ):
+        object.__setattr__(self, "response", response)
+        object.__setattr__(self, "code", code)
+        object.__setattr__(self, "message", message)
+        object.__setattr__(self, "resource", resource)
+        object.__setattr__(self, "request_id", request_id)
+        object.__setattr__(self, "host_id", host_id)
+        object.__setattr__(self, "bucket_name", bucket_name)
+        object.__setattr__(self, "object_name", object_name)
+
+        bucket_message = f", bucket_name: {bucket_name}" if bucket_name else ""
+        object_message = f", object_name: {object_name}" if object_name else ""
+
         super().__init__(
-            f"S3 operation failed; code: {self.code}, message: {self.message}, "
-            f"resource: {self.resource}, request_id: {self.request_id}, "
-            f"host_id: {self.host_id}{bucket_message}{object_message}"
+            f"S3 operation failed; code: {code}, message: {message}, "
+            f"resource: {resource}, request_id: {request_id}, "
+            f"host_id: {host_id}{bucket_message}{object_message}"
         )
+
+        # freeze after init
+        object.__setattr__(self, "_is_frozen", True)
+
+    def __setattr__(self, name, value):
+        if name in self._EXC_MUTABLES:
+            object.__setattr__(self, name, value)
+            return
+        if getattr(self, "_is_frozen", False):
+            raise AttributeError(
+                f"{self.__class__.__name__} is frozen and "
+                "does not allow attribute assignment"
+            )
+        object.__setattr__(self, name, value)
+
+    def __delattr__(self, name):
+        if name in self._EXC_MUTABLES:
+            object.__delattr__(self, name)
+            return
+        if getattr(self, "_is_frozen", False):
+            raise AttributeError(
+                f"{self.__class__.__name__} is frozen and "
+                "does not allow attribute deletion"
+            )
+        object.__delattr__(self, name)
 
     @classmethod
     def fromxml(cls: Type[A], response: BaseHTTPResponse) -> A:
@@ -126,7 +165,7 @@ class S3Error(MinioException):
         )
 
     def copy(self, code: str, message: str) -> S3Error:
-        """Make a copy with replace code and message."""
+        """Make a copy with replaced code and message."""
         return S3Error(
             response=self.response,
             code=code,
@@ -136,6 +175,40 @@ class S3Error(MinioException):
             host_id=self.host_id,
             bucket_name=self.bucket_name,
             object_name=self.object_name,
+        )
+
+    def __repr__(self):
+        return (
+            f"S3Error(code={self.code!r}, message={self.message!r}, "
+            f"resource={self.resource!r}, request_id={self.request_id!r}, "
+            f"host_id={self.host_id!r}, bucket_name={self.bucket_name!r}, "
+            f"object_name={self.object_name!r})"
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, S3Error):
+            return NotImplemented
+        return (
+            self.code == other.code
+            and self.message == other.message
+            and self.resource == other.resource
+            and self.request_id == other.request_id
+            and self.host_id == other.host_id
+            and self.bucket_name == other.bucket_name
+            and self.object_name == other.object_name
+        )
+
+    def __hash__(self):
+        return hash(
+            (
+                self.code,
+                self.message,
+                self.resource,
+                self.request_id,
+                self.host_id,
+                self.bucket_name,
+                self.object_name,
+            )
         )
 
 
