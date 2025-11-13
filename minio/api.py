@@ -3221,7 +3221,6 @@ class Minio:
                     )
 
                 if not upload_id:
-                    headers.extend(checksum_headers)
                     upload_id = self._create_multipart_upload(
                         bucket_name=bucket_name,
                         object_name=object_name,
@@ -3234,16 +3233,10 @@ class Minio:
                         pool = ThreadPool(num_parallel_uploads)
                         pool.start_parallel()
 
-                part_headers = HTTPHeaderDict(
+                headers = HTTPHeaderDict(
                     sse.headers() if isinstance(sse, SseCustomerKey) else None,
                 )
-                part_headers.extend(checksum_headers)
-
-                # Explicitly filter out CreateMultipartUpload-only headers that should not be in UploadPart
-                headers = HTTPHeaderDict({
-                    k: v for k, v in part_headers.items()
-                    if not k.lower() in ("x-amz-storage-class",)
-                })
+                headers.extend(checksum_headers)
 
                 if num_parallel_uploads > 1:
                     kwargs = {
