@@ -13,7 +13,7 @@ The `play` server is a public MinIO cluster located at [https://play.min.io](htt
 This cluster runs the latest stable version of MinIO and may be used for testing and development.
 The access credentials in the example are open to the public and all data uploaded to `play` should be considered public and world-readable.
 
-For a complete list of APIs and examples, see the [Python Client API Reference](https://min.io/docs/minio/linux/developers/python/API.html)
+For a complete list of APIs and examples, see the [Python Client API Reference](https://docs.min.io/enterprise/aistor-object-store/developers/sdk/python/api/)
 
 ## Install the MinIO Python SDK
 
@@ -141,7 +141,7 @@ mc ls play/python-test-bucket
 
 ## More References
 
-* [Python Client API Reference](https://min.io/docs/minio/linux/developers/python/API.html)
+* [Python Client API Reference](https://docs.min.io/enterprise/aistor-object-store/developers/sdk/python/api/)
 * [Examples](https://github.com/minio/minio-py/tree/master/examples)
 
 ## Explore Further
