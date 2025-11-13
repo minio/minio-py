@@ -541,21 +541,30 @@ class IamAwsProvider(Provider):
 class LdapIdentityProvider(Provider):
     """Credential provider using AssumeRoleWithLDAPIdentity API."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-positional-arguments
             self,
             sts_endpoint: str,
             ldap_username: str,
             ldap_password: str,
+            duration_seconds: Optional[int] = None,
+            policy: Optional[str] = None,
+            token_revoke_type: Optional[str] = None,
             http_client: Optional[PoolManager] = None,
     ):
-        self._sts_endpoint = sts_endpoint + "?" + urlencode(
-            {
-                "Action": "AssumeRoleWithLDAPIdentity",
-                "Version": "2011-06-15",
-                "LDAPUsername": ldap_username,
-                "LDAPPassword": ldap_password,
-            },
-        )
+        query_params = {
+            "Action": "AssumeRoleWithLDAPIdentity",
+            "Version": "2011-06-15",
+            "LDAPUsername": ldap_username,
+            "LDAPPassword": ldap_password,
+        }
+        if duration_seconds:
+            query_params["DurationSeconds"] = str(duration_seconds)
+        if policy:
+            query_params["Policy"] = policy
+        if token_revoke_type:
+            query_params["TokenRevokeType"] = token_revoke_type
+
+        self._sts_endpoint = sts_endpoint + "?" + urlencode(query_params)
         self._http_client = http_client or PoolManager(
             retries=Retry(
                 total=5,
