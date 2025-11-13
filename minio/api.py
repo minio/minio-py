@@ -3237,7 +3237,6 @@ class Minio:
                     sse.headers() if isinstance(sse, SseCustomerKey) else None,
                 )
                 headers.extend(checksum_headers)
-
                 if num_parallel_uploads > 1:
                     kwargs = {
                         "bucket_name": bucket_name,
