@@ -3234,10 +3234,17 @@ class Minio:
                         pool = ThreadPool(num_parallel_uploads)
                         pool.start_parallel()
 
-                headers = HTTPHeaderDict(
+                part_headers = HTTPHeaderDict(
                     sse.headers() if isinstance(sse, SseCustomerKey) else None,
                 )
-                headers.extend(checksum_headers)
+                part_headers.extend(checksum_headers)
+
+                # Explicitly filter out CreateMultipartUpload-only headers that should not be in UploadPart
+                headers = HTTPHeaderDict({
+                    k: v for k, v in part_headers.items()
+                    if not k.lower() in ("x-amz-storage-class",)
+                })
+
                 if num_parallel_uploads > 1:
                     kwargs = {
                         "bucket_name": bucket_name,
