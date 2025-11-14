@@ -2832,6 +2832,14 @@ class Minio:
             tag = SubElement(element, "Part")
             SubElement(tag, "PartNumber", str(part.part_number))
             SubElement(tag, "ETag", '"' + part.etag + '"')
+            if part.checksum_crc32:
+                SubElement(tag, "ChecksumCRC32", part.checksum_crc32)
+            elif part.checksum_crc32c:
+                SubElement(tag, "ChecksumCRC32C", part.checksum_crc32c)
+            elif part.checksum_sha1:
+                SubElement(tag, "ChecksumSHA1", part.checksum_sha1)
+            elif part.checksum_sha256:
+                SubElement(tag, "ChecksumSHA256", part.checksum_sha256)
         body = getbytes(element)
         headers = HTTPHeaderDict(
             {
@@ -2921,7 +2929,7 @@ class Minio:
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
             extra_query_params: Optional[HTTPQueryDict] = None,
-    ) -> str:
+    ) -> ObjectWriteResult:
         """Execute UploadPart S3 API."""
         query_params = HTTPQueryDict({
             "partNumber": str(part_number),
@@ -2937,7 +2945,7 @@ class Minio:
             extra_headers=extra_headers,
             extra_query_params=extra_query_params,
         )
-        return cast(str, result.etag)
+        return result
 
     def _upload_part_task(self, kwargs):
         """Upload_part task for ThreadPool."""
@@ -3221,9 +3229,6 @@ class Minio:
                     )
 
                 if not upload_id:
-                    # Add only algorithm header to CreateMultipartUpload, not checksum values
-                    headers.extend({k: v for k, v in checksum_headers.items()
-                                   if k == "x-amz-sdk-checksum-algorithm"})
                     upload_id = self._create_multipart_upload(
                         bucket_name=bucket_name,
                         object_name=object_name,
@@ -3253,7 +3258,7 @@ class Minio:
                         self._upload_part_task, kwargs,
                     )
                 else:
-                    etag = self._upload_part(
+                    result = self._upload_part(
                         bucket_name=bucket_name,
                         object_name=object_name,
                         data=part_data,
@@ -3261,14 +3266,28 @@ class Minio:
                         upload_id=upload_id,
                         part_number=part_number,
                     )
-                    parts.append(Part(part_number, etag))
+                    parts.append(Part(
+                        part_number=part_number,
+                        etag=result.etag,
+                        checksum_crc32=result.checksum_crc32,
+                        checksum_crc32c=result.checksum_crc32c,
+                        checksum_sha1=result.checksum_sha1,
+                        checksum_sha256=result.checksum_sha256,
+                    ))
 
             if pool:
                 result = pool.result()
                 parts = [Part(0, "")] * part_count
                 while not result.empty():
-                    part_number, etag = result.get()
-                    parts[part_number - 1] = Part(part_number, etag)
+                    part_number, upload_result = result.get()
+                    parts[part_number - 1] = Part(
+                        part_number=part_number,
+                        etag=upload_result.etag,
+                        checksum_crc32=upload_result.checksum_crc32,
+                        checksum_crc32c=upload_result.checksum_crc32c,
+                        checksum_sha1=upload_result.checksum_sha1,
+                        checksum_sha256=upload_result.checksum_sha256,
+                    )
 
             upload_result = self._complete_multipart_upload(
                 bucket_name=bucket_name,
