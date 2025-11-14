@@ -3229,6 +3229,7 @@ class Minio:
                     )
 
                 if not upload_id:
+                    headers.extend(checksum_headers)
                     upload_id = self._create_multipart_upload(
                         bucket_name=bucket_name,
                         object_name=object_name,
@@ -3276,10 +3277,10 @@ class Minio:
                     ))
 
             if pool:
-                result = pool.result()
+                result_queue = pool.result()
                 parts = [Part(0, "")] * part_count
-                while not result.empty():
-                    part_number, upload_result = result.get()
+                while not result_queue.empty():
+                    part_number, upload_result = result_queue.get()
                     parts[part_number - 1] = Part(
                         part_number=part_number,
                         etag=upload_result.etag,
