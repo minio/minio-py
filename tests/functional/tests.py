@@ -999,13 +999,16 @@ def test_put_object_multipart_with_checksum(  # pylint: disable=invalid-name
 
     finally:
         try:
-            _client.remove_object(bucket_name=bucket_name, object_name=object_name)
+            _client.remove_object(
+                bucket_name=bucket_name, object_name=object_name)
         except:  # pylint: disable=bare-except
             pass
         if object_name_sha256:
             try:
                 _client.remove_object(
-                    bucket_name=bucket_name, object_name=object_name_sha256)
+                    bucket_name=bucket_name,
+                    object_name=object_name_sha256,
+                )
             except:  # pylint: disable=bare-except
                 pass
         try:
