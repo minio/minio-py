@@ -402,9 +402,18 @@ def reset_hashers(hashers: Optional[Dict[Algorithm, "Hasher"]]):
 def make_headers(
     hashers: Optional[Dict[Algorithm, "Hasher"]],
     add_content_sha256: bool,
-    add_sha256_checksum: bool
+    add_sha256_checksum: bool,
+    algorithm_only: bool = False
 ) -> Dict[str, str]:
-    """Makes headers for hashers."""
+    """Makes headers for hashers.
+
+    Args:
+        hashers: Dictionary of algorithm to hasher instances
+        add_content_sha256: Whether to add x-amz-content-sha256 header
+        add_sha256_checksum: Whether to add SHA256 checksum header
+        algorithm_only: If True, only include algorithm declaration header,
+                       not checksum value headers
+    """
     headers = {}
     if hashers:
         for algo, hasher in hashers.items():
@@ -415,5 +424,6 @@ def make_headers(
                 if not add_sha256_checksum:
                     continue
             headers["x-amz-sdk-checksum-algorithm"] = str(algo)
-            headers[algo.header()] = base64_string(sum_bytes)
+            if not algorithm_only:
+                headers[algo.header()] = base64_string(sum_bytes)
     return headers

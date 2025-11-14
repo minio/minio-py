@@ -3229,7 +3229,7 @@ class Minio:
                     )
 
                 if not upload_id:
-                    headers.extend(checksum_headers)
+                    headers.extend(make_headers(hashers, add_content_sha256, add_sha256_checksum, algorithm_only=True))
                     upload_id = self._create_multipart_upload(
                         bucket_name=bucket_name,
                         object_name=object_name,
