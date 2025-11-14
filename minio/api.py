@@ -3221,6 +3221,9 @@ class Minio:
                     )
 
                 if not upload_id:
+                    # Add only algorithm header to CreateMultipartUpload, not checksum values
+                    headers.extend({k: v for k, v in checksum_headers.items()
+                                   if k == "x-amz-sdk-checksum-algorithm"})
                     upload_id = self._create_multipart_upload(
                         bucket_name=bucket_name,
                         object_name=object_name,
