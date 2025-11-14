@@ -284,6 +284,10 @@ class Part:
     etag: str
     last_modified: Optional[datetime] = None
     size: Optional[int] = None
+    checksum_crc32: Optional[str] = None
+    checksum_crc32c: Optional[str] = None
+    checksum_sha1: Optional[str] = None
+    checksum_sha256: Optional[str] = None
 
     @classmethod
     def fromxml(cls: Type[C], element: ET.Element) -> C:
