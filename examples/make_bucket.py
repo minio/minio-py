@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ client = Minio(
 client.make_bucket(bucket_name="my-bucket")
 
 # Create bucket on specific region.
-client.make_bucket(bucket_name="my-bucket", location="us-west-1")
+client.make_bucket(bucket_name="my-bucket", region="us-west-1")
 
 # Create bucket with object-lock feature on specific region.
 client.make_bucket(
-    bucket_name="my-bucket", location="eu-west-2", object_lock=True,
+    bucket_name="my-bucket", region="eu-west-2", object_lock=True,
 )

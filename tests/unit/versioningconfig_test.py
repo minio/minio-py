@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,39 +17,38 @@
 from unittest import TestCase
 
 from minio import xml
-from minio.commonconfig import DISABLED, ENABLED
-from minio.versioningconfig import OFF, SUSPENDED, VersioningConfig
+from minio.models import VersioningConfig
 
 
 class VersioningConfigTest(TestCase):
     def test_config(self):
-        config = VersioningConfig(ENABLED)
+        config = VersioningConfig(VersioningConfig.ENABLED)
         xml.marshal(config)
 
         config = xml.unmarshal(
-            VersioningConfig,
-            """<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+            VersioningConfig, """
+<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
 </VersioningConfiguration>""",
         )
         xml.marshal(config)
-        self.assertEqual(config.status_string, OFF)
+        self.assertEqual(config.status_string, VersioningConfig.OFF)
 
         config = xml.unmarshal(
-            VersioningConfig,
-            """<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+            VersioningConfig, """
+<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Status>Enabled</Status>
 </VersioningConfiguration>""",
         )
         xml.marshal(config)
-        self.assertEqual(config.status_string, ENABLED)
+        self.assertEqual(config.status_string, VersioningConfig.ENABLED)
 
         config = xml.unmarshal(
-            VersioningConfig,
-            """<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+            VersioningConfig, """
+<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Status>Suspended</Status>
   <MFADelete>Disabled</MFADelete>
 </VersioningConfiguration>""",
         )
         xml.marshal(config)
-        self.assertEqual(config.status_string, SUSPENDED)
-        self.assertEqual(config.mfa_delete, DISABLED)
+        self.assertEqual(config.status_string, VersioningConfig.SUSPENDED)
+        self.assertEqual(config.mfa_delete, VersioningConfig.DISABLED)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2020 MinIO, Inc.
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Time formatter for S3 APIs."""
+"""Time functions and formatter for S3 APIs."""
 
-from __future__ import absolute_import, annotations
+from __future__ import annotations
 
 import time as ctime
 from datetime import datetime, timezone

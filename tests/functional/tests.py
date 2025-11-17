@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015, 2016, 2017, 2018 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 # pylint: disable=too-many-lines,broad-exception-raised
 """Functional tests of minio-py."""
 
-from __future__ import absolute_import, division
+from __future__ import division
 
 import hashlib
 import io
@@ -39,24 +39,24 @@ from uuid import uuid4
 
 import certifi
 import urllib3
-from urllib3._collections import HTTPHeaderDict
 
 from minio import Minio
-from minio.checksum import Algorithm
-from minio.commonconfig import ENABLED, REPLACE, CopySource, SnowballObject
-from minio.datatypes import PostPolicy
-from minio.deleteobjects import DeleteObject
+from minio.args import Directive, SnowballObject, SourceObject
+from minio.checksum import CRC32C, Algorithm
+from minio.checksum import Type as ChecksumType
+from minio.checksum import base64_string
+from minio.compat import HTTPHeaderDict, HTTPQueryDict
 from minio.error import S3Error
-from minio.helpers import HTTPQueryDict
-from minio.select import (CSVInputSerialization, CSVOutputSerialization,
-                          SelectRequest)
+from minio.models import (DeleteRequest, PostPolicy,
+                          SelectObjectContentRequest, VersioningConfig)
 from minio.sse import SseCustomerKey
 from minio.time import to_http_header
-from minio.versioningconfig import SUSPENDED, VersioningConfig
 
 _client = None  # pylint: disable=invalid-name
 _test_file = None  # pylint: disable=invalid-name
 _large_file = None  # pylint: disable=invalid-name
+_test_file_crc32c = None  # pylint: disable=invalid-name
+_large_file_crc32c = None  # pylint: disable=invalid-name
 _is_aws = None  # pylint: disable=invalid-name
 KB = 1024
 MB = 1024 * KB
@@ -291,10 +291,10 @@ def test_select_object_content(log_entry):
             length=len(content.getvalue()),
         )
 
-        request = SelectRequest(
+        request = SelectObjectContentRequest(
             "select * from s3object",
-            CSVInputSerialization(),
-            CSVOutputSerialization(),
+            SelectObjectContentRequest.CSVInputSerialization(),
+            SelectObjectContentRequest.CSVOutputSerialization(),
             request_progress=True,
         )
         data = _client.select_object_content(
@@ -339,11 +339,36 @@ def _test_fput_object(bucket_name, object_name, filename, metadata, sse):
                 sse=sse,
             )
 
-        _client.stat_object(
+        response = _client.stat_object(
             bucket_name=bucket_name,
             object_name=object_name,
             ssec=sse,
+            fetch_checksum=True,
         )
+
+        if filename == _test_file:
+            if response.checksum_type != ChecksumType.FULL_OBJECT:
+                raise ValueError(
+                    f"checksum type: expected: {ChecksumType.FULL_OBJECT}; "
+                    f"got: {response.checksum_type}",
+                )
+            if response.checksums.get(Algorithm.CRC32C) != _test_file_crc32c:
+                raise ValueError(
+                    f"checksum crc32c: expected: {_test_file_crc32c}; "
+                    f"got: {response.checksums.get(Algorithm.CRC32C)}",
+                )
+        elif filename == _large_file:
+            if response.checksum_type != ChecksumType.COMPOSITE:
+                raise ValueError(
+                    f"checksum type: expected: {ChecksumType.COMPOSITE}; "
+                    f"got: {response.checksum_type}",
+                )
+            if response.checksums.get(Algorithm.CRC32C) != _large_file_crc32c:
+                raise ValueError(
+                    f"checksum crc32c: expected: {_large_file_crc32c}; "
+                    f"got: {response.checksums.get(Algorithm.CRC32C)}",
+                )
+
     finally:
         _client.remove_object(bucket_name=bucket_name, object_name=object_name)
         _client.remove_bucket(bucket_name=bucket_name)
@@ -421,11 +446,11 @@ def _validate_stat(st_obj, expected_size, expected_meta, version_id=None):
     }
     received_etag = st_obj.etag
     received_metadata = {
-        key.lower(): value for key, value in (st_obj.metadata or {}).items()
+        key.lower(): value for key, value in
+        (st_obj.user_metadata or {}).items()
     }
     received_content_type = st_obj.content_type
     received_size = st_obj.size
-    received_is_dir = st_obj.is_dir
 
     if not received_etag:
         raise ValueError('No Etag value is returned.')
@@ -448,12 +473,8 @@ def _validate_stat(st_obj, expected_size, expected_meta, version_id=None):
         raise ValueError('Incorrect file size. Expected: 11534336',
                          ', received: ', received_size)
 
-    if received_is_dir:
-        raise ValueError('Incorrect file type. Expected: is_dir=False',
-                         ', received: is_dir=', received_is_dir)
-
     if not all(i in received_metadata.items() for i in expected_meta.items()):
-        raise ValueError("Metadata key 'x-amz-meta-testing' not found")
+        raise ValueError("expected metadata not found in received metadata")
 
 
 def test_copy_object_no_copy_condition(  # pylint: disable=invalid-name
@@ -491,7 +512,7 @@ def test_copy_object_no_copy_condition(  # pylint: disable=invalid-name
             bucket_name=bucket_name,
             object_name=object_copy,
             sse=ssec,
-            source=CopySource(
+            source=SourceObject(
                 bucket_name=bucket_name,
                 object_name=object_source,
                 ssec=ssec_copy,
@@ -520,11 +541,12 @@ def test_copy_object_with_metadata(log_entry):
     object_name = f"{uuid4()}"
     object_source = object_name + "-source"
     object_copy = object_name + "-copy"
-    metadata = HTTPHeaderDict({
+    expected_metadata = {
         "testing-string": "string",
         "testing-int": "1",
         "10": 'value',
-    })
+    }
+    metadata = HTTPHeaderDict(expected_metadata)
 
     log_entry["args"] = {
         "bucket_name": bucket_name,
@@ -548,21 +570,18 @@ def test_copy_object_with_metadata(log_entry):
         _client.copy_object(
             bucket_name=bucket_name,
             object_name=object_copy,
-            source=CopySource(
+            source=SourceObject(
                 bucket_name=bucket_name,
                 object_name=object_source,
             ),
             user_metadata=metadata,
-            metadata_directive=REPLACE,
+            metadata_directive=Directive.REPLACE,
         )
         # Verification
         st_obj = _client.stat_object(
             bucket_name=bucket_name,
             object_name=object_copy,
         )
-        expected_metadata = {'x-amz-meta-testing-int': '1',
-                             'x-amz-meta-testing-string': 'string',
-                             'x-amz-meta-10': 'value'}
         _validate_stat(st_obj, size, expected_metadata)
     finally:
         _client.remove_object(
@@ -603,7 +622,7 @@ def test_copy_object_etag_match(log_entry):
         _client.copy_object(
             bucket_name=bucket_name,
             object_name=object_copy,
-            source=CopySource(
+            source=SourceObject(
                 bucket_name=bucket_name,
                 object_name=object_source,
             ),
@@ -617,7 +636,7 @@ def test_copy_object_etag_match(log_entry):
         _client.copy_object(
             bucket_name=bucket_name,
             object_name=object_copy,
-            source=CopySource(
+            source=SourceObject(
                 bucket_name=bucket_name,
                 object_name=object_source,
                 match_etag=source_etag,
@@ -667,7 +686,7 @@ def test_copy_object_negative_etag_match(  # pylint: disable=invalid-name
             _client.copy_object(
                 bucket_name=bucket_name,
                 object_name=object_copy,
-                source=CopySource(
+                source=SourceObject(
                     bucket_name=bucket_name,
                     object_name=object_source,
                     match_etag=etag,
@@ -720,7 +739,7 @@ def test_copy_object_modified_since(log_entry):
         _client.copy_object(
             bucket_name=bucket_name,
             object_name=object_copy,
-            source=CopySource(
+            source=SourceObject(
                 bucket_name=bucket_name,
                 object_name=object_source,
                 modified_since=mod_since,
@@ -773,7 +792,7 @@ def test_copy_object_unmodified_since(  # pylint: disable=invalid-name
             _client.copy_object(
                 bucket_name=bucket_name,
                 object_name=object_copy,
-                source=CopySource(
+                source=SourceObject(
                     bucket_name=bucket_name,
                     object_name=object_source,
                     unmodified_since=unmod_since,
@@ -859,14 +878,14 @@ def test_put_object(log_entry, sse=None):
         )
         normalized_meta = {
             key.lower(): value for key, value in (
-                st_obj.metadata or {}).items()
+                st_obj.user_metadata or {}).items()
         }
-        if 'x-amz-meta-testing' not in normalized_meta:
+        if 'testing' not in normalized_meta:
             raise ValueError("Metadata key 'x-amz-meta-testing' not found")
-        value = normalized_meta['x-amz-meta-testing']
+        value = normalized_meta['testing']
         if value != 'value':
             raise ValueError(f"Metadata key has unexpected value {value}")
-        if 'x-amz-meta-test-key' not in normalized_meta:
+        if 'test-key' not in normalized_meta:
             raise ValueError("Metadata key 'x-amz-meta-test-key' not found")
     finally:
         _client.remove_object(bucket_name=bucket_name, object_name=object_name)
@@ -909,114 +928,6 @@ def test_negative_put_object_with_path_segment(  # pylint: disable=invalid-name
         _client.remove_bucket(bucket_name=bucket_name)
 
 
-def test_put_object_multipart_with_checksum(  # pylint: disable=invalid-name
-        log_entry):
-    """Test put_object() multipart upload with checksum validation.
-
-    This test validates the AWS S3 compliant checksum implementation for
-    multipart uploads:
-    - CreateMultipartUpload receives algorithm header only (not values)
-    - UploadPart includes checksum value headers
-    - CompleteMultipartUpload includes checksums in XML body
-    """
-
-    # Get a unique bucket_name and object_name
-    bucket_name = _gen_bucket_name()
-    object_name = f"{uuid4()}-checksum"
-    object_name_sha256 = None  # Initialize for cleanup
-    # Use 6 MB to trigger multipart upload (> 5 MB threshold)
-    length = 6 * MB
-
-    log_entry["args"] = {
-        "bucket_name": bucket_name,
-        "object_name": object_name,
-        "length": length,
-        "data": "LimitedRandomReader(6 * MB)",
-        "checksum": "Algorithm.CRC32C",
-    }
-
-    try:
-        _client.make_bucket(bucket_name=bucket_name)
-
-        # Upload with CRC32C checksum - triggers multipart upload
-        reader = LimitedRandomReader(length)
-        result = _client.put_object(
-            bucket_name=bucket_name,
-            object_name=object_name,
-            data=reader,
-            length=length,
-            checksum=Algorithm.CRC32C,
-        )
-
-        # Verify upload succeeded and returned valid result
-        if not result.etag:
-            raise ValueError("Upload did not return valid ETag")
-
-        # Verify ETag indicates multipart upload (contains dash and part count)
-        if '-' not in result.etag:
-            raise ValueError(
-                f"Expected multipart ETag (with dash), got: {result.etag}")
-
-        # Stat the object to verify it exists and has correct size
-        st_obj = _client.stat_object(
-            bucket_name=bucket_name,
-            object_name=object_name,
-        )
-
-        if st_obj.size != length:
-            raise ValueError(
-                f"Size mismatch: expected {length}, got {st_obj.size}")
-
-        # Test with SHA256 checksum algorithm
-        object_name_sha256 = f"{uuid4()}-checksum-sha256"
-        log_entry["args"]["object_name"] = object_name_sha256
-        log_entry["args"]["checksum"] = "Algorithm.SHA256"
-
-        reader = LimitedRandomReader(length)
-        result = _client.put_object(
-            bucket_name=bucket_name,
-            object_name=object_name_sha256,
-            data=reader,
-            length=length,
-            checksum=Algorithm.SHA256,
-        )
-
-        if not result.etag:
-            raise ValueError("Upload with SHA256 did not return valid ETag")
-
-        if '-' not in result.etag:
-            raise ValueError(
-                f"Expected multipart ETag for SHA256, got: {result.etag}")
-
-        st_obj = _client.stat_object(
-            bucket_name=bucket_name,
-            object_name=object_name_sha256,
-        )
-
-        if st_obj.size != length:
-            raise ValueError(
-                f"Size mismatch: expected {length}, got {st_obj.size}")
-
-    finally:
-        try:
-            _client.remove_object(
-                bucket_name=bucket_name, object_name=object_name)
-        except:  # pylint: disable=bare-except
-            pass
-        if object_name_sha256:
-            try:
-                _client.remove_object(
-                    bucket_name=bucket_name,
-                    object_name=object_name_sha256,
-                )
-            except:  # pylint: disable=bare-except
-                pass
-        try:
-            _client.remove_bucket(bucket_name=bucket_name)
-        except:  # pylint: disable=bare-except
-            pass
-
-
 def _test_stat_object(log_entry, sse=None, version_check=False):
     """Test stat_object()."""
 
@@ -1043,7 +954,7 @@ def _test_stat_object(log_entry, sse=None, version_check=False):
         if version_check:
             _client.set_bucket_versioning(
                 bucket_name=bucket_name,
-                config=VersioningConfig(ENABLED),
+                config=VersioningConfig(VersioningConfig.ENABLED),
             )
         # Put/Upload a streaming object of 1 MiB
         reader = LimitedRandomReader(length)
@@ -1066,8 +977,7 @@ def _test_stat_object(log_entry, sse=None, version_check=False):
         log_entry["args"]["length"] = length = 11 * MB
         reader = LimitedRandomReader(length)
         log_entry["args"]["data"] = "LimitedRandomReader(11 * MB)"
-        log_entry["args"]["metadata"] = metadata = {
-            'X-Amz-Meta-Testing': 'value'}
+        log_entry["args"]["metadata"] = metadata = {'Testing': 'value'}
         log_entry["args"]["content_type"] = content_type = (
             "application/octet-stream")
         log_entry["args"]["object_name"] = object_name + "-metadata"
@@ -1136,7 +1046,7 @@ def _test_remove_object(log_entry, version_check=False):
         if version_check:
             _client.set_bucket_versioning(
                 bucket_name=bucket_name,
-                config=VersioningConfig(ENABLED),
+                config=VersioningConfig(VersioningConfig.ENABLED),
             )
         result = _client.put_object(
             bucket_name=bucket_name,
@@ -1185,7 +1095,7 @@ def _test_get_object(log_entry, sse=None, version_check=False):
         if version_check:
             _client.set_bucket_versioning(
                 bucket_name=bucket_name,
-                config=VersioningConfig(ENABLED),
+                config=VersioningConfig(VersioningConfig.ENABLED),
             )
         result = _client.put_object(
             bucket_name=bucket_name,
@@ -1250,7 +1160,7 @@ def _test_fget_object(log_entry, sse=None, version_check=False):
         if version_check:
             _client.set_bucket_versioning(
                 bucket_name=bucket_name,
-                config=VersioningConfig(ENABLED),
+                config=VersioningConfig(VersioningConfig.ENABLED),
             )
         result = _client.put_object(
             bucket_name=bucket_name,
@@ -1409,7 +1319,7 @@ def _test_list_objects(log_entry, use_api_v1=False, version_check=False):
         if version_check:
             _client.set_bucket_versioning(
                 bucket_name=bucket_name,
-                config=VersioningConfig(ENABLED),
+                config=VersioningConfig(VersioningConfig.ENABLED),
             )
         size = 1 * KB
         result = _client.put_object(
@@ -1873,7 +1783,7 @@ def test_presigned_get_object_version(  # pylint: disable=invalid-name
     try:
         _client.set_bucket_versioning(
             bucket_name=bucket_name,
-            config=VersioningConfig(ENABLED),
+            config=VersioningConfig(VersioningConfig.ENABLED),
         )
         size = 1 * KB
         result = _client.put_object(
@@ -2241,12 +2151,12 @@ def _test_remove_objects(log_entry, version_check=False):
 
     _client.make_bucket(bucket_name=bucket_name)
     object_names = []
-    delete_object_list = []
+    objects = []
     try:
         if version_check:
             _client.set_bucket_versioning(
                 bucket_name=bucket_name,
-                config=VersioningConfig(ENABLED),
+                config=VersioningConfig(VersioningConfig.ENABLED),
             )
         size = 1 * KB
         # Upload some new objects to prepare for multi-object delete test.
@@ -2262,17 +2172,17 @@ def _test_remove_objects(log_entry, version_check=False):
                 (object_name, result.version_id) if version_check
                 else object_name,
             )
-        log_entry["args"]["delete_object_list"] = object_names
+        log_entry["args"]["objects"] = object_names
 
         for args in object_names:
-            delete_object_list.append(
-                DeleteObject(args) if isinstance(args, str)
-                else DeleteObject(args[0], args[1])
+            objects.append(
+                DeleteRequest.Object(args) if isinstance(args, str)
+                else DeleteRequest.Object(args[0], args[1])
             )
         # delete the objects in a single library call.
         errs = _client.remove_objects(
             bucket_name=bucket_name,
-            delete_object_list=delete_object_list,
+            objects=objects,
         )
         for err in errs:
             raise ValueError(f"Remove objects err: {err}")
@@ -2280,7 +2190,7 @@ def _test_remove_objects(log_entry, version_check=False):
         # Try to clean everything to keep our server intact
         errs = _client.remove_objects(
             bucket_name=bucket_name,
-            delete_object_list=delete_object_list,
+            objects=objects,
         )
         for err in errs:
             raise ValueError(f"Remove objects err: {err}")
@@ -2311,7 +2221,7 @@ def test_remove_bucket(log_entry):
 
     if _is_aws:
         log_entry["args"]["location"] = location = "us-east-1"
-        _client.make_bucket(bucket_name=bucket_name, location=location)
+        _client.make_bucket(bucket_name=bucket_name, region=location)
     else:
         _client.make_bucket(bucket_name=bucket_name)
 
@@ -2391,13 +2301,13 @@ def test_set_get_bucket_versioning(log_entry):
         # Test all fields of versioning configuration
         _client.set_bucket_versioning(
             bucket_name=bucket_name,
-            config=VersioningConfig(status=ENABLED,
+            config=VersioningConfig(status=VersioningConfig.ENABLED,
                                     exclude_folders=True,
                                     excluded_prefixes=excl_prefixes),
         )
 
         vcfg = _client.get_bucket_versioning(bucket_name=bucket_name)
-        if vcfg.status != ENABLED:
+        if vcfg.status != VersioningConfig.ENABLED:
             raise ValueError(f'(1) unexpected get_bucket_versioning result: '
                              f'status: {vcfg.status}')
         if not vcfg.exclude_folders:
@@ -2410,11 +2320,11 @@ def test_set_get_bucket_versioning(log_entry):
         # Disable all fields of versioning configuration
         _client.set_bucket_versioning(
             bucket_name=bucket_name,
-            config=VersioningConfig(status=SUSPENDED),
+            config=VersioningConfig(status=VersioningConfig.SUSPENDED),
         )
 
         vcfg = _client.get_bucket_versioning(bucket_name=bucket_name)
-        if vcfg.status != SUSPENDED:
+        if vcfg.status != VersioningConfig.SUSPENDED:
             raise ValueError(f'(2) unexpected get_bucket_versioning result: '
                              f'status: {vcfg.status}')
         if vcfg.exclude_folders:
@@ -2433,7 +2343,8 @@ def main():
     Functional testing of minio python library.
     """
     # pylint: disable=global-statement
-    global _client, _test_file, _large_file, _is_aws
+    global _client, _test_file, _large_file, _test_file_crc32c, \
+        _large_file_crc32c, _is_aws
 
     access_key = os.getenv('ACCESS_KEY')
     secret_key = os.getenv('SECRET_KEY')
@@ -2477,6 +2388,26 @@ def main():
         with open(_large_file, 'wb') as file_data:
             shutil.copyfileobj(LimitedRandomReader(11 * MB), file_data)
 
+    hasher = CRC32C()
+    with open(_test_file, "rb") as file:
+        hasher.update(file.read())
+    _test_file_crc32c = base64_string(hasher.sum())
+    hasher.reset()
+
+    composite_hasher = CRC32C()
+    part_count = 0
+    with open(_large_file, "rb") as file:
+        while True:
+            data = file.read(5 * MB)
+            if not data:
+                break
+            part_count += 1
+            hasher.update(data)
+            composite_hasher.update(hasher.sum())
+            hasher.reset()
+        _large_file_crc32c = base64_string(composite_hasher.sum())
+        _large_file_crc32c = f"{_large_file_crc32c}-{part_count}"
+
     ssec = None
     if secure:
         # Create a Customer Key of 32 Bytes for Server Side Encryption (SSE-C)
@@ -2502,7 +2433,6 @@ def main():
             test_copy_object_unmodified_since: None,
             test_put_object: {"sse": ssec} if ssec else None,
             test_negative_put_object_with_path_segment: None,
-            test_put_object_multipart_with_checksum: None,
             test_stat_object: {"sse": ssec} if ssec else None,
             test_stat_object_version: {"sse": ssec} if ssec else None,
             test_get_object: {"sse": ssec} if ssec else None,

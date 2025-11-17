@@ -1,5 +1,6 @@
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015 MinIO, Inc.
+# -*- coding: utf-8 -*-
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,41 +14,60 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import codecs
+"""Setup definitions."""
+
+from __future__ import annotations
+
 import re
-import sys
+from pathlib import Path
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
-if sys.argv[-1] == "publish":
-    sys.argv = sys.argv[:-1] + ["sdist", "upload"]
+ROOT = Path(__file__).parent
 
-with codecs.open("minio/__init__.py") as file:
-    version = re.search(
-        r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
-        file.read(),
-        re.MULTILINE,
-    ).group(1)
+# Read version from minio/__init__.py
+init_py = ROOT / "minio" / "__init__.py"
+version_match = re.search(
+    r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+    init_py.read_text(encoding="utf-8"),
+    re.MULTILINE,
+)
+if not version_match:
+    raise RuntimeError("Unable to find __version__ in minio/__init__.py")
+version = version_match.group(1)
 
-with codecs.open("README.md", encoding="utf-8") as file:
-    readme = file.read()
+# Long description
+readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="minio",
-    description="MinIO Python SDK for Amazon S3 Compatible Cloud Storage",
-    author="MinIO, Inc.",
-    url="https://github.com/minio/minio-py",
-    download_url="https://github.com/minio/minio-py/releases",
-    author_email="dev@min.io",
     version=version,
+    description="MinIO Python SDK for Amazon S3 Compatible Cloud Storage",
+    long_description=readme,
     long_description_content_type="text/markdown",
-    package_dir={"minio": "minio"},
-    packages=["minio", "minio.credentials"],
-    python_requires=">=3.9",
-    install_requires=["certifi", "urllib3", "argon2-cffi",
-                      "pycryptodome", "typing-extensions"],
-    tests_require=[],
+    author="MinIO, Inc.",
+    author_email="dev@min.io",
+    url="https://github.com/minio/minio-py",
+    project_urls={
+        "Source": "https://github.com/minio/minio-py",
+        "Issues": "https://github.com/minio/minio-py/issues",
+        "Changelog": "https://github.com/minio/minio-py/releases",
+    },
     license="Apache-2.0",
+    package_dir={"": "."},
+    packages=find_packages(include=["minio", "minio.*"]),
+    python_requires=">=3.10",
+    install_requires=[
+        "certifi",
+        "urllib3",
+        "argon2-cffi",
+        "pycryptodome",
+        "typing-extensions",
+    ],
+    include_package_data=True,
+    package_data={
+        "minio": ["LICENSE", "README.md", "py.typed"],
+    },
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
@@ -55,14 +75,11 @@ setup(
         "Natural Language :: English",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    long_description=readme,
-    package_data={"": ["LICENSE", "README.md", "py.typed"]},
-    include_package_data=True,
 )

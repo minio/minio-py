@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,8 +18,7 @@ from datetime import datetime, timedelta
 
 from examples.progress import Progress
 from minio import Minio
-from minio.commonconfig import GOVERNANCE, Tags
-from minio.retention import Retention
+from minio.models import Retention, Tags
 from minio.sse import SseCustomerKey, SseKMS, SseS3
 
 client = Minio(
@@ -110,7 +109,7 @@ result = client.fput_object(
     object_name="my-object",
     file_path="my-filename",
     tags=tags,
-    retention=Retention(GOVERNANCE, date),
+    retention=Retention(Retention.GOVERNANCE, date),
     legal_hold=True,
 )
 print(

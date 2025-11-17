@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2018 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,22 +14,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-minio.sse
-~~~~~~~~~~~~~~~~~~~
+"""Server-side encryption."""
 
-This module contains core API parsers.
-
-:copyright: (c) 2018 by MinIO, Inc.
-:license: Apache 2.0, see LICENSE for more details.
-
-"""
-from __future__ import absolute_import, annotations
+from __future__ import annotations
 
 import base64
 import json
 from abc import ABC, abstractmethod
-from typing import Any, cast
+from typing import Any, Optional, cast
+
+from .checksum import md5sum_hash
+
+
+def check_ssec(sse: Optional[SseCustomerKey]):
+    """Check sse is SseCustomerKey type or not."""
+    if sse and not isinstance(sse, SseCustomerKey):
+        raise ValueError("SseCustomerKey type is required")
+
+
+def check_sse(sse: Optional[Sse]):
+    """Check sse is Sse type or not."""
+    if sse and not isinstance(sse, Sse):
+        raise ValueError("Sse type is required")
 
 
 class Sse(ABC):
@@ -58,8 +64,6 @@ class SseCustomerKey(Sse):
                 "Pass raw bytes, not the base64 encoded value.",
             )
         b64key = base64.b64encode(key).decode()
-        from .helpers import \
-            md5sum_hash  # pylint: disable=import-outside-toplevel
         md5key = cast(str, md5sum_hash(key))
         self._headers: dict[str, str] = {
             "X-Amz-Server-Side-Encryption-Customer-Algorithm": "AES256",

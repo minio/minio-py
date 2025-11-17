@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2016-2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 from datetime import datetime, timezone
 
 from minio import Minio
-from minio.commonconfig import REPLACE, CopySource
+from minio.args import CopySource, Directive
 
 client = Minio(
     endpoint="play.min.io",
@@ -55,6 +55,6 @@ result = client.copy_object(
         bucket_name="my-sourcebucket", object_name="my-sourceobject",
     ),
     user_metadata={"test_meta_key": "test_meta_value"},
-    metadata_directive=REPLACE,
+    metadata_directive=Directive.REPLACE,
 )
 print(result.object_name, result.version_id)
