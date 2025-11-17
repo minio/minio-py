@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,24 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import namedtuple
-from unittest import TestCase
-from urllib.parse import urlunsplit
-
-from minio.helpers import BaseURL
-
-
-def generate_error(code, message, request_id, host_id,
-                   resource, bucket_name, object_name):
-    return '''
-    <Error>
-      <Code>{0}</Code>
-      <Message>{1}</Message>
-      <RequestId>{2}</RequestId>
-      <HostId>{3}</HostId>
-      <Resource>{4}</Resource>
-      <BucketName>{5}</BucketName>
-      <Key>{6}</Key>
-    </Error>
-    '''.format(code, message, request_id, host_id,
-               resource, bucket_name, object_name)
+def generate_error(
+        code, message, request_id, host_id, resource, bucket_name, object_name,
+):
+    return f"""<Error>
+    <Code>{code}</Code>
+    <Message>{message}</Message>
+    <RequestId>{request_id}</RequestId>
+    <HostId>{host_id}</HostId>
+    <Resource>{resource}</Resource>
+    <BucketName>{bucket_name}</BucketName>
+    <Key>{object_name}</Key>
+</Error>"""

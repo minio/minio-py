@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2016 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -15,12 +15,11 @@
 # limitations under the License.
 
 import itertools
-import unittest.mock as mock
-from unittest import TestCase
+from unittest import TestCase, mock
 
 from minio import Minio
-from minio.api import _DEFAULT_USER_AGENT
-from minio.deleteobjects import DeleteObject
+from minio.helpers import _DEFAULT_USER_AGENT
+from minio.models import DeleteRequest
 
 from .minio_mocks import MockConnection, MockResponse
 
@@ -40,7 +39,9 @@ class RemoveObjectsTest(TestCase):
         client = Minio(endpoint='localhost:9000')
         for err in client.remove_objects(
                 bucket_name="hello",
-                delete_object_list=[DeleteObject("Ab"), DeleteObject("c")],
+                objects=[
+                    DeleteRequest.Object("Ab"), DeleteRequest.Object("c"),
+                ],
         ):
             print(err)
 
@@ -58,7 +59,9 @@ class RemoveObjectsTest(TestCase):
         client = Minio(endpoint='localhost:9000')
         for err in client.remove_objects(
                 bucket_name="hello",
-                delete_object_list=(DeleteObject("Ab"), DeleteObject("c")),
+                objects=(
+                    DeleteRequest.Object("Ab"), DeleteRequest.Object("c"),
+                ),
         ):
             print(err)
 
@@ -74,8 +77,11 @@ class RemoveObjectsTest(TestCase):
                          content=b'<Delete/>')
         )
         client = Minio(endpoint='localhost:9000')
-        it = itertools.chain((DeleteObject("Ab"), DeleteObject("c")))
         result = client.remove_objects(
-            bucket_name='hello', delete_object_list=it)
+            bucket_name='hello',
+            objects=itertools.chain(
+                (DeleteRequest.Object("Ab"), DeleteRequest.Object("c")),
+            ),
+        )
         for err in result:
             print(err)

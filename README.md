@@ -5,7 +5,7 @@ The MinIO Python Client SDK provides high level APIs to access any MinIO Object 
 This Quickstart Guide covers how to install the MinIO client SDK, connect to the object storage service, and create a sample file uploader.
 
 The example below uses:
-- [Python version 3.9+](https://www.python.org/downloads/)
+- [Python version 3.10+](https://www.python.org/downloads/)
 - The [MinIO `mc` command line tool](https://min.io/docs/minio/linux/reference/minio-mc.html)
 - The MinIO `play` test server
 
@@ -13,11 +13,11 @@ The `play` server is a public MinIO cluster located at [https://play.min.io](htt
 This cluster runs the latest stable version of MinIO and may be used for testing and development.
 The access credentials in the example are open to the public and all data uploaded to `play` should be considered public and world-readable.
 
-For a complete list of APIs and examples, see the [Python Client API Reference](https://min.io/docs/minio/linux/developers/python/API.html)
+For a complete list of APIs and examples, see the [Python SDK Documentation](https://docs.min.io/enterprise/aistor-object-store/developers/sdk/python/)
 
 ## Install the MinIO Python SDK
 
-The Python SDK requires Python version 3.9+.
+The Python SDK requires Python version 3.10+.
 You can install the SDK with `pip` or from the [`minio/minio-py` GitHub repository](https://github.com/minio/minio-py):
 
 ### Using `pip`
@@ -141,12 +141,12 @@ mc ls play/python-test-bucket
 
 ## More References
 
-* [Python Client API Reference](https://min.io/docs/minio/linux/developers/python/API.html)
+* [Python SDK Documentation](https://docs.min.io/enterprise/aistor-object-store/developers/sdk/python/)
 * [Examples](https://github.com/minio/minio-py/tree/master/examples)
 
 ## Explore Further
 
-* [Complete Documentation](https://min.io/docs/minio/kubernetes/upstream/index.html)
+* [Complete Documentation](https://docs.min.io/enterprise/aistor-object-store/)
 
 ## Contribute
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest.mock as mock
-from unittest import TestCase
+from unittest import TestCase, mock
 
 from minio import Minio
-from minio.api import _DEFAULT_USER_AGENT
 from minio.error import S3Error
+from minio.helpers import _DEFAULT_USER_AGENT
 
 from .helpers import generate_error
 from .minio_mocks import MockConnection, MockResponse

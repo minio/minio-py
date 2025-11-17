@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2021 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,40 +14,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-public-methods
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-public-methods disable=too-many-lines
 
 """MinIO Admin Client to perform MinIO administration operations."""
 
-from __future__ import absolute_import, annotations
+from __future__ import annotations
 
 import json
 import os
-from datetime import timedelta
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from enum import Enum, unique
 from typing import Any, Optional, TextIO, Tuple, cast
 from urllib.parse import urlunsplit
 
 import certifi
 from urllib3 import Retry
-from urllib3._collections import HTTPHeaderDict
 from urllib3.poolmanager import PoolManager
-
-try:
-    from urllib3.response import BaseHTTPResponse  # type: ignore[attr-defined]
-except ImportError:
-    from urllib3.response import HTTPResponse as BaseHTTPResponse
-
 from urllib3.util import Timeout
 
 from . import time
+from .checksum import sha256_hash
+from .compat import HTTPHeaderDict, HTTPQueryDict, HTTPResponse
 from .credentials import Provider
 from .crypto import decrypt, encrypt
-from .datatypes import PeerInfo, PeerSite, SiteReplicationStatusOptions
 from .error import MinioAdminException
-from .helpers import (_DEFAULT_USER_AGENT, _REGION_REGEX, HTTPQueryDict,
-                      _parse_url, headers_to_strings, sha256_hash, url_replace)
+from .helpers import (REGION_REGEX, get_user_agent, headers_to_strings,
+                      parse_url, url_replace)
 from .signer import sign_v4_s3
+from .time import to_iso8601utc
 
 
 @unique
@@ -124,18 +119,10 @@ class MinioAdmin:
             cert_check: bool = True,
             http_client: Optional[PoolManager] = None,
     ):
-        url = _parse_url(("https://" if secure else "http://") + endpoint)
-        if not isinstance(credentials, Provider):
-            raise ValueError("valid credentials must be provided")
-        if region and not _REGION_REGEX.match(region):
+        url = parse_url(("https://" if secure else "http://") + endpoint)
+        if region and not REGION_REGEX.match(region):
             raise ValueError(f"invalid region {region}")
-        if http_client:
-            if not isinstance(http_client, PoolManager):
-                raise ValueError(
-                    "HTTP client should be instance of "
-                    "`urllib3.poolmanager.PoolManager`"
-                )
-        else:
+        if not http_client:
             timeout = timedelta(minutes=5).seconds
             http_client = PoolManager(
                 timeout=Timeout(connect=timeout, read=timeout),
@@ -155,7 +142,9 @@ class MinioAdmin:
         self._secure = secure
         self._cert_check = cert_check
         self._http = http_client
-        self._user_agent = _DEFAULT_USER_AGENT
+        self._user_agent = get_user_agent(
+            app_name="", app_version="", default=True,
+        )
         self._trace_stream: Optional[TextIO] = None
 
     def __del__(self):
@@ -169,7 +158,7 @@ class MinioAdmin:
             query_params: Optional[HTTPQueryDict] = None,
             body: Optional[bytes] = None,
             preload_content: bool = True,
-    ) -> BaseHTTPResponse:
+    ) -> HTTPResponse:
         """Execute HTTP request."""
         creds = self._provider.retrieve()
 
@@ -263,9 +252,7 @@ class MinioAdmin:
         Example::
             client.set_app_info('my_app', '1.0.2')
         """
-        if not (app_name and app_version):
-            raise ValueError("Application name/version cannot be empty.")
-        self._user_agent = f"{_DEFAULT_USER_AGENT} {app_name}/{app_version}"
+        self._user_agent = get_user_agent(app_name, app_version)
 
     def trace_on(self, stream: TextIO):
         """
@@ -1036,3 +1023,88 @@ class MinioAdmin:
             response, self._provider.retrieve().secret_key,
         )
         return plain_data.decode()
+
+    @dataclass(frozen=True)
+    class PeerSite:
+        """
+        Represents a cluster/site to be added to the set of replicated sites.
+        """
+        name: str
+        endpoint: str
+        access_key: str
+        secret_key: str
+
+        def to_dict(self) -> dict[str, str]:
+            """Convert to dictionary."""
+            return {
+                "name": self.name,
+                "endpoints": self.endpoint,
+                "accessKey": self.access_key,
+                "secretKey": self.secret_key,
+            }
+
+    @dataclass(frozen=True)
+    class SiteReplicationStatusOptions:
+        """Represents site replication status options."""
+        ENTITY_TYPE = Enum(
+            "ENTITY_TYPE",
+            {
+                "BUCKET": "bucket",
+                "POLICY": "policy",
+                "USER": "user",
+                "GROUP": "group",
+            },
+        )
+        buckets: bool = False
+        policies: bool = False
+        users: bool = False
+        groups: bool = False
+        metrics: bool = False
+        show_deleted: bool = False
+        entity: Optional[str] = None
+        entity_value: Optional[str] = None
+
+        def to_query_params(self) -> HTTPQueryDict:
+            """Convert this options to query parameters."""
+            params = HTTPQueryDict()
+            params["buckets"] = str(self.buckets).lower()
+            params["policies"] = str(self.policies).lower()
+            params["users"] = str(self.users).lower()
+            params["groups"] = str(self.groups).lower()
+            params["metrics"] = str(self.metrics).lower()
+            params["showDeleted"] = str(self.show_deleted).lower()
+            if self.entity and self.entity_value:
+                params["entity"] = self.entity
+                params["entityvalue"] = self.entity_value
+            return params
+
+    @dataclass(frozen=True)
+    class PeerInfo:
+        """Site replication peer information."""
+        deployment_id: str
+        endpoint: str
+        bucket_bandwidth_limit: str
+        bucket_bandwidth_set: str
+        name: Optional[str] = None
+        sync_status: Optional[str] = None
+        bucket_bandwidth_updated_at: Optional[datetime] = None
+
+        def to_dict(self):
+            """Converts peer information to dictionary."""
+            data = {
+                "endpoint": self.endpoint,
+                "deploymentID": self.deployment_id,
+                "defaultbandwidth": {
+                    "bandwidthLimitPerBucket": self.bucket_bandwidth_limit,
+                    "set": self.bucket_bandwidth_set,
+                },
+            }
+            if self.name:
+                data["name"] = self.name
+            if self.sync_status is not None:
+                data["sync"] = "enable" if self.sync_status else "disable"
+            if self.bucket_bandwidth_updated_at:
+                data["defaultbandwidth"]["updatedAt"] = to_iso8601utc(
+                    self.bucket_bandwidth_updated_at,
+                )
+            return data

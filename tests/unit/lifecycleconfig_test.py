@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015, 2016 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,25 +17,26 @@
 from unittest import TestCase
 
 from minio import xml
-from minio.commonconfig import ENABLED, Filter
-from minio.lifecycleconfig import Expiration, LifecycleConfig, Rule, Transition
+from minio.models import Filter, LifecycleConfig, Status
 
 
 class LifecycleConfigTest(TestCase):
     def test_config(self):
         config = LifecycleConfig(
             rules=[
-                Rule(
-                    status=ENABLED,
+                LifecycleConfig.Rule(
+                    status=Status.ENABLED,
                     rule_filter=Filter(prefix="documents/"),
                     rule_id="rule1",
-                    transition=Transition(days=30, storage_class="GLACIER"),
+                    transition=LifecycleConfig.Transition(
+                        days=30, storage_class="GLACIER",
+                    ),
                 ),
-                Rule(
-                    status=ENABLED,
+                LifecycleConfig.Rule(
+                    status=Status.ENABLED,
                     rule_filter=Filter(prefix="logs/"),
                     rule_id="rule2",
-                    expiration=Expiration(days=365),
+                    expiration=LifecycleConfig.Expiration(days=365),
                 ),
             ],
         )
@@ -43,19 +44,19 @@ class LifecycleConfigTest(TestCase):
 
         config = LifecycleConfig(
             rules=[
-                Rule(
-                    status=ENABLED,
+                LifecycleConfig.Rule(
+                    status=Status.ENABLED,
                     rule_filter=Filter(prefix=""),
                     rule_id="rule",
-                    expiration=Expiration(days=365),
+                    expiration=LifecycleConfig.Expiration(days=365),
                 ),
             ],
         )
         xml.marshal(config)
 
         config = xml.unmarshal(
-            LifecycleConfig,
-            """<LifeCycleConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+            LifecycleConfig, """
+<LifeCycleConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Rule>
     <ID>DeleteAfterBecomingNonCurrent</ID>
     <Filter>
@@ -82,8 +83,8 @@ class LifecycleConfigTest(TestCase):
         xml.marshal(config)
 
         config = xml.unmarshal(
-            LifecycleConfig,
-            """<LifeCycleConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+            LifecycleConfig, """
+<LifeCycleConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Rule>
     <ID>DeleteAfterBecomingNonCurrent</ID>
     <Filter>

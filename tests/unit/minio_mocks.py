@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015-2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 from http import client as httplib
 
 
-class MockResponse(object):
+class MockResponse:
     def __init__(self, method, url, headers, status_code,
                  response_headers=None, content=None):
         self.method = method
@@ -61,11 +61,10 @@ class MockResponse(object):
         return self.headers.get(key, value) if self.headers else value
 
     def __getitem__(self, key):
-        if key == "status":
-            return self.status
+        return self.status if key == "status" else None
 
 
-class MockConnection(object):
+class MockConnection:
     def __init__(self):
         self.requests = []
 

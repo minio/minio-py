@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage.
-# Copyright (C) 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 # limitations under the License.
 
 from minio import Minio
-from minio.sseconfig import Rule, SSEConfig
+from minio.models import SSEConfig
 
 client = Minio(
     endpoint="play.min.io",
@@ -24,5 +24,7 @@ client = Minio(
 )
 
 client.set_bucket_encryption(
-    bucket_name="my-bucket", config=SSEConfig(Rule.new_sse_s3_rule()),
+    bucket_name="my-bucket", config=SSEConfig(
+        SSEConfig.Rule.new_sse_s3_rule(),
+    ),
 )

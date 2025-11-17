@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015, 2016, 2017 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@ from urllib.parse import urlunsplit
 
 from minio import Minio
 from minio import __version__ as minio_version
-from minio.api import _DEFAULT_USER_AGENT
-from minio.helpers import BaseURL, check_bucket_name
+from minio.helpers import _DEFAULT_USER_AGENT, BaseURL, check_bucket_name
 
 
 class ValidBucketName(TestCase):
