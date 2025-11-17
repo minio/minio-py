@@ -74,13 +74,13 @@ class InputSerialization(ABC):
 class CSVInputSerialization(InputSerialization):
     """CSV input serialization."""
 
-    allow_quoted_record_delimiter = None
-    comments = None
-    field_delimiter = None
-    file_header_info = None
-    quote_character = None
-    quote_escape_character = None
-    record_delimiter = None
+    allow_quoted_record_delimiter: Optional[str] = None
+    comments: Optional[str] = None
+    field_delimiter: Optional[str] = None
+    file_header_info: Optional[str] = None
+    quote_character: Optional[str] = None
+    quote_escape_character: Optional[str] = None
+    record_delimiter: Optional[str] = None
 
     def __post_init__(self):
         if (
@@ -128,7 +128,7 @@ class CSVInputSerialization(InputSerialization):
 class JSONInputSerialization(InputSerialization):
     """JSON input serialization."""
 
-    json_type = None
+    json_type: Optional[str] = None
 
     def __post_init__(self):
         if (
@@ -170,11 +170,11 @@ class OutputSerialization(ABC):
 class CSVOutputSerialization(OutputSerialization):
     """CSV output serialization."""
 
-    field_delimiter = None
-    quote_character = None
-    quote_escape_character = None
-    quote_fields = None
-    record_delimiter = None
+    field_delimiter: Optional[str] = None
+    quote_character: Optional[str] = None
+    quote_escape_character: Optional[str] = None
+    quote_fields: Optional[str] = None
+    record_delimiter: Optional[str] = None
 
     def __post_init__(self):
         if (
@@ -211,7 +211,7 @@ class CSVOutputSerialization(OutputSerialization):
 class JSONOutputSerialization(OutputSerialization):
     """JSON output serialization."""
 
-    record_delimiter = None
+    record_delimiter: Optional[str] = None
 
     def toxml(self, element):
         """Convert to XML."""
