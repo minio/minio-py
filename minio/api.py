@@ -3298,6 +3298,9 @@ class Minio:
                 object_name=object_name,
                 upload_id=cast(str, upload_id),
                 parts=parts,
+                extra_headers=HTTPHeaderDict(
+                    sse.headers() if isinstance(sse, SseCustomerKey) else None
+                ),
             )
             return ObjectWriteResult.new(
                 headers=upload_result.headers,
