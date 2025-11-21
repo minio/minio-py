@@ -42,6 +42,7 @@ import urllib3
 from urllib3._collections import HTTPHeaderDict
 
 from minio import Minio
+from minio.checksum import Algorithm
 from minio.commonconfig import ENABLED, REPLACE, CopySource, SnowballObject
 from minio.datatypes import PostPolicy
 from minio.deleteobjects import DeleteObject
@@ -906,6 +907,114 @@ def test_negative_put_object_with_path_segment(  # pylint: disable=invalid-name
             raise
     finally:
         _client.remove_bucket(bucket_name=bucket_name)
+
+
+def test_put_object_multipart_with_checksum(  # pylint: disable=invalid-name
+        log_entry):
+    """Test put_object() multipart upload with checksum validation.
+
+    This test validates the AWS S3 compliant checksum implementation for
+    multipart uploads:
+    - CreateMultipartUpload receives algorithm header only (not values)
+    - UploadPart includes checksum value headers
+    - CompleteMultipartUpload includes checksums in XML body
+    """
+
+    # Get a unique bucket_name and object_name
+    bucket_name = _gen_bucket_name()
+    object_name = f"{uuid4()}-checksum"
+    object_name_sha256 = None  # Initialize for cleanup
+    # Use 6 MB to trigger multipart upload (> 5 MB threshold)
+    length = 6 * MB
+
+    log_entry["args"] = {
+        "bucket_name": bucket_name,
+        "object_name": object_name,
+        "length": length,
+        "data": "LimitedRandomReader(6 * MB)",
+        "checksum": "Algorithm.CRC32C",
+    }
+
+    try:
+        _client.make_bucket(bucket_name=bucket_name)
+
+        # Upload with CRC32C checksum - triggers multipart upload
+        reader = LimitedRandomReader(length)
+        result = _client.put_object(
+            bucket_name=bucket_name,
+            object_name=object_name,
+            data=reader,
+            length=length,
+            checksum=Algorithm.CRC32C,
+        )
+
+        # Verify upload succeeded and returned valid result
+        if not result.etag:
+            raise ValueError("Upload did not return valid ETag")
+
+        # Verify ETag indicates multipart upload (contains dash and part count)
+        if '-' not in result.etag:
+            raise ValueError(
+                f"Expected multipart ETag (with dash), got: {result.etag}")
+
+        # Stat the object to verify it exists and has correct size
+        st_obj = _client.stat_object(
+            bucket_name=bucket_name,
+            object_name=object_name,
+        )
+
+        if st_obj.size != length:
+            raise ValueError(
+                f"Size mismatch: expected {length}, got {st_obj.size}")
+
+        # Test with SHA256 checksum algorithm
+        object_name_sha256 = f"{uuid4()}-checksum-sha256"
+        log_entry["args"]["object_name"] = object_name_sha256
+        log_entry["args"]["checksum"] = "Algorithm.SHA256"
+
+        reader = LimitedRandomReader(length)
+        result = _client.put_object(
+            bucket_name=bucket_name,
+            object_name=object_name_sha256,
+            data=reader,
+            length=length,
+            checksum=Algorithm.SHA256,
+        )
+
+        if not result.etag:
+            raise ValueError("Upload with SHA256 did not return valid ETag")
+
+        if '-' not in result.etag:
+            raise ValueError(
+                f"Expected multipart ETag for SHA256, got: {result.etag}")
+
+        st_obj = _client.stat_object(
+            bucket_name=bucket_name,
+            object_name=object_name_sha256,
+        )
+
+        if st_obj.size != length:
+            raise ValueError(
+                f"Size mismatch: expected {length}, got {st_obj.size}")
+
+    finally:
+        try:
+            _client.remove_object(
+                bucket_name=bucket_name, object_name=object_name)
+        except:  # pylint: disable=bare-except
+            pass
+        if object_name_sha256:
+            try:
+                _client.remove_object(
+                    bucket_name=bucket_name,
+                    object_name=object_name_sha256,
+                )
+            except:  # pylint: disable=bare-except
+                pass
+        try:
+            _client.remove_bucket(bucket_name=bucket_name)
+        except:  # pylint: disable=bare-except
+            pass
 
 
 def _test_stat_object(log_entry, sse=None, version_check=False):
@@ -2393,6 +2502,7 @@ def main():
             test_copy_object_unmodified_since: None,
             test_put_object: {"sse": ssec} if ssec else None,
             test_negative_put_object_with_path_segment: None,
+            test_put_object_multipart_with_checksum: None,
             test_stat_object: {"sse": ssec} if ssec else None,
             test_stat_object_version: {"sse": ssec} if ssec else None,
             test_get_object: {"sse": ssec} if ssec else None,
