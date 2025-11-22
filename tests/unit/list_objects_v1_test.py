@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015-2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,11 +15,10 @@
 # limitations under the License.
 
 import time
-import unittest.mock as mock
-from unittest import TestCase
+from unittest import TestCase, mock
 
 from minio import Minio
-from minio.api import _DEFAULT_USER_AGENT
+from minio.helpers import _DEFAULT_USER_AGENT
 
 from .minio_mocks import MockConnection, MockResponse
 
@@ -112,8 +111,8 @@ class ListObjectsV1Test(TestCase):
             mock_server.mock_add_request(
                 MockResponse(
                     "GET",
-                    "https://localhost:9000/bucket?delimiter=%2F&encoding-type=url"
-                    "&max-keys=1000&prefix=",
+                    "https://localhost:9000/bucket?delimiter=%2F&"
+                    "encoding-type=url&max-keys=1000&prefix=",
                     {"User-Agent": _DEFAULT_USER_AGENT},
                     200,
                     content=b"",

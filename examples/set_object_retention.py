@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage.
-# Copyright (C) 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@
 from datetime import datetime, timedelta
 
 from minio import Minio
-from minio.commonconfig import GOVERNANCE
-from minio.retention import Retention
+from minio.models import Retention
 
 client = Minio(
     endpoint="play.min.io",
@@ -26,7 +25,8 @@ client = Minio(
     secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
 )
 
-config = Retention(GOVERNANCE, datetime.utcnow() + timedelta(days=10))
+config = Retention(Retention.GOVERNANCE,
+                   datetime.utcnow() + timedelta(days=10))
 client.set_object_retention(
     bucket_name="my-bucket",
     object_name="my-object",

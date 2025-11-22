@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,18 +17,19 @@
 from unittest import TestCase
 
 from minio import xml
-from minio.commonconfig import COMPLIANCE, GOVERNANCE
-from minio.objectlockconfig import DAYS, YEARS, ObjectLockConfig
+from minio.models import ObjectLockConfig
 
 
 class ObjectLockConfigTest(TestCase):
     def test_config(self):
-        config = ObjectLockConfig(GOVERNANCE, 15, DAYS)
+        config = ObjectLockConfig(
+            ObjectLockConfig.GOVERNANCE, 15, ObjectLockConfig.DAYS,
+        )
         xml.marshal(config)
 
         config = xml.unmarshal(
-            ObjectLockConfig,
-            """<ObjectLockConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+            ObjectLockConfig, """
+<ObjectLockConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
    <ObjectLockEnabled>Enabled</ObjectLockEnabled>
    <Rule>
       <DefaultRetention>
@@ -39,5 +40,8 @@ class ObjectLockConfigTest(TestCase):
 </ObjectLockConfiguration>""",
         )
         xml.marshal(config)
-        self.assertEqual(config.mode, COMPLIANCE)
-        self.assertEqual((config.duration, config.duration_unit), (3, YEARS))
+        self.assertEqual(config.mode, ObjectLockConfig.COMPLIANCE)
+        self.assertEqual(
+            (config.duration, config.duration_unit),
+            (3, ObjectLockConfig.YEARS),
+        )

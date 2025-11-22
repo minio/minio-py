@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015-2019 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,29 +16,14 @@
 
 # pylint: disable=too-many-lines
 
-"""
-minio.error
-~~~~~~~~~~~~~~~~~~~
+"""SDK exceptions."""
 
-This module provides custom exception classes for MinIO library
-and API specific errors.
+from __future__ import annotations
 
-:copyright: (c) 2015, 2016, 2017 by MinIO, Inc.
-:license: Apache 2.0, see LICENSE for more details.
+from typing import Optional, Type
 
-"""
-
-from __future__ import absolute_import, annotations
-
-from typing import Optional, Type, TypeVar
-from xml.etree import ElementTree as ET
-
-try:
-    from urllib3.response import BaseHTTPResponse  # type: ignore[attr-defined]
-except ImportError:
-    from urllib3.response import HTTPResponse as BaseHTTPResponse
-
-from .xml import findtext
+from .compat import HTTPResponse
+from .xml import ET, findtext
 
 
 class MinioException(Exception):
@@ -76,15 +61,12 @@ class ServerError(MinioException):
         return self._status_code
 
 
-A = TypeVar("A", bound="S3Error")
-
-
 class S3Error(MinioException):
     """
     Raised to indicate that error response is received
     when executing S3 operation.
     """
-    response: BaseHTTPResponse
+    response: HTTPResponse
     code: Optional[str]
     message: Optional[str]
     resource: Optional[str]
@@ -97,7 +79,7 @@ class S3Error(MinioException):
 
     def __init__(  # pylint: disable=too-many-positional-arguments
         self,
-        response: BaseHTTPResponse,
+        response: HTTPResponse,
         code: Optional[str],
         message: Optional[str],
         resource: Optional[str],
@@ -150,7 +132,7 @@ class S3Error(MinioException):
         object.__delattr__(self, name)
 
     @classmethod
-    def fromxml(cls: Type[A], response: BaseHTTPResponse) -> A:
+    def new(cls: Type[S3Error], response: HTTPResponse) -> S3Error:
         """Create new object with values from XML element."""
         element = ET.fromstring(response.data.decode())
         return cls(
