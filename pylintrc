@@ -186,6 +186,10 @@ bad-names=foo,bar,baz,toto,tutu,tata
 # Maximum number of arguments for function / method
 max-args=12
 
+# Maximum number of positional arguments for function / method
+# We allow more than the default 5 for backwards compatibility
+max-positional-arguments=16
+
 # Maximum number of locals for function / method body
 max-locals=30
 
