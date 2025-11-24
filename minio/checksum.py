@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2025 MinIO, Inc.
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 """Checksum functions."""
 
-from __future__ import absolute_import, annotations, division, unicode_literals
+from __future__ import annotations
 
 import base64
 import binascii
@@ -33,6 +33,33 @@ ZERO_SHA256_HASH = (
     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 )
 UNSIGNED_PAYLOAD = "UNSIGNED-PAYLOAD"
+
+
+def md5sum_hash(data: Optional[str | bytes]) -> Optional[str]:
+    """Compute MD5 of data and return hash as Base64 encoded value."""
+    if data is None:
+        return None
+
+    # indicate md5 hashing algorithm is not used in a security context.
+    # Refer https://bugs.python.org/issue9216 for more information.
+    hasher = hashlib.new(  # type: ignore[call-arg]
+        "md5",
+        usedforsecurity=False,
+    )
+    hasher.update(data.encode() if isinstance(data, str) else data)
+    md5sum = base64.b64encode(hasher.digest())
+    return md5sum.decode() if isinstance(md5sum, bytes) else md5sum
+
+
+def sha256_hash(data: Optional[str | bytes]) -> str:
+    """Compute SHA-256 of data and return hash as hex encoded value."""
+    data = data or b""
+    hasher = hashlib.sha256()
+    hasher.update(data.encode() if isinstance(data, str) else data)
+    sha256sum = hasher.hexdigest()
+    if isinstance(sha256sum, bytes):
+        return sha256sum.decode()
+    return sha256sum
 
 
 def base64_string(data: bytes) -> str:

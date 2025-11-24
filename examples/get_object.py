@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@ try:
 finally:
     if response:
         response.close()
-        response.release_conn()
 
 # Get data of an object of version-ID.
 response = None
@@ -48,7 +47,6 @@ try:
 finally:
     if response:
         response.close()
-        response.release_conn()
 
 # Get data of an object from offset and length.
 response = None
@@ -63,7 +61,6 @@ try:
 finally:
     if response:
         response.close()
-        response.release_conn()
 
 # Get data of an SSE-C encrypted object.
 response = None
@@ -77,4 +74,3 @@ try:
 finally:
     if response:
         response.close()
-        response.release_conn()

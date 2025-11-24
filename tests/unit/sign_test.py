@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -23,8 +23,9 @@ from urllib.parse import urlsplit, urlunsplit
 from urllib3._collections import HTTPHeaderDict
 
 from minio import Minio
+from minio.checksum import sha256_hash
+from minio.compat import queryencode, quote
 from minio.credentials import Credentials
-from minio.helpers import queryencode, quote, sha256_hash
 from minio.signer import (_get_authorization, _get_canonical_request_hash,
                           _get_scope, _get_signing_key, _get_string_to_sign,
                           presign_v4, sign_v4_s3)
@@ -138,7 +139,16 @@ class PresignURLTest(TestCase):
             expires=604800,
         )
 
-        self.assertEqual(urlunsplit(url), 'http://localhost:9000/bucket-name/objectName?versionId=uuid&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=minio%2F20150620%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20150620T010203Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=3ce13e2ca929fafa20581a05730e4e9435f2a5e20ec7c5a082d175692fb0a663')
+        self.assertEqual(
+            urlunsplit(url),
+            'http://localhost:9000/bucket-name/objectName?versionId=uuid&'
+            'X-Amz-Algorithm=AWS4-HMAC-SHA256&'
+            'X-Amz-Credential=minio%2F20150620%2Fus-east-1%2Fs3%2Faws4_request&'
+            'X-Amz-Date=20150620T010203Z&X-Amz-Expires=604800&'
+            'X-Amz-SignedHeaders=host&'
+            'X-Amz-Signature=3ce13e2ca929fafa20581a05730e4e9435f2a5e20ec7c5a082'
+            'd175692fb0a663',
+        )
 
 
 class SignV4Test(TestCase):
@@ -170,7 +180,8 @@ class SignV4Test(TestCase):
             headers=headers,
             credentials=creds,
             content_sha256=(
-                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8"
+                "55"
             ),
             date=dt,
         )
@@ -178,8 +189,8 @@ class SignV4Test(TestCase):
                          'AWS4-HMAC-SHA256 Credential='
                          'minio/20150620/us-east-1/s3/aws4_request, '
                          'SignedHeaders=host;x-amz-content-sha256;x-amz-date, '
-                         'Signature='
-                         'a2f4546f647981732bd90dfa5a7599c44dca92f44bea48ecc7565df06032c25b')
+                         'Signature=a2f4546f647981732bd90dfa5a7599c44dca92f44b'
+                         'ea48ecc7565df06032c25b')
 
 
 class UnicodeEncodeTest(TestCase):
@@ -191,11 +202,11 @@ class UnicodeEncodeTest(TestCase):
                          '%2Ftest%2F123%2F%E6%B1%89%E5%AD%97')
 
     def test_unicode_quote_u(self):
-        self.assertEqual(quote(u'/test/123/汉字'),
+        self.assertEqual(quote('/test/123/汉字'),
                          '/test/123/%E6%B1%89%E5%AD%97')
 
     def test_unicode_queryencode_u(self):
-        self.assertEqual(queryencode(u'/test/123/汉字'),
+        self.assertEqual(queryencode('/test/123/汉字'),
                          '%2Ftest%2F123%2F%E6%B1%89%E5%AD%97')
 
     def test_unicode_quote_b(self):

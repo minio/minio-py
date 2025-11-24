@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 # limitations under the License.
 
 from minio import Minio
-from minio.commonconfig import ComposeSource
+from minio.args import SourceObject
 from minio.sse import SseS3
 
 client = Minio(
@@ -25,13 +25,13 @@ client = Minio(
 )
 
 sources = [
-    ComposeSource(
+    SourceObject(
         bucket_name="my-job-bucket", object_name="my-object-part-one",
     ),
-    ComposeSource(
+    SourceObject(
         bucket_name="my-job-bucket", object_name="my-object-part-two",
     ),
-    ComposeSource(
+    SourceObject(
         bucket_name="my-job-bucket", object_name="my-object-part-three",
     ),
 ]

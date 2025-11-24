@@ -72,26 +72,29 @@ client = Minio(
 | [`bucket_exists`](#bucket_exists)                           | [`put_object`](#put_object)                                     |
 | [`remove_bucket`](#remove_bucket)                           | [`copy_object`](#copy_object)                                   |
 | [`list_objects`](#list_objects)                             | [`compose_object`](#compose_object)                             |
-| [`get_bucket_versioning`](#get_bucket_versioning)           | [`stat_object`](#stat_object)                                   |
-| [`set_bucket_versioning`](#set_bucket_versioning)           | [`remove_object`](#remove_object)                               |
-| [`delete_bucket_replication`](#delete_bucket_replication)   | [`remove_objects`](#remove_objects)                             |
-| [`get_bucket_replication`](#get_bucket_replication)         | [`fput_object`](#fput_object)                                   |
-| [`set_bucket_replication`](#set_bucket_replication)         | [`fget_object`](#fget_object)                                   |
-| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)       | [`select_object_content`](#select_object_content)               |
-| [`get_bucket_lifecycle`](#get_bucket_lifecycle)             | [`delete_object_tags`](#delete_object_tags)                     |
-| [`set_bucket_lifecycle`](#set_bucket_lifecycle)             | [`get_object_tags`](#get_object_tags)                           |
-| [`delete_bucket_tags`](#delete_bucket_tags)                 | [`set_object_tags`](#set_object_tags)                           |
-| [`get_bucket_tags`](#get_bucket_tags)                       | [`enable_object_legal_hold`](#enable_object_legal_hold)         |
-| [`set_bucket_tags`](#set_bucket_tags)                       | [`disable_object_legal_hold`](#disable_object_legal_hold)       |
-| [`delete_bucket_policy`](#delete_bucket_policy)             | [`is_object_legal_hold_enabled`](#is_object_legal_hold_enabled) |
-| [`get_bucket_policy`](#get_bucket_policy)                   | [`get_object_retention`](#get_object_retention)                 |
-| [`set_bucket_policy`](#set_bucket_policy)                   | [`set_object_retention`](#set_object_retention)                 |
-| [`delete_bucket_notification`](#delete_bucket_notification) | [`presigned_get_object`](#presigned_get_object)                 |
-| [`get_bucket_notification`](#get_bucket_notification)       | [`presigned_put_object`](#presigned_put_object)                 |
-| [`set_bucket_notification`](#set_bucket_notification)       | [`presigned_post_policy`](#presigned_post_policy)               |
-| [`listen_bucket_notification`](#listen_bucket_notification) | [`get_presigned_url`](#get_presigned_url)                       |
-| [`delete_bucket_encryption`](#delete_bucket_encryption)     | [`upload_snowball_objects`](#upload_snowball_objects)           |
-| [`get_bucket_encryption`](#get_bucket_encryption)           | [`prompt_object`](#prompt_object)                               |
+| [`delete_bucket_cors`](#delete_bucket_cors)                 | [`stat_object`](#stat_object)                                   |
+| [`get_bucket_cors`](#get_bucket_cors)                       | [`remove_object`](#remove_object)                               |
+| [`set_bucket_cors`](#set_bucket_cors)                       | [`remove_objects`](#remove_objects)                             |
+| [`get_bucket_versioning`](#get_bucket_versioning)           | [`fput_object`](#fput_object)                                   |
+| [`set_bucket_versioning`](#set_bucket_versioning)           | [`fget_object`](#fget_object)                                   |
+| [`delete_bucket_replication`](#delete_bucket_replication)   | [`select_object_content`](#select_object_content)               |
+| [`get_bucket_replication`](#get_bucket_replication)         | [`delete_object_tags`](#delete_object_tags)                     |
+| [`set_bucket_replication`](#set_bucket_replication)         | [`get_object_tags`](#get_object_tags)                           |
+| [`delete_bucket_lifecycle`](#delete_bucket_lifecycle)       | [`set_object_tags`](#set_object_tags)                           |
+| [`get_bucket_lifecycle`](#get_bucket_lifecycle)             | [`enable_object_legal_hold`](#enable_object_legal_hold)         |
+| [`set_bucket_lifecycle`](#set_bucket_lifecycle)             | [`disable_object_legal_hold`](#disable_object_legal_hold)       |
+| [`delete_bucket_tags`](#delete_bucket_tags)                 | [`is_object_legal_hold_enabled`](#is_object_legal_hold_enabled) |
+| [`get_bucket_tags`](#get_bucket_tags)                       | [`get_object_retention`](#get_object_retention)                 |
+| [`set_bucket_tags`](#set_bucket_tags)                       | [`set_object_retention`](#set_object_retention)                 |
+| [`delete_bucket_policy`](#delete_bucket_policy)             | [`presigned_get_object`](#presigned_get_object)                 |
+| [`get_bucket_policy`](#get_bucket_policy)                   | [`presigned_put_object`](#presigned_put_object)                 |
+| [`set_bucket_policy`](#set_bucket_policy)                   | [`presigned_post_policy`](#presigned_post_policy)               |
+| [`delete_bucket_notification`](#delete_bucket_notification) | [`get_presigned_url`](#get_presigned_url)                       |
+| [`get_bucket_notification`](#get_bucket_notification)       | [`upload_snowball_objects`](#upload_snowball_objects)           |
+| [`set_bucket_notification`](#set_bucket_notification)       | [`prompt_object`](#prompt_object)                               |
+| [`listen_bucket_notification`](#listen_bucket_notification) | [`get_object_acl`](#get_object_acl)                             |
+| [`delete_bucket_encryption`](#delete_bucket_encryption)     | [`get_object_attributes`](#get_object_attributes)               |
+| [`get_bucket_encryption`](#get_bucket_encryption)           | [`put_object_fan_out`](#put_object_fan_out)                     |
 | [`set_bucket_encryption`](#set_bucket_encryption)           |                                                                 |
 | [`delete_object_lock_config`](#delete_object_lock_config)   |                                                                 |
 | [`get_object_lock_config`](#get_object_lock_config)         |                                                                 |
@@ -107,13 +110,13 @@ Create a bucket with region and object lock.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|----------------------|-------------------------------------------------|--------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `location`           | _Optional[str] = None_                          | Region in which the bucket to be created.  |
-| `object_lock`        | _bool = False_                                  | Flag to set object-lock feature.           |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|----------------------|------------------------------------------------|--------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `location`           | _Optional[str] = None_                         | Region in which the bucket to be created.  |
+| `object_lock`        | _bool = False_                                 | Flag to set object-lock feature.           |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -130,23 +133,25 @@ client.make_bucket(bucket_name="my-bucket", location="eu-west-2", object_lock=Tr
 
 <a name="list_buckets"></a>
 
-### list_buckets(self, *, bucket_region: Optional[str] = None, max_buckets: int = 10000, prefix: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None, ) -> Iterator[Bucket]
+### list_buckets(self, *, bucket_region: Optional[str] = None, max_buckets: int = 10000, prefix: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None, ) -> Iterator[ListAllMyBucketsResult.Bucket]
 
 List information of all accessible buckets.
 
-| Param                | Type                                            | Description                                |
-|----------------------|-------------------------------------------------|--------------------------------------------|
-| `bucket_region`      | _Optional[str] = None_                          | Fetch buckets from the region.             |
-| `max_buckets`        | _int = 10000_                                   | Fetch maximum number of buckets.           |
-| `prefix`             | _Optional[str] = None_                          | Fetch buckets starts with the prefix.      |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
-
 __Parameters__
 
-| Return                                  |
-|:----------------------------------------|
-| An iterator of _minio.datatypes.Bucket_ |
+| Param                | Type                                           | Description                                |
+|----------------------|------------------------------------------------|--------------------------------------------|
+| `bucket_region`      | _Optional[str] = None_                         | Fetch buckets from the region.             |
+| `max_buckets`        | _int = 10000_                                  | Fetch maximum number of buckets.           |
+| `prefix`             | _Optional[str] = None_                         | Fetch buckets starts with the prefix.      |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+
+__Return Value__
+
+| Return                                                      |
+|:------------------------------------------------------------|
+| An iterator of _minio.models.ListAllMyBucketsResult.Bucket_ |
 
 __Example__
 
@@ -164,12 +169,12 @@ Check if a bucket exists.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -188,12 +193,12 @@ Remove an empty bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -209,26 +214,26 @@ Lists object information of a bucket.
 
 __Parameters__
 
-| Param                   | Type                                            | Description                                                  |
-|:------------------------|:------------------------------------------------|:-------------------------------------------------------------|
-| `bucket_name`           | _str_                                           | Name of the bucket.                                          |
-| `prefix`                | _Optional[str] = None_                          | Object name starts with prefix.                              |
-| `recursive`             | _bool = False_                                  | List recursively than directory structure emulation.         |
-| `start_after`           | _Optional[str] = None_                          | List objects after this key name.                            |
-| `include_user_meta`     | _bool = False_                                  | MinIO specific flag to control to include user metadata.     |
-| `include_version`       | _bool = False_                                  | Flag to control whether include object versions.             |
-| `use_api_v1`            | _bool = False_                                  | Flag to control to use ListObjectV1 S3 API or not.           |
-| `use_url_encoding_type` | _bool = True_                                   | Flag to control whether URL encoding type to be used or not. |
-| `fetch_owner`           | _bool = False_                                  | Flag to control to fetch owner information.                  |
-| `region`                | _Optional[str] = None_                          | Region of the bucket to skip auto probing.                   |
-| `extra_headers`         | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                            |
-| `extra_query_params`    | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.                   |
+| Param                   | Type                                           | Description                                                  |
+|:------------------------|:-----------------------------------------------|:-------------------------------------------------------------|
+| `bucket_name`           | _str_                                          | Name of the bucket.                                          |
+| `prefix`                | _Optional[str] = None_                         | Object name starts with prefix.                              |
+| `recursive`             | _bool = False_                                 | List recursively than directory structure emulation.         |
+| `start_after`           | _Optional[str] = None_                         | List objects after this key name.                            |
+| `include_user_meta`     | _bool = False_                                 | MinIO specific flag to control to include user metadata.     |
+| `include_version`       | _bool = False_                                 | Flag to control whether include object versions.             |
+| `use_api_v1`            | _bool = False_                                 | Flag to control to use ListObjectV1 S3 API or not.           |
+| `use_url_encoding_type` | _bool = True_                                  | Flag to control whether URL encoding type to be used or not. |
+| `fetch_owner`           | _bool = False_                                 | Flag to control to fetch owner information.                  |
+| `region`                | _Optional[str] = None_                         | Region of the bucket to skip auto probing.                   |
+| `extra_headers`         | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                            |
+| `extra_query_params`    | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.                   |
 
 __Return Value__
 
-| Return                                  |
-|:----------------------------------------|
-| An iterator of _minio.datatypes.Object_ |
+| Return                               |
+|:-------------------------------------|
+| An iterator of _minio.models.Object_ |
 
 __Example__
 
@@ -273,12 +278,12 @@ Get bucket policy configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Return Value__
 
@@ -300,13 +305,13 @@ Set bucket policy configuration to a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                 |
-|:---------------------|:------------------------------------------------|:--------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                         |
-| `policy`             | _str \| bytes_                                  | Bucket policy configuration as JSON string. |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing.  |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.           |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
+| Param                | Type                                           | Description                                 |
+|:---------------------|:-----------------------------------------------|:--------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                         |
+| `policy`             | _str \| bytes_                                 | Bucket policy configuration as JSON string. |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing.  |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.           |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
 
 __Example__
 
@@ -370,17 +375,102 @@ Delete bucket policy configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
 ```py
 client.delete_bucket_policy(bucket_name="my-bucket")
+```
+
+<a name="get_bucket_cors"></a>
+
+### get_bucket_cors(self, *, bucket_name: str, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> CORSConfig
+
+Get CORS configuration of a bucket.
+
+__Parameters__
+
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+
+__Return Value__
+
+| Param                             |
+|:----------------------------------|
+| _minio.models.CORSConfig_ object. |
+
+__Example__
+
+```py
+config = client.get_bucket_cors(bucket_name="my-bucket")
+```
+
+<a name="set_bucket_cors"></a>
+
+### set_bucket_cors(self, *, bucket_name: str, config: CORSConfig, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None)
+
+Set CORS configuration of a bucket.
+
+__Parameters__
+
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `config`             | _minio.models.CORSConfig_                      | Cors configuration.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+
+__Example__
+
+```py
+config = CORSConfig(
+    rules=[
+        CORSConfig.CORSRule(
+            allowed_headers=["*"],
+            allowed_methods=["PUT", "POST", "DELETE"],
+            allowed_origins=["http://www.example.com"],
+            expose_headers=["x-amz-server-side-encryption"],
+            max_age_seconds=3000,
+        ),
+        CORSConfig.CORSRule(
+            allowed_methods=["GET"],
+            allowed_origins=["*"],
+        ),
+    ],
+)
+client.set_bucket_cors(bucket_name="my-bucket", config=config)
+```
+
+<a name="delete_bucket_cors"></a>
+
+### delete_bucket_cors(self, *, bucket_name: str, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None)
+
+Delete CORS configuration of a bucket.
+
+__Parameters__
+
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+
+__Example__
+
+```py
+client.delete_bucket_cors(bucket_name="my-bucket")
 ```
 
 <a name="get_bucket_notification"></a>
@@ -391,18 +481,18 @@ Get notification configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Return Value__
 
-| Param                                                 |
-|:------------------------------------------------------|
-| _minio.notificationconfig.NotificationConfig_ object. |
+| Param                                     |
+|:------------------------------------------|
+| _minio.models.NotificationConfig_ object. |
 
 __Example__
 
@@ -418,13 +508,13 @@ Set notification configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `config`             | _minio.notificationconfig.NotificationConfig_   | Notification configuration.                |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `config`             | _minio.models.NotificationConfig_              | Notification configuration.                |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -450,12 +540,12 @@ Delete notification configuration of a bucket. On success, S3 service stops noti
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -478,14 +568,14 @@ __Parameters__
 | `suffix`             | _str = ""_                                                                              | Listen events of object ends with suffix.   |
 | `events`             | _tuple[str, ...] = ('s3:ObjectCreated:*', 's3:ObjectRemoved:*', 's3:ObjectAccessed:*')_ | Events to listen.                           |
 | `region`             | _Optional[str] = None_                                                                  | Region of the bucket to skip auto probing.  |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_                                         | Extra headers for advanced usage.           |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_                                          | Extra query parameters for advanced usage.  |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_                                          | Extra headers for advanced usage.           |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_                                           | Extra query parameters for advanced usage.  |
 
 __Return Value__
 
-| Param                                                     |
-|:----------------------------------------------------------|
-| Iterator _minio.datatypes.EventIterable_ of event records |
+| Param                                                  |
+|:-------------------------------------------------------|
+| Iterator _minio.models.EventIterable_ of event records |
 
 ```py
 with client.listen_bucket_notification(
@@ -504,18 +594,18 @@ Get encryption configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Return Value__
 
-| Param                                         |
-|:----------------------------------------------|
-| _Optional[minio.sseconfig.SSEConfig]_ object. |
+| Param                                      |
+|:-------------------------------------------|
+| _Optional[minio.models.SSEConfig]_ object. |
 
 __Example__
 
@@ -531,13 +621,13 @@ Set encryption configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `config`             | _minio.sseconfig.SSEConfig_                     | Server-side encryption configuration.      |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `config`             | _minio.models.SSEConfig_                       | Server-side encryption configuration.      |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -555,12 +645,12 @@ Delete encryption configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -576,18 +666,18 @@ Get versioning configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Return Value__
 
-| Param                                             |
-|:--------------------------------------------------|
-| _minio.versioningconfig.VersioningConfig_ object. |
+| Param                                   |
+|:----------------------------------------|
+| _minio.models.VersioningConfig_ object. |
 
 __Example__
 
@@ -604,13 +694,13 @@ Set versioning configuration to a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `config`             | _minio.versioningconfig.VersioningConfig_       | Versioning configuration.                  |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `config`             | _minio.models.VersioningConfig_                | Versioning configuration.                  |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -626,12 +716,12 @@ Delete replication configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -647,16 +737,16 @@ Get replication configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
-| Return                                                        |
-|:--------------------------------------------------------------|
-| _Optional[minio.replicationconfig.ReplicationConfig]_ object. |
+| Return                                             |
+|:---------------------------------------------------|
+| _Optional[minio.models.ReplicationConfig]_ object. |
 
 __Example__
 
@@ -672,13 +762,13 @@ Set replication configuration to a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `config`             | _minio.replicationconfig.ReplicationConfig_     | Replication configuration.                 |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `config`             | _minio.models.ReplicationConfig_               | Replication configuration.                 |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -716,12 +806,12 @@ Delete lifecycle configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -737,16 +827,16 @@ Get lifecycle configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
-| Return                                                    |
-|:----------------------------------------------------------|
-| _Optional[minio.lifecycleconfig.LifecycleConfig]_ object. |
+| Return                                           |
+|:-------------------------------------------------|
+| _Optional[minio.models.LifecycleConfig]_ object. |
 
 
 __Example__
@@ -763,13 +853,13 @@ Set lifecycle configuration to a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `config`             | _minio.lifecycleconfig.LifecycleConfig_         | Lifecycle configuration.                   |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `config`             | _minio.models.LifecycleConfig_                 | Lifecycle configuration.                   |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -801,12 +891,12 @@ Delete tags configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -822,16 +912,16 @@ Get tags configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
-| Return                                      |
-|:--------------------------------------------|
-| _Optional[minio.commonconfig.Tags]_ object. |
+| Return                                |
+|:--------------------------------------|
+| _Optional[minio.models.Tags]_ object. |
 
 __Example__
 
@@ -847,13 +937,13 @@ Set tags configuration to a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `tags`               | _minio.commonconfig.Tags_                       | Tags configuration.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `tags`               | _minio.models.Tags_                            | Tags configuration.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -872,12 +962,12 @@ Delete object-lock configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -893,16 +983,16 @@ Get object-lock configuration of a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
-| Return                                            |
-|:--------------------------------------------------|
-| _minio.objectlockconfig.ObjectLockConfig_ object. |
+| Return                                  |
+|:----------------------------------------|
+| _minio.models.ObjectLockConfig_ object. |
 
 __Example__
 
@@ -918,13 +1008,13 @@ Set object-lock configuration to a bucket.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `config`             | _minio.objectlockconfig.ObjectLockConfig_       | Object-Lock configuration.                 |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `config`             | _minio.models.ObjectLockConfig_                | Object-Lock configuration.                 |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -943,25 +1033,25 @@ Appends data to existing object in a bucket. Only of `filename`, `stream` or `da
 
 __Parameters__
 
-| Param                | Type                                            | Description                                                |
-|:---------------------|:------------------------------------------------|:-----------------------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                                        |
-| `object_name`        | _str_                                           | Object name in the bucket.                                 |
-| `filename`           | _Optional[str \| os.PathLike] = None_           | Name of file to append.                                    |
-| `stream`             | _Optional[io.BinaryIO] = None_                  | An object having callable `read()` returning bytes object. |
-| `data`               | _Optional[bytes] = None_                        | Data in byte array.                                        |
-| `length`             | _Optional[int] = None_                          | Data length of `data` or `stream`.                         |
-| `chunk_size`         | _Optional[int] = None_                          | Chunk size.                                                |
-| `progress`           | _Optional[minio.helpers.ProgressType] = None_   | A progress object.                                         |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing.                 |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.                 |
+| Param                | Type                                           | Description                                                |
+|:---------------------|:-----------------------------------------------|:-----------------------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                                        |
+| `object_name`        | _str_                                          | Object name in the bucket.                                 |
+| `filename`           | _Optional[str \| os.PathLike] = None_          | Name of file to append.                                    |
+| `stream`             | _Optional[io.BinaryIO] = None_                 | An object having callable `read()` returning bytes object. |
+| `data`               | _Optional[bytes] = None_                       | Data in byte array.                                        |
+| `length`             | _Optional[int] = None_                         | Data length of `data` or `stream`.                         |
+| `chunk_size`         | _Optional[int] = None_                         | Chunk size.                                                |
+| `progress`           | _Optional[minio.args.ProgressType] = None_     | A progress object.                                         |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing.                 |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.                 |
 
 __Return Value__
 
-| Return                                    |
-|:------------------------------------------|
-| _minio.helpers.ObjectWriteResult_ object. |
+| Return                                     |
+|:-------------------------------------------|
+| _minio.models.ObjectWriteResponse_ object. |
 
 __Example__
 ```py
@@ -1002,34 +1092,34 @@ with urlopen(
 
 <a name="get_object"></a>
 
-### get_object(self, *, bucket_name: str, object_name: str, version_id: Optional[str] = None, ssec: Optional[SseCustomerKey] = None, offset: int = 0, length: Optional[int] = None, match_etag: Optional[str] = None, not_match_etag: Optional[str] = None, modified_since: Optional[datetime] = None, unmodified_since: Optional[datetime] = None, fetch_checksum: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> BaseHTTPResponse
+### get_object(self, *, bucket_name: str, object_name: str, version_id: Optional[str] = None, ssec: Optional[SseCustomerKey] = None, offset: int = 0, length: Optional[int] = None, match_etag: Optional[str] = None, not_match_etag: Optional[str] = None, modified_since: Optional[datetime] = None, unmodified_since: Optional[datetime] = None, fetch_checksum: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> GetObjectResponse
 
-Gets data from offset to length of an object. Returned response should be closed after use to release network resources. To reuse the connection, it's required to call `response.release_conn()` explicitly.
+Gets data from offset to length of an object. Returned response should be closed after use to release network resources.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                 |
-|:---------------------|:------------------------------------------------|:--------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                         |
-| `object_name`        | _str_                                           | Object name in the bucket.                  |
-| `version_id`         | _Optional[str] = None_                          | Version-ID of the object.                   |
-| `ssec`               | _Optional[minio.sse.SseCustomerKey] = None_     | Server-side encryption customer key.        |
-| `offset`             | _int = 0_                                       | Start byte position of object data.         |
-| `length`             | _Optional[int] = None_                          | Number of bytes of object data from offset. |
-| `match_etag`         | _Optional[str] = None_                          | Match ETag of the object.                   |
-| `not_match_etag`     | _Optional[str] = None_                          | None-match ETag of the object.              |
-| `modified_since`     | _Optional[datetime.datetime] = None_            | Modified-since of the object.               |
-| `unmodified_since`   | _Optional[datetime.datetime] = None_            | Unmodified-since of the object.             |
-| `fetch_checksum`     | _bool = False_                                  | Fetch object checksum.                      |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing.  |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.           |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
+| Param                | Type                                           | Description                                 |
+|:---------------------|:-----------------------------------------------|:--------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                         |
+| `object_name`        | _str_                                          | Object name in the bucket.                  |
+| `version_id`         | _Optional[str] = None_                         | Version-ID of the object.                   |
+| `ssec`               | _Optional[minio.sse.SseCustomerKey] = None_    | Server-side encryption customer key.        |
+| `offset`             | _int = 0_                                      | Start byte position of object data.         |
+| `length`             | _Optional[int] = None_                         | Number of bytes of object data from offset. |
+| `match_etag`         | _Optional[str] = None_                         | Match ETag of the object.                   |
+| `not_match_etag`     | _Optional[str] = None_                         | None-match ETag of the object.              |
+| `modified_since`     | _Optional[datetime.datetime] = None_           | Modified-since of the object.               |
+| `unmodified_since`   | _Optional[datetime.datetime] = None_           | Unmodified-since of the object.             |
+| `fetch_checksum`     | _bool = False_                                 | Fetch object checksum.                      |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing.  |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.           |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
 
 __Return Value__
 
-| Return                                                                         |
-|:-------------------------------------------------------------------------------|
-| _urllib3.response.BaseHTTPResponse_ or _urllib3.response.HTTPResponse_ object. |
+| Return                                   |
+|:-----------------------------------------|
+| _minio.models.GetObjectResponse_ object. |
 
 __Example__
 
@@ -1040,7 +1130,6 @@ try:
     # Read data from response.
 finally:
     response.close()
-    response.release_conn()
 
 # Get data of an object of version-ID.
 try:
@@ -1052,7 +1141,6 @@ try:
     # Read data from response.
 finally:
     response.close()
-    response.release_conn()
 
 # Get data of an object from offset and length.
 try:
@@ -1065,7 +1153,6 @@ try:
     # Read data from response.
 finally:
     response.close()
-    response.release_conn()
 
 # Get data of an SSE-C encrypted object.
 try:
@@ -1077,31 +1164,30 @@ try:
     # Read data from response.
 finally:
     response.close()
-    response.release_conn()
 ```
 
 <a name="select_object_content"></a>
 
-### select_object_content(self, *, bucket_name: str, object_name: str, request: SelectRequest, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> SelectObjectReader
+### select_object_content(self, *, bucket_name: str, object_name: str, request: SelectObjectContentRequest, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> SelectObjectResponse
 
 Select content of an object by SQL expression.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                 |
-|:---------------------|:------------------------------------------------|:--------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                         |
-| `object_name`        | _str_                                           | Object name in the bucket.                  |
-| `request`            | _minio.select.SelectRequest_                    | Select request.                             |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing.  |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.           |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `object_name`        | _str_                                          | Object name in the bucket.                 |
+| `request`            | _minio.models.SelectObjectContentRequest_      | Select request.                            |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Return Value__
 
-| Return                                    |
-|:------------------------------------------|
-| _minio.select.SelectObjectReader_ object. |
+| Return                                      |
+|:--------------------------------------------|
+| _minio.models.SelectObjectResponse_ object. |
 
 __Example__
 
@@ -1115,39 +1201,43 @@ with client.select_object_content(
             output_serialization=CSVOutputSerialization(),
             request_progress=True,
         ),
-) as result:
-    for data in result.stream():
+) as response:
+    for data in response.stream():
         print(data.decode())
-    print(result.stats())
+    print(response.stats())
 ```
 
 <a name="fget_object"></a>
 
-### fget_object(self, *, bucket_name: str, object_name: str, file_path: str, match_etag: Optional[str] = None, not_match_etag: Optional[str] = None, modified_since: Optional[datetime] = None, unmodified_since: Optional[datetime] = None, fetch_checksum: bool = False, ssec: Optional[SseCustomerKey] = None, version_id: Optional[str] = None, tmp_file_path: Optional[str] = None, progress: Optional[ProgressType] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None)
+### fget_object(self, *, bucket_name: str, object_name: str, file_path: str, match_etag: Optional[str] = None, not_match_etag: Optional[str] = None, modified_since: Optional[datetime] = None, unmodified_since: Optional[datetime] = None, fetch_checksum: bool = False, ssec: Optional[SseCustomerKey] = None, version_id: Optional[str] = None, tmp_file_path: Optional[str] = None, progress: Optional[ProgressType] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> GetObjectResponse
 
 Downloads data of an object to file.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                 |
-|:---------------------|:------------------------------------------------|:--------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                         |
-| `object_name`        | _str_                                           | Object name in the bucket.                  |
-| `file_path`          | _str_                                           | Name of file to download.                   |
-| `version_id`         | _Optional[str] = None_                          | Version-ID of the object.                   |
-| `ssec`               | _Optional[minio.sse.SseCustomerKey] = None_     | Server-side encryption customer key.        |
-| `offset`             | _int = 0_                                       | Start byte position of object data.         |
-| `length`             | _Optional[int] = None_                          | Number of bytes of object data from offset. |
-| `tmp_file_path`      | _Optional[str] = None_                          | Path to a temporary file.                   |
-| `progress`           | _Optional[minio.helpers.ProgressType] = None_   | A progress object.                          |
-| `match_etag`         | _Optional[str] = None_                          | Match ETag of the object.                   |
-| `not_match_etag`     | _Optional[str] = None_                          | None-match ETag of the object.              |
-| `modified_since`     | _Optional[datetime.datetime] = None_            | Modified-since of the object.               |
-| `unmodified_since`   | _Optional[datetime.datetime] = None_            | Unmodified-since of the object.             |
-| `fetch_checksum`     | _bool = False_                                  | Fetch object checksum.                      |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing.  |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.           |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
+| Param                | Type                                           | Description                                 |
+|:---------------------|:-----------------------------------------------|:--------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                         |
+| `object_name`        | _str_                                          | Object name in the bucket.                  |
+| `file_path`          | _str_                                          | Name of file to download.                   |
+| `version_id`         | _Optional[str] = None_                         | Version-ID of the object.                   |
+| `ssec`               | _Optional[minio.sse.SseCustomerKey] = None_    | Server-side encryption customer key.        |
+| `offset`             | _int = 0_                                      | Start byte position of object data.         |
+| `length`             | _Optional[int] = None_                         | Number of bytes of object data from offset. |
+| `tmp_file_path`      | _Optional[str] = None_                         | Path to a temporary file.                   |
+| `progress`           | _Optional[minio.args.ProgressType] = None_     | A progress object.                          |
+| `match_etag`         | _Optional[str] = None_                         | Match ETag of the object.                   |
+| `not_match_etag`     | _Optional[str] = None_                         | None-match ETag of the object.              |
+| `modified_since`     | _Optional[datetime.datetime] = None_           | Modified-since of the object.               |
+| `unmodified_since`   | _Optional[datetime.datetime] = None_           | Unmodified-since of the object.             |
+| `fetch_checksum`     | _bool = False_                                 | Fetch object checksum.                      |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing.  |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.           |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
+
+| Return                                   |
+|:-----------------------------------------|
+| _minio.models.GetObjectResponse_ object. |
 
 __Example__
 
@@ -1178,34 +1268,34 @@ client.fget_object(
 
 <a name="copy_object"></a>
 
-### copy_object(self, *, bucket_name: str, object_name: str, source: CopySource, sse: Optional[Sse] = None, user_metadata: Optional[HTTPHeaderDict] = None, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, metadata_directive: Optional[str] = None, tagging_directive: Optional[str] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
+### copy_object(self, *, bucket_name: str, object_name: str, source: CopySource, sse: Optional[Sse] = None, user_metadata: Optional[HTTPHeaderDict] = None, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, metadata_directive: Optional[str] = None, tagging_directive: Optional[str] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResponse
 
 Create an object by server-side copying data from another object. In this API maximum supported source object size is 5GiB.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                                           |
-|:---------------------|:------------------------------------------------|:----------------------------------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                                                   |
-| `object_name`        | _str_                                           | Object name in the bucket.                                            |
-| `source`             | _minio.commonconfig.CopySource_                 | Source object information.                                            |
-| `sse`                | _Optional[minio.sse.Sse] = None_                | Server-side encryption of destination object.                         |
-| `user_metadata`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Any user-defined metadata to be copied along with destination object. |
-| `tags`               | _Optional[minio.commonconfig.Tags] = None_      | Tags for destination object.                                          |
-| `retention`          | _Optional[minio.retention.Retention] = None_    | Retention configuration.                                              |
-| `legal_hold`         | _bool = False_                                  | Flag to set legal hold for destination object.                        |
-| `metadata_directive` | _Optional[str] = None_                          | Directive used to handle user metadata for destination object.        |
-| `tagging_directive`  | _Optional[str] = None_                          | Directive used to handle tags for destination object.                 |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing.                            |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                                     |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.                            |
+| Param                | Type                                           | Description                                                           |
+|:---------------------|:-----------------------------------------------|:----------------------------------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                                                   |
+| `object_name`        | _str_                                          | Object name in the bucket.                                            |
+| `source`             | _minio.args.CopySource_                        | Source object information.                                            |
+| `sse`                | _Optional[minio.sse.Sse] = None_               | Server-side encryption of destination object.                         |
+| `user_metadata`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Any user-defined metadata to be copied along with destination object. |
+| `tags`               | _Optional[minio.models.Tags] = None_           | Tags for destination object.                                          |
+| `retention`          | _Optional[minio.models.Retention] = None_      | Retention configuration.                                              |
+| `legal_hold`         | _bool = False_                                 | Flag to set legal hold for destination object.                        |
+| `metadata_directive` | _Optional[str] = None_                         | Directive used to handle user metadata for destination object.        |
+| `tagging_directive`  | _Optional[str] = None_                         | Directive used to handle tags for destination object.                 |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing.                            |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                                     |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.                            |
 
 
 __Return Value__
 
-| Return                                    |
-|:------------------------------------------|
-| _minio.helpers.ObjectWriteResult_ object. |
+| Return                                     |
+|:-------------------------------------------|
+| _minio.models.ObjectWriteResponse_ object. |
 
 __Example__
 
@@ -1253,32 +1343,32 @@ print(result.object_name, result.version_id)
 
 <a name="compose_object"></a>
 
-### compose_object(self, *, bucket_name: str, object_name: str, sources: list[ComposeSource], sse: Optional[Sse] = None, user_metadata: Optional[HTTPHeaderDict] = None, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
+### compose_object(self, *, bucket_name: str, object_name: str, sources: list[ComposeSource], sse: Optional[Sse] = None, user_metadata: Optional[HTTPHeaderDict] = None, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResponse
 
 Create an object by combining data from different source objects using server-side copy.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                                           |
-|:---------------------|:------------------------------------------------|:----------------------------------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                                                   |
-| `object_name`        | _str_                                           | Object name in the bucket.                                            |
-| `sources`            | _list[minio.commonconfig.ComposeSource]_        | List of _ComposeSource_ object.                                       |
-| `sse`                | _Optional[minio.sse.Sse] = None_                | Server-side encryption of destination object.                         |
-| `user_metadata`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Any user-defined metadata to be copied along with destination object. |
-| `tags`               | _Optional[minio.commonconfig.Tags] = None_      | Tags for destination object.                                          |
-| `retention`          | _Optional[minio.retention.Retention] = None_    | Retention configuration.                                              |
-| `legal_hold`         | _bool = False_                                  | Flag to set legal hold for destination object.                        |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing.                            |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                                     |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.                            |
+| Param                | Type                                           | Description                                                           |
+|:---------------------|:-----------------------------------------------|:----------------------------------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                                                   |
+| `object_name`        | _str_                                          | Object name in the bucket.                                            |
+| `sources`            | _list[minio.models.ComposeSource]_             | List of _ComposeSource_ object.                                       |
+| `sse`                | _Optional[minio.sse.Sse] = None_               | Server-side encryption of destination object.                         |
+| `user_metadata`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Any user-defined metadata to be copied along with destination object. |
+| `tags`               | _Optional[minio.models.Tags] = None_           | Tags for destination object.                                          |
+| `retention`          | _Optional[minio.models.Retention] = None_      | Retention configuration.                                              |
+| `legal_hold`         | _bool = False_                                 | Flag to set legal hold for destination object.                        |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing.                            |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                                     |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.                            |
 
 
 __Return Value__
 
-| Return                                    |
-|:------------------------------------------|
-| _minio.helpers.ObjectWriteResult_ object. |
+| Return                                     |
+|:-------------------------------------------|
+| _minio.models.ObjectWriteResponse_ object. |
 
 __Example__
 
@@ -1333,38 +1423,38 @@ print(result.object_name, result.version_id)
 
 <a name="put_object"></a>
 
-### put_object(self, *, bucket_name: str, object_name: str, data: BinaryIO, length: int, content_type: str = "application/octet-stream", headers: Optional[HTTPHeaderDict] = None, user_metadata: Optional[HTTPHeaderDict] = None, sse: Optional[Sse] = None, progress: Optional[ProgressType] = None, part_size: int = 0, checksum: Optional[Algorithm] = None, num_parallel_uploads: int = 3, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
+### put_object(self, *, bucket_name: str, object_name: str, data: BinaryIO, length: int, content_type: str = "application/octet-stream", headers: Optional[HTTPHeaderDict] = None, user_metadata: Optional[HTTPHeaderDict] = None, sse: Optional[Sse] = None, progress: Optional[ProgressType] = None, part_size: int = 0, checksum: Optional[Algorithm] = None, num_parallel_uploads: int = 3, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResponse
 
 Uploads data from a stream to an object in a bucket.
 
 __Parameters__
 
-| Param                  | Type                                            | Description                                               |
-|:-----------------------|:------------------------------------------------|:----------------------------------------------------------|
-| `bucket_name`          | _str_                                           | Name of the bucket.                                       |
-| `object_name`          | _str_                                           | Object name in the bucket.                                |
-| `data`                 | _io.BinaryIO_                                   | An object having callable read() returning bytes object.  |
-| `length`               | _int_                                           | Data size; -1 for unknown size and set valid `part_size`. |
-| `content_type`         | _str = "application/octet-stream"_              | Content type of the object.                               |
-| `headers`              | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Additional headers.                                       |
-| `user_metadata`        | _Optional[minio.helpers.HTTPHeaderDict] = None_ | User metadata of the object.                              |
-| `sse`                  | _Optional[minio.sse.Sse] = None_                | Server-side encryption.                                   |
-| `progress`             | _Optional[minio.helpers.ProgressType] = None_   | A progress object.                                        |
-| `part_size`            | _int = 0_                                       | Multipart part size.                                      |
-| `checksum`             | _Optional[minio.checksum.Algorithm] = None_     | Algorithm for checksum computation.                       |
-| `num_parallel_uploads` | _int = 3_                                       | Number of parallel uploads.                               |
-| `tags`                 | _Optional[minio.commonconfig.Tags] = None_      | Tags for the object.                                      |
-| `retention`            | _Optional[minio.retention.Retention] = None_    | Retention configuration.                                  |
-| `legal_hold`           | _bool = False_                                  | Flag to set legal hold for the object.                    |
-| `region`               | _Optional[str] = None_                          | Region of the bucket to skip auto probing.                |
-| `extra_headers`        | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                         |
-| `extra_query_params`   | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.                |
+| Param                  | Type                                           | Description                                               |
+|:-----------------------|:-----------------------------------------------|:----------------------------------------------------------|
+| `bucket_name`          | _str_                                          | Name of the bucket.                                       |
+| `object_name`          | _str_                                          | Object name in the bucket.                                |
+| `data`                 | _io.BinaryIO_                                  | An object having callable read() returning bytes object.  |
+| `length`               | _int_                                          | Data size; -1 for unknown size and set valid `part_size`. |
+| `content_type`         | _str = "application/octet-stream"_             | Content type of the object.                               |
+| `headers`              | _Optional[minio.compat.HTTPHeaderDict] = None_ | Additional headers.                                       |
+| `user_metadata`        | _Optional[minio.compat.HTTPHeaderDict] = None_ | User metadata of the object.                              |
+| `sse`                  | _Optional[minio.sse.Sse] = None_               | Server-side encryption.                                   |
+| `progress`             | _Optional[minio.args.ProgressType] = None_     | A progress object.                                        |
+| `part_size`            | _int = 0_                                      | Multipart part size.                                      |
+| `checksum`             | _Optional[minio.checksum.Algorithm] = None_    | Algorithm for checksum computation.                       |
+| `num_parallel_uploads` | _int = 3_                                      | Number of parallel uploads.                               |
+| `tags`                 | _Optional[minio.models.Tags] = None_           | Tags for the object.                                      |
+| `retention`            | _Optional[minio.models.Retention] = None_      | Retention configuration.                                  |
+| `legal_hold`           | _bool = False_                                 | Flag to set legal hold for the object.                    |
+| `region`               | _Optional[str] = None_                         | Region of the bucket to skip auto probing.                |
+| `extra_headers`        | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                         |
+| `extra_query_params`   | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.                |
 
 __Return Value__
 
-| Return                                    |
-|:------------------------------------------|
-| _minio.helpers.ObjectWriteResult_ object. |
+| Return                                     |
+|:-------------------------------------------|
+| _minio.models.ObjectWriteResponse_ object. |
 
 __Example__
 ```py
@@ -1497,37 +1587,37 @@ print(
 
 <a name="fput_object"></a>
 
-### fput_object(self, *, bucket_name: str, object_name: str, file_path: str, content_type: str = "application/octet-stream", headers: Optional[HTTPHeaderDict] = None, user_metadata: Optional[HTTPHeaderDict] = None, sse: Optional[Sse] = None, progress: Optional[ProgressType] = None, part_size: int = 0, checksum: Optional[Algorithm] = None, num_parallel_uploads: int = 3, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
+### fput_object(self, *, bucket_name: str, object_name: str, file_path: str, content_type: str = "application/octet-stream", headers: Optional[HTTPHeaderDict] = None, user_metadata: Optional[HTTPHeaderDict] = None, sse: Optional[Sse] = None, progress: Optional[ProgressType] = None, part_size: int = 0, checksum: Optional[Algorithm] = None, num_parallel_uploads: int = 3, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResponse
 
 Uploads data from a file to an object in a bucket.
 
 __Parameters__
 
-| Param                  | Type                                            | Description                                |
-|:-----------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`          | _str_                                           | Name of the bucket.                        |
-| `object_name`          | _str_                                           | Object name in the bucket.                 |
-| `file_path`            | _str_                                           | Name of file to upload.                    |
-| `content_type`         | _str = "application/octet-stream"_              | Content type of the object.                |
-| `headers`              | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Additional headers.                        |
-| `user_metadata`        | _Optional[minio.helpers.HTTPHeaderDict] = None_ | User metadata of the object.               |
-| `sse`                  | _Optional[minio.sse.Sse] = None_                | Server-side encryption.                    |
-| `progress`             | _Optional[minio.helpers.ProgressType] = None_   | A progress object.                         |
-| `part_size`            | _int = 0_                                       | Multipart part size.                       |
-| `checksum`             | _Optional[minio.checksum.Algorithm] = None_     | Algorithm for checksum computation.        |
-| `num_parallel_uploads` | _int = 3_                                       | Number of parallel uploads.                |
-| `tags`                 | _Optional[minio.commonconfig.Tags] = None_      | Tags for the object.                       |
-| `retention`            | _Optional[minio.retention.Retention] = None_    | Retention configuration.                   |
-| `legal_hold`           | _bool = False_                                  | Flag to set legal hold for the object.     |
-| `region`               | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`        | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params`   | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                  | Type                                           | Description                                |
+|:-----------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`          | _str_                                          | Name of the bucket.                        |
+| `object_name`          | _str_                                          | Object name in the bucket.                 |
+| `file_path`            | _str_                                          | Name of file to upload.                    |
+| `content_type`         | _str = "application/octet-stream"_             | Content type of the object.                |
+| `headers`              | _Optional[minio.compat.HTTPHeaderDict] = None_ | Additional headers.                        |
+| `user_metadata`        | _Optional[minio.compat.HTTPHeaderDict] = None_ | User metadata of the object.               |
+| `sse`                  | _Optional[minio.sse.Sse] = None_               | Server-side encryption.                    |
+| `progress`             | _Optional[minio.args.ProgressType] = None_     | A progress object.                         |
+| `part_size`            | _int = 0_                                      | Multipart part size.                       |
+| `checksum`             | _Optional[minio.checksum.Algorithm] = None_    | Algorithm for checksum computation.        |
+| `num_parallel_uploads` | _int = 3_                                      | Number of parallel uploads.                |
+| `tags`                 | _Optional[minio.models.Tags] = None_           | Tags for the object.                       |
+| `retention`            | _Optional[minio.models.Retention] = None_      | Retention configuration.                   |
+| `legal_hold`           | _bool = False_                                 | Flag to set legal hold for the object.     |
+| `region`               | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`        | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params`   | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Return Value__
 
-| Return                                    |
-|:------------------------------------------|
-| _minio.helpers.ObjectWriteResult_ object. |
+| Return                                     |
+|:-------------------------------------------|
+| _minio.models.ObjectWriteResponse_ object. |
 
 __Example__
 
@@ -1647,36 +1737,86 @@ print(
 )
 ```
 
+<a name="put_object_fan_out"></a>
+
+### put_object_fan_out(self, *, bucket_name: str, data: BinaryIO, length: int, entries: list[PutObjectFanOutEntry], sse: Optional[Sse] = None, checksum: Optional[Checksum] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> PutObjectFanOutResponse
+
+Uploads multiple objects with same content from single stream with optional metadata and tags.
+
+__Parameters__
+
+| Param                | Type                                           | Description                                              |
+|:---------------------|:-----------------------------------------------|:---------------------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                                      |
+| `object_name`        | _str_                                          | Object name in the bucket.                               |
+| `data`               | _io.BinaryIO_                                  | An object having callable read() returning bytes object. |
+| `length`             | _int_                                          | Size of the data in bytes.                               |
+| `entries`            | _list[minio.args.PutObjectFanOutEntry]_        | Objects to be created.                                   |
+| `sse`                | _Optional[minio.sse.Sse] = None_               | Server-side encryption.                                  |
+| `checksum`           | _Optional[minio.checksum.Algorithm] = None_    | Algorithm for checksum computation.                      |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing.               |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                        |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.               |
+
+
+__Return Value__
+
+| Return                                         |
+|:-----------------------------------------------|
+| _minio.models.PutObjectFanOutResponse_ object. |
+
+__Example__
+```py
+response = client.put_object_fan_out(
+    bucket_name="my-bucket",
+    data=io.BytesIO(b"hello"),
+    length=5,
+    entries=[
+        PutObjectFanOutEntry(key="fan-out.0"),
+        PutObjectFanOutEntry(
+            key="fan-out.1",
+            tags={"Project": "Project One", "User": "jsmith"},
+        ),
+    ],
+)
+for result in response.results:
+    print(
+        f"created {result.key} object; etag: {result.etag}, "
+        f"version-id: {result.version_id}, ",
+        f"error: {result.error}",
+    )
+```
+
 <a name="stat_object"></a>
 
-### stat_object(self, *, bucket_name: str, object_name: str, version_id: Optional[str] = None, ssec: Optional[SseCustomerKey] = None, offset: int = 0, length: Optional[int] = None, match_etag: Optional[str] = None, not_match_etag: Optional[str] = None, modified_since: Optional[datetime] = None, unmodified_since: Optional[datetime] = None, fetch_checksum: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> Object:
+### stat_object(self, *, bucket_name: str, object_name: str, version_id: Optional[str] = None, ssec: Optional[SseCustomerKey] = None, offset: int = 0, length: Optional[int] = None, match_etag: Optional[str] = None, not_match_etag: Optional[str] = None, modified_since: Optional[datetime] = None, unmodified_since: Optional[datetime] = None, fetch_checksum: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> StatObjectResponse:
 
 Get object information and metadata of an object.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                 |
-|:---------------------|:------------------------------------------------|:--------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                         |
-| `object_name`        | _str_                                           | Object name in the bucket.                  |
-| `version_id`         | _Optional[str] = None_                          | Version ID of the object.                   |
-| `ssec`               | _Optional[minio.sse.SseCustomerKey] = None_     | Server-side encryption customer key.        |
-| `offset`             | _int = 0_                                       | Start byte position of object data.         |
-| `length`             | _Optional[int] = None_                          | Number of bytes of object data from offset. |
-| `match_etag`         | _Optional[str] = None_                          | Match ETag of the object.                   |
-| `not_match_etag`     | _Optional[str] = None_                          | None-match ETag of the object.              |
-| `modified_since`     | _Optional[datetime.datetime] = None_            | Modified-since of the object.               |
-| `unmodified_since`   | _Optional[datetime.datetime] = None_            | Unmodified-since of the object.             |
-| `fetch_checksum`     | _bool = False_                                  | Fetch object checksum.                      |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing.  |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.           |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
+| Param                | Type                                           | Description                                 |
+|:---------------------|:-----------------------------------------------|:--------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                         |
+| `object_name`        | _str_                                          | Object name in the bucket.                  |
+| `version_id`         | _Optional[str] = None_                         | Version ID of the object.                   |
+| `ssec`               | _Optional[minio.sse.SseCustomerKey] = None_    | Server-side encryption customer key.        |
+| `offset`             | _int = 0_                                      | Start byte position of object data.         |
+| `length`             | _Optional[int] = None_                         | Number of bytes of object data from offset. |
+| `match_etag`         | _Optional[str] = None_                         | Match ETag of the object.                   |
+| `not_match_etag`     | _Optional[str] = None_                         | None-match ETag of the object.              |
+| `modified_since`     | _Optional[datetime.datetime] = None_           | Modified-since of the object.               |
+| `unmodified_since`   | _Optional[datetime.datetime] = None_           | Unmodified-since of the object.             |
+| `fetch_checksum`     | _bool = False_                                 | Fetch object checksum.                      |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing.  |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.           |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
 
 __Return Value__
 
-| Return                           |
-|:---------------------------------|
-| _minio.datatypes.Object_ object. |
+| Return                                    |
+|:------------------------------------------|
+| _minio.models.StatObjectResponse_ object. |
 
 __Example__
 
@@ -1713,14 +1853,14 @@ Remove an object.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `object_name`        | _str_                                           | Object name in the bucket.                 |
-| `version_id`         | _Optional[str] = None_                          | Version ID of the object.                  |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `object_name`        | _str_                                          | Object name in the bucket.                 |
+| `version_id`         | _Optional[str] = None_                         | Version ID of the object.                  |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -1747,20 +1887,20 @@ Remove multiple objects.
 
 __Parameters__
 
-| Param                    | Type                                            | Description                                |
-|:-------------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`            | _str_                                           | Name of the bucket.                        |
-| `delete_object_list`     | _Iterable[minio.deleteobjects.DeleteObject]_    | DeleteObject iterable.                     |
-| `bypass_governance_mode` | _bool = False_                                  | Bypass Governance retention mode.          |
-| `region`                 | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`          | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params`     | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                    | Type                                           | Description                                |
+|:-------------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`            | _str_                                          | Name of the bucket.                        |
+| `delete_object_list`     | _Iterable[minio.models.DeleteRequest.Object]_  | DeleteObject iterable.                     |
+| `bypass_governance_mode` | _bool = False_                                 | Bypass Governance retention mode.          |
+| `region`                 | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`          | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params`     | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Return Value__
 
 | Return                                              |
 |:----------------------------------------------------|
-| _Iterator[minio.deleteobjects.DeleteError]_ object. |
+| _Iterator[minio.models.DeleteResult.Error]_ object. |
 
 __Example__
 
@@ -1805,19 +1945,89 @@ Delete tags configuration of an object.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `object_name`        | _str_                                           | Object name in the bucket.                 |
-| `version_id`         | _Optional[str] = None_                          | Version ID of the object.                  |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `object_name`        | _str_                                          | Object name in the bucket.                 |
+| `version_id`         | _Optional[str] = None_                         | Version ID of the object.                  |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
 ```py
 client.delete_object_tags(bucket_name="my-bucket", object_name="my-object")
+```
+
+<a name="get_object_attributes"></a>
+
+### get_object_attributes(self, *, bucket_name: str, object_name: str, version_id: Optional[str] = None, ssec: Optional[SseCustomerKey] = None, object_attributes: Optional[list[str]] = None, max_parts: Optional[int] = None, part_number_marker: Optional[int] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> Optional[GetObjectAttributesResponse]
+
+Get retention information of an object.
+
+__Parameters__
+
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `object_name`        | _str_                                          | Object name in the bucket.                 |
+| `version_id`         | _Optional[str] = None_                         | Version ID of the object.                  |
+| `ssec`               | _Optional[minio.sse.SseCustomerKey] = None_    | Server-side encryption customer key.       |
+| `object_attributes`  | _Optional[list[str]] = None_                   | Object attributes.                         |
+| `max_parts`          | _Optional[int] = None_                         | Maximum parts to fetch.                    |
+| `part_number_marker` | _Optional[int] = None_                         | Part number marker to fetch remaining..    |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+
+__Return Value__
+
+| Return                                                       |
+|:-------------------------------------------------------------|
+| _Optional[minio.models.GetObjectAttributesResponse]_ object. |
+
+
+__Example__
+
+```py
+response = client.get_object_attributes(
+    bucket_name="my-bucket",
+    object_name="my-object",
+)
+```
+
+<a name="get_object_acl"></a>
+
+### get_object_acl(self, *, bucket_name: str, object_name: str, version_id: Optional[str] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> Optional[GetObjectAclResponse]
+
+Get retention information of an object.
+
+__Parameters__
+
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `object_name`        | _str_                                          | Object name in the bucket.                 |
+| `version_id`         | _Optional[str] = None_                         | Version ID of the object.                  |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+
+__Return Value__
+
+| Return                                                |
+|:------------------------------------------------------|
+| _Optional[minio.models.GetObjectAclResponse]_ object. |
+
+
+__Example__
+
+```py
+response = client.get_object_acl(
+    bucket_name="my-bucket",
+    object_name="my-object",
+)
 ```
 
 <a name="get_object_tags"></a>
@@ -1828,18 +2038,18 @@ Get tags configuration of an object.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `object_name`        | _str_                                           | Object name in the bucket.                 |
-| `version_id`         | _Optional[str] = None_                          | Version ID of the object.                  |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `object_name`        | _str_                                          | Object name in the bucket.                 |
+| `version_id`         | _Optional[str] = None_                         | Version ID of the object.                  |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
-| Return                                      |
-|:--------------------------------------------|
-| _Optional[minio.commonconfig.Tags]_ object. |
+| Return                                |
+|:--------------------------------------|
+| _Optional[minio.models.Tags]_ object. |
 
 __Example__
 
@@ -1855,15 +2065,15 @@ Set tags configuration to an object.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `object_name`        | _str_                                           | Object name in the bucket.                 |
-| `tags`               | _minio.commonconfig.Tags_                       | Tags configuration.                        |
-| `version_id`         | _Optional[str] = None_                          | Version ID of the object.                  |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `object_name`        | _str_                                          | Object name in the bucket.                 |
+| `tags`               | _minio.models.Tags_                            | Tags configuration.                        |
+| `version_id`         | _Optional[str] = None_                         | Version ID of the object.                  |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -1882,14 +2092,14 @@ Enable legal hold on an object.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `object_name`        | _str_                                           | Object name in the bucket.                 |
-| `version_id`         | _Optional[str] = None_                          | Version ID of the object.                  |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `object_name`        | _str_                                          | Object name in the bucket.                 |
+| `version_id`         | _Optional[str] = None_                         | Version ID of the object.                  |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -1905,14 +2115,14 @@ Disable legal hold on an object.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `object_name`        | _str_                                           | Object name in the bucket.                 |
-| `version_id`         | _Optional[str] = None_                          | Version ID of the object.                  |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `object_name`        | _str_                                          | Object name in the bucket.                 |
+| `version_id`         | _Optional[str] = None_                         | Version ID of the object.                  |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -1928,14 +2138,14 @@ Returns true if legal hold is enabled on an object.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `object_name`        | _str_                                           | Object name in the bucket.                 |
-| `version_id`         | _Optional[str] = None_                          | Version ID of the object.                  |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `object_name`        | _str_                                          | Object name in the bucket.                 |
+| `version_id`         | _Optional[str] = None_                         | Version ID of the object.                  |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -1957,20 +2167,20 @@ Get retention information of an object.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `object_name`        | _str_                                           | Object name in the bucket.                 |
-| `version_id`         | _Optional[str] = None_                          | Version ID of the object.                  |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `object_name`        | _str_                                          | Object name in the bucket.                 |
+| `version_id`         | _Optional[str] = None_                         | Version ID of the object.                  |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Return Value__
 
-| Return                                        |
-|:----------------------------------------------|
-| _Optional[minio.retention.Retention]_ object. |
+| Return                                     |
+|:-------------------------------------------|
+| _Optional[minio.models.Retention]_ object. |
 
 
 __Example__
@@ -1990,15 +2200,15 @@ Set retention information to an object.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                |
-|:---------------------|:------------------------------------------------|:-------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                        |
-| `object_name`        | _str_                                           | Object name in the bucket.                 |
-| `config`             | _minio.retention.Retention_                     | Retention configuration.                   |
-| `version_id`         | _Optional[str] = None_                          | Version ID of the object.                  |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing. |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
+| Param                | Type                                           | Description                                |
+|:---------------------|:-----------------------------------------------|:-------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                        |
+| `object_name`        | _str_                                          | Object name in the bucket.                 |
+| `config`             | _minio.models.Retention_                       | Retention configuration.                   |
+| `version_id`         | _Optional[str] = None_                         | Version ID of the object.                  |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing. |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.          |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage. |
 
 __Example__
 
@@ -2013,30 +2223,30 @@ client.set_object_retention(
 
 <a name="prompt_object"></a>
 
-### prompt_object(self, *, bucket_name: str, object_name: str, prompt: str, lambda_arn: Optional[str] = None, ssec: Optional[SseCustomerKey] = None, version_id: Optional[str] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None, **kwargs: Optional[Any]) -> BaseHTTPResponse
+### prompt_object(self, *, bucket_name: str, object_name: str, prompt: str, lambda_arn: Optional[str] = None, ssec: Optional[SseCustomerKey] = None, version_id: Optional[str] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None, **kwargs: Optional[Any]) -> PromptObjectResponse
 
 Prompt an object using natural language.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                                             |
-|----------------------|-------------------------------------------------|-------------------------------------------------------------------------|
-| `bucket_name`        | `str`                                           | Name of the bucket.                                                     |
-| `object_name`        | `str`                                           | Object name in the bucket.                                              |
-| `prompt`             | `str`                                           | Natural language prompt to interact with the object using the AI model. |
-| `lambda_arn`         | `Optional[str] = None`                          | AWS Lambda ARN to use for processing the prompt.                        |
-| `ssec`               | `Optional[minio.sse.SseCustomerKey] = None`     | Server-side encryption customer key.                                    |
-| `version_id`         | `Optional[str] = None`                          | Version ID of the object.                                               |
-| `region`             | `Optional[str] = None`                          | Region of the bucket to skip auto probing.                              |
-| `extra_headers`      | `Optional[minio.helpers.HTTPHeaderDict] = None` | Extra headers for advanced usage.                                       |
-| `extra_query_params` | `Optional[minio.helpers.HTTPQueryDict] = None`  | Extra query parameters for advanced usage.                              |
-| `**kwargs`           | `Optional[Any]`                                 | Additional parameters for advanced usage.                               |
+| Param                | Type                                           | Description                                                             |
+|----------------------|------------------------------------------------|-------------------------------------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                                                     |
+| `object_name`        | _str_                                          | Object name in the bucket.                                              |
+| `prompt`             | _str_                                          | Natural language prompt to interact with the object using the AI model. |
+| `lambda_arn`         | _Optional[str] = None_                         | AWS Lambda ARN to use for processing the prompt.                        |
+| `ssec`               | _Optional[minio.sse.SseCustomerKey] = None_    | Server-side encryption customer key.                                    |
+| `version_id`         | _Optional[str] = None_                         | Version ID of the object.                                               |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing.                              |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                                       |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.                              |
+| `**kwargs`           | _Optional[Any]_                                | Additional parameters for advanced usage.                               |
 
 __Return Value__
 
-| Return                                                                         |
-|:-------------------------------------------------------------------------------|
-| _urllib3.response.BaseHTTPResponse_ or _urllib3.response.HTTPResponse_ object. |
+| Return                                      |
+|:--------------------------------------------|
+| _minio.models.PromptObjectResponse_ object. |
 
 __Example__
 
@@ -2052,7 +2262,6 @@ try:
 finally:
     if response:
         response.close()
-        response.release_conn()
 ```
 
 <a name="presigned_get_object"></a>
@@ -2071,7 +2280,7 @@ __Parameters__
 | `request_date`       | _Optional[datetime.datetime] = None_              | Request time instead of current time.      |
 | `version_id`         | _Optional[str] = None_                            | Version ID of the object.                  |
 | `region`             | _Optional[str] = None_                            | Region of the bucket to skip auto probing. |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_    | Extra query parameters for advanced usage. |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_     | Extra query parameters for advanced usage. |
 
 __Return Value__
 
@@ -2114,7 +2323,7 @@ __Parameters__
 | `object_name`        | _str_                                             | Object name in the bucket.                 |
 | `expires`            | _datetime.timedelta = datetime.timedelta(days=7)_ | Expiry in seconds.                         |
 | `region`             | _Optional[str] = None_                            | Region of the bucket to skip auto probing. |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_    | Extra query parameters for advanced usage. |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_     | Extra query parameters for advanced usage. |
 
 __Return Value__
 
@@ -2151,9 +2360,9 @@ Get form-data of PostPolicy of an object to upload its data using POST method.
 
 __Parameters__
 
-| Param    | Type                         | Description  |
-|:---------|:-----------------------------|:-------------|
-| `policy` | _minio.datatypes.PostPolicy_ | Post policy. |
+| Param    | Type                      | Description  |
+|:---------|:--------------------------|:-------------|
+| `policy` | _minio.models.PostPolicy_ | Post policy. |
 
 __Return Value__
 
@@ -2191,7 +2400,7 @@ __Parameters__
 | `request_date`       | _Optional[datetime.datetime] = None_              | Request time instead of current time.      |
 | `version_id`         | _Optional[str] = None_                            | Version ID of the object.                  |
 | `region`             | _Optional[str] = None_                            | Region of the bucket to skip auto probing. |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_    | Extra query parameters for advanced usage. |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_     | Extra query parameters for advanced usage. |
 
 __Return Value__
 
@@ -2237,33 +2446,33 @@ print(url)
 
 <a name="upload_snowball_objects"></a>
 
-### upload_snowball_objects(self, *, bucket_name: str, objects: Iterable[SnowballObject], headers: Optional[HTTPHeaderDict] = None, user_metadata: Optional[HTTPHeaderDict] = None, sse: Optional[Sse] = None, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, staging_filename: Optional[str] = None, compression: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
+### upload_snowball_objects(self, *, bucket_name: str, objects: Iterable[SnowballObject], headers: Optional[HTTPHeaderDict] = None, user_metadata: Optional[HTTPHeaderDict] = None, sse: Optional[Sse] = None, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, staging_filename: Optional[str] = None, compression: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResponse
 
 Uploads multiple objects in a single put call. It is done by creating intermediate TAR file optionally compressed which is uploaded to S3 service.
 
 __Parameters__
 
-| Param                | Type                                            | Description                                        |
-|:---------------------|:------------------------------------------------|:---------------------------------------------------|
-| `bucket_name`        | _str_                                           | Name of the bucket.                                |
-| `objects`            | _Iterable[minio.commonconfig.SnowballObject]_   | An iterable contain snowball object.               |
-| `headers`            | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Additional headers.                                |
-| `user_metadata`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | User metadata.                                     |
-| `sse`                | _Optional[minio.sse.Sse] = None_                | Server-side encryption.                            |
-| `tags`               | _Optional[minio.commonconfig.Tags] = None_      | Tags for the object.                               |
-| `retention`          | _Optional[minio.retention.Retention] = None_    | Retention configuration.                           |
-| `legal_hold`         | _bool = False_                                  | Flag to set legal hold for the object.             |
-| `staging_filename`   | _Optional[str] = None_                          | A staging filename to create intermediate tarball. |
-| `compression`        | _bool = False_                                  | Flag to compress tarball.                          |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing.         |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                  |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.         |
+| Param                | Type                                           | Description                                        |
+|:---------------------|:-----------------------------------------------|:---------------------------------------------------|
+| `bucket_name`        | _str_                                          | Name of the bucket.                                |
+| `objects`            | _Iterable[minio.models.SnowballObject]_        | An iterable contain snowball object.               |
+| `headers`            | _Optional[minio.compat.HTTPHeaderDict] = None_ | Additional headers.                                |
+| `user_metadata`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | User metadata.                                     |
+| `sse`                | _Optional[minio.sse.Sse] = None_               | Server-side encryption.                            |
+| `tags`               | _Optional[minio.models.Tags] = None_           | Tags for the object.                               |
+| `retention`          | _Optional[minio.models.Retention] = None_      | Retention configuration.                           |
+| `legal_hold`         | _bool = False_                                 | Flag to set legal hold for the object.             |
+| `staging_filename`   | _Optional[str] = None_                         | A staging filename to create intermediate tarball. |
+| `compression`        | _bool = False_                                 | Flag to compress tarball.                          |
+| `region`             | _Optional[str] = None_                         | Region of the bucket to skip auto probing.         |
+| `extra_headers`      | _Optional[minio.compat.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                  |
+| `extra_query_params` | _Optional[minio.compat.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.         |
 
 __Return Value__
 
-| Return                                    |
-|:------------------------------------------|
-| _minio.helpers.ObjectWriteResult_ object. |
+| Return                                     |
+|:-------------------------------------------|
+| _minio.models.ObjectWriteResponse_ object. |
 
 __Example__
 
@@ -2293,6 +2502,6 @@ client.upload_snowball_objects(
 
 ## 5. Explore Further
 
-- [MinIO Golang Client SDK Quickstart Guide](https://min.io/docs/minio/linux/developers/go/minio-go.html)
-- [MinIO Java Client SDK Quickstart Guide](https://min.io/docs/minio/linux/developers/java/minio-java.html)
-- [MinIO JavaScript Client SDK Quickstart Guide](https://min.io/docs/minio/linux/developers/javascript/minio-javascript.html)
+- [MinIO Golang Client SDK Quickstart Guide](https://docs.min.io/enterprise/aistor-object-store/developers/sdk/go/)
+- [MinIO Java Client SDK Quickstart Guide](https://docs.min.io/enterprise/aistor-object-store/developers/sdk/java/)
+- [MinIO JavaScript Client SDK Quickstart Guide](https://docs.min.io/enterprise/aistor-object-store/developers/sdk/javascript/)

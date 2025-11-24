@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2015-2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,19 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Signature V4 signing methods."""
 
-"""
-minio.signer
-~~~~~~~~~~~~~~~
-
-This module implements all helpers for AWS Signature version '4' support.
-
-:copyright: (c) 2015 by MinIO, Inc.
-:license: Apache 2.0, see LICENSE for more details.
-
-"""
-
-from __future__ import absolute_import, annotations
+from __future__ import annotations
 
 import hashlib
 import hmac
@@ -36,11 +26,10 @@ from datetime import datetime
 from typing import cast
 from urllib.parse import SplitResult
 
-from urllib3._collections import HTTPHeaderDict
-
 from . import time
+from .checksum import sha256_hash
+from .compat import HTTPHeaderDict, queryencode
 from .credentials import Credentials
-from .helpers import queryencode, sha256_hash
 
 SIGN_V4_ALGORITHM = 'AWS4-HMAC-SHA256'
 _MULTI_SPACE_REGEX = re.compile(r"( +)")
