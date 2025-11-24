@@ -2244,7 +2244,7 @@ print(url)
 
 <a name="upload_snowball_objects"></a>
 
-### upload_snowball_objects(self, bucket_name: str, objects: Iterable[SnowballObject], headers: Optional[HTTPHeaderDict] = None, user_metadata: Optional[HTTPHeaderDict] = None, sse: Optional[Sse] = None, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, staging_filename: Optional[str] = None, compression: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
+### upload_snowball_objects(self, bucket_name: str, objects: Iterable[SnowballObject], metadata: Optional[HTTPHeaderDict] = None, sse: Optional[Sse] = None, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, staging_filename: Optional[str] = None, compression: bool = False, *, headers: Optional[HTTPHeaderDict] = None, user_metadata: Optional[HTTPHeaderDict] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
 
 Uploads multiple objects in a single put call. It is done by creating intermediate TAR file optionally compressed which is uploaded to S3 service.
 
@@ -2254,6 +2254,7 @@ __Parameters__
 |:---------------------|:------------------------------------------------|:---------------------------------------------------|
 | `bucket_name`        | _str_                                           | Name of the bucket.                                |
 | `objects`            | _Iterable[minio.commonconfig.SnowballObject]_   | An iterable contain snowball object.               |
+| `metadata`           | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Metadata for the object (legacy).                  |
 | `headers`            | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Additional headers.                                |
 | `user_metadata`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | User metadata.                                     |
 | `sse`                | _Optional[minio.sse.Sse] = None_                | Server-side encryption.                            |
