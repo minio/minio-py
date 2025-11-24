@@ -2567,7 +2567,6 @@ class Minio:
             object_name: str,
             sources: list[ComposeSource],
             sse: Optional[Sse] = None,
-            metadata: Optional[HTTPHeaderDict] = None,
             tags: Optional[Tags] = None,
             retention: Optional[Retention] = None,
             legal_hold: bool = False,
