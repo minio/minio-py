@@ -2387,8 +2387,6 @@ class Minio:
             raise ValueError("retention must be Retention type")
         if user_metadata is None:
             user_metadata = metadata
-        if user_metadata is None:
-            user_metadata = metadata
         if (
                 metadata_directive is not None and
                 metadata_directive not in [COPY, REPLACE]
@@ -2567,6 +2565,7 @@ class Minio:
             object_name: str,
             sources: list[ComposeSource],
             sse: Optional[Sse] = None,
+            metadata: Optional[HTTPHeaderDict] = None,
             tags: Optional[Tags] = None,
             retention: Optional[Retention] = None,
             legal_hold: bool = False,
@@ -2679,6 +2678,8 @@ class Minio:
             raise ValueError("tags must be Tags type")
         if retention is not None and not isinstance(retention, Retention):
             raise ValueError("retention must be Retention type")
+        if user_metadata is None:
+            user_metadata = metadata
 
         part_count = self._calc_part_count(sources)
         if (
@@ -3399,7 +3400,7 @@ class Minio:
             self,
             bucket_name: str,
             object_name: str,
-            data: Optional[bytes | BinaryIO] = None,
+            data: Optional[bytes] = None,
             length: Optional[int] = None,
             chunk_size: Optional[int] = None,
             progress: Optional[ProgressType] = None,

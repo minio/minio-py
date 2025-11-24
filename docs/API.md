@@ -203,7 +203,7 @@ client.remove_bucket(bucket_name="my-bucket")
 
 <a name="list_objects"></a>
 
-### list_objects(self, bucket_name: str, prefix: Optional[str] = None, recursive: bool = False, start_after: Optional[str] = None, include_user_meta: bool = False, include_version: bool = False, use_api_v1: bool = False, use_url_encoding_type: bool = True, fetch_owner: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None, ) -> Iterator[Object]
+### list_objects(self, bucket_name: str, prefix: Optional[str] = None, recursive: bool = False, start_after: Optional[str] = None, include_user_meta: bool = False, include_version: bool = False, use_api_v1: bool = False, use_url_encoding_type: bool = True, fetch_owner: bool = False, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None, *, region: Optional[str] = None) -> Iterator[Object]
 
 Lists object information of a bucket.
 
@@ -220,9 +220,9 @@ __Parameters__
 | `use_api_v1`            | _bool = False_                                  | Flag to control to use ListObjectV1 S3 API or not.           |
 | `use_url_encoding_type` | _bool = True_                                   | Flag to control whether URL encoding type to be used or not. |
 | `fetch_owner`           | _bool = False_                                  | Flag to control to fetch owner information.                  |
-| `region`                | _Optional[str] = None_                          | Region of the bucket to skip auto probing.                   |
 | `extra_headers`         | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                            |
 | `extra_query_params`    | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.                   |
+| `region`                | _Optional[str] = None_                          | Region of the bucket to skip auto probing.                   |
 
 __Return Value__
 
@@ -937,7 +937,7 @@ client.set_object_lock_config(bucket_name="my-bucket", config=config)
 
 <a name="append_object"></a>
 
-### append_object(self, bucket_name: str, object_name: str, filename: Optional[str | os.PathLike] = None, stream: Optional[BinaryIO] = None, data: Optional[bytes] = None, length: Optional[int] = None, chunk_size: Optional[int] = None, progress: Optional[ProgressType] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None)
+### append_object(self, bucket_name: str, object_name: str, data: Optional[bytes] = None, length: Optional[int] = None, chunk_size: Optional[int] = None, progress: Optional[ProgressType] = None, extra_headers: Optional[HTTPHeaderDict] = None, *, filename: Optional[str | os.PathLike] = None, stream: Optional[BinaryIO] = None, region: Optional[str] = None, extra_query_params: Optional[HTTPQueryDict] = None)
 
 Appends data to existing object in a bucket. Only of `filename`, `stream` or `data` must be provided and `length` must be provided if `data` is supplied.
 
@@ -947,14 +947,14 @@ __Parameters__
 |:---------------------|:------------------------------------------------|:-----------------------------------------------------------|
 | `bucket_name`        | _str_                                           | Name of the bucket.                                        |
 | `object_name`        | _str_                                           | Object name in the bucket.                                 |
-| `filename`           | _Optional[str \| os.PathLike] = None_           | Name of file to append.                                    |
-| `stream`             | _Optional[io.BinaryIO] = None_                  | An object having callable `read()` returning bytes object. |
 | `data`               | _Optional[bytes] = None_                        | Data in byte array.                                        |
 | `length`             | _Optional[int] = None_                          | Data length of `data` or `stream`.                         |
 | `chunk_size`         | _Optional[int] = None_                          | Chunk size.                                                |
 | `progress`           | _Optional[minio.helpers.ProgressType] = None_   | A progress object.                                         |
-| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing.                 |
 | `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                          |
+| `filename`           | _Optional[str \| os.PathLike] = None_           | Name of file to append.                                    |
+| `stream`             | _Optional[io.BinaryIO] = None_                  | An object having callable `read()` returning bytes object. |
+| `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing.                 |
 | `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.                 |
 
 __Return Value__
@@ -1002,7 +1002,7 @@ with urlopen(
 
 <a name="get_object"></a>
 
-### get_object(self, bucket_name: str, object_name: str, version_id: Optional[str] = None, ssec: Optional[SseCustomerKey] = None, offset: int = 0, length: Optional[int] = None, match_etag: Optional[str] = None, not_match_etag: Optional[str] = None, modified_since: Optional[datetime] = None, unmodified_since: Optional[datetime] = None, fetch_checksum: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> BaseHTTPResponse
+### get_object(self, bucket_name: str, object_name: str, offset: int = 0, length: Optional[int] = None, request_headers: Optional[HTTPHeaderDict] = None, ssec: Optional[SseCustomerKey] = None, version_id: Optional[str] = None, extra_query_params: Optional[HTTPQueryDict] = None, *, match_etag: Optional[str] = None, not_match_etag: Optional[str] = None, modified_since: Optional[datetime] = None, unmodified_since: Optional[datetime] = None, fetch_checksum: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None) -> BaseHTTPResponse
 
 Gets data from offset to length of an object. Returned response should be closed after use to release network resources. To reuse the connection, it's required to call `response.release_conn()` explicitly.
 
@@ -1012,10 +1012,12 @@ __Parameters__
 |:---------------------|:------------------------------------------------|:--------------------------------------------|
 | `bucket_name`        | _str_                                           | Name of the bucket.                         |
 | `object_name`        | _str_                                           | Object name in the bucket.                  |
-| `version_id`         | _Optional[str] = None_                          | Version-ID of the object.                   |
-| `ssec`               | _Optional[minio.sse.SseCustomerKey] = None_     | Server-side encryption customer key.        |
 | `offset`             | _int = 0_                                       | Start byte position of object data.         |
 | `length`             | _Optional[int] = None_                          | Number of bytes of object data from offset. |
+| `request_headers`    | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Request headers for advanced usage.         |
+| `ssec`               | _Optional[minio.sse.SseCustomerKey] = None_     | Server-side encryption customer key.        |
+| `version_id`         | _Optional[str] = None_                          | Version-ID of the object.                   |
+| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
 | `match_etag`         | _Optional[str] = None_                          | Match ETag of the object.                   |
 | `not_match_etag`     | _Optional[str] = None_                          | None-match ETag of the object.              |
 | `modified_since`     | _Optional[datetime.datetime] = None_            | Modified-since of the object.               |
@@ -1023,7 +1025,6 @@ __Parameters__
 | `fetch_checksum`     | _bool = False_                                  | Fetch object checksum.                      |
 | `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing.  |
 | `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.           |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
 
 __Return Value__
 
@@ -1123,7 +1124,7 @@ with client.select_object_content(
 
 <a name="fget_object"></a>
 
-### fget_object(self, bucket_name: str, object_name: str, file_path: str, match_etag: Optional[str] = None, not_match_etag: Optional[str] = None, modified_since: Optional[datetime] = None, unmodified_since: Optional[datetime] = None, fetch_checksum: bool = False, ssec: Optional[SseCustomerKey] = None, version_id: Optional[str] = None, tmp_file_path: Optional[str] = None, progress: Optional[ProgressType] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None)
+### fget_object(self, bucket_name: str, object_name: str, file_path: str, request_headers: Optional[HTTPHeaderDict] = None, ssec: Optional[SseCustomerKey] = None, version_id: Optional[str] = None, extra_query_params: Optional[HTTPQueryDict] = None, tmp_file_path: Optional[str] = None, progress: Optional[ProgressType] = None, *, match_etag: Optional[str] = None, not_match_etag: Optional[str] = None, modified_since: Optional[datetime] = None, unmodified_since: Optional[datetime] = None, fetch_checksum: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None)
 
 Downloads data of an object to file.
 
@@ -1134,10 +1135,10 @@ __Parameters__
 | `bucket_name`        | _str_                                           | Name of the bucket.                         |
 | `object_name`        | _str_                                           | Object name in the bucket.                  |
 | `file_path`          | _str_                                           | Name of file to download.                   |
-| `version_id`         | _Optional[str] = None_                          | Version-ID of the object.                   |
+| `request_headers`    | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Request headers for advanced usage.         |
 | `ssec`               | _Optional[minio.sse.SseCustomerKey] = None_     | Server-side encryption customer key.        |
-| `offset`             | _int = 0_                                       | Start byte position of object data.         |
-| `length`             | _Optional[int] = None_                          | Number of bytes of object data from offset. |
+| `version_id`         | _Optional[str] = None_                          | Version-ID of the object.                   |
+| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
 | `tmp_file_path`      | _Optional[str] = None_                          | Path to a temporary file.                   |
 | `progress`           | _Optional[minio.helpers.ProgressType] = None_   | A progress object.                          |
 | `match_etag`         | _Optional[str] = None_                          | Match ETag of the object.                   |
@@ -1147,7 +1148,6 @@ __Parameters__
 | `fetch_checksum`     | _bool = False_                                  | Fetch object checksum.                      |
 | `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing.  |
 | `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.           |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
 
 __Example__
 
@@ -1178,7 +1178,7 @@ client.fget_object(
 
 <a name="copy_object"></a>
 
-### copy_object(self, bucket_name: str, object_name: str, source: CopySource, sse: Optional[Sse] = None, user_metadata: Optional[HTTPHeaderDict] = None, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, metadata_directive: Optional[str] = None, tagging_directive: Optional[str] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
+### copy_object(self, bucket_name: str, object_name: str, source: CopySource, sse: Optional[Sse] = None, metadata: Optional[HTTPHeaderDict] = None, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, metadata_directive: Optional[str] = None, tagging_directive: Optional[str] = None, *, user_metadata: Optional[HTTPHeaderDict] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
 
 Create an object by server-side copying data from another object. In this API maximum supported source object size is 5GiB.
 
@@ -1190,6 +1190,7 @@ __Parameters__
 | `object_name`        | _str_                                           | Object name in the bucket.                                            |
 | `source`             | _minio.commonconfig.CopySource_                 | Source object information.                                            |
 | `sse`                | _Optional[minio.sse.Sse] = None_                | Server-side encryption of destination object.                         |
+| `metadata`           | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Metadata for the object (legacy).                                     |
 | `user_metadata`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Any user-defined metadata to be copied along with destination object. |
 | `tags`               | _Optional[minio.commonconfig.Tags] = None_      | Tags for destination object.                                          |
 | `retention`          | _Optional[minio.retention.Retention] = None_    | Retention configuration.                                              |
@@ -1253,7 +1254,7 @@ print(result.object_name, result.version_id)
 
 <a name="compose_object"></a>
 
-### compose_object(self, bucket_name: str, object_name: str, sources: list[ComposeSource], sse: Optional[Sse] = None, user_metadata: Optional[HTTPHeaderDict] = None, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
+### compose_object(self, bucket_name: str, object_name: str, sources: list[ComposeSource], sse: Optional[Sse] = None, metadata: Optional[HTTPHeaderDict] = None, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, *, user_metadata: Optional[HTTPHeaderDict] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
 
 Create an object by combining data from different source objects using server-side copy.
 
@@ -1265,6 +1266,7 @@ __Parameters__
 | `object_name`        | _str_                                           | Object name in the bucket.                                            |
 | `sources`            | _list[minio.commonconfig.ComposeSource]_        | List of _ComposeSource_ object.                                       |
 | `sse`                | _Optional[minio.sse.Sse] = None_                | Server-side encryption of destination object.                         |
+| `metadata`           | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Metadata for the object (legacy).                                     |
 | `user_metadata`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Any user-defined metadata to be copied along with destination object. |
 | `tags`               | _Optional[minio.commonconfig.Tags] = None_      | Tags for destination object.                                          |
 | `retention`          | _Optional[minio.retention.Retention] = None_    | Retention configuration.                                              |
@@ -1333,7 +1335,7 @@ print(result.object_name, result.version_id)
 
 <a name="put_object"></a>
 
-### put_object(self, bucket_name: str, object_name: str, data: BinaryIO, length: int, content_type: str = "application/octet-stream", headers: Optional[HTTPHeaderDict] = None, user_metadata: Optional[HTTPHeaderDict] = None, sse: Optional[Sse] = None, progress: Optional[ProgressType] = None, part_size: int = 0, checksum: Optional[Algorithm] = None, num_parallel_uploads: int = 3, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
+### put_object(self, bucket_name: str, object_name: str, data: BinaryIO, length: int, content_type: str = "application/octet-stream", metadata: Optional[HTTPHeaderDict] = None, sse: Optional[Sse] = None, progress: Optional[ProgressType] = None, part_size: int = 0, num_parallel_uploads: int = 3, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, write_offset: Optional[int] = None, *, headers: Optional[HTTPHeaderDict] = None, user_metadata: Optional[HTTPHeaderDict] = None, checksum: Optional[Algorithm] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
 
 Uploads data from a stream to an object in a bucket.
 
@@ -1346,6 +1348,7 @@ __Parameters__
 | `data`                 | _io.BinaryIO_                                   | An object having callable read() returning bytes object.  |
 | `length`               | _int_                                           | Data size; -1 for unknown size and set valid `part_size`. |
 | `content_type`         | _str = "application/octet-stream"_              | Content type of the object.                               |
+| `metadata`             | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Metadata for the object (legacy).                         |
 | `headers`              | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Additional headers.                                       |
 | `user_metadata`        | _Optional[minio.helpers.HTTPHeaderDict] = None_ | User metadata of the object.                              |
 | `sse`                  | _Optional[minio.sse.Sse] = None_                | Server-side encryption.                                   |
@@ -1356,6 +1359,7 @@ __Parameters__
 | `tags`                 | _Optional[minio.commonconfig.Tags] = None_      | Tags for the object.                                      |
 | `retention`            | _Optional[minio.retention.Retention] = None_    | Retention configuration.                                  |
 | `legal_hold`           | _bool = False_                                  | Flag to set legal hold for the object.                    |
+| `write_offset`         | _Optional[int] = None_                          | Offset to append data at specific position.               |
 | `region`               | _Optional[str] = None_                          | Region of the bucket to skip auto probing.                |
 | `extra_headers`        | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.                         |
 | `extra_query_params`   | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.                |
@@ -1497,7 +1501,7 @@ print(
 
 <a name="fput_object"></a>
 
-### fput_object(self, bucket_name: str, object_name: str, file_path: str, content_type: str = "application/octet-stream", headers: Optional[HTTPHeaderDict] = None, user_metadata: Optional[HTTPHeaderDict] = None, sse: Optional[Sse] = None, progress: Optional[ProgressType] = None, part_size: int = 0, checksum: Optional[Algorithm] = None, num_parallel_uploads: int = 3, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
+### fput_object(self, bucket_name: str, object_name: str, file_path: str, content_type: str = "application/octet-stream", metadata: Optional[HTTPHeaderDict] = None, sse: Optional[Sse] = None, progress: Optional[ProgressType] = None, part_size: int = 0, num_parallel_uploads: int = 3, tags: Optional[Tags] = None, retention: Optional[Retention] = None, legal_hold: bool = False, *, headers: Optional[HTTPHeaderDict] = None, user_metadata: Optional[HTTPHeaderDict] = None, checksum: Optional[Algorithm] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> ObjectWriteResult
 
 Uploads data from a file to an object in a bucket.
 
@@ -1509,6 +1513,7 @@ __Parameters__
 | `object_name`          | _str_                                           | Object name in the bucket.                 |
 | `file_path`            | _str_                                           | Name of file to upload.                    |
 | `content_type`         | _str = "application/octet-stream"_              | Content type of the object.                |
+| `metadata`             | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Metadata for the object (legacy).          |
 | `headers`              | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Additional headers.                        |
 | `user_metadata`        | _Optional[minio.helpers.HTTPHeaderDict] = None_ | User metadata of the object.               |
 | `sse`                  | _Optional[minio.sse.Sse] = None_                | Server-side encryption.                    |
@@ -1649,7 +1654,7 @@ print(
 
 <a name="stat_object"></a>
 
-### stat_object(self, bucket_name: str, object_name: str, version_id: Optional[str] = None, ssec: Optional[SseCustomerKey] = None, offset: int = 0, length: Optional[int] = None, match_etag: Optional[str] = None, not_match_etag: Optional[str] = None, modified_since: Optional[datetime] = None, unmodified_since: Optional[datetime] = None, fetch_checksum: bool = False, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> Object:
+### stat_object(self, bucket_name: str, object_name: str, ssec: Optional[SseCustomerKey] = None, version_id: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None, *, offset: int = 0, length: Optional[int] = None, match_etag: Optional[str] = None, not_match_etag: Optional[str] = None, modified_since: Optional[datetime] = None, unmodified_since: Optional[datetime] = None, fetch_checksum: bool = False, region: Optional[str] = None) -> Object:
 
 Get object information and metadata of an object.
 
@@ -1659,8 +1664,10 @@ __Parameters__
 |:---------------------|:------------------------------------------------|:--------------------------------------------|
 | `bucket_name`        | _str_                                           | Name of the bucket.                         |
 | `object_name`        | _str_                                           | Object name in the bucket.                  |
-| `version_id`         | _Optional[str] = None_                          | Version ID of the object.                   |
 | `ssec`               | _Optional[minio.sse.SseCustomerKey] = None_     | Server-side encryption customer key.        |
+| `version_id`         | _Optional[str] = None_                          | Version ID of the object.                   |
+| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.           |
+| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
 | `offset`             | _int = 0_                                       | Start byte position of object data.         |
 | `length`             | _Optional[int] = None_                          | Number of bytes of object data from offset. |
 | `match_etag`         | _Optional[str] = None_                          | Match ETag of the object.                   |
@@ -1669,8 +1676,6 @@ __Parameters__
 | `unmodified_since`   | _Optional[datetime.datetime] = None_            | Unmodified-since of the object.             |
 | `fetch_checksum`     | _bool = False_                                  | Fetch object checksum.                      |
 | `region`             | _Optional[str] = None_                          | Region of the bucket to skip auto probing.  |
-| `extra_headers`      | _Optional[minio.helpers.HTTPHeaderDict] = None_ | Extra headers for advanced usage.           |
-| `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_  | Extra query parameters for advanced usage.  |
 
 __Return Value__
 
@@ -2013,7 +2018,7 @@ client.set_object_retention(
 
 <a name="prompt_object"></a>
 
-### prompt_object(self, bucket_name: str, object_name: str, prompt: str, lambda_arn: Optional[str] = None, ssec: Optional[SseCustomerKey] = None, version_id: Optional[str] = None, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None, **kwargs: Optional[Any]) -> BaseHTTPResponse
+### prompt_object(self, bucket_name: str, object_name: str, prompt: str, lambda_arn: Optional[str] = None, request_headers: Optional[HTTPHeaderDict] = None, ssec: Optional[SseCustomerKey] = None, version_id: Optional[str] = None, *, region: Optional[str] = None, extra_headers: Optional[HTTPHeaderDict] = None, extra_query_params: Optional[HTTPQueryDict] = None, **kwargs: Optional[Any]) -> BaseHTTPResponse
 
 Prompt an object using natural language.
 
@@ -2025,6 +2030,7 @@ __Parameters__
 | `object_name`        | `str`                                           | Object name in the bucket.                                              |
 | `prompt`             | `str`                                           | Natural language prompt to interact with the object using the AI model. |
 | `lambda_arn`         | `Optional[str] = None`                          | AWS Lambda ARN to use for processing the prompt.                        |
+| `request_headers`    | `Optional[minio.helpers.HTTPHeaderDict] = None` | Request headers for advanced usage.                                     |
 | `ssec`               | `Optional[minio.sse.SseCustomerKey] = None`     | Server-side encryption customer key.                                    |
 | `version_id`         | `Optional[str] = None`                          | Version ID of the object.                                               |
 | `region`             | `Optional[str] = None`                          | Region of the bucket to skip auto probing.                              |
@@ -2057,7 +2063,7 @@ finally:
 
 <a name="presigned_get_object"></a>
 
-### presigned_get_object(self, bucket_name: str, object_name: str, expires: timedelta = timedelta(days=7), request_date: Optional[datetime] = None, version_id: Optional[str] = None, region: Optional[str] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> str
+### presigned_get_object(self, bucket_name: str, object_name: str, expires: timedelta = timedelta(days=7), response_headers: Optional[HTTPHeaderDict] = None, request_date: Optional[datetime] = None, version_id: Optional[str] = None, extra_query_params: Optional[HTTPQueryDict] = None, *, region: Optional[str] = None) -> str
 
 Get presigned URL of an object to download its data with expiry time and custom request parameters.
 
@@ -2068,10 +2074,11 @@ __Parameters__
 | `bucket_name`        | _str_                                             | Name of the bucket.                        |
 | `object_name`        | _str_                                             | Object name in the bucket.                 |
 | `expires`            | _datetime.timedelta = datetime.timedelta(days=7)_ | Expiry in seconds.                         |
+| `response_headers`   | _Optional[minio.helpers.HTTPHeaderDict] = None_   | Response headers for advanced usage.       |
 | `request_date`       | _Optional[datetime.datetime] = None_              | Request time instead of current time.      |
 | `version_id`         | _Optional[str] = None_                            | Version ID of the object.                  |
-| `region`             | _Optional[str] = None_                            | Region of the bucket to skip auto probing. |
 | `extra_query_params` | _Optional[minio.helpers.HTTPQueryDict] = None_    | Extra query parameters for advanced usage. |
+| `region`             | _Optional[str] = None_                            | Region of the bucket to skip auto probing. |
 
 __Return Value__
 
@@ -2102,7 +2109,7 @@ print(url)
 
 <a name="presigned_put_object"></a>
 
-### presigned_put_object(self, bucket_name: str, object_name: str, expires: timedelta = timedelta(days=7), region: Optional[str] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> str
+### presigned_put_object(self, bucket_name: str, object_name: str, expires: timedelta = timedelta(days=7), *, region: Optional[str] = None, extra_query_params: Optional[HTTPQueryDict] = None) -> str
 
 Get presigned URL of an object to upload data with expiry time and custom request parameters.
 
