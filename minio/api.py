@@ -5363,7 +5363,7 @@ class Minio:
     def upload_snowball_objects(
             self,
             bucket_name: str,
-            object_list: Iterable[SnowballObject],
+            objects: Iterable[SnowballObject],
             metadata: Optional[HTTPHeaderDict] = None,
             sse: Optional[Sse] = None,
             tags: Optional[Tags] = None,
@@ -5458,7 +5458,7 @@ class Minio:
             user_metadata = metadata
 
         # turn list like objects into an iterator.
-        objects = itertools.chain(object_list)
+        objects = itertools.chain(objects)
 
         headers = HTTPHeaderDict() if headers is None else headers.copy()
         headers["X-Amz-Meta-Snowball-Auto-Extract"] = "true"
