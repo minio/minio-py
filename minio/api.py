@@ -106,7 +106,6 @@ class Minio:
 
     def __init__(
             self,
-            *,
             endpoint: str,
             access_key: Optional[str] = None,
             secret_key: Optional[str] = None,
@@ -237,7 +236,6 @@ class Minio:
 
     @staticmethod
     def _gen_read_headers(
-            *,
             ssec: Optional[SseCustomerKey] = None,
             offset: int = 0,
             length: Optional[int] = None,
@@ -268,7 +266,6 @@ class Minio:
 
     @staticmethod
     def _gen_write_headers(
-            *,
             headers: Optional[HTTPHeaderDict] = None,
             user_metadata: Optional[HTTPHeaderDict] = None,
             sse: Optional[Sse] = None,
@@ -326,7 +323,6 @@ class Minio:
 
     def _url_open(
             self,
-            *,
             method: str,
             region: str,
             bucket_name: Optional[str] = None,
@@ -538,7 +534,6 @@ class Minio:
 
     def _execute(
             self,
-            *,
             method: str,
             bucket_name: Optional[str] = None,
             object_name: Optional[str] = None,
@@ -601,7 +596,6 @@ class Minio:
 
     def _get_region(
             self,
-            *,
             bucket_name: Optional[str] = None,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -718,7 +712,6 @@ class Minio:
 
     def select_object_content(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             request: SelectRequest,
@@ -792,7 +785,6 @@ class Minio:
 
     def make_bucket(
             self,
-            *,
             bucket_name: str,
             location: Optional[str] = None,
             object_lock: bool = False,
@@ -867,7 +859,6 @@ class Minio:
 
     def _list_buckets(
             self,
-            *,
             bucket_region: Optional[str] = None,
             max_buckets: int = 10000,
             prefix: Optional[str] = None,
@@ -897,7 +888,6 @@ class Minio:
 
     def list_buckets(
             self,
-            *,
             bucket_region: Optional[str] = None,
             max_buckets: int = 10000,
             prefix: Optional[str] = None,
@@ -947,7 +937,6 @@ class Minio:
 
     def bucket_exists(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -996,7 +985,6 @@ class Minio:
 
     def remove_bucket(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -1033,7 +1021,6 @@ class Minio:
 
     def get_bucket_policy(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -1075,7 +1062,6 @@ class Minio:
 
     def _execute_delete_bucket(
             self,
-            *,
             bucket_name: str,
             query_params: HTTPQueryDict,
             region: Optional[str] = None,
@@ -1095,7 +1081,6 @@ class Minio:
 
     def delete_bucket_policy(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -1130,7 +1115,6 @@ class Minio:
 
     def set_bucket_policy(
             self,
-            *,
             bucket_name: str,
             policy: str | bytes,
             region: Optional[str] = None,
@@ -1231,7 +1215,6 @@ class Minio:
 
     def get_bucket_notification(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -1273,7 +1256,6 @@ class Minio:
 
     def set_bucket_notification(
             self,
-            *,
             bucket_name: str,
             config: NotificationConfig,
             region: Optional[str] = None,
@@ -1335,7 +1317,6 @@ class Minio:
 
     def delete_bucket_notification(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -1373,7 +1354,6 @@ class Minio:
 
     def set_bucket_encryption(
             self,
-            *,
             bucket_name: str,
             config: SSEConfig,
             region: Optional[str] = None,
@@ -1425,7 +1405,6 @@ class Minio:
 
     def get_bucket_encryption(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -1473,7 +1452,6 @@ class Minio:
 
     def delete_bucket_encryption(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -1512,7 +1490,6 @@ class Minio:
 
     def listen_bucket_notification(
             self,
-            *,
             bucket_name: str,
             prefix: str = "",
             suffix: str = "",
@@ -1593,7 +1570,6 @@ class Minio:
 
     def set_bucket_versioning(
             self,
-            *,
             bucket_name: str,
             config: VersioningConfig,
             region: Optional[str] = None,
@@ -1645,7 +1621,6 @@ class Minio:
 
     def get_bucket_versioning(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -1688,21 +1663,22 @@ class Minio:
 
     def fput_object(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             file_path: str,
             content_type: str = "application/octet-stream",
-            headers: Optional[HTTPHeaderDict] = None,
-            user_metadata: Optional[HTTPHeaderDict] = None,
+            metadata: Optional[HTTPHeaderDict] = None,
             sse: Optional[Sse] = None,
             progress: Optional[ProgressType] = None,
             part_size: int = 0,
-            checksum: Optional[Algorithm] = None,
             num_parallel_uploads: int = 3,
             tags: Optional[Tags] = None,
             retention: Optional[Retention] = None,
             legal_hold: bool = False,
+            *,
+            headers: Optional[HTTPHeaderDict] = None,
+            user_metadata: Optional[HTTPHeaderDict] = None,
+            checksum: Optional[Algorithm] = None,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
             extra_query_params: Optional[HTTPQueryDict] = None,
@@ -1853,6 +1829,8 @@ class Minio:
             ... )
         """
         file_size = os.stat(file_path).st_size
+        if user_metadata is None:
+            user_metadata = metadata
         with open(file_path, "rb") as file_data:
             return self.put_object(
                 bucket_name=bucket_name,
@@ -1877,22 +1855,23 @@ class Minio:
 
     def fget_object(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             file_path: str,
+            request_headers: Optional[HTTPHeaderDict] = None,
+            ssec: Optional[SseCustomerKey] = None,
+            version_id: Optional[str] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+            tmp_file_path: Optional[str] = None,
+            progress: Optional[ProgressType] = None,
+            *,
             match_etag: Optional[str] = None,
             not_match_etag: Optional[str] = None,
             modified_since: Optional[datetime] = None,
             unmodified_since: Optional[datetime] = None,
             fetch_checksum: bool = False,
-            ssec: Optional[SseCustomerKey] = None,
-            version_id: Optional[str] = None,
-            tmp_file_path: Optional[str] = None,
-            progress: Optional[ProgressType] = None,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
-            extra_query_params: Optional[HTTPQueryDict] = None,
     ):
         """
         Download an object to a file.
@@ -1994,16 +1973,17 @@ class Minio:
             response = self.get_object(
                 bucket_name=bucket_name,
                 object_name=object_name,
+                request_headers=request_headers,
+                ssec=ssec,
+                version_id=version_id,
+                extra_query_params=extra_query_params,
                 match_etag=match_etag,
                 not_match_etag=not_match_etag,
                 modified_since=modified_since,
                 unmodified_since=unmodified_since,
                 fetch_checksum=fetch_checksum,
-                ssec=ssec,
-                version_id=version_id,
                 region=region,
                 extra_headers=extra_headers,
-                extra_query_params=extra_query_params,
             )
 
             if progress:
@@ -2027,13 +2007,15 @@ class Minio:
 
     def get_object(
             self,
-            *,
             bucket_name: str,
             object_name: str,
-            version_id: Optional[str] = None,
-            ssec: Optional[SseCustomerKey] = None,
             offset: int = 0,
             length: Optional[int] = None,
+            request_headers: Optional[HTTPHeaderDict] = None,
+            ssec: Optional[SseCustomerKey] = None,
+            version_id: Optional[str] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+            *,
             match_etag: Optional[str] = None,
             not_match_etag: Optional[str] = None,
             modified_since: Optional[datetime] = None,
@@ -2041,7 +2023,6 @@ class Minio:
             fetch_checksum: bool = False,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
-            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> BaseHTTPResponse:
         """
         Get object data from a bucket.
@@ -2162,6 +2143,12 @@ class Minio:
             unmodified_since=unmodified_since,
             fetch_checksum=fetch_checksum,
         )
+        if request_headers:
+            request_headers = HTTPHeaderDict(request_headers)
+            if request_headers.get("Range"):
+                headers.pop("Range", None)
+            headers.extend(request_headers)
+
         query_params = HTTPQueryDict()
         if version_id:
             query_params["versionId"] = version_id
@@ -2180,13 +2167,14 @@ class Minio:
 
     def prompt_object(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             prompt: str,
             lambda_arn: Optional[str] = None,
+            request_headers: Optional[HTTPHeaderDict] = None,
             ssec: Optional[SseCustomerKey] = None,
             version_id: Optional[str] = None,
+            *,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
             extra_query_params: Optional[HTTPQueryDict] = None,
@@ -2254,6 +2242,10 @@ class Minio:
             query_params["versionId"] = version_id
         query_params["lambdaArn"] = lambda_arn or ""
 
+        if request_headers:
+            extra_headers = HTTPHeaderDict(extra_headers or {})
+            extra_headers.extend(request_headers)
+
         prompt_body = kwargs
         prompt_body["prompt"] = prompt
 
@@ -2273,17 +2265,18 @@ class Minio:
 
     def copy_object(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             source: CopySource,
             sse: Optional[Sse] = None,
-            user_metadata: Optional[HTTPHeaderDict] = None,
+            metadata: Optional[HTTPHeaderDict] = None,
             tags: Optional[Tags] = None,
             retention: Optional[Retention] = None,
             legal_hold: bool = False,
             metadata_directive: Optional[str] = None,
             tagging_directive: Optional[str] = None,
+            *,
+            user_metadata: Optional[HTTPHeaderDict] = None,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
             extra_query_params: Optional[HTTPQueryDict] = None,
@@ -2392,6 +2385,10 @@ class Minio:
             raise ValueError("tags must be Tags type")
         if retention is not None and not isinstance(retention, Retention):
             raise ValueError("retention must be Retention type")
+        if user_metadata is None:
+            user_metadata = metadata
+        if user_metadata is None:
+            user_metadata = metadata
         if (
                 metadata_directive is not None and
                 metadata_directive not in [COPY, REPLACE]
@@ -2536,7 +2533,6 @@ class Minio:
 
     def _upload_part_copy(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             upload_id: str,
@@ -2567,15 +2563,16 @@ class Minio:
 
     def compose_object(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             sources: list[ComposeSource],
             sse: Optional[Sse] = None,
-            user_metadata: Optional[HTTPHeaderDict] = None,
+            metadata: Optional[HTTPHeaderDict] = None,
             tags: Optional[Tags] = None,
             retention: Optional[Retention] = None,
             legal_hold: bool = False,
+            *,
+            user_metadata: Optional[HTTPHeaderDict] = None,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
             extra_query_params: Optional[HTTPQueryDict] = None,
@@ -2796,7 +2793,6 @@ class Minio:
 
     def _abort_multipart_upload(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             upload_id: str,
@@ -2817,7 +2813,6 @@ class Minio:
 
     def _complete_multipart_upload(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             upload_id: str,
@@ -2862,7 +2857,6 @@ class Minio:
 
     def _create_multipart_upload(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             headers: HTTPHeaderDict,
@@ -2888,7 +2882,6 @@ class Minio:
 
     def _put_object(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             data: bytes,
@@ -2919,7 +2912,6 @@ class Minio:
 
     def _upload_part(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             data: bytes,
@@ -2953,22 +2945,24 @@ class Minio:
 
     def put_object(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             data: BinaryIO,
             length: int,
             content_type: str = "application/octet-stream",
-            headers: Optional[HTTPHeaderDict] = None,
-            user_metadata: Optional[HTTPHeaderDict] = None,
+            metadata: Optional[HTTPHeaderDict] = None,
             sse: Optional[Sse] = None,
             progress: Optional[ProgressType] = None,
             part_size: int = 0,
-            checksum: Optional[Algorithm] = None,
             num_parallel_uploads: int = 3,
             tags: Optional[Tags] = None,
             retention: Optional[Retention] = None,
             legal_hold: bool = False,
+            write_offset: Optional[int] = None,
+            *,
+            headers: Optional[HTTPHeaderDict] = None,
+            user_metadata: Optional[HTTPHeaderDict] = None,
+            checksum: Optional[Algorithm] = None,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
             extra_query_params: Optional[HTTPQueryDict] = None,
@@ -3143,6 +3137,10 @@ class Minio:
             raise ValueError("retention must be Retention type")
         if not callable(getattr(data, "read")):
             raise ValueError("input data must have callable read()")
+        if user_metadata is None:
+            user_metadata = metadata
+        if write_offset is not None and write_offset < 0:
+            raise ValueError("write_offset must be zero or greater")
         part_size, part_count = get_part_info(length, part_size)
         if progress:
             # Set progress bar length and object name before upload
@@ -3163,6 +3161,8 @@ class Minio:
             retention=retention,
             legal_hold=legal_hold,
         )
+        if write_offset is not None:
+            headers["x-amz-write-offset-bytes"] = str(write_offset)
         headers["Content-Type"] = content_type or "application/octet-stream"
 
         object_size = length
@@ -3321,12 +3321,11 @@ class Minio:
 
     def _append_object(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             stream: BinaryIO,
-            length: Optional[int] = None,
             chunk_size: int,
+            length: Optional[int] = None,
             progress: Optional[ProgressType] = None,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -3399,17 +3398,17 @@ class Minio:
 
     def append_object(
             self,
-            *,
             bucket_name: str,
             object_name: str,
-            filename: Optional[str | os.PathLike] = None,
-            stream: Optional[BinaryIO] = None,
-            data: Optional[bytes] = None,
+            data: Optional[bytes | BinaryIO] = None,
             length: Optional[int] = None,
             chunk_size: Optional[int] = None,
             progress: Optional[ProgressType] = None,
-            region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
+            *,
+            filename: Optional[str | os.PathLike] = None,
+            stream: Optional[BinaryIO] = None,
+            region: Optional[str] = None,
             extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> ObjectWriteResult:
         """
@@ -3536,7 +3535,6 @@ class Minio:
 
     def list_objects(
             self,
-            *,
             bucket_name: str,
             prefix: Optional[str] = None,
             recursive: bool = False,
@@ -3546,9 +3544,10 @@ class Minio:
             use_api_v1: bool = False,
             use_url_encoding_type: bool = True,
             fetch_owner: bool = False,
-            region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
             extra_query_params: Optional[HTTPQueryDict] = None,
+            *,
+            region: Optional[str] = None,
     ) -> Iterator[Object]:
         """
         List object information of a bucket.
@@ -3650,11 +3649,13 @@ class Minio:
 
     def stat_object(
             self,
-            *,
             bucket_name: str,
             object_name: str,
-            version_id: Optional[str] = None,
             ssec: Optional[SseCustomerKey] = None,
+            version_id: Optional[str] = None,
+            extra_headers: Optional[HTTPHeaderDict] = None,
+            extra_query_params: Optional[HTTPQueryDict] = None,
+            *,
             offset: int = 0,
             length: Optional[int] = None,
             match_etag: Optional[str] = None,
@@ -3663,8 +3664,6 @@ class Minio:
             unmodified_since: Optional[datetime] = None,
             fetch_checksum: bool = False,
             region: Optional[str] = None,
-            extra_headers: Optional[HTTPHeaderDict] = None,
-            extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> Object:
         """
         Get object information and metadata of an object.
@@ -3793,7 +3792,6 @@ class Minio:
 
     def remove_object(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             version_id: Optional[str] = None,
@@ -3854,7 +3852,6 @@ class Minio:
 
     def _delete_objects(
             self,
-            *,
             bucket_name: str,
             delete_object_list: list[DeleteObject],
             quiet: bool = False,
@@ -3899,7 +3896,6 @@ class Minio:
 
     def remove_objects(
             self,
-            *,
             bucket_name: str,
             delete_object_list: Iterable[DeleteObject],
             bypass_governance_mode: bool = False,
@@ -4002,15 +3998,16 @@ class Minio:
 
     def get_presigned_url(
             self,
-            *,
             method: str,
             bucket_name: str,
             object_name: str,
             expires: timedelta = timedelta(days=7),
+            response_headers: Optional[HTTPHeaderDict] = None,
             request_date: Optional[datetime] = None,
             version_id: Optional[str] = None,
-            region: Optional[str] = None,
             extra_query_params: Optional[HTTPQueryDict] = None,
+            *,
+            region: Optional[str] = None,
     ) -> str:
         """
         Get a presigned URL for an object.
@@ -4085,10 +4082,15 @@ class Minio:
         if expires.total_seconds() < 1 or expires.total_seconds() > 604800:
             raise ValueError("expires must be between 1 second to 7 days")
 
-        region = self._get_region(bucket_name=bucket_name)
+        region = self._get_region(bucket_name=bucket_name, region=region)
         query_params = HTTPQueryDict()
         if version_id:
             query_params["versionId"] = version_id
+        extra_query = HTTPQueryDict()
+        if extra_query_params:
+            extra_query.extend(extra_query_params)
+        if response_headers:
+            extra_query.extend(response_headers)
         creds = self._provider.retrieve() if self._provider else None
         if creds and creds.session_token:
             query_params["X-Amz-Security-Token"] = creds.session_token
@@ -4098,7 +4100,7 @@ class Minio:
             bucket_name=bucket_name,
             object_name=object_name,
             query_params=query_params,
-            extra_query_params=extra_query_params,
+            extra_query_params=extra_query,
         )
 
         if creds:
@@ -4114,14 +4116,15 @@ class Minio:
 
     def presigned_get_object(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             expires: timedelta = timedelta(days=7),
+            response_headers: Optional[HTTPHeaderDict] = None,
             request_date: Optional[datetime] = None,
             version_id: Optional[str] = None,
-            region: Optional[str] = None,
             extra_query_params: Optional[HTTPQueryDict] = None,
+            *,
+            region: Optional[str] = None,
     ) -> str:
         """
         Get a presigned URL to download an object.
@@ -4177,6 +4180,7 @@ class Minio:
             bucket_name=bucket_name,
             object_name=object_name,
             expires=expires,
+            response_headers=response_headers,
             request_date=request_date,
             version_id=version_id,
             region=region,
@@ -4185,10 +4189,10 @@ class Minio:
 
     def presigned_put_object(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             expires: timedelta = timedelta(days=7),
+            *,
             region: Optional[str] = None,
             extra_query_params: Optional[HTTPQueryDict] = None,
     ) -> str:
@@ -4281,7 +4285,6 @@ class Minio:
 
     def delete_bucket_replication(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -4316,7 +4319,6 @@ class Minio:
 
     def get_bucket_replication(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -4364,7 +4366,6 @@ class Minio:
 
     def set_bucket_replication(
             self,
-            *,
             bucket_name: str,
             config: ReplicationConfig,
             region: Optional[str] = None,
@@ -4438,7 +4439,6 @@ class Minio:
 
     def delete_bucket_lifecycle(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -4473,7 +4473,6 @@ class Minio:
 
     def get_bucket_lifecycle(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -4521,7 +4520,6 @@ class Minio:
 
     def set_bucket_lifecycle(
             self,
-            *,
             bucket_name: str,
             config: LifecycleConfig,
             region: Optional[str] = None,
@@ -4592,7 +4590,6 @@ class Minio:
 
     def delete_bucket_tags(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -4627,7 +4624,6 @@ class Minio:
 
     def get_bucket_tags(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -4676,7 +4672,6 @@ class Minio:
 
     def set_bucket_tags(
             self,
-            *,
             bucket_name: str,
             tags: Tags,
             region: Optional[str] = None,
@@ -4729,7 +4724,6 @@ class Minio:
 
     def delete_object_tags(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             version_id: Optional[str] = None,
@@ -4783,7 +4777,6 @@ class Minio:
 
     def get_object_tags(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             version_id: Optional[str] = None,
@@ -4849,7 +4842,6 @@ class Minio:
 
     def set_object_tags(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             tags: Tags,
@@ -4920,7 +4912,6 @@ class Minio:
 
     def enable_object_legal_hold(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             version_id: Optional[str] = None,
@@ -4980,7 +4971,6 @@ class Minio:
 
     def disable_object_legal_hold(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             version_id: Optional[str] = None,
@@ -5040,7 +5030,6 @@ class Minio:
 
     def is_object_legal_hold_enabled(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             version_id: Optional[str] = None,
@@ -5108,7 +5097,6 @@ class Minio:
 
     def delete_object_lock_config(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -5143,7 +5131,6 @@ class Minio:
 
     def get_object_lock_config(
             self,
-            *,
             bucket_name: str,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
@@ -5189,7 +5176,6 @@ class Minio:
 
     def set_object_lock_config(
             self,
-            *,
             bucket_name: str,
             config: ObjectLockConfig,
             region: Optional[str] = None,
@@ -5242,7 +5228,6 @@ class Minio:
 
     def get_object_retention(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             version_id: Optional[str] = None,
@@ -5307,7 +5292,6 @@ class Minio:
 
     def set_object_retention(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             config: Retention,
@@ -5378,17 +5362,18 @@ class Minio:
 
     def upload_snowball_objects(
             self,
-            *,
             bucket_name: str,
-            objects: Iterable[SnowballObject],
-            headers: Optional[HTTPHeaderDict] = None,
-            user_metadata: Optional[HTTPHeaderDict] = None,
+            object_list: Iterable[SnowballObject],
+            metadata: Optional[HTTPHeaderDict] = None,
             sse: Optional[Sse] = None,
             tags: Optional[Tags] = None,
             retention: Optional[Retention] = None,
             legal_hold: bool = False,
             staging_filename: Optional[str] = None,
             compression: bool = False,
+            *,
+            headers: Optional[HTTPHeaderDict] = None,
+            user_metadata: Optional[HTTPHeaderDict] = None,
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
             extra_query_params: Optional[HTTPQueryDict] = None,
@@ -5469,8 +5454,11 @@ class Minio:
 
         object_name = f"snowball.{random()}.tar"
 
+        if user_metadata is None:
+            user_metadata = metadata
+
         # turn list like objects into an iterator.
-        objects = itertools.chain(objects)
+        objects = itertools.chain(object_list)
 
         headers = HTTPHeaderDict() if headers is None else headers.copy()
         headers["X-Amz-Meta-Snowball-Auto-Extract"] = "true"
@@ -5534,7 +5522,6 @@ class Minio:
 
     def _list_objects(
             self,
-            *,
             bucket_name: str,
             continuation_token: Optional[str] = None,  # listV2 only
             delimiter: Optional[str] = None,  # all
@@ -5616,7 +5603,6 @@ class Minio:
 
     def _list_multipart_uploads(
             self,
-            *,
             bucket_name: str,
             delimiter: Optional[str] = None,
             encoding_type: Optional[str] = None,
@@ -5674,7 +5660,6 @@ class Minio:
 
     def _list_parts(
             self,
-            *,
             bucket_name: str,
             object_name: str,
             upload_id: str,

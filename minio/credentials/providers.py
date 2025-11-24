@@ -113,7 +113,6 @@ class AssumeRoleProvider(Provider):
 
     def __init__(
             self,
-            *,
             sts_endpoint: str,
             access_key: str,
             secret_key: str,
@@ -396,7 +395,6 @@ class IamAwsProvider(Provider):
 
     def __init__(
             self,
-            *,
             custom_endpoint: Optional[str] = None,
             http_client: Optional[PoolManager] = None,
             auth_token: Optional[str] = None,
@@ -556,7 +554,6 @@ class LdapIdentityProvider(Provider):
 
     def __init__(
             self,
-            *,
             sts_endpoint: str,
             ldap_username: str,
             ldap_password: str,
@@ -628,7 +625,6 @@ class WebIdentityClientGrantsProvider(Provider, ABC):
 
     def __init__(
             self,
-            *,
             jwt_provider_func: Callable[[], dict[str, str]],
             sts_endpoint: str,
             duration_seconds: int = 0,
@@ -724,7 +720,6 @@ class ClientGrantsProvider(WebIdentityClientGrantsProvider):
 
     def __init__(
             self,
-            *,
             jwt_provider_func: Callable[[], dict[str, str]],
             sts_endpoint: str,
             duration_seconds: int = 0,
@@ -755,7 +750,6 @@ class CertificateIdentityProvider(Provider):
 
     def __init__(
             self,
-            *,
             sts_endpoint: str,
             cert_file: Optional[str] = None,
             key_file: Optional[str] = None,

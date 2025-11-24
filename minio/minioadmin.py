@@ -116,7 +116,6 @@ class MinioAdmin:
 
     def __init__(
             self,
-            *,
             endpoint: str,
             credentials: Provider,
             region: str = "",
@@ -163,7 +162,6 @@ class MinioAdmin:
 
     def _url_open(
             self,
-            *,
             method: str,
             command: _COMMAND,
             query_params: Optional[HTTPQueryDict] = None,
@@ -789,7 +787,6 @@ class MinioAdmin:
         return plain_data.decode()
 
     def add_service_account(self,
-                            *,
                             access_key: Optional[str] = None,
                             secret_key: Optional[str] = None,
                             name: Optional[str] = None,
@@ -842,7 +839,6 @@ class MinioAdmin:
         return plain_data.decode()
 
     def update_service_account(self,
-                               *,
                                access_key: str,
                                secret_key: Optional[str] = None,
                                name: Optional[str] = None,

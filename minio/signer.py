@@ -184,7 +184,6 @@ def _get_authorization(
 
 
 def _sign_v4(
-        *,
         service_name: str,
         method: str,
         url: SplitResult,
@@ -213,7 +212,6 @@ def _sign_v4(
 
 
 def sign_v4_s3(
-        *,
         method: str,
         url: SplitResult,
         region: str,
@@ -236,7 +234,6 @@ def sign_v4_s3(
 
 
 def sign_v4_sts(
-        *,
         method: str,
         url: SplitResult,
         region: str,
@@ -259,7 +256,6 @@ def sign_v4_sts(
 
 
 def _get_presign_canonical_request_hash(  # pylint: disable=invalid-name
-        *,
         method: str,
         url: SplitResult,
         access_key: str,
@@ -304,7 +300,6 @@ def _get_presign_canonical_request_hash(  # pylint: disable=invalid-name
 
 
 def presign_v4(
-        *,
         method: str,
         url: SplitResult,
         region: str,

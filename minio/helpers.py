@@ -283,7 +283,6 @@ class ProgressType(Protocol):
 
 
 def read_part_data(
-        *,
         stream: BinaryIO,
         size: int,
         part_data: bytes = b"",
@@ -436,7 +435,6 @@ def sha256_hash(data: Optional[str | bytes]) -> str:
 
 
 def url_replace(
-        *,
         url: urllib.parse.SplitResult,
         scheme: Optional[str] = None,
         netloc: Optional[str] = None,
@@ -678,7 +676,6 @@ class BaseURL:
     @classmethod
     def _build_aws_url(
             cls,
-            *,
             aws_info: dict,
             url: urllib.parse.SplitResult,
             bucket_name: Optional[str],
@@ -742,7 +739,6 @@ class BaseURL:
 
     def build(
             self,
-            *,
             method: str,
             region: str,
             bucket_name: Optional[str] = None,
@@ -820,7 +816,6 @@ class ObjectWriteResult:
     @classmethod
     def new(
             cls: Type[ObjectWriteResult],
-            *,
             headers: HTTPHeaderDict,
             bucket_name: str,
             object_name: str,
