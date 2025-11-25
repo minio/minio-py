@@ -43,7 +43,9 @@ from urllib3._collections import HTTPHeaderDict
 
 from minio import Minio
 from minio.checksum import Algorithm
-from minio.commonconfig import ENABLED, REPLACE, ComposeSource, CopySource, SnowballObject
+from minio.commonconfig import (
+    ENABLED, REPLACE, ComposeSource, CopySource, SnowballObject,
+)
 from minio.datatypes import PostPolicy
 from minio.deleteobjects import DeleteObject
 from minio.error import S3Error
@@ -2001,12 +2003,14 @@ def test_presigned_post_policy(log_entry):
         _client.remove_bucket(bucket_name=bucket_name)
 
 
-def test_backward_compatibility_positional_args(log_entry):
+def test_backward_compat_positional(  # pylint: disable=invalid-name
+        log_entry,
+):
     """
     Critical test: Verify all main APIs accept positional arguments.
     This was BROKEN in 6daf366 and must work in our fix.
     """
-    log_entry["name"] = "test_backward_compatibility_positional_args"
+    log_entry["name"] = "test_backward_compat_positional"
     bucket_name = _gen_bucket_name()
 
     log_entry["args"] = {
@@ -2030,7 +2034,9 @@ def test_backward_compatibility_positional_args(log_entry):
         _client.stat_object(bucket_name, "test1")  # Positional
 
         # Test 5: copy_object with positional args
-        _client.copy_object(bucket_name, "test3", CopySource(bucket_name, "test1"))
+        _client.copy_object(
+            bucket_name, "test3", CopySource(bucket_name, "test1"),
+        )
 
         # Test 6: list_objects with positional args
         list(_client.list_objects(bucket_name))  # Positional
@@ -2045,12 +2051,14 @@ def test_backward_compatibility_positional_args(log_entry):
         _client.remove_bucket(bucket_name)
 
 
-def test_metadata_parameter_backward_compatibility(log_entry):
+def test_metadata_backward_compat(  # pylint: disable=invalid-name
+        log_entry,
+):
     """
     Test that old 'metadata' parameter still works for backward compatibility.
     6daf366 split metadata -> headers/user_metadata, but we keep both.
     """
-    log_entry["name"] = "test_metadata_parameter_backward_compatibility"
+    log_entry["name"] = "test_metadata_backward_compat"
     bucket_name = _gen_bucket_name()
 
     log_entry["args"] = {
@@ -2071,16 +2079,21 @@ def test_metadata_parameter_backward_compatibility(log_entry):
 
         # Verify it was stored (user metadata keys have x-amz-meta- prefix)
         stat = _client.stat_object(bucket_name, "test-old-metadata")
-        # Find the key (case-insensitive, may have x-amz-meta- prefix)
+        # Find key (case-insensitive, may have x-amz-meta- prefix)
         found_key = None
         for key in stat.metadata.keys():
             if key.lower().endswith("old-key"):
                 found_key = key
                 break
         if not found_key:
-            raise Exception(f"Old metadata parameter didn't work. Keys: {list(stat.metadata.keys())}")
+            raise Exception(
+                f"Old metadata parameter didn't work. "
+                f"Keys: {list(stat.metadata.keys())}",
+            )
         if stat.metadata[found_key] != "old-value":
-            raise Exception(f"Old metadata value mismatch: {stat.metadata[found_key]}")
+            raise Exception(
+                f"Old metadata value mismatch: {stat.metadata[found_key]}",
+            )
 
         # NEW API: Using 'user_metadata' parameter (should also work)
         new_metadata = HTTPHeaderDict({"X-Amz-Meta-New-Key": "new-value"})
@@ -2092,16 +2105,21 @@ def test_metadata_parameter_backward_compatibility(log_entry):
         )
 
         stat2 = _client.stat_object(bucket_name, "test-new-metadata")
-        # Find the key (case-insensitive, may have x-amz-meta- prefix)
+        # Find key (case-insensitive, may have x-amz-meta- prefix)
         found_key2 = None
         for key in stat2.metadata.keys():
             if key.lower().endswith("new-key"):
                 found_key2 = key
                 break
         if not found_key2:
-            raise Exception(f"New user_metadata parameter didn't work. Keys: {list(stat2.metadata.keys())}")
+            raise Exception(
+                f"New user_metadata parameter didn't work. "
+                f"Keys: {list(stat2.metadata.keys())}",
+            )
         if stat2.metadata[found_key2] != "new-value":
-            raise Exception(f"New metadata value mismatch: {stat2.metadata[found_key2]}")
+            raise Exception(
+                f"New metadata value mismatch: {stat2.metadata[found_key2]}",
+            )
 
     finally:
         for obj in _client.list_objects(bucket_name):
@@ -2125,7 +2143,7 @@ def test_real_world_usage_patterns(log_entry):
         # Pattern 1: Minimal arguments (very common)
         _client.make_bucket(bucket_name)
 
-        # Pattern 2: Quick upload without keywords (BROKEN in master)
+        # Pattern 2: Quick upload without keywords (broken in master)
         with open(_test_file, 'rb') as file_data:
             _client.put_object(
                 bucket_name,
@@ -2170,21 +2188,35 @@ def test_edge_cases_still_work(log_entry):
         _client.make_bucket(bucket_name)
 
         # Edge 1: Empty metadata (both old and new way)
-        _client.fput_object(bucket_name, "test1", _test_file, metadata=HTTPHeaderDict())
-        _client.fput_object(bucket_name, "test2", _test_file, user_metadata=HTTPHeaderDict())
+        _client.fput_object(
+            bucket_name, "test1", _test_file, metadata=HTTPHeaderDict(),
+        )
+        _client.fput_object(
+            bucket_name, "test2", _test_file,
+            user_metadata=HTTPHeaderDict(),
+        )
 
         # Edge 2: None metadata (explicit None)
         _client.fput_object(bucket_name, "test3", _test_file, metadata=None)
 
         # Edge 3: Large metadata
-        large_meta = HTTPHeaderDict({f"X-Amz-Meta-Key{i}": f"value{i}" for i in range(20)})
-        _client.fput_object(bucket_name, "test4", _test_file, metadata=large_meta)
+        large_meta = HTTPHeaderDict(
+            {f"X-Amz-Meta-Key{i}": f"value{i}" for i in range(20)},
+        )
+        _client.fput_object(
+            bucket_name, "test4", _test_file, metadata=large_meta,
+        )
 
         # Edge 4: Special characters in metadata
-        special_meta = HTTPHeaderDict({"X-Amz-Meta-Special-Key": "value with spaces & symbols!"})
-        _client.fput_object(bucket_name, "test5", _test_file, metadata=special_meta)
+        special_meta = HTTPHeaderDict(
+            {"X-Amz-Meta-Special-Key": "value with spaces & symbols!"},
+        )
+        _client.fput_object(
+            bucket_name, "test5", _test_file, metadata=special_meta,
+        )
 
         # Edge 5: Zero-byte file
+        # pylint: disable=consider-using-with
         zero_file = tempfile.NamedTemporaryFile(delete=False)
         zero_file.close()
         try:
@@ -2216,10 +2248,12 @@ def test_no_regression_from_6daf366(log_entry):
         _client.make_bucket(bucket_name)
 
         # Create temporary 6MB files for compose_object
+        # pylint: disable=consider-using-with
         part1_file = tempfile.NamedTemporaryFile(delete=False)
         part1_file.write(b"a" * (6 * 1024 * 1024))  # 6MB
         part1_file.close()
 
+        # pylint: disable=consider-using-with
         part2_file = tempfile.NamedTemporaryFile(delete=False)
         part2_file.write(b"b" * (6 * 1024 * 1024))  # 6MB
         part2_file.close()
@@ -2243,16 +2277,22 @@ def test_no_regression_from_6daf366(log_entry):
         )
 
         stat = _client.stat_object(bucket_name, "composed")
-        # Find the key (case-insensitive, may have x-amz-meta- prefix)
+        # Find key (case-insensitive, may have x-amz-meta- prefix)
         found_test_key = None
         for key in stat.metadata.keys():
             if key.lower().endswith("test"):
                 found_test_key = key
                 break
         if not found_test_key:
-            raise Exception(f"compose_object metadata parameter didn't work. Keys: {list(stat.metadata.keys())}")
+            raise Exception(
+                "compose_object metadata parameter didn't work. "
+                f"Keys: {list(stat.metadata.keys())}",
+            )
         if stat.metadata[found_test_key] != "value":
-            raise Exception(f"compose_object metadata value mismatch: {stat.metadata[found_test_key]}")
+            raise Exception(
+                f"compose_object metadata value mismatch: "
+                f"{stat.metadata[found_test_key]}",
+            )
 
         # Regression 2: copy_object with positional source
         _client.copy_object(
@@ -2266,12 +2306,12 @@ def test_no_regression_from_6daf366(log_entry):
         if part1_file:
             try:
                 os.unlink(part1_file.name)
-            except:
+            except OSError:  # pylint: disable=bare-except
                 pass
         if part2_file:
             try:
                 os.unlink(part2_file.name)
-            except:
+            except OSError:  # pylint: disable=bare-except
                 pass
         # Clean up bucket
         for obj in _client.list_objects(bucket_name):
@@ -2800,8 +2840,8 @@ def main():
             test_presigned_put_object_default_expiry: None,
             test_presigned_put_object_expiry: None,
             test_presigned_post_policy: None,
-            test_backward_compatibility_positional_args: None,
-            test_metadata_parameter_backward_compatibility: None,
+            test_backward_compat_positional: None,
+            test_metadata_backward_compat: None,
             test_real_world_usage_patterns: None,
             test_edge_cases_still_work: None,
             test_no_regression_from_6daf366: None,
