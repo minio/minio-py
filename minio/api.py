@@ -1696,6 +1696,7 @@ class Minio:
                     size -= length
             result = self._complete_multipart_upload(
                 bucket_name, object_name, upload_id, total_parts,
+                sse if isinstance(sse, SseCustomerKey) else None,
             )
             return ObjectWriteResult(
                 cast(str, result.bucket_name),
@@ -1732,6 +1733,7 @@ class Minio:
             object_name: str,
             upload_id: str,
             parts: list[Part],
+            ssec: Optional[SseCustomerKey] = None,
     ) -> CompleteMultipartUploadResult:
         """Execute CompleteMultipartUpload S3 API."""
         element = Element("CompleteMultipartUpload")
@@ -1740,15 +1742,18 @@ class Minio:
             SubElement(tag, "PartNumber", str(part.part_number))
             SubElement(tag, "ETag", '"' + part.etag + '"')
         body = getbytes(element)
+        headers: DictType = {
+            "Content-Type": 'application/xml',
+            "Content-MD5": cast(str, md5sum_hash(body)),
+        }
+        if ssec:
+            headers.update(ssec.headers())
         response = self._execute(
             "POST",
             bucket_name,
             object_name,
             body=body,
-            headers={
-                "Content-Type": 'application/xml',
-                "Content-MD5": cast(str, md5sum_hash(body)),
-            },
+            headers=headers,
             query_params={'uploadId': upload_id},
         )
         return CompleteMultipartUploadResult(response)
@@ -1992,6 +1997,7 @@ class Minio:
 
             upload_result = self._complete_multipart_upload(
                 bucket_name, object_name, cast(str, upload_id), parts,
+                sse if isinstance(sse, SseCustomerKey) else None,
             )
             return ObjectWriteResult(
                 cast(str, upload_result.bucket_name),
