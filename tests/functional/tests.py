@@ -970,11 +970,8 @@ def test_put_object_multipart_with_checksum(  # pylint: disable=invalid-name
         log_entry["args"]["checksum"] = "Algorithm.SHA256"
 
         reader = LimitedRandomReader(length)
-        result = _client.put_object(
-            bucket_name=bucket_name,
-            object_name=object_name_sha256,
-            data=reader,
-            length=length,
+        # Use positional args to make sure that works, revert later with the major release v8.0.0
+        result = _client.put_object(bucket_name, object_name_sha256, reader, length,
             checksum=Algorithm.SHA256,
         )
 
@@ -1012,6 +1009,82 @@ def test_put_object_multipart_with_checksum(  # pylint: disable=invalid-name
             _client.remove_bucket(bucket_name=bucket_name)
         except:  # pylint: disable=bare-except
             pass
+
+
+def test_fput_object_sse_c_25mb(log_entry):
+    """Test fput_object() with SSE-C encryption for 25MB file and list objects."""
+
+    # Mark this as SSE-C test in the log
+    log_entry["name"] = "test_fput_object_sse_c_25mb"
+
+    # Generate unique bucket and object names
+    bucket_name = _gen_bucket_name()
+    object_name = "test-sse-c-25mb.bin"
+
+    # Create SSE-C encryption key (32 bytes)
+    ssec_key = b"key1key1key1key1key1key1key1key1"
+    ssec = SseCustomerKey(ssec_key)
+
+    # Create a temporary 25MB file
+    temp_file = tempfile.NamedTemporaryFile(delete=False)
+    temp_file_path = temp_file.name
+    try:
+        # Write 25MB of random data
+        with open(temp_file_path, 'wb') as file_data:
+            shutil.copyfileobj(LimitedRandomReader(25 * MB), file_data)
+
+        log_entry["args"] = {
+            "bucket_name": bucket_name,
+            "object_name": object_name,
+            "file_path": temp_file_path,
+            "sse": "SSE-C",
+        }
+
+        try:
+            # Create bucket
+            _client.make_bucket(bucket_name=bucket_name)
+
+            # Upload file with SSE-C
+            # Use positional args to make sure that works, revert later with the major release v8.0.0
+            _client.fput_object(bucket_name, object_name, temp_file_path,
+                sse=ssec
+            )
+
+            # Verify file was uploaded by listing objects
+            objects = _client.list_objects(bucket_name=bucket_name)
+            found = False
+            for obj in objects:
+                if obj.object_name == object_name:
+                    found = True
+                    # Verify size is correct (25MB)
+                    if obj.size != 25 * MB:
+                        raise Exception(
+                            f"Object size mismatch: expected {25 * MB}, got {obj.size}"
+                        )
+                    break
+
+            if not found:
+                raise Exception(f"Object '{object_name}' not found in bucket listing")
+
+            # Try to retrieve object with SSE-C to verify it works
+            # Use positional args to make sure that works, revert later with the major release v8.0.0
+            stat = _client.stat_object(bucket_name, object_name, ssec)
+
+            if stat.size != 25 * MB:
+                raise Exception(
+                    f"Stat size mismatch: expected {25 * MB}, got {stat.size}"
+                )
+
+        finally:
+            # Clean up
+            _client.remove_object(
+                bucket_name=bucket_name,
+                object_name=object_name
+            )
+            _client.remove_bucket(bucket_name=bucket_name)
+    finally:
+        # Remove temporary file
+        os.remove(temp_file_path)
 
 
 def _test_stat_object(log_entry, sse=None, version_check=False):
@@ -2500,6 +2573,7 @@ def main():
             test_put_object: {"sse": ssec} if ssec else None,
             test_negative_put_object_with_path_segment: None,
             test_put_object_multipart_with_checksum: None,
+            test_fput_object_sse_c_25mb: None,
             test_stat_object: {"sse": ssec} if ssec else None,
             test_stat_object_version: {"sse": ssec} if ssec else None,
             test_get_object: {"sse": ssec} if ssec else None,
