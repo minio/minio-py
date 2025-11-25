@@ -2153,13 +2153,17 @@ def test_real_world_usage_patterns(log_entry):
             )
 
         # Pattern 3: Copy with minimal args (BROKEN in master)
-        _client.copy_object(bucket_name, "test-copy", CopySource(bucket_name, "test"))
+        _client.copy_object(
+            bucket_name, "test-copy", CopySource(bucket_name, "test"),
+        )
 
-        # Pattern 4: List with prefix positionally (BROKEN in master)
+        # Pattern 4: List with prefix positionally (broken in master)
         list(_client.list_objects(bucket_name, "test"))
 
         # Pattern 5: Mixed positional and keyword (should work)
-        _client.fput_object(bucket_name, "test2", _test_file, content_type="text/plain")
+        _client.fput_object(
+            bucket_name, "test2", _test_file, content_type="text/plain",
+        )
 
         # Pattern 6: Stat with version (if supported)
         _client.stat_object(bucket_name, "test")
