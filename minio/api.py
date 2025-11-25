@@ -1992,6 +1992,9 @@ class Minio:
 
             upload_result = self._complete_multipart_upload(
                 bucket_name, object_name, cast(str, upload_id), parts,
+                extra_headers=HTTPHeaderDict(
+                    sse.headers() if isinstance(sse, SseCustomerKey) else None
+                ),
             )
             return ObjectWriteResult(
                 cast(str, upload_result.bucket_name),
