@@ -401,22 +401,22 @@ class ComposeSource(ObjectConditionalReadArgs):
     @property
     def object_size(self) -> Optional[int]:
         """Get object size."""
-        if self.object_size is None:
+        if self._object_size is None:
             raise MinioException(
                 "build_headers() must be called prior to "
                 "this method invocation",
             )
-        return self.object_size
+        return self._object_size
 
     @property
     def headers(self) -> dict[str, str]:
         """Get headers."""
-        if self.headers is None:
+        if self._headers is None:
             raise MinioException(
                 "build_headers() must be called prior to "
                 "this method invocation",
             )
-        return self.headers.copy()
+        return self._headers.copy()
 
     @classmethod
     def of(cls: Type[F], src: ObjectConditionalReadArgs) -> F:
