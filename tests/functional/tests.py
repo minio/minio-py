@@ -942,7 +942,8 @@ def test_put_object_multipart_with_checksum(  # pylint: disable=invalid-name
         reader = LimitedRandomReader(length)
         # Use positional args to make sure that works
         # Revert later with the major release v8.0.0
-        result = _client.put_object(bucket_name, object_name, reader, length,
+        result = _client.put_object(
+            bucket_name, object_name, reader, length,
             checksum=Algorithm.CRC32C,
         )
 
@@ -973,7 +974,8 @@ def test_put_object_multipart_with_checksum(  # pylint: disable=invalid-name
         reader = LimitedRandomReader(length)
         # Use positional args to make sure that works
         # Revert later with the major release v8.0.0
-        result = _client.put_object(bucket_name, object_name_sha256, reader, length,
+        result = _client.put_object(
+            bucket_name, object_name_sha256, reader, length,
             checksum=Algorithm.SHA256,
         )
 
