@@ -43,7 +43,7 @@ from urllib3._collections import HTTPHeaderDict
 
 from minio import Minio
 from minio.checksum import Algorithm
-from minio.commonconfig import ENABLED, REPLACE, CopySource, SnowballObject
+from minio.commonconfig import ENABLED, REPLACE, ComposeSource, CopySource, SnowballObject
 from minio.datatypes import PostPolicy
 from minio.deleteobjects import DeleteObject
 from minio.error import S3Error
@@ -2001,6 +2001,284 @@ def test_presigned_post_policy(log_entry):
         _client.remove_bucket(bucket_name=bucket_name)
 
 
+def test_backward_compatibility_positional_args(log_entry):
+    """
+    Critical test: Verify all main APIs accept positional arguments.
+    This was BROKEN in 6daf366 and must work in our fix.
+    """
+    log_entry["name"] = "test_backward_compatibility_positional_args"
+    bucket_name = _gen_bucket_name()
+
+    log_entry["args"] = {
+        "bucket_name": bucket_name,
+    }
+
+    try:
+        _client.make_bucket(bucket_name)
+
+        # Test 1: put_object with positional args (BROKEN in master)
+        data = io.BytesIO(b"test data for positional args")
+        _client.put_object(bucket_name, "test1", data, 29)  # All positional
+
+        # Test 2: fput_object with positional args
+        _client.fput_object(bucket_name, "test2", _test_file)  # Positional
+
+        # Test 3: get_object with positional args
+        _client.get_object(bucket_name, "test1")  # Positional
+
+        # Test 4: stat_object with positional args
+        _client.stat_object(bucket_name, "test1")  # Positional
+
+        # Test 5: copy_object with positional args
+        _client.copy_object(bucket_name, "test3", CopySource(bucket_name, "test1"))
+
+        # Test 6: list_objects with positional args
+        list(_client.list_objects(bucket_name))  # Positional
+
+        # Test 7: remove_object with positional args
+        _client.remove_object(bucket_name, "test1")  # Positional
+
+    finally:
+        # Cleanup
+        for obj in _client.list_objects(bucket_name):
+            _client.remove_object(bucket_name, obj.object_name)
+        _client.remove_bucket(bucket_name)
+
+
+def test_metadata_parameter_backward_compatibility(log_entry):
+    """
+    Test that old 'metadata' parameter still works for backward compatibility.
+    6daf366 split metadata -> headers/user_metadata, but we keep both.
+    """
+    log_entry["name"] = "test_metadata_parameter_backward_compatibility"
+    bucket_name = _gen_bucket_name()
+
+    log_entry["args"] = {
+        "bucket_name": bucket_name,
+    }
+
+    try:
+        _client.make_bucket(bucket_name)
+
+        # OLD API: Using 'metadata' parameter (must still work!)
+        old_metadata = HTTPHeaderDict({"X-Amz-Meta-Old-Key": "old-value"})
+        _client.fput_object(
+            bucket_name,
+            "test-old-metadata",
+            _test_file,
+            metadata=old_metadata  # OLD parameter
+        )
+
+        # Verify it was stored (user metadata keys have x-amz-meta- prefix)
+        stat = _client.stat_object(bucket_name, "test-old-metadata")
+        # Find the key (case-insensitive, may have x-amz-meta- prefix)
+        found_key = None
+        for key in stat.metadata.keys():
+            if key.lower().endswith("old-key"):
+                found_key = key
+                break
+        if not found_key:
+            raise Exception(f"Old metadata parameter didn't work. Keys: {list(stat.metadata.keys())}")
+        if stat.metadata[found_key] != "old-value":
+            raise Exception(f"Old metadata value mismatch: {stat.metadata[found_key]}")
+
+        # NEW API: Using 'user_metadata' parameter (should also work)
+        new_metadata = HTTPHeaderDict({"X-Amz-Meta-New-Key": "new-value"})
+        _client.fput_object(
+            bucket_name,
+            "test-new-metadata",
+            _test_file,
+            user_metadata=new_metadata  # NEW parameter
+        )
+
+        stat2 = _client.stat_object(bucket_name, "test-new-metadata")
+        # Find the key (case-insensitive, may have x-amz-meta- prefix)
+        found_key2 = None
+        for key in stat2.metadata.keys():
+            if key.lower().endswith("new-key"):
+                found_key2 = key
+                break
+        if not found_key2:
+            raise Exception(f"New user_metadata parameter didn't work. Keys: {list(stat2.metadata.keys())}")
+        if stat2.metadata[found_key2] != "new-value":
+            raise Exception(f"New metadata value mismatch: {stat2.metadata[found_key2]}")
+
+    finally:
+        for obj in _client.list_objects(bucket_name):
+            _client.remove_object(bucket_name, obj.object_name)
+        _client.remove_bucket(bucket_name)
+
+
+def test_real_world_usage_patterns(log_entry):
+    """
+    Test common usage patterns from real codebases.
+    These are patterns that would BREAK in master but MUST work in our fix.
+    """
+    log_entry["name"] = "test_real_world_usage_patterns"
+    bucket_name = _gen_bucket_name()
+
+    log_entry["args"] = {
+        "bucket_name": bucket_name,
+    }
+
+    try:
+        # Pattern 1: Minimal arguments (very common)
+        _client.make_bucket(bucket_name)
+
+        # Pattern 2: Quick upload without keywords (BROKEN in master)
+        with open(_test_file, 'rb') as file_data:
+            _client.put_object(
+                bucket_name,
+                "test",
+                file_data,
+                os.path.getsize(_test_file)
+            )
+
+        # Pattern 3: Copy with minimal args (BROKEN in master)
+        _client.copy_object(bucket_name, "test-copy", CopySource(bucket_name, "test"))
+
+        # Pattern 4: List with prefix positionally (BROKEN in master)
+        list(_client.list_objects(bucket_name, "test"))
+
+        # Pattern 5: Mixed positional and keyword (should work)
+        _client.fput_object(bucket_name, "test2", _test_file, content_type="text/plain")
+
+        # Pattern 6: Stat with version (if supported)
+        _client.stat_object(bucket_name, "test")
+
+        # Pattern 7: Remove positionally (BROKEN in master)
+        _client.remove_object(bucket_name, "test")
+
+    finally:
+        for obj in _client.list_objects(bucket_name):
+            _client.remove_object(bucket_name, obj.object_name)
+        _client.remove_bucket(bucket_name)
+
+
+def test_edge_cases_still_work(log_entry):
+    """
+    Test edge cases that might break with signature changes.
+    """
+    log_entry["name"] = "test_edge_cases_still_work"
+    bucket_name = _gen_bucket_name()
+
+    log_entry["args"] = {
+        "bucket_name": bucket_name,
+    }
+
+    try:
+        _client.make_bucket(bucket_name)
+
+        # Edge 1: Empty metadata (both old and new way)
+        _client.fput_object(bucket_name, "test1", _test_file, metadata=HTTPHeaderDict())
+        _client.fput_object(bucket_name, "test2", _test_file, user_metadata=HTTPHeaderDict())
+
+        # Edge 2: None metadata (explicit None)
+        _client.fput_object(bucket_name, "test3", _test_file, metadata=None)
+
+        # Edge 3: Large metadata
+        large_meta = HTTPHeaderDict({f"X-Amz-Meta-Key{i}": f"value{i}" for i in range(20)})
+        _client.fput_object(bucket_name, "test4", _test_file, metadata=large_meta)
+
+        # Edge 4: Special characters in metadata
+        special_meta = HTTPHeaderDict({"X-Amz-Meta-Special-Key": "value with spaces & symbols!"})
+        _client.fput_object(bucket_name, "test5", _test_file, metadata=special_meta)
+
+        # Edge 5: Zero-byte file
+        zero_file = tempfile.NamedTemporaryFile(delete=False)
+        zero_file.close()
+        try:
+            _client.fput_object(bucket_name, "test6", zero_file.name)
+        finally:
+            os.unlink(zero_file.name)
+
+    finally:
+        for obj in _client.list_objects(bucket_name):
+            _client.remove_object(bucket_name, obj.object_name)
+        _client.remove_bucket(bucket_name)
+
+
+def test_no_regression_from_6daf366(log_entry):
+    """
+    Specific regression tests for issues introduced in 6daf366.
+    """
+    log_entry["name"] = "test_no_regression_from_6daf366"
+    bucket_name = _gen_bucket_name()
+
+    log_entry["args"] = {
+        "bucket_name": bucket_name,
+    }
+
+    # Create 6MB files for compose_object (minimum 5MB per source required)
+    part1_file = None
+    part2_file = None
+    try:
+        _client.make_bucket(bucket_name)
+
+        # Create temporary 6MB files for compose_object
+        part1_file = tempfile.NamedTemporaryFile(delete=False)
+        part1_file.write(b"a" * (6 * 1024 * 1024))  # 6MB
+        part1_file.close()
+
+        part2_file = tempfile.NamedTemporaryFile(delete=False)
+        part2_file.write(b"b" * (6 * 1024 * 1024))  # 6MB
+        part2_file.close()
+
+        # Regression 1: compose_object must accept metadata parameter
+        _client.fput_object(bucket_name, "part1", part1_file.name)
+        _client.fput_object(bucket_name, "part2", part2_file.name)
+
+        sources = [
+            ComposeSource(bucket_name, "part1"),
+            ComposeSource(bucket_name, "part2"),
+        ]
+
+        # This FAILED in 6daf366 if using old 'metadata' parameter
+        metadata = HTTPHeaderDict({"X-Amz-Meta-Test": "value"})
+        _client.compose_object(
+            bucket_name,
+            "composed",
+            sources,
+            metadata=metadata  # OLD parameter must work
+        )
+
+        stat = _client.stat_object(bucket_name, "composed")
+        # Find the key (case-insensitive, may have x-amz-meta- prefix)
+        found_test_key = None
+        for key in stat.metadata.keys():
+            if key.lower().endswith("test"):
+                found_test_key = key
+                break
+        if not found_test_key:
+            raise Exception(f"compose_object metadata parameter didn't work. Keys: {list(stat.metadata.keys())}")
+        if stat.metadata[found_test_key] != "value":
+            raise Exception(f"compose_object metadata value mismatch: {stat.metadata[found_test_key]}")
+
+        # Regression 2: copy_object with positional source
+        _client.copy_object(
+            bucket_name,
+            "copied",
+            CopySource(bucket_name, "part1")  # Positional source
+        )
+
+    finally:
+        # Clean up temporary files
+        if part1_file:
+            try:
+                os.unlink(part1_file.name)
+            except:
+                pass
+        if part2_file:
+            try:
+                os.unlink(part2_file.name)
+            except:
+                pass
+        # Clean up bucket
+        for obj in _client.list_objects(bucket_name):
+            _client.remove_object(bucket_name, obj.object_name)
+        _client.remove_bucket(bucket_name)
+
+
 def test_thread_safe(log_entry):
     """Test thread safety."""
     bucket_name = _gen_bucket_name()
@@ -2522,6 +2800,11 @@ def main():
             test_presigned_put_object_default_expiry: None,
             test_presigned_put_object_expiry: None,
             test_presigned_post_policy: None,
+            test_backward_compatibility_positional_args: None,
+            test_metadata_parameter_backward_compatibility: None,
+            test_real_world_usage_patterns: None,
+            test_edge_cases_still_work: None,
+            test_no_regression_from_6daf366: None,
             test_thread_safe: None,
             test_set_get_bucket_versioning: None,
             test_get_bucket_policy: None,

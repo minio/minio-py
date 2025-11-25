@@ -2729,7 +2729,7 @@ class Minio:
                 elif src.offset is not None:
                     size -= src.offset
                 offset = src.offset or 0
-                headers = cast(HTTPHeaderDict, src.headers)
+                headers = HTTPHeaderDict(src.headers)
                 headers.extend(ssec_headers)
                 if size <= MAX_PART_SIZE:
                     part_number += 1
