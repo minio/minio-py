@@ -4,9 +4,11 @@ on:
   pull_request:
     branches:
     - master
+    - v7
   push:
     branches:
     - master
+    - v7
 
 env:
   MINIO_ROOT_USER: minio
