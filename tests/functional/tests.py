@@ -940,7 +940,8 @@ def test_put_object_multipart_with_checksum(  # pylint: disable=invalid-name
 
         # Upload with CRC32C checksum - triggers multipart upload
         reader = LimitedRandomReader(length)
-        # Use positional args to make sure that works, revert later with the major release v8.0.0
+        # Use positional args to make sure that works
+        # Revert later with the major release v8.0.0
         result = _client.put_object(bucket_name, object_name, reader, length,
             checksum=Algorithm.CRC32C,
         )
@@ -970,7 +971,8 @@ def test_put_object_multipart_with_checksum(  # pylint: disable=invalid-name
         log_entry["args"]["checksum"] = "Algorithm.SHA256"
 
         reader = LimitedRandomReader(length)
-        # Use positional args to make sure that works, revert later with the major release v8.0.0
+        # Use positional args to make sure that works
+        # Revert later with the major release v8.0.0
         result = _client.put_object(bucket_name, object_name_sha256, reader, length,
             checksum=Algorithm.SHA256,
         )
