@@ -112,7 +112,6 @@ class AssumeRoleProvider(Provider):
 
     def __init__(
             self,
-            *,
             sts_endpoint: str,
             access_key: str,
             secret_key: str,
