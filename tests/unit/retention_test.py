@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,14 +18,15 @@ from datetime import datetime, timedelta, timezone
 from unittest import TestCase
 
 from minio import xml
-from minio.commonconfig import COMPLIANCE, GOVERNANCE
-from minio.retention import Retention
+from minio.models import Retention
 from minio.time import utcnow
 
 
 class RetentionTest(TestCase):
     def test_config(self):
-        config = Retention(GOVERNANCE, utcnow() + timedelta(days=10))
+        config = Retention(
+            Retention.GOVERNANCE, utcnow() + timedelta(days=10),
+        )
         xml.marshal(config)
 
         config = xml.unmarshal(
@@ -36,7 +37,7 @@ class RetentionTest(TestCase):
 </Retention>""",
         )
         xml.marshal(config)
-        self.assertEqual(config.mode, COMPLIANCE)
+        self.assertEqual(config.mode, Retention.COMPLIANCE)
         self.assertEqual(
             config.retain_until_date,
             datetime(2020, 10, 2, 0, 0, 0, 0, timezone.utc),

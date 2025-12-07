@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,23 +33,17 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Callable, Optional, cast
 from urllib.parse import urlencode, urlsplit, urlunsplit
-from xml.etree import ElementTree as ET
 
 import certifi
-from urllib3._collections import HTTPHeaderDict
 from urllib3.poolmanager import PoolManager
-
-try:
-    from urllib3.response import BaseHTTPResponse  # type: ignore[attr-defined]
-except ImportError:
-    from urllib3.response import HTTPResponse as BaseHTTPResponse
-
 from urllib3.util import Retry, parse_url
 
-from minio.helpers import sha256_hash, url_replace
+from minio.checksum import sha256_hash
+from minio.compat import HTTPHeaderDict, HTTPResponse
+from minio.helpers import url_replace
 from minio.signer import sign_v4_sts
 from minio.time import from_iso8601utc, to_amz_date, utcnow
-from minio.xml import find, findtext
+from minio.xml import ET, find, findtext
 
 from .credentials import Credentials
 
@@ -78,7 +72,7 @@ def _urlopen(
         url: str,
         body: Optional[str | bytes] = None,
         headers: Optional[HTTPHeaderDict] = None,
-) -> BaseHTTPResponse:
+) -> HTTPResponse:
     """Wrapper of urlopen() handles HTTP status code."""
     res = http_client.urlopen(method, url, body=body, headers=headers)
     if res.status not in [200, 204, 206]:

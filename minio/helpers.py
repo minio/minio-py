@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2015, 2016, 2017 MinIO, Inc.
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,73 +14,80 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Helper functions."""
+"""Utility functions and classes."""
 
-from __future__ import absolute_import, annotations, division, unicode_literals
+from __future__ import annotations
 
-import base64
-import errno
-import hashlib
-import math
-import os
 import platform
 import re
 import urllib.parse
-from dataclasses import dataclass
-from datetime import datetime
 from queue import Queue
 from threading import BoundedSemaphore, Lock, Thread
-from typing import (BinaryIO, Dict, Iterable, List, Mapping, Optional, Type,
-                    Union)
-
-from typing_extensions import Protocol
-from urllib3._collections import HTTPHeaderDict
+from typing import Mapping, Optional
 
 from . import __title__, __version__
-from .checksum import Algorithm, Hasher, reset_hashers, update_hashers
-from .sse import Sse, SseCustomerKey
+from .compat import HTTPHeaderDict, HTTPQueryDict, quote
 
 _DEFAULT_USER_AGENT = (
     f"MinIO ({platform.system()}; {platform.machine()}) "
     f"{__title__}/{__version__}"
 )
 
-MAX_MULTIPART_COUNT = 10000  # 10000 parts
+MAX_MULTIPART_COUNT = 10000  # 10,000 parts
 MAX_MULTIPART_OBJECT_SIZE = 5 * 1024 * 1024 * 1024 * 1024  # 5TiB
 MAX_PART_SIZE = 5 * 1024 * 1024 * 1024  # 5GiB
 MIN_PART_SIZE = 5 * 1024 * 1024  # 5MiB
 
-_AWS_S3_PREFIX = (r'^(((bucket\.|accesspoint\.)'
-                  r'vpce(-(?!_)[a-z_\d]+(?<!-)(?<!_))+\.s3\.)|'
-                  r'((?!s3)(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.)'
-                  r's3-control(-(?!_)[a-z_\d]+(?<!-)(?<!_))*\.|'
-                  r'([a-z\d\-]+-[0-9]{12})\.s3-accesspoint\.|'
-                  r'(s3(-(?!_)[a-z_\d]+(?<!-)(?<!_))*\.))')
+_AWS_S3_PREFIX = (
+    r'^(((bucket\.|accesspoint\.)'
+    r'vpce(-(?!_)[a-z_\d]+(?<!-)(?<!_))+\.s3\.)|'
+    r'((?!s3)(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.)'
+    r's3-control(-(?!_)[a-z_\d]+(?<!-)(?<!_))*\.|'
+    r'([a-z\d\-]+-[0-9]{12})\.s3-accesspoint\.|'
+    r'(s3(-(?!_)[a-z_\d]+(?<!-)(?<!_))*\.))'
+)
 
 _BUCKET_NAME_REGEX = re.compile(r'^[a-z0-9][a-z0-9\.\-]{1,61}[a-z0-9]$')
-_OLD_BUCKET_NAME_REGEX = re.compile(r'^[a-z0-9][a-z0-9_\.\-\:]{1,61}[a-z0-9]$',
-                                    re.IGNORECASE)
+_OLD_BUCKET_NAME_REGEX = re.compile(
+    r'^[a-z0-9][a-z0-9_\.\-\:]{1,61}[a-z0-9]$',
+    re.IGNORECASE,
+)
 _IPV4_REGEX = re.compile(
     r'^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}'
-    r'(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$')
+    r'(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$'
+)
 _HOSTNAME_REGEX = re.compile(
     r'^((?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.)*'
     r'((?!_)(?!-)[a-z_\d-]{1,63}(?<!-)(?<!_))$',
-    re.IGNORECASE)
+    re.IGNORECASE,
+)
 _AWS_ENDPOINT_REGEX = re.compile(r'.*\.amazonaws\.com(|\.cn)$', re.IGNORECASE)
 _AWS_S3_ENDPOINT_REGEX = re.compile(
     _AWS_S3_PREFIX +
     r'((?!s3)(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.)*'
     r'amazonaws\.com(|\.cn)$',
-    re.IGNORECASE)
+    re.IGNORECASE,
+)
 _AWS_ELB_ENDPOINT_REGEX = re.compile(
     r'^(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.'
     r'(?!-)(?!_)[a-z_\d-]{1,63}(?<!-)(?<!_)\.'
     r'elb\.amazonaws\.com$',
-    re.IGNORECASE)
+    re.IGNORECASE,
+)
 _AWS_S3_PREFIX_REGEX = re.compile(_AWS_S3_PREFIX, re.IGNORECASE)
-_REGION_REGEX = re.compile(r'^((?!_)(?!-)[a-z_\d-]{1,63}(?<!-)(?<!_))$',
-                           re.IGNORECASE)
+REGION_REGEX = re.compile(
+    r'^((?!_)(?!-)[a-z_\d-]{1,63}(?<!-)(?<!_))$',
+    re.IGNORECASE,
+)
+
+
+def get_user_agent(app_name: str, app_version: str, default=False) -> str:
+    """Get user agent header value for app name and version."""
+    if default:
+        return _DEFAULT_USER_AGENT
+    if not (app_name and app_version):
+        raise ValueError("Application name and version must be provided.")
+    return f"{_DEFAULT_USER_AGENT} {app_name}/{app_version}"
 
 
 class RegionMap:
@@ -106,102 +113,6 @@ class RegionMap:
             self._map.pop(bucket_name, None)
 
 
-class HTTPQueryDict(dict[str, List[str]]):
-    """Dictionary for HTTP query parameters with multiple values per key."""
-
-    def __init__(
-        self,
-        initial: Optional[
-            Union[
-                "HTTPQueryDict",
-                Mapping[str, Union[str, Iterable[str]]],
-            ]
-        ] = None
-    ):
-        super().__init__()
-        if initial:
-            if not isinstance(initial, Mapping):
-                raise TypeError(
-                    "HTTPQueryDict expects a mapping-like object, "
-                    f"got {type(initial).__name__}",
-                )
-            for key, value in initial.items():
-                if isinstance(value, (str, bytes)):
-                    self[key] = [value]
-                else:
-                    self[key] = list(value)
-
-    def __setitem__(self, key: str, value: Union[str, Iterable[str]]) -> None:
-        super().__setitem__(
-            key,
-            [value] if isinstance(value, (str, bytes)) else list(value),
-        )
-
-    def copy(self) -> "HTTPQueryDict":
-        return HTTPQueryDict(self)
-
-    def extend(
-        self,
-        other: Optional[
-            Union[
-                "HTTPQueryDict",
-                Mapping[str, Union[str, Iterable[str]]],
-            ]
-        ],
-    ) -> "HTTPQueryDict":
-        """Merges other keys and values."""
-        if other is None:
-            return self
-        if not isinstance(other, Mapping):
-            raise TypeError(
-                "extend() expects a mapping-like object, "
-                f"got {type(other).__name__}",
-            )
-        for key, value in other.items():
-            normalized = (
-                [value] if isinstance(value, (str, bytes)) else list(value)
-            )
-            if key in self:
-                self[key] += normalized
-            else:
-                self[key] = normalized
-        return self
-
-    def __str__(self) -> str:
-        """Convert dictionary to a URL-encoded query string."""
-        query_list = [(k, v) for k, values in self.items() for v in values]
-        query_list.sort(key=lambda x: (x[0], x[1]))  # Sort by key, then value
-        return urllib.parse.urlencode(query_list, quote_via=urllib.parse.quote)
-
-
-def quote(
-        resource: str,
-        safe: str = "/",
-        encoding: Optional[str] = None,
-        errors: Optional[str] = None,
-) -> str:
-    """
-    Wrapper to urllib.parse.quote() replacing back to '~' for older python
-    versions.
-    """
-    return urllib.parse.quote(
-        resource,
-        safe=safe,
-        encoding=encoding,
-        errors=errors,
-    ).replace("%7E", "~")
-
-
-def queryencode(
-        query: str,
-        safe: str = "",
-        encoding: Optional[str] = None,
-        errors: Optional[str] = None,
-) -> str:
-    """Encode query parameter value."""
-    return quote(query, safe, encoding, errors)
-
-
 def headers_to_strings(
         headers: Mapping[str, str | list[str] | tuple[str]],
         titled_key: bool = False,
@@ -214,117 +125,15 @@ def headers_to_strings(
             item = re.sub(
                 r"Credential=([^/]+)",
                 "Credential=*REDACTED*",
-                re.sub(r"Signature=([0-9a-f]+)", "Signature=*REDACTED*", item),
+                re.sub(
+                    r"Signature=([0-9a-f]+)",
+                    "Signature=*REDACTED*",
+                    item,
+                    flags=re.IGNORECASE,
+                ),
             ) if titled_key else item
             values.append(f"{key}: {item}")
     return "\n".join(values)
-
-
-def _validate_sizes(object_size: int, part_size: int):
-    """Validate object and part size."""
-    if part_size > 0:
-        if part_size < MIN_PART_SIZE:
-            raise ValueError(
-                f"part size {part_size} is not supported; minimum allowed 5MiB"
-            )
-        if part_size > MAX_PART_SIZE:
-            raise ValueError(
-                f"part size {part_size} is not supported; maximum allowed 5GiB"
-            )
-
-    if object_size >= 0:
-        if object_size > MAX_MULTIPART_OBJECT_SIZE:
-            raise ValueError(
-                f"object size {object_size} is not supported; "
-                f"maximum allowed 5TiB"
-            )
-    elif part_size <= 0:
-        raise ValueError(
-            "valid part size must be provided when object size is unknown",
-        )
-
-
-def _get_part_info(object_size: int, part_size: int):
-    """Compute part information for object and part size."""
-    _validate_sizes(object_size, part_size)
-
-    if object_size < 0:
-        return part_size, -1
-
-    if part_size > 0:
-        part_size = min(part_size, object_size)
-        return part_size, math.ceil(object_size / part_size) if part_size else 1
-
-    part_size = math.ceil(
-        math.ceil(object_size / MAX_MULTIPART_COUNT) / MIN_PART_SIZE,
-    ) * MIN_PART_SIZE
-    return part_size, math.ceil(object_size / part_size) if part_size else 1
-
-
-def get_part_info(object_size: int, part_size: int) -> tuple[int, int]:
-    """Compute part information for object and part size."""
-    part_size, part_count = _get_part_info(object_size, part_size)
-    if part_count > MAX_MULTIPART_COUNT:
-        raise ValueError(
-            f"object size {object_size} and part size {part_size} "
-            f"make more than {MAX_MULTIPART_COUNT} parts for upload"
-        )
-    return part_size, part_count
-
-
-class ProgressType(Protocol):
-    """typing stub for Put/Get object progress."""
-
-    def set_meta(self, object_name: str, total_length: int):
-        """Set process meta information."""
-
-    def update(self, length: int):
-        """Set current progress length."""
-
-
-def read_part_data(
-        *,
-        stream: BinaryIO,
-        size: int,
-        part_data: bytes = b"",
-        progress: Optional[ProgressType] = None,
-        hashers: Optional[Dict[Algorithm, Hasher]] = None,
-) -> bytes:
-    """Read part data of given size from stream."""
-    reset_hashers(hashers)
-    initial_length = len(part_data)
-    size -= initial_length
-    if part_data:
-        update_hashers(hashers, part_data, initial_length)
-    while size:
-        data = stream.read(size)
-        if not data:
-            break  # EOF reached
-        if not isinstance(data, bytes):
-            raise ValueError("read() must return 'bytes' object")
-        part_data += data
-        size -= len(data)
-        update_hashers(
-            hashers,
-            data,
-            len(data) - (initial_length if size == 0 else 0),
-        )
-        if progress:
-            progress.update(len(data))
-    return part_data
-
-
-def makedirs(path: str):
-    """Wrapper of os.makedirs() ignores errno.EEXIST."""
-    try:
-        if path:
-            os.makedirs(path)
-    except OSError as exc:  # Python >2.5
-        if exc.errno != errno.EEXIST:
-            raise
-
-        if not os.path.isdir(path):
-            raise ValueError(f"path {path} is not a directory") from exc
 
 
 def check_bucket_name(
@@ -336,43 +145,45 @@ def check_bucket_name(
 
     if strict:
         if not _BUCKET_NAME_REGEX.match(bucket_name):
-            raise ValueError(f'invalid bucket name {bucket_name}')
+            raise ValueError(f"invalid bucket name {bucket_name}")
     else:
         if not _OLD_BUCKET_NAME_REGEX.match(bucket_name):
-            raise ValueError(f'invalid bucket name {bucket_name}')
+            raise ValueError(f"invalid bucket name {bucket_name}")
 
     if _IPV4_REGEX.match(bucket_name):
-        raise ValueError(f'bucket name {bucket_name} must not be formatted '
-                         'as an IP address')
+        raise ValueError(
+            f"bucket name {bucket_name} must not be formatted as an IP address",
+        )
 
     unallowed_successive_chars = ['..', '.-', '-.']
     if any(x in bucket_name for x in unallowed_successive_chars):
-        raise ValueError(f'bucket name {bucket_name} contains invalid '
-                         'successive characters')
+        raise ValueError(
+            f"bucket name {bucket_name} contains invalid successive characters",
+        )
 
-    if (
-            s3_check and
+    if s3_check and (
             bucket_name.startswith("xn--") or
             bucket_name.endswith("-s3alias") or
             bucket_name.endswith("--ol-s3")
     ):
-        raise ValueError(f"bucket name {bucket_name} must not start with "
-                         "'xn--' and must not end with '--s3alias' or "
-                         "'--ol-s3'")
+        raise ValueError(
+            f"bucket name {bucket_name} must not start with 'xn--' and "
+            f"must not end with '--s3alias' or '--ol-s3'"
+        )
 
 
-def check_non_empty_string(string: str | bytes):
+def _check_non_empty_string(string: str | bytes, kind: str):
     """Check whether given string is not empty."""
     try:
         if not string.strip():
-            raise ValueError()
+            raise ValueError(f"{kind} must be a non-empty string or bytes")
     except AttributeError as exc:
-        raise TypeError() from exc
+        raise TypeError(f"{kind} must be a string or bytes") from exc
 
 
 def check_object_name(object_name: str):
     """Check whether given object name is valid."""
-    check_non_empty_string(object_name)
+    _check_non_empty_string(object_name, "object name")
     tokens = object_name.split("/")
     if "." in tokens or ".." in tokens:
         raise ValueError(
@@ -380,59 +191,9 @@ def check_object_name(object_name: str):
         )
 
 
-def is_valid_policy_type(policy: str | bytes):
-    """
-    Validate if policy is type str
-
-    :param policy: S3 style Bucket policy.
-    :return: True if policy parameter is of a valid type, 'string'.
-    Raise :exc:`TypeError` otherwise.
-    """
-    if not isinstance(policy, (str, bytes)):
-        raise TypeError("policy must be str or bytes type")
-
-    check_non_empty_string(policy)
-
-    return True
-
-
-def check_ssec(sse: Optional[SseCustomerKey]):
-    """Check sse is SseCustomerKey type or not."""
-    if sse and not isinstance(sse, SseCustomerKey):
-        raise ValueError("SseCustomerKey type is required")
-
-
-def check_sse(sse: Optional[Sse]):
-    """Check sse is Sse type or not."""
-    if sse and not isinstance(sse, Sse):
-        raise ValueError("Sse type is required")
-
-
-def md5sum_hash(data: Optional[str | bytes]) -> Optional[str]:
-    """Compute MD5 of data and return hash as Base64 encoded value."""
-    if data is None:
-        return None
-
-    # indicate md5 hashing algorithm is not used in a security context.
-    # Refer https://bugs.python.org/issue9216 for more information.
-    hasher = hashlib.new(  # type: ignore[call-arg]
-        "md5",
-        usedforsecurity=False,
-    )
-    hasher.update(data.encode() if isinstance(data, str) else data)
-    md5sum = base64.b64encode(hasher.digest())
-    return md5sum.decode() if isinstance(md5sum, bytes) else md5sum
-
-
-def sha256_hash(data: Optional[str | bytes]) -> str:
-    """Compute SHA-256 of data and return hash as hex encoded value."""
-    data = data or b""
-    hasher = hashlib.sha256()
-    hasher.update(data.encode() if isinstance(data, str) else data)
-    sha256sum = hasher.hexdigest()
-    if isinstance(sha256sum, bytes):
-        return sha256sum.decode()
-    return sha256sum
+def check_policy(policy: str | bytes):
+    """Check whether given policy is valid."""
+    _check_non_empty_string(policy, "policy")
 
 
 def url_replace(
@@ -479,72 +240,14 @@ def normalize_headers(headers: Optional[HTTPHeaderDict]) -> HTTPHeaderDict:
     return normalized_headers
 
 
-def _get_aws_info(
-        host: str,
-        https: bool,
-        region: Optional[str],
-) -> tuple[Optional[dict], Optional[str]]:
-    """Extract AWS domain information. """
-
-    if not _HOSTNAME_REGEX.match(host):
-        return (None, None)
-
-    if _AWS_ELB_ENDPOINT_REGEX.match(host):
-        region_in_host = host.split(".elb.amazonaws.com", 1)[0].split(".")[-1]
-        return (None, region or region_in_host)
-
-    if not _AWS_ENDPOINT_REGEX.match(host):
-        return (None, None)
-
-    if host.startswith("ec2-"):
-        return (None, None)
-
-    if not _AWS_S3_ENDPOINT_REGEX.match(host):
-        raise ValueError(f"invalid Amazon AWS host {host}")
-
-    matcher = _AWS_S3_PREFIX_REGEX.match(host)
-    end = matcher.end() if matcher else 0
-    aws_s3_prefix = host[:end]
-
-    if "s3-accesspoint" in aws_s3_prefix and not https:
-        raise ValueError(f"use HTTPS scheme for host {host}")
-
-    tokens = host[end:].split(".")
-    dualstack = tokens[0] == "dualstack"
-    if dualstack:
-        tokens = tokens[1:]
-    region_in_host = ""
-    if tokens[0] not in ["vpce", "amazonaws"]:
-        region_in_host = tokens[0]
-        tokens = tokens[1:]
-    aws_domain_suffix = ".".join(tokens)
-
-    if host in "s3-external-1.amazonaws.com":
-        region_in_host = "us-east-1"
-
-    if host in ["s3-us-gov-west-1.amazonaws.com",
-                "s3-fips-us-gov-west-1.amazonaws.com"]:
-        region_in_host = "us-gov-west-1"
-
-    if (aws_domain_suffix.endswith(".cn") and
-        not aws_s3_prefix.endswith("s3-accelerate.") and
-        not region_in_host and
-            not region):
-        raise ValueError(
-            f"region missing in Amazon S3 China endpoint {host}",
-        )
-
-    return ({"s3_prefix": aws_s3_prefix,
-             "domain_suffix": aws_domain_suffix,
-             "region": region or region_in_host or None,
-             "dualstack": dualstack}, None)
-
-
-def _parse_url(endpoint: str) -> urllib.parse.SplitResult:
+def parse_url(endpoint: str) -> urllib.parse.SplitResult:
     """Parse url string."""
 
     url = urllib.parse.urlsplit(endpoint)
     host = url.hostname
+
+    if not host:
+        raise ValueError("hostname in endpoint is missing")
 
     if url.scheme.lower() not in ["http", "https"]:
         raise ValueError("scheme in endpoint must be http or https")
@@ -591,13 +294,13 @@ class BaseURL:
     _accelerate_host_flag: bool
 
     def __init__(self, endpoint: str, region: Optional[str]):
-        url = _parse_url(endpoint)
+        url = parse_url(endpoint)
 
-        if region and not _REGION_REGEX.match(region):
+        if region and not REGION_REGEX.match(region):
             raise ValueError(f"invalid region {region}")
 
         hostname = url.hostname or ""
-        self._aws_info, region_in_host = _get_aws_info(
+        self._aws_info, region_in_host = self._get_aws_info(
             hostname, url.scheme == "https", region)
         self._virtual_style_flag = (
             self._aws_info is not None or hostname.endswith("aliyuncs.com")
@@ -610,6 +313,68 @@ class BaseURL:
             self._accelerate_host_flag = (
                 self._aws_info["s3_prefix"].endswith("s3-accelerate.")
             )
+
+    @staticmethod
+    def _get_aws_info(
+            host: str,
+            https: bool,
+            region: Optional[str],
+    ) -> tuple[Optional[dict], Optional[str]]:
+        """Extract AWS domain information. """
+
+        if not _HOSTNAME_REGEX.match(host):
+            return (None, None)
+
+        if _AWS_ELB_ENDPOINT_REGEX.match(host):
+            region_in_host = host.split(
+                ".elb.amazonaws.com", 1)[0].split(".")[-1]
+            return (None, region or region_in_host)
+
+        if not _AWS_ENDPOINT_REGEX.match(host):
+            return (None, None)
+
+        if host.startswith("ec2-"):
+            return (None, None)
+
+        if not _AWS_S3_ENDPOINT_REGEX.match(host):
+            raise ValueError(f"invalid Amazon AWS host {host}")
+
+        matcher = _AWS_S3_PREFIX_REGEX.match(host)
+        end = matcher.end() if matcher else 0
+        aws_s3_prefix = host[:end]
+
+        if "s3-accesspoint" in aws_s3_prefix and not https:
+            raise ValueError(f"use HTTPS scheme for host {host}")
+
+        tokens = host[end:].split(".")
+        dualstack = tokens[0] == "dualstack"
+        if dualstack:
+            tokens = tokens[1:]
+        region_in_host = ""
+        if tokens[0] not in ["vpce", "amazonaws"]:
+            region_in_host = tokens[0]
+            tokens = tokens[1:]
+        aws_domain_suffix = ".".join(tokens)
+
+        if host in "s3-external-1.amazonaws.com":
+            region_in_host = "us-east-1"
+
+        if host in ["s3-us-gov-west-1.amazonaws.com",
+                    "s3-fips-us-gov-west-1.amazonaws.com"]:
+            region_in_host = "us-gov-west-1"
+
+        if (aws_domain_suffix.endswith(".cn") and
+            not aws_s3_prefix.endswith("s3-accelerate.") and
+            not region_in_host and
+                not region):
+            raise ValueError(
+                f"region missing in Amazon S3 China endpoint {host}",
+            )
+
+        return ({"s3_prefix": aws_s3_prefix,
+                 "domain_suffix": aws_domain_suffix,
+                 "region": region or region_in_host or None,
+                 "dualstack": dualstack}, None)
 
     @property
     def region(self) -> Optional[str]:
@@ -798,53 +563,6 @@ class BaseURL:
             path += ("" if path.endswith("/") else "/") + quote(object_name)
 
         return url_replace(url=url, netloc=netloc, path=path)
-
-
-@dataclass(frozen=True)
-class ObjectWriteResult:
-    """Result class of any APIs doing object creation."""
-    headers: HTTPHeaderDict
-    bucket_name: str
-    object_name: str
-    etag: str
-    version_id: Optional[str] = None
-    last_modified: Optional[datetime] = None
-    location: Optional[str] = None
-    checksum_crc32: Optional[str] = None
-    checksum_crc32c: Optional[str] = None
-    checksum_crc64nvme: Optional[str] = None
-    checksum_sha1: Optional[str] = None
-    checksum_sha256: Optional[str] = None
-    checksum_type: Optional[str] = None
-
-    @classmethod
-    def new(
-            cls: Type[ObjectWriteResult],
-            *,
-            headers: HTTPHeaderDict,
-            bucket_name: str,
-            object_name: str,
-            etag: Optional[str] = None,
-            version_id: Optional[str] = None,
-            last_modified: Optional[datetime] = None,
-            location: Optional[str] = None,
-    ) -> ObjectWriteResult:
-        """Creates object write result."""
-        return cls(
-            headers=headers,
-            bucket_name=bucket_name,
-            object_name=object_name,
-            etag=etag or headers.get("etag", "").replace('"', ""),
-            version_id=version_id or headers.get("x-amz-version-id"),
-            last_modified=last_modified,
-            location=location,
-            checksum_crc32=headers.get("x-amz-checksum-crc32"),
-            checksum_crc32c=headers.get("x-amz-checksum-crc32c"),
-            checksum_crc64nvme=headers.get("x-amz-checksum-crc64nvme"),
-            checksum_sha1=headers.get("x-amz-checksum-sha1"),
-            checksum_sha256=headers.get("x-amz-checksum-sha256"),
-            checksum_type=headers.get("x-amz-checksum-type"),
-        )
 
 
 class Worker(Thread):

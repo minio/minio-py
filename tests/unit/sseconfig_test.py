@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,17 +17,17 @@
 from unittest import TestCase
 
 from minio import xml
-from minio.sseconfig import AWS_KMS, Rule, SSEConfig
+from minio.models import SSEConfig
 
 
 class ReplicationConfigTest(TestCase):
     def test_config(self):
-        config = SSEConfig(Rule.new_sse_s3_rule())
+        config = SSEConfig(SSEConfig.Rule.new_sse_s3_rule())
         xml.marshal(config)
 
         config = xml.unmarshal(
-            SSEConfig,
-            """<ServerSideEncryptionConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+            SSEConfig, """
+<ServerSideEncryptionConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Rule>
     <ApplyServerSideEncryptionByDefault>
         <SSEAlgorithm>aws:kms</SSEAlgorithm>
@@ -38,7 +38,7 @@ class ReplicationConfigTest(TestCase):
         """,
         )
         xml.marshal(config)
-        self.assertEqual(config.rule.sse_algorithm, AWS_KMS)
+        self.assertEqual(config.rule.sse_algorithm, SSEConfig.Rule.AWS_KMS)
         self.assertEqual(
             config.rule.kms_master_key_id,
             "arn:aws:kms:us-east-1:1234/5678example",

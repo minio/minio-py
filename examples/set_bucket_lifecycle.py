@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage.
-# Copyright (C) 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,7 @@
 # limitations under the License.
 
 from minio import Minio
-from minio.commonconfig import ENABLED, Filter
-from minio.lifecycleconfig import Expiration, LifecycleConfig, Rule, Transition
+from minio.models import Filter, LifecycleConfig, Status
 
 client = Minio(
     endpoint="play.min.io",
@@ -26,17 +25,19 @@ client = Minio(
 
 config = LifecycleConfig(
     [
-        Rule(
-            status=ENABLED,
+        LifecycleConfig.Rule(
+            status=Status.ENABLED,
             rule_filter=Filter(prefix="documents/"),
             rule_id="rule1",
-            transition=Transition(days=30, storage_class="GLACIER"),
+            transition=LifecycleConfig.Transition(
+                days=30, storage_class="GLACIER",
+            ),
         ),
-        Rule(
-            status=ENABLED,
+        LifecycleConfig.Rule(
+            status=Status.ENABLED,
             rule_filter=Filter(prefix="logs/"),
             rule_id="rule2",
-            expiration=Expiration(days=365),
+            expiration=LifecycleConfig.Expiration(days=365),
         ),
     ],
 )

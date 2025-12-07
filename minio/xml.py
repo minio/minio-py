@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2020 MinIO, Inc.
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""XML utility module."""
+"""XML encoding and decoding functions."""
 
-from __future__ import absolute_import, annotations
+from __future__ import annotations
 
 import io
-from typing import Optional, Type, TypeVar
+from typing import Optional, TypeVar
 from xml.etree import ElementTree as ET
 
 from typing_extensions import Protocol
@@ -45,24 +45,30 @@ def SubElement(  # pylint: disable=invalid-name
     return element
 
 
-def _get_namespace(element: ET.Element) -> str:
-    """Exact namespace if found."""
-    start = element.tag.find("{")
-    if start < 0:
-        return ""
-    start += 1
-    end = element.tag.find("}")
-    if end < 0:
-        return ""
-    return element.tag[start:end]
+def _namespaced(element: ET.Element, name: str) -> tuple[str, dict[str, str]]:
+    """Namespace arguments for find and findall."""
+    def _get_namespace() -> str:
+        """Exact namespace if found."""
+        start = element.tag.find("{")
+        if start < 0:
+            return ""
+        start += 1
+        end = element.tag.find("}")
+        if end < 0:
+            return ""
+        return element.tag[start:end]
+
+    namespace = _get_namespace()
+    if namespace:
+        name = "/".join(f"ns:{token}" for token in name.split("/"))
+        return name, {"ns": namespace}
+    return name, {}
 
 
 def findall(element: ET.Element, name: str) -> list[ET.Element]:
     """Namespace aware ElementTree.Element.findall()."""
-    namespace = _get_namespace(element)
-    if namespace:
-        name = "/".join(["ns:" + token for token in name.split("/")])
-    return element.findall(name, {"ns": namespace} if namespace else {})
+    name, namespaces = _namespaced(element, name)
+    return element.findall(name, namespaces=namespaces)
 
 
 def find(
@@ -71,11 +77,8 @@ def find(
         strict: bool = False,
 ) -> Optional[ET.Element]:
     """Namespace aware ElementTree.Element.find()."""
-    namespace = _get_namespace(element)
-    elem = element.find(
-        "ns:" + name if namespace else name,
-        {"ns": namespace} if namespace else {},
-    )
+    name, namespaces = _namespaced(element, name)
+    elem = element.find(name, namespaces=namespaces)
     if strict and elem is None:
         raise ValueError(f"XML element <{name}> not found")
     return elem
@@ -85,30 +88,32 @@ def findtext(
     element: ET.Element,
     name: str,
     strict: bool = False,
+    default: Optional[str] = None,
 ) -> Optional[str]:
     """
     Namespace aware ElementTree.Element.findtext() with strict flag
     raises ValueError if element name not exist.
     """
     elem = find(element, name, strict=strict)
-    return None if elem is None else (elem.text or "")
+    return default if elem is None else (elem.text or "")
 
 
-A = TypeVar("A")
+UnmarshalT = TypeVar("UnmarshalT", bound="UnmarshalProtocol")
 
 
-class FromXmlType(Protocol):
+class UnmarshalProtocol(Protocol):
     """typing stub for class with `fromxml` method"""
 
     @classmethod
-    def fromxml(cls: Type[A], element: ET.Element) -> A:
-        """Create python object with values from XML element."""
+    def fromxml(cls: type[UnmarshalT], element: ET.Element) -> UnmarshalT:
+        """
+        Create object by values from XML element.
+        Code discipline:
+        1. Do not use find() to look for its own `Element` if needed.
+        """
 
 
-B = TypeVar("B", bound=FromXmlType)
-
-
-def unmarshal(cls: Type[B], xmlstring: str) -> B:
+def unmarshal(cls: type[UnmarshalT], xmlstring: str) -> UnmarshalT:
     """Unmarshal given XML string to an object of passed class."""
     return cls.fromxml(ET.fromstring(xmlstring))
 
@@ -124,13 +129,20 @@ def getbytes(element: ET.Element) -> bytes:
         return data.getvalue()
 
 
-class ToXmlType(Protocol):
+class MarshalT(Protocol):
     """typing stub for class with `toxml` method"""
 
     def toxml(self, element: Optional[ET.Element]) -> ET.Element:
-        """Convert python object to ElementTree.Element."""
+        """
+        Convert python object to ElementTree.Element.
+        Code discipline:
+        1. Do not create its own `SubElement` if needed.
+        2. Always return passed `Element`.
+        3. For root, `element` argument is always `None` hence
+           root `Element` must be created.
+        """
 
 
-def marshal(obj: ToXmlType) -> bytes:
+def marshal(obj: MarshalT) -> bytes:
     """Get XML data as bytes of ElementTree.Element."""
     return getbytes(obj.toxml(None))

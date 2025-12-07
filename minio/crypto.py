@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
-# 2015, 2016, 2017 MinIO, Inc.
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Cryptography to read and write encrypted MinIO Admin payload"""
+"""Cryptography to read and write encrypted MinIO Admin payload."""
 
-from __future__ import absolute_import, annotations
+from __future__ import annotations
 
 import os
 
@@ -25,10 +25,7 @@ from Crypto.Cipher import AES, ChaCha20_Poly1305
 from Crypto.Cipher._mode_gcm import GcmMode
 from Crypto.Cipher.ChaCha20_Poly1305 import ChaCha20Poly1305Cipher
 
-try:
-    from urllib3.response import BaseHTTPResponse  # type: ignore[attr-defined]
-except ImportError:
-    from urllib3.response import HTTPResponse as BaseHTTPResponse
+from .compat import HTTPResponse
 
 #
 # Encrypted Message Format:
@@ -142,7 +139,7 @@ class DecryptReader:
     APIs.
     """
 
-    def __init__(self, response: BaseHTTPResponse, secret: bytes):
+    def __init__(self, response: HTTPResponse, secret: bytes):
         self._response = response
         self._secret = secret
         self._payload = None
@@ -242,7 +239,7 @@ class DecryptReader:
                 yield result
 
 
-def decrypt(response: BaseHTTPResponse, secret_key: str) -> bytes:
+def decrypt(response: HTTPResponse, secret_key: str) -> bytes:
     """Decrypt response data."""
     result = b""
     with DecryptReader(response, secret_key.encode()) as reader:

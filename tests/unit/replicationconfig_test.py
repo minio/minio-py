@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# MinIO Python Library for Amazon S3 Compatible Cloud Storage,
-# (C) 2020 MinIO, Inc.
+# MinIO Python Library for Amazon S3 Compatible Cloud Storage, (C)
+# [2014] - [2025] MinIO, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,9 +17,7 @@
 from unittest import TestCase
 
 from minio import xml
-from minio.commonconfig import DISABLED, ENABLED, AndOperator, Filter, Tags
-from minio.replicationconfig import (DeleteMarkerReplication, Destination,
-                                     ReplicationConfig, Rule)
+from minio.models import Filter, ReplicationConfig, Status, Tags
 
 
 class ReplicationConfigTest(TestCase):
@@ -29,15 +27,17 @@ class ReplicationConfigTest(TestCase):
         config = ReplicationConfig(
             "REPLACE-WITH-ACTUAL-ROLE",
             [
-                Rule(
-                    destination=Destination(
+                ReplicationConfig.Rule(
+                    destination=ReplicationConfig.Destination(
                         "REPLACE-WITH-ACTUAL-DESTINATION-BUCKET-ARN",
                     ),
-                    status=ENABLED,
-                    delete_marker_replication=DeleteMarkerReplication(
-                        DISABLED,
+                    status=Status.ENABLED,
+                    delete_marker_replication=(
+                        ReplicationConfig.DeleteMarkerReplication(
+                            Status.DISABLED,
+                        )
                     ),
-                    rule_filter=Filter(AndOperator("TaxDocs", tags)),
+                    rule_filter=Filter(Filter.And("TaxDocs", tags)),
                     rule_id="rule1",
                     priority=1,
                 ),
@@ -47,7 +47,8 @@ class ReplicationConfigTest(TestCase):
 
         config = xml.unmarshal(
             ReplicationConfig,
-            """<ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+            """
+<ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Role>arn:aws:iam::35667example:role/CrossRegionReplicationRoleForS3</Role>
   <Rule>
     <ID>rule1</ID>
