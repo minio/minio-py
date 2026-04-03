@@ -22,8 +22,8 @@ import platform
 import re
 import urllib.parse
 from queue import Queue
-from threading import BoundedSemaphore, Lock, Thread
-from typing import Mapping, Optional
+from threading import BoundedSemaphore, Event, Lock, Thread
+from typing import Any, Callable, Mapping, Optional
 
 from . import __title__, __version__
 from .compat import HTTPHeaderDict, HTTPQueryDict, quote
@@ -566,86 +566,89 @@ class BaseURL:
 
 
 class Worker(Thread):
-    """ Thread executing tasks from a given tasks queue """
+    """Thread executing tasks from a given tasks queue"""
 
     def __init__(
-            self,
-            tasks_queue: Queue,
-            results_queue: Queue,
-            exceptions_queue: Queue,
+        self,
+        tasks_queue: Queue,
+        results_queue: Queue,
+        exceptions_queue: Queue,
+        abort_event: Event,
     ):
-        Thread.__init__(self, daemon=True)
+        super().__init__(daemon=True)
         self._tasks_queue = tasks_queue
         self._results_queue = results_queue
         self._exceptions_queue = exceptions_queue
+        self._abort_event = abort_event
         self.start()
 
-    def run(self):
-        """ Continuously receive tasks and execute them """
+    def run(self) -> None:
+        """Continuously receive tasks and execute them"""
         while True:
             task = self._tasks_queue.get()
-            if not task:
+
+            # Poison pill to stop the thread
+            if task is None:
                 self._tasks_queue.task_done()
                 break
-            func, args, kargs, cleanup_func = task
-            # No exception detected in any thread,
-            # continue the execution.
-            if self._exceptions_queue.empty():
+
+            func, args, kwargs, cleanup_func = task
+
+            # 3.14t Optimization: Use an Event check instead of Queue.empty().
+            # This is a thread-safe way to stop processing if another thread
+            # failed.
+            if not self._abort_event.is_set():
                 try:
-                    result = func(*args, **kargs)
+                    result = func(*args, **kwargs)
                     self._results_queue.put(result)
                 except Exception as ex:  # pylint: disable=broad-except
+                    # Signal all threads to stop executing new tasks
+                    self._abort_event.set()
                     self._exceptions_queue.put(ex)
 
-            # call cleanup i.e. Semaphore.release irrespective of task
-            # execution to avoid race condition.
+            # Always cleanup (release semaphore) and mark task done
             cleanup_func()
-            # Mark this task as done, whether an exception happened or not
             self._tasks_queue.task_done()
 
 
 class ThreadPool:
-    """ Pool of threads consuming tasks from a queue """
-    _results_queue: Queue
-    _exceptions_queue: Queue
-    _tasks_queue: Queue
-    _sem: BoundedSemaphore
-    _num_threads: int
+    """Pool of threads consuming tasks from a queue"""
 
     def __init__(self, num_threads: int):
-        self._results_queue = Queue()
-        self._exceptions_queue = Queue()
-        self._tasks_queue = Queue()
+        self._results_queue: Queue[Any] = Queue()
+        self._exceptions_queue: Queue[Exception] = Queue()
+        self._tasks_queue: Queue[tuple | None] = Queue()
         self._sem = BoundedSemaphore(num_threads)
+        self._abort_event = Event()
         self._num_threads = num_threads
 
-    def add_task(self, func, *args, **kargs):
-        """
-        Add a task to the queue. Calling this function can block
-        until workers have a room for processing new tasks. Blocking
-        the caller also prevents the latter from allocating a lot of
-        memory while workers are still busy running their assigned tasks.
-        """
+    def add_task(self, func: Callable, *args: Any, **kwargs: Any) -> None:
+        """Add a task to the queue. Blocks if the pool is full"""
         self._sem.acquire()  # pylint: disable=consider-using-with
         cleanup_func = self._sem.release
-        self._tasks_queue.put((func, args, kargs, cleanup_func))
+        self._tasks_queue.put((func, args, kwargs, cleanup_func))
 
-    def start_parallel(self):
-        """ Prepare threads to run tasks"""
+    def start_parallel(self) -> None:
+        """Prepare threads to run tasks"""
         for _ in range(self._num_threads):
             Worker(
-                self._tasks_queue, self._results_queue, self._exceptions_queue,
+                self._tasks_queue,
+                self._results_queue,
+                self._exceptions_queue,
+                self._abort_event
             )
 
     def result(self) -> Queue:
-        """ Stop threads and return the result of all called tasks """
-        # Send None to all threads to cleanly stop them
+        """Stop threads and return the results"""
+        # 1. Send "Poison Pill" to all threads
         for _ in range(self._num_threads):
             self._tasks_queue.put(None)
-        # Wait for completion of all the tasks in the queue
+
+        # 2. Wait for completion
         self._tasks_queue.join()
-        # Check if one of the thread raised an exception, if yes
-        # raise it here in the function
+
+        # 3. Check for exceptions collected during execution
         if not self._exceptions_queue.empty():
             raise self._exceptions_queue.get()
+
         return self._results_queue
