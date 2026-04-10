@@ -133,7 +133,7 @@ def _call_test(func, *args, **kwargs):
     try:
         func(log_entry, *args, **kwargs)
     except S3Error as exc:
-        if exc.code == "NotImplemented":
+        if exc.response.status in (405, 501):
             log_entry["alert"] = "Not Implemented"
             log_entry["status"] = "NA"
         else:
