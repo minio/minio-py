@@ -110,6 +110,7 @@ class Minio:
             http_client: Optional[urllib3.PoolManager] = None,
             credentials: Optional[Provider] = None,
             cert_check: bool = True,
+            enable_rdma: bool = False,
     ):
         """
         Initializes a new Minio client object.
@@ -143,6 +144,13 @@ class Minio:
             cert_check (bool, default=True):
                 Flag to enable/disable server certificate validation
                 for HTTPS connections.
+
+            enable_rdma (bool, default=False):
+                Enable RDMA / GPUDirect Storage dispatch for ``put_object`` and
+                ``get_object`` when a contiguous buffer is passed via ``data``
+                (PUT) or ``into`` (GET). Requires ``libminiocpp.so`` to be
+                loadable at runtime. When False, RDMA arguments are ignored
+                and the HTTP path is used unconditionally.
 
         Notes:
             The `Minio` object is thread-safe when used with the Python
@@ -221,9 +229,37 @@ class Minio:
             )
         )
 
+        self._rdma_enabled = enable_rdma
+        self._rdma_endpoint = endpoint
+        self._rdma_secure = secure
+        self._rdma_region = region or ""
+        self._rdma_client = None
+
+    def _rdma(self):
+        """Lazy ctypes binding to libminiocpp.so.
+
+        Returns an RDMAClient or raises ``RDMANotAvailable``.
+        """
+        if self._rdma_client is not None:
+            return self._rdma_client
+        # pylint: disable=import-outside-toplevel
+        from .rdma import RDMAClient
+        creds = self._provider.retrieve() if self._provider else None
+        self._rdma_client = RDMAClient(
+            endpoint=self._rdma_endpoint,
+            region=self._rdma_region,
+            access_key=creds.access_key if creds else "",
+            secret_key=creds.secret_key if creds else "",
+            session_token=creds.session_token if creds else "",
+            secure=self._rdma_secure,
+        )
+        return self._rdma_client
+
     def __del__(self):
         if hasattr(self, "_http"):  # Only required for unit test run
             self._http.clear()
+        if getattr(self, "_rdma_client", None) is not None:
+            self._rdma_client.close()
 
     @staticmethod
     def _get_part_info(object_size: int, part_size: int) -> tuple[int, int]:
@@ -2777,7 +2813,9 @@ class Minio:
 
         response = None
         try:
-            response = self.get_object(
+            # fget_object never passes into=, so get_object returns the
+            # GetObjectResponse branch of the union.
+            response = cast(GetObjectResponse, self.get_object(
                 bucket_name=bucket_name,
                 object_name=object_name,
                 match_etag=match_etag,
@@ -2790,7 +2828,7 @@ class Minio:
                 region=region,
                 extra_headers=extra_headers,
                 extra_query_params=extra_query_params,
-            )
+            ))
 
             if progress:
                 # Set progress bar length and object name before upload
@@ -2827,7 +2865,8 @@ class Minio:
             region: Optional[str] = None,
             extra_headers: Optional[HTTPHeaderDict] = None,
             extra_query_params: Optional[HTTPQueryDict] = None,
-    ) -> GetObjectResponse:
+            into: Optional[Union[memoryview, bytearray, int]] = None,
+    ) -> Union[GetObjectResponse, int]:
         """
         Get object data from a bucket.
 
@@ -2929,6 +2968,19 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         check_object_name(object_name)
+
+        # RDMA dispatch — write directly into the caller's into= buffer and
+        # return the byte count.
+        if self._rdma_enabled and into is not None:
+            buf_len = (
+                length if length is not None
+                else (len(into) if hasattr(into, "__len__") else 0)
+            )
+            if not isinstance(buf_len, int) or buf_len <= 0:
+                raise ValueError(
+                    "length must be provided (or into must be a sized buffer)")
+            return self._rdma().get(bucket_name, object_name, into, buf_len)
+
         headers = self._gen_read_headers(
             ssec=ssec,
             offset=offset,
@@ -3875,6 +3927,22 @@ class Minio:
         """
         check_bucket_name(bucket_name, s3_check=self._base_url.is_aws_host)
         check_object_name(object_name)
+
+        # RDMA dispatch — only when the SDK was opted in AND the caller passed
+        # a contiguous buffer object (memoryview / bytes / bytearray / raw int
+        # pointer). A streaming BinaryIO falls through to the HTTP path.
+        if self._rdma_enabled and isinstance(
+                data, (int, memoryview, bytes, bytearray)) and length > 0:
+            _nbytes, etag, _checksum = self._rdma().put(
+                bucket_name, object_name, data, length)
+            return ObjectWriteResponse(
+                headers=HTTPHeaderDict({"etag": etag}),
+                bucket_name=bucket_name,
+                region=region or "",
+                object_name=object_name,
+                etag=etag,
+            )
+
         part_size, part_count = self._get_part_info(length, part_size)
         if progress:
             # Set progress bar length and object name before upload

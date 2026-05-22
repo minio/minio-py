@@ -139,6 +139,43 @@ mc ls play/python-test-bucket
 [2023-11-03 22:18:54 UTC]  20KiB STANDARD my-test-file.txt
 ```
 
+## RDMA / GPUDirect Storage (optional)
+
+`put_object` and `get_object` can dispatch to MinIO's RDMA + GPUDirect
+Storage path via [minio-cpp](https://github.com/minio/minio-cpp). It is
+strictly opt-in and the SDK stays pure-Python unless used.
+
+```python
+from minio import Minio
+
+client = Minio(
+    endpoint="server:9000",
+    access_key="...",
+    secret_key="...",
+    secure=False,
+    enable_rdma=True,             # opt-in
+)
+
+buf = bytearray(1 << 20)
+client.put_object(
+    bucket_name="b", object_name="o",
+    data=buf, length=len(buf),    # buffer-protocol object selects RDMA
+)
+
+dst = bytearray(1 << 20)
+n = client.get_object(
+    bucket_name="b", object_name="o",
+    into=dst, length=len(dst),    # into= selects RDMA, returns bytes
+)
+```
+
+Requires `libminiocpp.so` (built with `-DMINIO_CPP_ENABLE_RDMA=ON`) on the
+host's library search path (or pointed at via the `MINIOCPP_LIB` env var).
+GPU buffer pointers (e.g. CuPy's `arr.data.ptr`, PyTorch's `t.data_ptr()`)
+work as `data=` / `into=` arguments unchanged — pass them as `int`.
+
+See `examples/put_object_rdma.py` and `examples/get_object_rdma.py`.
+
 ## More References
 
 * [Python SDK Documentation](https://docs.min.io/enterprise/aistor-object-store/developers/sdk/python/)
