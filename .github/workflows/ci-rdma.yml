@@ -1,0 +1,78 @@
+name: CI (RDMA)
+
+on:
+  pull_request:
+    branches:
+    - master
+  push:
+    branches:
+    - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-miniocpp:
+    name: Build libminiocpp.so (${{ matrix.config.arch }}) + RDMA wrapper tests
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - { os: ubuntu-latest,    arch: "amd64" }
+        - { os: ubuntu-24.04-arm, arch: "arm64" }
+
+    steps:
+    - name: Checkout minio-py
+      uses: actions/checkout@v4
+      with:
+        path: "minio-py"
+
+    - name: Checkout minio-cpp
+      uses: actions/checkout@v4
+      with:
+        repository: minio/minio-cpp
+        path: "minio-cpp"
+
+    - name: Checkout vcpkg
+      uses: actions/checkout@v4
+      with:
+        repository: microsoft/vcpkg
+        path: "vcpkg"
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get -qy update
+        sudo apt-get -qy install cmake libibverbs-dev librdmacm-dev libnuma-dev
+
+    - name: Build libminiocpp.so with RDMA
+      shell: bash
+      run: |
+        ./vcpkg/bootstrap-vcpkg.sh
+        cd minio-cpp
+        ../vcpkg/vcpkg install
+        cmake . -B ./build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_SHARED_LIBS=ON \
+          -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake \
+          -DMINIO_CPP_ENABLE_RDMA:BOOL=ON
+        cmake --build ./build --config Release -j 4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install minio-py
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ./minio-py
+        pip install pytest mock
+
+    - name: Run RDMA wrapper unit tests
+      working-directory: minio-py
+      env:
+        MINIOCPP_LIB: ${{ github.workspace }}/minio-cpp/build/libminiocpp.so
+      run: |
+        pytest tests/unit/rdma_test.py -v
