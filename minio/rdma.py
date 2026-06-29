@@ -109,7 +109,8 @@ def alloc_aligned(size: int) -> int:
 
 def free_aligned(ptr: int) -> None:
     """Release a buffer previously returned by :func:`alloc_aligned`."""
-    _load().miniocpp_free_aligned(ptr)
+    if ptr:
+        _load().miniocpp_free_aligned(ptr)
 
 
 def _last_error(lib: ctypes.CDLL) -> str:
@@ -120,29 +121,56 @@ def _last_error(lib: ctypes.CDLL) -> str:
 
 def _buffer_pointer(
     buf: Union[int, memoryview, bytes, bytearray],
-) -> tuple[int, int]:
-    """Return (ptr, length) for a buffer-protocol object or raw int pointer.
+    *,
+    writable: bool,
+) -> tuple[int, int, object]:
+    """Return ``(ptr, length, owner)`` for a buffer-protocol object or int.
 
-    For raw int pointers the caller-supplied length is unknown; returns 0
-    for length and the caller must pass it separately.
+    ``owner`` is the object that backs the returned pointer. The caller MUST
+    keep it referenced until the C call that uses ``ptr`` has returned;
+    otherwise the backing memory may be freed and ``ptr`` left dangling.
+
+    For raw int pointers the caller-supplied length is unknown; returns 0 for
+    length (the caller must pass it separately) and ``None`` as the owner.
+
+    When ``writable`` is True the C side writes results back through ``ptr``,
+    so a read-only source (``bytes`` or a read-only ``memoryview``) is
+    rejected rather than silently writing into a throwaway copy the caller
+    would never see.
     """
     if isinstance(buf, int):
-        return buf, 0
-    if isinstance(buf, (bytes, bytearray)):
-        return ctypes.cast(
-            (ctypes.c_char * len(buf)).from_buffer_copy(buf)
-            if isinstance(buf, bytes)
-            else (ctypes.c_char * len(buf)).from_buffer(buf),
-            ctypes.c_void_p,
-        ).value or 0, len(buf)
+        # bool is a subclass of int: True would be taken as address 1.
+        if isinstance(buf, bool):
+            raise TypeError("raw RDMA pointer must be an int, not bool")
+        # A non-positive value is either null (0) or, when negative, coerced
+        # by ctypes.c_void_p into a huge unsigned address — both invalid.
+        if buf <= 0:
+            raise ValueError("raw RDMA pointer must be a positive address")
+        return buf, 0, None
+    if isinstance(buf, bytes):
+        if writable:
+            raise ValueError(
+                "read-only bytes cannot be used as an RDMA get target; "
+                "pass a bytearray or writable memoryview"
+            )
+        owner = (ctypes.c_char * len(buf)).from_buffer_copy(buf)
+        return ctypes.addressof(owner), len(buf), owner
+    if isinstance(buf, bytearray):
+        owner = (ctypes.c_char * len(buf)).from_buffer(buf)
+        return ctypes.addressof(owner), len(buf), owner
     if isinstance(buf, memoryview):
         if not buf.contiguous:
             raise ValueError("memoryview must be contiguous for RDMA")
-        backing = buf if not buf.readonly else bytearray(buf)
-        addr = ctypes.addressof(
-            (ctypes.c_char * buf.nbytes).from_buffer(backing)
-        )
-        return addr, buf.nbytes
+        if buf.readonly:
+            if writable:
+                raise ValueError(
+                    "read-only memoryview cannot be used as an RDMA get "
+                    "target; pass a writable buffer"
+                )
+            owner = (ctypes.c_char * buf.nbytes).from_buffer_copy(buf)
+            return ctypes.addressof(owner), buf.nbytes, owner
+        owner = (ctypes.c_char * buf.nbytes).from_buffer(buf)
+        return ctypes.addressof(owner), buf.nbytes, owner
     raise TypeError(
         f"unsupported buffer type for RDMA: {type(buf).__name__}; "
         "pass memoryview, bytearray, bytes, or raw int pointer"
@@ -184,36 +212,50 @@ class RDMAClient:
 
         Returns (bytes, etag, checksum).
         """
-        ptr, inferred = _buffer_pointer(buf)
+        # ``owner`` backs ``ptr``; it must stay referenced until the C call
+        # below returns, else the buffer is freed and ``ptr`` dangles.
+        ptr, inferred, owner = _buffer_pointer(buf, writable=False)
         size = length if length is not None else inferred
         if size <= 0:
             raise ValueError("length must be > 0 for RDMA put")
+        if owner is not None and size > inferred:
+            raise ValueError(
+                f"length {size} exceeds buffer size {inferred}"
+            )
         etag = (ctypes.c_char * 64)()
         checksum = (ctypes.c_char * 64)()
         nbytes = self._lib.miniocpp_put_object(
             self._handle, bucket.encode(), obj.encode(),
             ctypes.c_void_p(ptr), size, None, None, etag, checksum,
         )
+        del owner
         if nbytes < 0:
             raise RDMAError(f"RDMA put: {_last_error(self._lib)}")
         return (
             int(nbytes),
-            etag.value.decode().replace('"', ""),
-            checksum.value.decode(),
+            etag.value.decode(errors="replace").replace('"', ""),
+            checksum.value.decode(errors="replace"),
         )
 
     def get(self, bucket: str, obj: str,
             buf: Union[int, memoryview, bytearray],
             length: Optional[int] = None) -> int:
         """RDMA-get ``bucket/obj`` into ``buf``; returns the byte count."""
-        ptr, inferred = _buffer_pointer(buf)
+        # ``owner`` backs ``ptr``; it must stay referenced until the C call
+        # below returns, else the buffer is freed and ``ptr`` dangles.
+        ptr, inferred, owner = _buffer_pointer(buf, writable=True)
         size = length if length is not None else inferred
         if size <= 0:
             raise ValueError("length must be > 0 for RDMA get")
+        if owner is not None and size > inferred:
+            raise ValueError(
+                f"length {size} exceeds buffer size {inferred}"
+            )
         nbytes = self._lib.miniocpp_get_object(
             self._handle, bucket.encode(), obj.encode(),
             ctypes.c_void_p(ptr), size, None, None,
         )
+        del owner
         if nbytes < 0:
             raise RDMAError(f"RDMA get: {_last_error(self._lib)}")
         return int(nbytes)

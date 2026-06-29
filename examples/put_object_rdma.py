@@ -10,6 +10,7 @@ Requirements:
 """
 
 import os
+
 from minio import Minio
 
 client = Minio(

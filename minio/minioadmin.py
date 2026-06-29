@@ -242,6 +242,20 @@ class MinioAdmin:
             _safe_str(response.data),
         )
 
+    def _decrypt_response(self, response: HTTPResponse) -> str:
+        """Decrypt a streamed response and release its connection.
+
+        The connection is always returned to the pool, even when decryption
+        fails, so a failed decrypt cannot leak a streamed connection.
+        """
+        try:
+            return decrypt(
+                response, self._provider.retrieve().secret_key,
+            ).decode()
+        finally:
+            response.close()
+            response.release_conn()
+
     def set_app_info(self, app_name: str, app_version: str):
         """
         Set your application name and version to user agent header.
@@ -379,10 +393,7 @@ class MinioAdmin:
             command=_COMMAND.LIST_USERS,
             preload_content=False,
         )
-        plain_data = decrypt(
-            response, self._provider.retrieve().secret_key,
-        )
-        return plain_data.decode()
+        return self._decrypt_response(response)
 
     def group_add(self, group_name: str, members: list[str]) -> str:
         """Add users a new or existing group."""
@@ -541,6 +552,7 @@ class MinioAdmin:
 
     def config_get(self, key: Optional[str] = None) -> str:
         """Get configuration parameters."""
+        response = None
         try:
             response = self._url_open(
                 method="GET",
@@ -589,6 +601,7 @@ class MinioAdmin:
 
     def config_history(self) -> str:
         """Get historic configuration changes."""
+        response = None
         try:
             response = self._url_open(
                 method="GET",
@@ -622,7 +635,7 @@ class MinioAdmin:
         response = self._url_open(
             method="POST",
             command=_COMMAND.START_PROFILE,
-            query_params=HTTPQueryDict({"profilerType;": ",".join(profilers)}),
+            query_params=HTTPQueryDict({"profilerType": ",".join(profilers)}),
         )
         return response.data.decode()
 
@@ -701,9 +714,9 @@ class MinioAdmin:
             all_sites: bool = False,
     ) -> str:
         """Remove given sites or all sites from site replication."""
-        data = {}
+        data: dict[str, Any] = {}
         if all_sites:
-            data.update({"all": "True"})
+            data.update({"all": True})
         elif sites:
             data.update({"sites": sites or ""})
         else:
@@ -757,10 +770,7 @@ class MinioAdmin:
             query_params=HTTPQueryDict({"accessKey": access_key}),
             preload_content=False,
         )
-        plain_data = decrypt(
-            response, self._provider.retrieve().secret_key,
-        )
-        return plain_data.decode()
+        return self._decrypt_response(response)
 
     def list_service_account(self, user: str) -> str:
         """List service accounts of user"""
@@ -770,10 +780,7 @@ class MinioAdmin:
             query_params=HTTPQueryDict({"user": user}),
             preload_content=False,
         )
-        plain_data = decrypt(
-            response, self._provider.retrieve().secret_key,
-        )
-        return plain_data.decode()
+        return self._decrypt_response(response)
 
     def add_service_account(self,
                             *,
@@ -823,10 +830,7 @@ class MinioAdmin:
             body=encrypt(body, self._provider.retrieve().secret_key),
             preload_content=False,
         )
-        plain_data = decrypt(
-            response, self._provider.retrieve().secret_key,
-        )
-        return plain_data.decode()
+        return self._decrypt_response(response)
 
     def update_service_account(self,
                                *,
@@ -913,8 +917,7 @@ class MinioAdmin:
                 response.close()
                 response.release_conn()
                 return ""
-            data = decrypt(response, self._provider.retrieve().secret_key)
-            return data.decode()
+            return self._decrypt_response(response)
         raise ValueError("either user or group must be set")
 
     def attach_policy_ldap(
@@ -954,10 +957,7 @@ class MinioAdmin:
             query_params=query_params,
             preload_content=False,
         )
-        plain_data = decrypt(
-            response, self._provider.retrieve().secret_key,
-        )
-        return plain_data.decode()
+        return self._decrypt_response(response)
 
     def list_access_keys_ldap_bulk(
             self,
@@ -976,10 +976,7 @@ class MinioAdmin:
             query_params=HTTPQueryDict({"listType": list_type, key: value}),
             preload_content=False,
         )
-        plain_data = decrypt(
-            response, self._provider.retrieve().secret_key,
-        )
-        return plain_data.decode()
+        return self._decrypt_response(response)
 
     def attach_policy(
             self,
@@ -1019,10 +1016,7 @@ class MinioAdmin:
             query_params=query_params,
             preload_content=False,
         )
-        plain_data = decrypt(
-            response, self._provider.retrieve().secret_key,
-        )
-        return plain_data.decode()
+        return self._decrypt_response(response)
 
     @dataclass(frozen=True)
     class PeerSite:

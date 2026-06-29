@@ -75,13 +75,16 @@ def _get_canonical_query_string(query: str) -> str:
     """Get canonical query string."""
 
     query = query or ""
-    return "&".join(
-        [
-            "=".join(pair) for pair in sorted(
-                [params.split("=") for params in query.split("&")],
-            )
-        ],
-    )
+    if not query:
+        return ""
+    # Each parameter must canonicalize to "name=value"; per SigV4 a value-less
+    # parameter (e.g. "acl") still requires a trailing "=". Sort by the
+    # (name, value) pair, not by the joined string.
+    pairs = []
+    for param in query.split("&"):
+        name, _, value = param.partition("=")
+        pairs.append((name, value))
+    return "&".join(f"{name}={value}" for name, value in sorted(pairs))
 
 
 def _get_canonical_request_hash(

@@ -18,7 +18,6 @@
 
 from __future__ import annotations
 
-import time as ctime
 from datetime import datetime, timezone
 
 try:
@@ -125,5 +124,9 @@ def to_signer_date(value: datetime) -> str:
 
 
 def to_float(value: datetime) -> float:
-    """Convert datetime into float value."""
-    return ctime.mktime(value.timetuple()) + value.microsecond * 1e-6
+    """Convert datetime into a POSIX timestamp (seconds since the UTC epoch).
+
+    Naive datetimes are treated as UTC, consistent with the rest of this
+    module (see :func:`_to_utc` and :func:`utcnow`).
+    """
+    return _to_utc(value).replace(tzinfo=timezone.utc).timestamp()
