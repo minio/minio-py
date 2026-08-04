@@ -28,6 +28,13 @@ class RDMAError(RuntimeError):
     """libminiocpp.so returned an error from a put/get call."""
 
 
+# Largest buffer a single cuObject registration (cuMemObjGetDescriptor, inside
+# libminiocpp) can pin -- 4 GiB. A larger buffer cannot be RDMA-registered, so
+# reject it with a clear error instead of an opaque C failure; split the
+# transfer into parts no larger than this (multipart upload / ranged read).
+_CUOBJ_MAX_MEMORY_REG_SIZE = 4 * 1024**3  # 4 GiB
+
+
 _LIB: Optional[ctypes.CDLL] = None
 
 
@@ -222,6 +229,12 @@ class RDMAClient:
             raise ValueError(
                 f"length {size} exceeds buffer size {inferred}"
             )
+        if size > _CUOBJ_MAX_MEMORY_REG_SIZE:
+            raise ValueError(
+                f"RDMA put size {size} exceeds the cuObject registration limit "
+                f"of {_CUOBJ_MAX_MEMORY_REG_SIZE} bytes (4 GiB); split into "
+                f"parts <= 4 GiB (multipart upload / ranged read)"
+            )
         etag = (ctypes.c_char * 64)()
         checksum = (ctypes.c_char * 64)()
         nbytes = self._lib.miniocpp_put_object(
@@ -250,6 +263,12 @@ class RDMAClient:
         if owner is not None and size > inferred:
             raise ValueError(
                 f"length {size} exceeds buffer size {inferred}"
+            )
+        if size > _CUOBJ_MAX_MEMORY_REG_SIZE:
+            raise ValueError(
+                f"RDMA get size {size} exceeds the cuObject registration limit "
+                f"of {_CUOBJ_MAX_MEMORY_REG_SIZE} bytes (4 GiB); split into "
+                f"parts <= 4 GiB (multipart upload / ranged read)"
             )
         nbytes = self._lib.miniocpp_get_object(
             self._handle, bucket.encode(), obj.encode(),
