@@ -15,6 +15,7 @@ import unittest
 from unittest import mock
 
 from minio.minio import Minio
+from minio.rdma import _CUOBJ_MAX_MEMORY_REG_SIZE, RDMAClient
 
 
 class _FakeLib:
@@ -134,6 +135,51 @@ class RDMADispatchTest(unittest.TestCase):
                 length=1,
             )
         self.assertEqual(len(self._fake.put_calls), 0)
+
+
+class RDMAOversizeGuardTest(unittest.TestCase):
+    """The 4 GiB cuObject registration limit is enforced (inclusive) before the
+    native call. A raw pointer is used so the buffer-vs-length guard cannot fire
+    first, isolating the size-limit guard."""
+
+    def setUp(self):
+        import minio.rdma as rdma_mod
+        self._fake = _FakeLib()
+        self._orig = rdma_mod._LIB
+        rdma_mod._LIB = self._fake
+
+    def tearDown(self):
+        import minio.rdma as rdma_mod
+        rdma_mod._LIB = self._orig
+
+    def _client(self):
+        return RDMAClient("example.com", "", "k", "s", "", False)
+
+    def test_put_rejects_over_limit_without_native_call(self):
+        client = self._client()
+        with self.assertRaises(ValueError):
+            client.put("bucket", "object", 1,
+                       length=_CUOBJ_MAX_MEMORY_REG_SIZE + 1)
+        self.assertEqual(len(self._fake.put_calls), 0)
+
+    def test_get_rejects_over_limit_without_native_call(self):
+        client = self._client()
+        with self.assertRaises(ValueError):
+            client.get("bucket", "object", 1,
+                       length=_CUOBJ_MAX_MEMORY_REG_SIZE + 1)
+        self.assertEqual(len(self._fake.get_calls), 0)
+
+    def test_put_allows_exact_limit(self):
+        client = self._client()
+        client.put("bucket", "object", 1,
+                   length=_CUOBJ_MAX_MEMORY_REG_SIZE)
+        self.assertEqual(len(self._fake.put_calls), 1)
+
+    def test_get_allows_exact_limit(self):
+        client = self._client()
+        client.get("bucket", "object", 1,
+                   length=_CUOBJ_MAX_MEMORY_REG_SIZE)
+        self.assertEqual(len(self._fake.get_calls), 1)
 
 
 if __name__ == "__main__":
