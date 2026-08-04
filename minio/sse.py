@@ -21,7 +21,7 @@ from __future__ import annotations
 import base64
 import json
 from abc import ABC, abstractmethod
-from typing import Any, cast
+from typing import Any, Optional, cast
 
 from .checksum import md5sum_hash
 
@@ -76,7 +76,7 @@ class SseCustomerKey(Sse):
 class SseKMS(Sse):
     """Server-side encryption - KMS type."""
 
-    def __init__(self, key: str, context: dict[str, Any]):
+    def __init__(self, key: str, context: Optional[dict[str, Any]] = None):
         self._headers = {
             "X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id": key,
             "X-Amz-Server-Side-Encryption": "aws:kms"

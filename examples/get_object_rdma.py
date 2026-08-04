@@ -5,6 +5,7 @@
 """Download from MinIO over RDMA into a pre-allocated host buffer."""
 
 import os
+
 from minio import Minio
 
 client = Minio(

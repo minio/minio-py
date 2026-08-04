@@ -356,7 +356,7 @@ class BaseURL:
             tokens = tokens[1:]
         aws_domain_suffix = ".".join(tokens)
 
-        if host in "s3-external-1.amazonaws.com":
+        if host == "s3-external-1.amazonaws.com":
             region_in_host = "us-east-1"
 
         if host in ["s3-us-gov-west-1.amazonaws.com",

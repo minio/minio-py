@@ -413,9 +413,8 @@ class IamAwsProvider(Provider):
             os.environ.get("AWS_CONTAINER_AUTHORIZATION_TOKEN") or
             auth_token
         )
-        self._token_file = (
-            os.environ.get("AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE") or
-            auth_token
+        self._token_file = os.environ.get(
+            "AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE",
         )
         self._identity_file = (
             os.environ.get("AWS_WEB_IDENTITY_TOKEN_FILE") or token_file
@@ -536,7 +535,7 @@ class IamAwsProvider(Provider):
             )
             res = _urlopen(self._http_client, "GET", url, headers=headers)
             role_names = res.data.decode("utf-8").split("\n")
-            if not role_names:
+            if not role_names or not role_names[0].strip():
                 raise ValueError(f"no IAM roles attached to EC2 service {url}")
             url += role_names[0].strip("\r")
         if not url:
@@ -761,7 +760,7 @@ class CertificateIdentityProvider(Provider):
         if urlsplit(sts_endpoint).scheme != "https":
             raise ValueError("STS endpoint scheme must be HTTPS")
 
-        if not bool(http_client) != (cert_file and key_file):
+        if bool(http_client) == bool(cert_file and key_file):
             raise ValueError(
                 "either cert/key file or custom http_client must be provided",
             )

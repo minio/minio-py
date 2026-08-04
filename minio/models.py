@@ -69,7 +69,7 @@ class Checksum:
             ("sha256", self.checksum_sha256),
         ):
             if value:
-                headers[f"x-amz-checksum-algorithm-{algorithm}"] = value
+                headers[f"x-amz-checksum-{algorithm}"] = value
                 headers["x-amz-checksum-algorithm"] = algorithm
         return headers
 
@@ -109,11 +109,10 @@ class Filter:
     tag: Optional[Tag] = None
 
     def __post_init__(self):
-        if not (
-            (self.and_operator is not None) ^
-            (self.prefix is not None) ^
-            (self.tag is not None)
-        ):
+        if sum(
+            x is not None
+            for x in (self.and_operator, self.prefix, self.tag)
+        ) != 1:
             raise ValueError(
                 "only one of and operator, prefix or tag must be provided",
             )
@@ -776,7 +775,7 @@ class LifecycleConfig:
             date, days = cls.parsexml(element)
             expired_object_delete_marker = cast(
                 str,
-                findtext(element, "ExpiredObjectDeleteMarker", default=""),
+                findtext(element, "ExpiredObjectDeleteMarker"),
             )
             if expired_object_delete_marker is None:
                 return cls(date, days, None)
@@ -1243,6 +1242,10 @@ class ObjectLockConfig:
                 f"mode must be {ObjectLockConfig.GOVERNANCE} or "
                 f"{ObjectLockConfig.COMPLIANCE}",
             )
+        if self.duration_unit:
+            object.__setattr__(
+                self, "duration_unit", self.duration_unit.title(),
+            )
         if (
                 self.duration is not None and
                 self.duration_unit not in [
@@ -1250,12 +1253,8 @@ class ObjectLockConfig:
                 ]
         ):
             raise ValueError(
-                f"duration unit must be {ObjectLockConfig.DAYS} or ",
+                f"duration unit must be {ObjectLockConfig.DAYS} or "
                 f"{ObjectLockConfig.YEARS}",
-            )
-        if self.duration_unit:
-            object.__setattr__(
-                self, "duration_unit", self.duration_unit.title(),
             )
 
     @classmethod
@@ -1983,8 +1982,6 @@ class CreateBucketConfiguration:
             """Convert to XML."""
             if element is None:
                 raise ValueError("element must be provided")
-            if self.name or self.type:
-                element = SubElement(element, "Location")
             if self.name:
                 SubElement(element, "Name", self.name)
             if self.type:
@@ -2001,8 +1998,6 @@ class CreateBucketConfiguration:
             """Convert to XML."""
             if element is None:
                 raise ValueError("element must be provided")
-            if self.data_redundancy or self.type:
-                element = SubElement(element, "Bucket")
             if self.data_redundancy:
                 SubElement(element, "DataRedundancy", self.data_redundancy)
             if self.type:
@@ -3361,7 +3356,7 @@ class GetObjectAclResponse(GenericResponse):
         )
         object.__setattr__(
             self,
-            "result",
+            "policy",
             unmarshal(AccessControlPolicy, response.data.decode()),
         )
         object.__setattr__(self, "version_id", version_id)
@@ -3397,7 +3392,7 @@ class GetObjectAttributesResponse(GenericResponse):
         object.__setattr__(
             self,
             "delete_marker",
-            response.headers.get("x-amz-delete-marker"),
+            response.headers.get("x-amz-delete-marker", "").lower() == "true",
         )
         last_modified = response.headers.get("Last-Modified")
         if last_modified:
@@ -3676,7 +3671,7 @@ class PutObjectFanOutResponse(GenericResponse):
                 etag=result["etag"],
                 version_id=result.get("versionId"),
                 last_modified=(
-                    to_iso8601utc(result.get("lastModified"))
+                    from_iso8601utc(result.get("lastModified"))
                     if result.get("lastModified") else None
                 ),
                 error=result.get("error"),

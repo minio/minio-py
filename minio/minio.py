@@ -621,9 +621,9 @@ class Minio:
                 "The specified method is not allowed against this resource",
             ),
             409: lambda: (
-                ("NoSuchBucket", "Bucket does not exist")
+                ("Conflict", "Bucket not empty")
                 if bucket_name
-                else ("ResourceConflict", "Request resource conflicts"),
+                else ("ResourceConflict", "Request resource conflicts")
             ),
             412: lambda: (
                 ("PreconditionFailed",
@@ -3081,7 +3081,7 @@ class Minio:
             headers["x-amz-part-number-marker"] = str(part_number_marker)
         for attribute in object_attributes or []:
             if attribute:
-                headers["x-amz-object-attributes"] = attribute
+                headers.add("x-amz-object-attributes", attribute)
         if ssec:
             headers.extend(ssec.headers())
 
@@ -3684,7 +3684,7 @@ class Minio:
                 elif src.offset is not None:
                     size -= src.offset
                 offset = src.offset or 0
-                headers = cast(HTTPHeaderDict, src.headers)
+                headers = HTTPHeaderDict(src.headers)
                 headers.extend(ssec_headers)
                 if size <= MAX_PART_SIZE:
                     part_number += 1

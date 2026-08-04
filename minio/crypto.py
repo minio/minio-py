@@ -113,7 +113,10 @@ def encrypt(payload: bytes, password: str) -> bytes:
     padded_nonce = nonce + b"\x00\x00\x00\x00"
     additional_data = _generate_additional_data(aead_id[0], key, padded_nonce)
 
-    indices = range(0, len(payload), _CHUNK_SIZE)
+    # An empty payload still emits a single final (empty) chunk so the
+    # stream always carries a last-marked tag, matching the reference
+    # streaming-AEAD format and protecting against truncation.
+    indices = range(0, len(payload), _CHUNK_SIZE) or [0]
     nonce_id = 0
     result = salt + aead_id + nonce
     for i in indices:
