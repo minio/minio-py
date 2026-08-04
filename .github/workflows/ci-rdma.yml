@@ -39,12 +39,19 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: microsoft/vcpkg
+        ref: "2026.07.29"
         path: "vcpkg"
+
+    # arm64 Linux has no prebuilt vcpkg CMake, so vcpkg falls back to the system
+    # cmake; the apt version (3.28) is too old for vcpkg's SPDX generation
+    # (string(JSON ... STRING_ENCODE)). Provide a recent cmake on PATH.
+    - name: Install recent CMake and Ninja
+      uses: lukka/get-cmake@fffaaafeea488556c2c12dad60690008bc1caacb # v4.4.2
 
     - name: Install system dependencies
       run: |
         sudo apt-get -qy update
-        sudo apt-get -qy install cmake libibverbs-dev librdmacm-dev libnuma-dev
+        sudo apt-get -qy install libibverbs-dev librdmacm-dev libnuma-dev
 
     - name: Build libminiocpp.so with RDMA
       shell: bash
