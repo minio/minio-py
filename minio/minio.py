@@ -4911,7 +4911,7 @@ class Minio:
         if expires.total_seconds() < 1 or expires.total_seconds() > 604800:
             raise ValueError("expires must be between 1 second to 7 days")
 
-        region = self._get_region(bucket_name=bucket_name)
+        region = self._get_region(bucket_name=bucket_name, region=region)
         query_params = HTTPQueryDict()
         if version_id:
             query_params["versionId"] = version_id
