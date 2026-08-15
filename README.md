@@ -139,11 +139,11 @@ mc ls play/python-test-bucket
 [2023-11-03 22:18:54 UTC]  20KiB STANDARD my-test-file.txt
 ```
 
-## RDMA / GPUDirect Storage (optional)
+## RDMA (optional)
 
-`put_object` and `get_object` can dispatch to MinIO's RDMA + GPUDirect
-Storage path via [minio-cpp](https://github.com/minio/minio-cpp). It is
-strictly opt-in and the SDK stays pure-Python unless used.
+`put_object` and `get_object` can dispatch to MinIO's RDMA path via
+[minio-cpp](https://github.com/minio/minio-cpp). It is strictly opt-in and
+the SDK stays pure-Python unless used.
 
 ```python
 from minio import Minio
@@ -171,8 +171,15 @@ n = client.get_object(
 
 Requires `libminiocpp.so` (built with `-DMINIO_CPP_ENABLE_RDMA=ON`) on the
 host's library search path (or pointed at via the `MINIOCPP_LIB` env var).
+It carries its own RDMA transport, `libs3rdma`, which supports RoCE and
+native InfiniBand and needs no NVIDIA client library on the host.
+
 GPU buffer pointers (e.g. CuPy's `arr.data.ptr`, PyTorch's `t.data_ptr()`)
-work as `data=` / `into=` arguments unchanged — pass them as `int`.
+work as `data=` / `into=` arguments unchanged — pass them as `int`. The SDK
+links no CUDA itself; allocating device memory stays the application's job.
+
+Set `S3RDMA_DEVICE` to pin a particular HCA on a multi-NIC host; otherwise
+the first usable device is selected.
 
 See `examples/put_object_rdma.py` and `examples/get_object_rdma.py`.
 
