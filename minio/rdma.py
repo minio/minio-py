@@ -241,9 +241,10 @@ class RDMAClient:
             )
         if size > _RDMA_MAX_MEMORY_REG_SIZE:
             raise ValueError(
-                f"RDMA put size {size} exceeds the {_RDMA_MAX_MEMORY_REG_SIZE} bytes "
-                f"an RDMA descriptor can describe; split into "
-                f"parts <= 4 GiB (multipart upload / ranged read)"
+                f"RDMA put size {size} exceeds the "
+                f"{_RDMA_MAX_MEMORY_REG_SIZE} bytes an RDMA descriptor can "
+                f"describe; split into parts of at most that many "
+                f"bytes (multipart upload / ranged read)"
             )
         etag = (ctypes.c_char * 64)()
         checksum = (ctypes.c_char * 64)()
@@ -276,9 +277,10 @@ class RDMAClient:
             )
         if size > _RDMA_MAX_MEMORY_REG_SIZE:
             raise ValueError(
-                f"RDMA get size {size} exceeds the {_RDMA_MAX_MEMORY_REG_SIZE} bytes "
-                f"an RDMA descriptor can describe; split into "
-                f"parts <= 4 GiB (multipart upload / ranged read)"
+                f"RDMA get size {size} exceeds the "
+                f"{_RDMA_MAX_MEMORY_REG_SIZE} bytes an RDMA descriptor can "
+                f"describe; split into parts of at most that many "
+                f"bytes (multipart upload / ranged read)"
             )
         nbytes = self._lib.miniocpp_get_object(
             self._handle, bucket.encode(), obj.encode(),

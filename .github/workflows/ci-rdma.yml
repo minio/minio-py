@@ -29,10 +29,17 @@ jobs:
       with:
         path: "minio-py"
 
+    # Pinned, like the other SDKs: this job builds minio-cpp and loads the
+    # libs3rdma it vendors, so a floating main makes the build race whatever
+    # landed there. It already did -- a run against the pre-libs3rdma tree
+    # failed on -lnuma/-lrdmacm, which the libs3rdma build no longer needs.
+    # A commit rather than a tag: the RDMA transport moved to libs3rdma after
+    # v0.5.0 and no release carries it yet.
     - name: Checkout minio-cpp
       uses: actions/checkout@v4
       with:
         repository: minio/minio-cpp
+        ref: f89cc4d25d30057f30a0c3adabe2244c9e222486
         path: "minio-cpp"
 
     - name: Checkout vcpkg
