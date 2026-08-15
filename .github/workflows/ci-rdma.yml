@@ -51,7 +51,7 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt-get -qy update
-        sudo apt-get -qy install libibverbs-dev librdmacm-dev libnuma-dev
+        sudo apt-get -qy install libibverbs-dev
 
     - name: Build libminiocpp.so with RDMA
       shell: bash

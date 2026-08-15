@@ -5,7 +5,7 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # SPDX-License-Identifier: Apache-2.0
 
-"""RDMA / GPUDirect Storage dispatch via libminiocpp.so.
+"""RDMA dispatch via libminiocpp.so.
 
 Loaded lazily on first use when ``Minio(enable_rdma=True)`` was set.
 ``libminiocpp.so`` must be findable via the platform loader
@@ -28,11 +28,15 @@ class RDMAError(RuntimeError):
     """libminiocpp.so returned an error from a put/get call."""
 
 
-# Largest buffer a single cuObject registration (cuMemObjGetDescriptor, inside
-# libminiocpp) can pin -- 4 GiB. A larger buffer cannot be RDMA-registered, so
-# reject it with a clear error instead of an opaque C failure; split the
-# transfer into parts no larger than this (multipart upload / ranged read).
-_CUOBJ_MAX_MEMORY_REG_SIZE = 4 * 1024**3  # 4 GiB
+# Largest transfer a single RDMA descriptor can describe: the
+# x-amz-rdma-token carries the window size in a 32-bit field, so a buffer past
+# this cannot be named to the server at all. Reject it with a clear error
+# instead of an opaque C failure; split the transfer into parts no larger than
+# this (multipart upload / ranged read). Keep in step with
+# kRDMAMaxMemoryRegSize in minio-cpp -- a value even one byte larger lets a
+# buffer through here that libminiocpp then declines, silently falling back to
+# a much slower HTTP transfer.
+_RDMA_MAX_MEMORY_REG_SIZE = 2**32 - 1  # 4 GiB - 1
 
 
 _LIB: Optional[ctypes.CDLL] = None
@@ -99,7 +103,13 @@ def _load() -> ctypes.CDLL:
 
 
 def is_available() -> bool:
-    """True if libminiocpp.so loaded and cuObj is connected to cuObjServer."""
+    """True if libminiocpp.so loaded and this host has a usable RDMA device.
+
+    Reports a usable local device, not a reachable server: DC is
+    connectionless, so there is no session to probe. A server that will not
+    serve RDMA declines per request with ``x-amz-rdma-reply: 501``, and the
+    caller falls back to HTTP there.
+    """
     try:
         return _load().miniocpp_rdma_available() != 0
     except RDMANotAvailable:
@@ -229,10 +239,10 @@ class RDMAClient:
             raise ValueError(
                 f"length {size} exceeds buffer size {inferred}"
             )
-        if size > _CUOBJ_MAX_MEMORY_REG_SIZE:
+        if size > _RDMA_MAX_MEMORY_REG_SIZE:
             raise ValueError(
-                f"RDMA put size {size} exceeds the cuObject registration limit "
-                f"of {_CUOBJ_MAX_MEMORY_REG_SIZE} bytes (4 GiB); split into "
+                f"RDMA put size {size} exceeds the {_RDMA_MAX_MEMORY_REG_SIZE} bytes "
+                f"an RDMA descriptor can describe; split into "
                 f"parts <= 4 GiB (multipart upload / ranged read)"
             )
         etag = (ctypes.c_char * 64)()
@@ -264,10 +274,10 @@ class RDMAClient:
             raise ValueError(
                 f"length {size} exceeds buffer size {inferred}"
             )
-        if size > _CUOBJ_MAX_MEMORY_REG_SIZE:
+        if size > _RDMA_MAX_MEMORY_REG_SIZE:
             raise ValueError(
-                f"RDMA get size {size} exceeds the cuObject registration limit "
-                f"of {_CUOBJ_MAX_MEMORY_REG_SIZE} bytes (4 GiB); split into "
+                f"RDMA get size {size} exceeds the {_RDMA_MAX_MEMORY_REG_SIZE} bytes "
+                f"an RDMA descriptor can describe; split into "
                 f"parts <= 4 GiB (multipart upload / ranged read)"
             )
         nbytes = self._lib.miniocpp_get_object(

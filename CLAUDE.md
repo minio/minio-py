@@ -39,7 +39,7 @@ Supporting modules (each is single-responsibility; read these before changing cl
 - `models.py` — ~50 request/response dataclasses (bucket configs, object info, select, etc.).
 - `xml.py` — S3 XML marshalling/unmarshalling built on ElementTree; most config objects implement `fromxml`/`toxml`.
 - `args.py` — argument-holder classes shared across operations. `error.py` — `S3Error`/`ServerError`/`InvalidResponseError`. `sse.py` / `crypto.py` — server-side encryption and credential-file crypto. `checksum.py` — CRC/SHA checksums. `time.py`, `compat.py` — time formatting and Py compat shims.
-- `rdma.py` — **opt-in** RDMA / NVIDIA GPUDirect Storage acceleration for `put_object`/`get_object`, dispatched to `libminiocpp.so` via ctypes when `Minio(enable_rdma=True)`. The SDK stays pure-Python unless this path is used; see `examples/*_rdma.py`.
+- `rdma.py` — **opt-in** RDMA acceleration for `put_object`/`get_object`, dispatched to `libminiocpp.so` via ctypes when `Minio(enable_rdma=True)`. libminiocpp carries its own transport (`libs3rdma`: RoCE or native InfiniBand, host or GPU memory, no CUDA link dependency). The SDK stays pure-Python unless this path is used; see `examples/*_rdma.py`.
 
 ## Tests
 
