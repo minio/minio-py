@@ -472,7 +472,7 @@ class BaseURL:
 
         if aws_info["dualstack"]:
             netloc += "dualstack."
-        if "s3-accelerate" not in s3_prefix:
+        if enforce_path_style or "s3-accelerate" not in s3_prefix:
             netloc += region + "."
         netloc += domain_suffix
 
