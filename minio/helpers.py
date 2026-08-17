@@ -468,11 +468,12 @@ class BaseURL:
                     f"for accelerate endpoint"
                 )
             if enforce_path_style:
-                netloc = netloc.replace("-accelerate", "", 1)
+                s3_prefix = netloc.replace("-accelerate", "", 1)
+                netloc = s3_prefix
 
         if aws_info["dualstack"]:
             netloc += "dualstack."
-        if enforce_path_style or "s3-accelerate" not in s3_prefix:
+        if "s3-accelerate" not in s3_prefix:
             netloc += region + "."
         netloc += domain_suffix
 
