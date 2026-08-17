@@ -1477,6 +1477,36 @@ class BaseURLTests(TestCase):
             )
             self.assertEqual(str(url), case.result)
 
+    def test_aws_accelerate_path_style_build(self):
+        # Path style is forced for CreateBucket, so the accelerate endpoint
+        # falls back to "s3." and that form carries the region.
+        Case = namedtuple("Case", ["args", "result"])
+        cases = [
+            Case(
+                ("https://s3-accelerate.amazonaws.com", None),
+                "https://s3.us-east-1.amazonaws.com/my-bucket",
+            ),
+            Case(
+                ("https://s3-accelerate.amazonaws.com", "ap-south-1a"),
+                "https://s3.ap-south-1a.amazonaws.com/my-bucket",
+            ),
+            Case(
+                ("https://s3-accelerate.dualstack.amazonaws.com", "us-west-2"),
+                "https://s3.dualstack.us-west-2.amazonaws.com/my-bucket",
+            ),
+        ]
+
+        for case in cases:
+            base_url = BaseURL(*case.args)
+            url = urlunsplit(
+                base_url.build(
+                    method="PUT",
+                    region=base_url.region or "us-east-1",
+                    bucket_name="my-bucket",
+                ),
+            )
+            self.assertEqual(str(url), case.result)
+
     def test_aws_object_build(self):
         Case = namedtuple("Case", ["args", "result"])
         cases = [
