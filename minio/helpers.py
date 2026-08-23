@@ -468,7 +468,8 @@ class BaseURL:
                     f"for accelerate endpoint"
                 )
             if enforce_path_style:
-                netloc = netloc.replace("-accelerate", "", 1)
+                s3_prefix = netloc.replace("-accelerate", "", 1)
+                netloc = s3_prefix
 
         if aws_info["dualstack"]:
             netloc += "dualstack."
