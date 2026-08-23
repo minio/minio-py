@@ -33,12 +33,12 @@ jobs:
     # libs3rdma it vendors, so a floating main makes the build race whatever
     # landed there. It already did -- a run against the pre-libs3rdma tree
     # failed on -lnuma/-lrdmacm, which the libs3rdma build no longer needs.
-    # v0.6.0 is the first release carrying the libs3rdma transport.
+    # v0.7.0 is the first release carrying the libs3rdma transport.
     - name: Checkout minio-cpp
       uses: actions/checkout@v4
       with:
         repository: minio/minio-cpp
-        ref: v0.6.0
+        ref: v0.7.0
         path: "minio-cpp"
 
     - name: Checkout vcpkg
