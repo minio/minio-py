@@ -24,7 +24,7 @@ import hashlib
 import struct
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 # MD5 hash of zero length byte array.
 ZERO_MD5_HASH = "1B2M2Y8AsgTpgAmY7PhCfg=="
@@ -145,11 +145,34 @@ def _generate_crc32c_table():
 _CRC32C_TABLE = _generate_crc32c_table()
 
 
+def _crc32c_table_update(crc: int, data: bytes) -> int:
+    """Extends CRC32C checksum crc with data using the lookup table."""
+    crc = ~crc & 0xFFFFFFFF
+    for byte in data:
+        crc = _CRC32C_TABLE[(crc ^ byte) & 0xFF] ^ (crc >> 8)
+    return ~crc & 0xFFFFFFFF
+
+
+def _get_crc32c_update() -> Callable[[int, bytes], int]:
+    """Get C extension based CRC32C update, else the lookup table one."""
+    # pylint: disable=import-outside-toplevel
+    try:
+        # google_crc32c.cext is absent when its C extension is unavailable;
+        # its pure-Python fallback is slower than the table loop below.
+        from google_crc32c.cext import extend  # type: ignore[import-not-found]
+        return extend
+    except ImportError:
+        return _crc32c_table_update
+
+
+_crc32c_update = _get_crc32c_update()
+
+
 class CRC32C(Hasher):
     """CRC32C Hasher."""
 
     def __init__(self):
-        self._crc = 0xFFFFFFFF
+        self._crc = 0
 
     def update(
             self,
@@ -160,16 +183,13 @@ class CRC32C(Hasher):
         offset = offset or 0
         if length is None:
             length = len(data) - offset
-        for byte in data[offset:offset+length]:
-            self._crc = _CRC32C_TABLE[
-                (self._crc ^ byte) & 0xFF] ^ (self._crc >> 8)
+        self._crc = _crc32c_update(self._crc, data[offset:offset+length])
 
     def sum(self) -> bytes:
-        crc_final = (~self._crc) & 0xFFFFFFFF
-        return crc_final.to_bytes(4, "big")
+        return self._crc.to_bytes(4, "big")
 
     def reset(self) -> None:
-        self._crc = 0xFFFFFFFF
+        self._crc = 0
 
 
 def _generate_crc64nvme_table():
