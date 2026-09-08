@@ -195,6 +195,7 @@ class Minio:
             ...             total=5,
             ...             backoff_factor=0.2,
             ...             status_forcelist=[500, 502, 503, 504],
+            ...             raise_on_status=False,
             ...         ),
             ...     ),
             ... )
@@ -225,7 +226,8 @@ class Minio:
             retries=Retry(
                 total=5,
                 backoff_factor=0.2,
-                status_forcelist=[500, 502, 503, 504]
+                status_forcelist=[500, 502, 503, 504],
+                raise_on_status=False,
             )
         )
 
