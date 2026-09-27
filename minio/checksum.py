@@ -183,7 +183,9 @@ class CRC32C(Hasher):
         offset = offset or 0
         if length is None:
             length = len(data) - offset
-        self._crc = _crc32c_update(self._crc, data[offset:offset+length])
+        self._crc = _crc32c_update(
+            self._crc, bytes(data[offset:offset+length]),
+        )
 
     def sum(self) -> bytes:
         return self._crc.to_bytes(4, "big")
