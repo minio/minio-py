@@ -896,6 +896,63 @@ def test_put_object(log_entry, sse=None):
         _client.remove_bucket(bucket_name=bucket_name)
 
 
+def test_put_object_unknown_size(log_entry):
+    """Test put_object() with unknown size."""
+
+    # Get a unique bucket_name and object_name
+    bucket_name = _gen_bucket_name()
+    object_name = f"{uuid4()}"
+    part_size = 5 * MB
+
+    log_entry["args"] = {
+        "bucket_name": bucket_name,
+        "object_name": object_name,
+        "length": -1,
+        "part_size": part_size,
+    }
+
+    try:
+        _client.make_bucket(bucket_name=bucket_name)
+        for filename, checksum_type, crc32c in (
+                (_test_file, ChecksumType.FULL_OBJECT, _test_file_crc32c),
+                (_large_file, ChecksumType.COMPOSITE, _large_file_crc32c),
+        ):
+            log_entry["args"]["data"] = filename
+            # Upload in unknown size mode; each part is read with one
+            # look-ahead byte which must not be part of its checksum.
+            with open(filename, "rb") as file:
+                _client.put_object(
+                    bucket_name=bucket_name,
+                    object_name=object_name,
+                    data=file,
+                    length=-1,
+                    part_size=part_size,
+                )
+            response = _client.stat_object(
+                bucket_name=bucket_name,
+                object_name=object_name,
+                fetch_checksum=True,
+            )
+            size = os.path.getsize(filename)
+            if response.size != size:
+                raise ValueError(
+                    f"size: expected: {size}; got: {response.size}",
+                )
+            if response.checksum_type != checksum_type:
+                raise ValueError(
+                    f"checksum type: expected: {checksum_type}; "
+                    f"got: {response.checksum_type}",
+                )
+            if response.checksums.get(Algorithm.CRC32C) != crc32c:
+                raise ValueError(
+                    f"checksum crc32c: expected: {crc32c}; "
+                    f"got: {response.checksums.get(Algorithm.CRC32C)}",
+                )
+    finally:
+        _client.remove_object(bucket_name=bucket_name, object_name=object_name)
+        _client.remove_bucket(bucket_name=bucket_name)
+
+
 def test_negative_put_object_with_path_segment(  # pylint: disable=invalid-name
         log_entry):
     """Test put_object() failure with path segment."""
@@ -2432,6 +2489,7 @@ def main():
             test_copy_object_modified_since: None,
             test_copy_object_unmodified_since: None,
             test_put_object: {"sse": ssec} if ssec else None,
+            test_put_object_unknown_size: None,
             test_negative_put_object_with_path_segment: None,
             test_stat_object: {"sse": ssec} if ssec else None,
             test_stat_object_version: {"sse": ssec} if ssec else None,
@@ -2469,6 +2527,7 @@ def main():
             test_make_bucket_default_region: None,
             test_list_buckets: None,
             test_put_object: {"sse": ssec} if ssec else None,
+            test_put_object_unknown_size: None,
             test_stat_object: {"sse": ssec} if ssec else None,
             test_stat_object_version: {"sse": ssec} if ssec else None,
             test_get_object: {"sse": ssec} if ssec else None,
