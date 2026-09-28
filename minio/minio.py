@@ -330,6 +330,7 @@ class Minio:
             part_data: bytes = b"",
             progress: Optional[ProgressType] = None,
             hashers: Optional[Dict[Algorithm, Hasher]] = None,
+            peek: int = 0,
     ) -> bytes:
         """Read part data of given size from stream."""
         reset_hashers(hashers)
@@ -337,6 +338,8 @@ class Minio:
         size -= initial_length
         if part_data:
             update_hashers(hashers, part_data, initial_length)
+        elif peek > 0:
+            initial_length = peek
         while size:
             data = stream.read(size)
             if not data:
@@ -3972,6 +3975,7 @@ class Minio:
         uploaded_size = 0
         part_number = 0
         one_byte = b""
+        peek_len = 1
         stop = False
         upload_id = None
         parts: list[Part] = []
@@ -3999,10 +4003,11 @@ class Minio:
                 else:
                     part_data = self._read_part_data(
                         stream=data,
-                        size=part_size + 1,
+                        size=part_size + peek_len,
                         part_data=one_byte,
                         progress=progress,
                         hashers=hashers,
+                        peek=peek_len,
                     )
                     # If part_data_size is less or equal to part_size,
                     # then we have reached last part.
@@ -4243,6 +4248,7 @@ class Minio:
         uploaded_size = 0
         chunk_number = 0
         one_byte = b""
+        peek_len = 1
         stop = False
 
         head_response = self._head_object(
@@ -4269,9 +4275,10 @@ class Minio:
             else:
                 chunk_data = self._read_part_data(
                     stream=stream,
-                    size=chunk_size + 1,
+                    size=chunk_size + peek_len,
                     part_data=one_byte,
                     progress=progress,
+                    peek=peek_len,
                 )
                 # If chunk_data_size is less or equal to chunk_size,
                 # then we have reached last chunk.
