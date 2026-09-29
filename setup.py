@@ -64,6 +64,9 @@ setup(
         "pycryptodome",
         "typing-extensions",
     ],
+    extras_require={
+        "fast-checksum": ["awscrt>=0.22.0"],
+    },
     include_package_data=True,
     package_data={
         "minio": ["LICENSE", "README.md", "py.typed"],

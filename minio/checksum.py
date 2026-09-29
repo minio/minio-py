@@ -21,10 +21,29 @@ from __future__ import annotations
 import base64
 import binascii
 import hashlib
+import importlib
 import struct
 from abc import ABC, abstractmethod
 from enum import Enum
+from types import ModuleType
 from typing import Dict, List, Optional
+
+# Optional native CRC implementations; pure-Python fallback is used otherwise.
+# awscrt provides CRC32C and CRC64NVME; google_crc32c provides CRC32C only and
+# is used when awscrt is unavailable.
+_awscrt_checksums: Optional[ModuleType]
+try:
+    _awscrt_checksums = importlib.import_module("awscrt.checksums")
+except ImportError:
+    _awscrt_checksums = None
+
+# Import the C extension directly; the google_crc32c package silently falls
+# back to its own pure-Python implementation, which is slower than ours.
+_google_crc32c: Optional[ModuleType]
+try:
+    _google_crc32c = importlib.import_module("google_crc32c.cext")
+except ImportError:
+    _google_crc32c = None
 
 # MD5 hash of zero length byte array.
 ZERO_MD5_HASH = "1B2M2Y8AsgTpgAmY7PhCfg=="
@@ -42,10 +61,7 @@ def md5sum_hash(data: Optional[str | bytes]) -> Optional[str]:
 
     # indicate md5 hashing algorithm is not used in a security context.
     # Refer https://bugs.python.org/issue9216 for more information.
-    hasher = hashlib.new(  # type: ignore[call-arg]
-        "md5",
-        usedforsecurity=False,
-    )
+    hasher = hashlib.new("md5", usedforsecurity=False)
     hasher.update(data.encode() if isinstance(data, str) else data)
     md5sum = base64.b64encode(hasher.digest())
     return md5sum.decode() if isinstance(md5sum, bytes) else md5sum
@@ -74,7 +90,7 @@ def base64_string_to_sum(value: str) -> bytes:
 
 def hex_string(data: bytes) -> str:
     """Encodes the specified bytes to Base16 (hex) string."""
-    return "".join(f"{b:02x}" for b in data)
+    return data.hex()
 
 
 def hex_string_to_sum(value: str) -> bytes:
@@ -82,6 +98,17 @@ def hex_string_to_sum(value: str) -> bytes:
     if len(value) % 2 != 0:
         raise ValueError("Hex string length must be even")
     return bytes(int(value[i:i+2], 16) for i in range(0, len(value), 2))
+
+
+def _view(
+        data: bytes,
+        offset: Optional[int] = None,
+        length: Optional[int] = None,
+) -> memoryview:
+    """Returns data[offset:offset+length] as memoryview without copying."""
+    offset = offset or 0
+    view = memoryview(data)
+    return view[offset:] if length is None else view[offset:offset+length]
 
 
 class Hasher(ABC):
@@ -117,11 +144,8 @@ class CRC32(Hasher):
             offset: Optional[int] = None,
             length: Optional[int] = None,
     ) -> None:
-        offset = offset or 0
-        if length is None:
-            length = len(data) - offset
         self._crc = binascii.crc32(
-            data[offset:offset+length], self._crc,
+            _view(data, offset, length), self._crc,
         ) & 0xFFFFFFFF
 
     def sum(self) -> bytes:
@@ -131,25 +155,86 @@ class CRC32(Hasher):
         self._crc = 0
 
 
-def _generate_crc32c_table():
-    """Generates CRC32C table."""
-    table = [0] * 256
+def _generate_crc_tables(polynomial: int) -> tuple[list[int], ...]:
+    """Generates slicing-by-16 lookup tables for reflected CRC polynomial."""
+    table = []
     for i in range(256):
         crc = i
         for _ in range(8):
-            crc = (crc >> 1) ^ (0x82F63B78 if (crc & 1) else 0)
-        table[i] = crc & 0xFFFFFFFF
-    return table
+            crc = (crc >> 1) ^ (polynomial if crc & 1 else 0)
+        table.append(crc)
+    tables = [table]
+    for _ in range(15):
+        tables.append([table[crc & 0xFF] ^ (crc >> 8) for crc in tables[-1]])
+    return tuple(tables)
 
 
-_CRC32C_TABLE = _generate_crc32c_table()
+_CRC32C_TABLES = _generate_crc_tables(0x82F63B78)
+_CRC64NVME_TABLES = _generate_crc_tables(0x9A6C9329AC4BC9B5)
+
+
+def _crc32c_update(crc: int, data: memoryview) -> int:
+    """Extends CRC32C checksum crc with data.
+
+    Uses slicing-by-16: each loop iteration consumes 16 bytes with one table
+    lookup per byte, which minimizes Python bytecode executed per byte.
+    """
+    # pylint: disable=invalid-name,too-many-locals
+    # pylint: disable=unbalanced-tuple-unpacking
+    (t0, t1, t2, t3, t4, t5, t6, t7,
+     t8, t9, t10, t11, t12, t13, t14, t15) = _CRC32C_TABLES
+    crc ^= 0xFFFFFFFF
+    end = len(data) - len(data) % 16
+    for (b0, b1, b2, b3, b4, b5, b6, b7,
+         b8, b9, b10, b11, b12, b13, b14, b15) in struct.iter_unpack(
+             "16B", data[:end]):
+        crc = (
+            t15[b0 ^ (crc & 0xFF)] ^
+            t14[b1 ^ ((crc >> 8) & 0xFF)] ^
+            t13[b2 ^ ((crc >> 16) & 0xFF)] ^
+            t12[b3 ^ (crc >> 24)] ^
+            t11[b4] ^ t10[b5] ^ t9[b6] ^ t8[b7] ^
+            t7[b8] ^ t6[b9] ^ t5[b10] ^ t4[b11] ^
+            t3[b12] ^ t2[b13] ^ t1[b14] ^ t0[b15]
+        )
+    for byte in data[end:]:
+        crc = t0[(crc ^ byte) & 0xFF] ^ (crc >> 8)
+    return crc ^ 0xFFFFFFFF
+
+
+def _crc64nvme_update(crc: int, data: memoryview) -> int:
+    """Extends CRC64NVME checksum crc with data using slicing-by-16."""
+    # pylint: disable=invalid-name,too-many-locals
+    # pylint: disable=unbalanced-tuple-unpacking
+    (t0, t1, t2, t3, t4, t5, t6, t7,
+     t8, t9, t10, t11, t12, t13, t14, t15) = _CRC64NVME_TABLES
+    crc ^= 0xFFFFFFFFFFFFFFFF
+    end = len(data) - len(data) % 16
+    for (b0, b1, b2, b3, b4, b5, b6, b7,
+         b8, b9, b10, b11, b12, b13, b14, b15) in struct.iter_unpack(
+             "16B", data[:end]):
+        crc = (
+            t15[b0 ^ (crc & 0xFF)] ^
+            t14[b1 ^ ((crc >> 8) & 0xFF)] ^
+            t13[b2 ^ ((crc >> 16) & 0xFF)] ^
+            t12[b3 ^ ((crc >> 24) & 0xFF)] ^
+            t11[b4 ^ ((crc >> 32) & 0xFF)] ^
+            t10[b5 ^ ((crc >> 40) & 0xFF)] ^
+            t9[b6 ^ ((crc >> 48) & 0xFF)] ^
+            t8[b7 ^ (crc >> 56)] ^
+            t7[b8] ^ t6[b9] ^ t5[b10] ^ t4[b11] ^
+            t3[b12] ^ t2[b13] ^ t1[b14] ^ t0[b15]
+        )
+    for byte in data[end:]:
+        crc = t0[(crc ^ byte) & 0xFF] ^ (crc >> 8)
+    return crc ^ 0xFFFFFFFFFFFFFFFF
 
 
 class CRC32C(Hasher):
     """CRC32C Hasher."""
 
     def __init__(self):
-        self._crc = 0xFFFFFFFF
+        self._crc = 0
 
     def update(
             self,
@@ -157,47 +242,23 @@ class CRC32C(Hasher):
             offset: Optional[int] = None,
             length: Optional[int] = None,
     ) -> None:
-        offset = offset or 0
-        if length is None:
-            length = len(data) - offset
-        for byte in data[offset:offset+length]:
-            self._crc = _CRC32C_TABLE[
-                (self._crc ^ byte) & 0xFF] ^ (self._crc >> 8)
+        view = _view(data, offset, length)
+        if _awscrt_checksums:
+            self._crc = _awscrt_checksums.crc32c(view, self._crc)
+        elif _google_crc32c:
+            # google_crc32c accepts bytes only; avoid copying whole bytes.
+            whole = isinstance(data, bytes) and len(view) == len(data)
+            self._crc = _google_crc32c.extend(
+                self._crc, data if whole else bytes(view),
+            )
+        else:
+            self._crc = _crc32c_update(self._crc, view)
 
     def sum(self) -> bytes:
-        crc_final = (~self._crc) & 0xFFFFFFFF
-        return crc_final.to_bytes(4, "big")
+        return self._crc.to_bytes(4, "big")
 
     def reset(self) -> None:
-        self._crc = 0xFFFFFFFF
-
-
-def _generate_crc64nvme_table():
-    """Generates CRC64NVME table."""
-    table = [0] * 256
-    slicing8_table = [[0] * 256 for _ in range(8)]
-
-    polynomial = 0x9A6C9329AC4BC9B5
-    for i in range(256):
-        crc = i
-        for _ in range(8):
-            if crc & 1:
-                crc = (crc >> 1) ^ polynomial
-            else:
-                crc >>= 1
-        table[i] = crc & 0xFFFFFFFFFFFFFFFF
-
-    slicing8_table[0] = table[:]
-    for i in range(256):
-        crc = table[i]
-        for j in range(1, 8):
-            crc = table[crc & 0xFF] ^ (crc >> 8)
-            slicing8_table[j][i] = crc & 0xFFFFFFFFFFFFFFFF
-
-    return table, slicing8_table
-
-
-_CRC64NVME_TABLE, _SLICING8_TABLE_NVME = _generate_crc64nvme_table()
+        self._crc = 0
 
 
 class CRC64NVME(Hasher):
@@ -211,54 +272,18 @@ class CRC64NVME(Hasher):
             data: bytes,
             offset: Optional[int] = None,
             length: Optional[int] = None,
-    ):
-        offset = offset or 0
-        if length is None:
-            length = len(data) - offset
-        data = data[offset:offset + length]
-        self._crc = ~self._crc & 0xFFFFFFFFFFFFFFFF
-        offset = 0
-
-        # Process in 8-byte chunks (little-endian)
-        while len(data) >= 64 and (len(data) - offset) > 8:
-            value = struct.unpack_from("<Q", data, offset)[0]
-            self._crc ^= value
-            self._crc = (
-                _SLICING8_TABLE_NVME[7][self._crc & 0xFF] ^
-                _SLICING8_TABLE_NVME[6][(self._crc >> 8) & 0xFF] ^
-                _SLICING8_TABLE_NVME[5][(self._crc >> 16) & 0xFF] ^
-                _SLICING8_TABLE_NVME[4][(self._crc >> 24) & 0xFF] ^
-                _SLICING8_TABLE_NVME[3][(self._crc >> 32) & 0xFF] ^
-                _SLICING8_TABLE_NVME[2][(self._crc >> 40) & 0xFF] ^
-                _SLICING8_TABLE_NVME[1][(self._crc >> 48) & 0xFF] ^
-                _SLICING8_TABLE_NVME[0][(self._crc >> 56)]
-            ) & 0xFFFFFFFFFFFFFFFF
-            offset += 8
-
-        # Process remaining bytes
-        for i in range(offset, length):
-            self._crc = (
-                _CRC64NVME_TABLE[(self._crc ^ data[i]) & 0xFF] ^
-                (self._crc >> 8)
-            ) & 0xFFFFFFFFFFFFFFFF
-
-        self._crc = ~self._crc & 0xFFFFFFFFFFFFFFFF
-
-    def reset(self):
-        self._crc = 0
+    ) -> None:
+        view = _view(data, offset, length)
+        if _awscrt_checksums:
+            self._crc = _awscrt_checksums.crc64nvme(view, self._crc)
+        else:
+            self._crc = _crc64nvme_update(self._crc, view)
 
     def sum(self) -> bytes:
-        value = self._crc
-        return bytes([
-            (value >> 56) & 0xFF,
-            (value >> 48) & 0xFF,
-            (value >> 40) & 0xFF,
-            (value >> 32) & 0xFF,
-            (value >> 24) & 0xFF,
-            (value >> 16) & 0xFF,
-            (value >> 8) & 0xFF,
-            value & 0xFF
-        ])
+        return self._crc.to_bytes(8, "big")
+
+    def reset(self) -> None:
+        self._crc = 0
 
 
 class HashlibHasher(Hasher, ABC):
@@ -266,7 +291,15 @@ class HashlibHasher(Hasher, ABC):
 
     def __init__(self, name: str):
         self._name = name
-        self._hasher = hashlib.new(name)
+        self._hasher = self._new()
+
+    def _new(self):
+        """Creates new hashlib object."""
+        # MD5 is used as a checksum, not for security; this allows MD5 on
+        # FIPS enabled systems. Refer https://bugs.python.org/issue9216
+        if self._name == "md5":
+            return hashlib.new("md5", usedforsecurity=False)
+        return hashlib.new(self._name)
 
     def update(
             self,
@@ -274,16 +307,13 @@ class HashlibHasher(Hasher, ABC):
             offset: Optional[int] = None,
             length: Optional[int] = None,
     ) -> None:
-        offset = offset or 0
-        if length is None:
-            length = len(data) - offset
-        self._hasher.update(data[offset:offset+length])
+        self._hasher.update(_view(data, offset, length))
 
     def sum(self) -> bytes:
         return self._hasher.digest()
 
     def reset(self) -> None:
-        self._hasher = hashlib.new(self._name)
+        self._hasher = self._new()
 
 
 class SHA1(HashlibHasher):
