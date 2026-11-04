@@ -46,6 +46,15 @@ def from_iso8601utc(value: Optional[str]) -> Optional[datetime]:
     if value is None:
         return None
 
+    # MinIO's JSON APIs use Go's RFC3339Nano, with up to nine fractional
+    # digits; datetime keeps six.
+    head, dot, fraction = value.partition(".")
+    if (
+        dot and fraction.endswith("Z") and len(fraction) > 7
+        and fraction[:-1].isdigit()
+    ):
+        value = f"{head}.{fraction[:6]}Z"
+
     try:
         time = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ")
     except ValueError:
