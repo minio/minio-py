@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from urllib3.response import HTTPResponse
 
 from minio.models import PutObjectFanOutResponse
+from minio.time import from_iso8601utc
 
 
 class PutObjectFanOutResponseTest(unittest.TestCase):
@@ -46,3 +47,7 @@ class PutObjectFanOutResponseTest(unittest.TestCase):
                 datetime(2025, 1, 7, 9, 57, 45, 200000, tzinfo=timezone.utc),
             ],
         )
+
+    def test_malformed_fraction_raises(self) -> None:
+        with self.assertRaises(ValueError):
+            from_iso8601utc("2025-01-07T09:57:45.123456oopsZ")

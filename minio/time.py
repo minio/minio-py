@@ -49,7 +49,10 @@ def from_iso8601utc(value: Optional[str]) -> Optional[datetime]:
     # MinIO's JSON APIs use Go's RFC3339Nano, with up to nine fractional
     # digits; datetime keeps six.
     head, dot, fraction = value.partition(".")
-    if dot and fraction.endswith("Z") and len(fraction) > 7:
+    if (
+        dot and fraction.endswith("Z") and len(fraction) > 7
+        and fraction[:-1].isdigit()
+    ):
         value = f"{head}.{fraction[:6]}Z"
 
     try:
