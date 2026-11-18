@@ -26,6 +26,7 @@ import json
 import os
 import re
 import socket
+import ssl
 import sys
 import time
 from abc import ABC, abstractmethod
@@ -37,6 +38,7 @@ from urllib.parse import urlencode, urlsplit, urlunsplit
 import certifi
 from urllib3.poolmanager import PoolManager
 from urllib3.util import Retry, parse_url
+from urllib3.util.ssl_ import create_urllib3_context
 
 from minio.checksum import sha256_hash
 from minio.compat import HTTPHeaderDict, HTTPResponse
@@ -385,6 +387,74 @@ def _get_jwt_token(token_file: str) -> dict[str, str]:
         raise ValueError(f"error in reading file {token_file}") from exc
 
 
+def _sts_endpoint_from_env() -> Optional[str]:
+    """
+    Get STS endpoint from AWS_ENDPOINT_URL_STS unless
+    AWS_IGNORE_CONFIGURED_ENDPOINT_URLS is true. The global
+    AWS_ENDPOINT_URL is intentionally not read, so setting
+    AWS_ENDPOINT_URL_STS is an explicit opt-in.
+
+    See https://docs.aws.amazon.com/sdkref/latest/guide/
+    feature-ss-endpoints.html
+    """
+    if os.environ.get("AWS_IGNORE_CONFIGURED_ENDPOINT_URLS", "").lower() \
+       == "true":
+        return None
+    return os.environ.get("AWS_ENDPOINT_URL_STS") or None
+
+
+def _http_client_with_ca_bundle(ca_bundle: str) -> PoolManager:
+    """
+    Create HTTP client trusting certificates in the PEM file ca_bundle in
+    addition to the default trust store.
+
+    See https://docs.aws.amazon.com/sdkref/latest/guide/
+    feature-gen-config.html
+    """
+    # Read the bundle once and use the same data for the check and the
+    # client. The check uses a standard-library context, which also works
+    # when urllib3 hands out another TLS backend (e.g. pyOpenSSL).
+    checker = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    try:
+        with open(ca_bundle, "rb") as file:
+            pem = file.read().decode("utf-8", errors="replace")
+        checker.load_verify_locations(cadata=pem)
+    except (OSError, ValueError, ssl.SSLError) as exc:
+        raise ValueError(
+            f"unable to load certificates from AWS_CA_BUNDLE {ca_bundle}: "
+            f"{exc}",
+        ) from exc
+    # A bundle holding only CRLs loads without error; require a certificate.
+    if checker.cert_store_stats()["x509"] == 0:
+        raise ValueError(f"no certificates found in AWS_CA_BUNDLE {ca_bundle}")
+    # urllib3's TLS defaults keep its hostname policy (no CN fallback).
+    context = create_urllib3_context()
+    try:
+        if isinstance(context, ssl.SSLContext):
+            context.load_verify_locations(cadata=pem)
+            context.load_default_certs()
+        else:
+            # Other backends (e.g. urllib3's pyOpenSSL context) do not
+            # accept PEM text as cadata and lack load_default_certs, so load
+            # the checked file by path and use the default verify paths.
+            context.load_verify_locations(cafile=ca_bundle)
+            context.set_default_verify_paths()
+    except (OSError, ValueError, ssl.SSLError) as exc:
+        raise ValueError(
+            f"unable to load certificates from AWS_CA_BUNDLE {ca_bundle}: "
+            f"{exc}",
+        ) from exc
+    return PoolManager(
+        ssl_context=context,
+        retries=Retry(
+            total=5,
+            backoff_factor=0.2,
+            status_forcelist=[500, 502, 503, 504],
+            raise_on_status=False,
+        ),
+    )
+
+
 class IamAwsProvider(Provider):
     """Credential provider using IAM roles for Amazon EC2/ECS."""
 
@@ -402,6 +472,7 @@ class IamAwsProvider(Provider):
             region: Optional[str] = None,
     ):
         self._custom_endpoint = custom_endpoint
+        self._custom_http_client = http_client is not None
         self._http_client = http_client or PoolManager(
             retries=Retry(
                 total=5,
@@ -467,6 +538,10 @@ class IamAwsProvider(Provider):
 
         url = self._custom_endpoint
         if self._identity_file:
+            from_env = False
+            if not url:
+                url = _sts_endpoint_from_env()
+                from_env = bool(url)
             if not url:
                 url = "https://sts.amazonaws.com"
                 if self._aws_region:
@@ -474,16 +549,29 @@ class IamAwsProvider(Provider):
                     if self._aws_region.startswith("cn-"):
                         url += ".cn"
 
-            provider = WebIdentityProvider(
-                jwt_provider_func=lambda: _get_jwt_token(
-                    cast(str, self._identity_file),
-                ),
-                sts_endpoint=url,
-                role_arn=self._role_arn,
-                role_session_name=self._role_session_name,
-                http_client=self._http_client,
+            http_client = self._http_client
+            # AWS_CA_BUNDLE is an opt-in: read only with an STS endpoint
+            # from AWS_ENDPOINT_URL_STS.
+            ca_bundle = (
+                os.environ.get("AWS_CA_BUNDLE")
+                if from_env and not self._custom_http_client else None
             )
-            self._credentials = provider.retrieve()
+            if ca_bundle:
+                http_client = _http_client_with_ca_bundle(ca_bundle)
+            try:
+                provider = WebIdentityProvider(
+                    jwt_provider_func=lambda: _get_jwt_token(
+                        cast(str, self._identity_file),
+                    ),
+                    sts_endpoint=url,
+                    role_arn=self._role_arn,
+                    role_session_name=self._role_session_name,
+                    http_client=http_client,
+                )
+                self._credentials = provider.retrieve()
+            finally:
+                if http_client is not self._http_client:
+                    http_client.clear()
             return cast(Credentials, self._credentials)
 
         headers: Optional[HTTPHeaderDict] = None
@@ -518,7 +606,7 @@ class IamAwsProvider(Provider):
             res = _urlopen(
                 self._http_client,
                 "PUT",
-                url+"/latest/api/token",
+                url + "/latest/api/token",
                 headers=headers,
             )
             token = res.data.decode("utf-8")
